@@ -49,3 +49,38 @@ obj/
 *.pdb
 *.cache
 *.json
+
+# Angular build output
+/WebApp.Client/dist/
+/WebApp.Client/.angular/cache/
+/WebApp.Client/angular/cache/
+
+# Angular generated files
+*.js.map
+*.js
+!/WebApp.Client/src/**/*.js
+!/WebApp.Client/src/**/*.js.map
+
+# Angular cache & temp files
+.angular/
+.sass-cache/
+connect.lock
+coverage/
+libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+typings/
+
+# Dependencies
+/WebApp.Client/node_modules/
+
+# IDE files
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
