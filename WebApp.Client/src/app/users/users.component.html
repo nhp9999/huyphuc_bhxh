@@ -1,0 +1,88 @@
+<div class="users-container">
+  <div class="users-header">
+    <h1>Quản lý người dùng</h1>
+    <button nz-button nzType="primary" (click)="showAddModal()">
+      <span nz-icon nzType="plus"></span>
+      Thêm mới
+    </button>
+  </div>
+
+  <nz-table #basicTable [nzData]="users">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên đăng nhập</th>
+        <th>Họ và tên</th>
+        <th>Email</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of basicTable.data">
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.fullName }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role }}</td>
+        <td>
+          <span [class.active]="user.status" [class.inactive]="!user.status">
+            {{ user.status ? 'Hoạt động' : 'Không hoạt động' }}
+          </span>
+        </td>
+        <td>
+          <button nz-button nzType="primary" (click)="showEditModal(user)" class="action-button">
+            <span nz-icon nzType="edit"></span>
+          </button>
+          <button nz-button nzType="default" nzDanger (click)="deleteUser(user.id)" class="action-button">
+            <span nz-icon nzType="delete"></span>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <nz-modal
+    [(nzVisible)]="isModalVisible"
+    [nzTitle]="editingUser ? 'Sửa người dùng' : 'Thêm người dùng'"
+    (nzOnCancel)="handleCancel()"
+    (nzOnOk)="handleOk()">
+    <ng-container *nzModalContent>
+      <form nz-form>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Tên đăng nhập</nz-form-label>
+          <nz-form-control [nzSpan]="14">
+            <input nz-input [(ngModel)]="editingUser!.username" name="username" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Họ và tên</nz-form-label>
+          <nz-form-control [nzSpan]="14">
+            <input nz-input [(ngModel)]="editingUser!.fullName" name="fullName" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Email</nz-form-label>
+          <nz-form-control [nzSpan]="14">
+            <input nz-input [(ngModel)]="editingUser!.email" name="email" type="email" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Vai trò</nz-form-label>
+          <nz-form-control [nzSpan]="14">
+            <input nz-input [(ngModel)]="editingUser!.role" name="role" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Trạng thái</nz-form-label>
+          <nz-form-control [nzSpan]="14">
+            <label nz-checkbox [(ngModel)]="editingUser!.status" name="status">
+              Hoạt động
+            </label>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </ng-container>
+  </nz-modal>
+</div>

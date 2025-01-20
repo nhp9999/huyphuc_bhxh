@@ -1,0 +1,101 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>{{title}}</h1>
+    <div class="dashboard-actions">
+      <button nz-button nzType="primary">
+        <span nz-icon nzType="plus"></span>
+        Thêm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card primary">
+      <div class="stat-icon">
+        <span nz-icon nzType="team" nzTheme="outline"></span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">2,451</div>
+        <div class="stat-label">Tổng nhân viên</div>
+      </div>
+      <div class="stat-trend up">
+        <span nz-icon nzType="arrow-up"></span>
+        <span>12%</span>
+      </div>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-icon">
+        <span nz-icon nzType="solution" nzTheme="outline"></span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">1,257</div>
+        <div class="stat-label">Hồ sơ đã xử lý</div>
+      </div>
+      <div class="stat-trend up">
+        <span nz-icon nzType="arrow-up"></span>
+        <span>8%</span>
+      </div>
+    </div>
+
+    <div class="stat-card warning">
+      <div class="stat-icon">
+        <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">145</div>
+        <div class="stat-label">Đang chờ xử lý</div>
+      </div>
+      <div class="stat-trend down">
+        <span nz-icon nzType="arrow-down"></span>
+        <span>5%</span>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-icon">
+        <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">98%</div>
+        <div class="stat-label">Tỷ lệ hoàn thành</div>
+      </div>
+      <div class="stat-trend up">
+        <span nz-icon nzType="arrow-up"></span>
+        <span>2%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h2>Hoạt động gần đây</h2>
+        <a nz-button nzType="link">Xem tất cả</a>
+      </div>
+      <nz-list [nzDataSource]="recentActivities" nzItemLayout="horizontal">
+        <nz-list-item *ngFor="let item of recentActivities">
+          <nz-list-item-meta
+            [nzAvatar]="item.avatar"
+            [nzTitle]="item.title"
+            [nzDescription]="item.description">
+          </nz-list-item-meta>
+        </nz-list-item>
+      </nz-list>
+    </div>
+
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h2>Thống kê theo tháng</h2>
+        <nz-radio-group [(ngModel)]="selectedPeriod">
+          <label nz-radio-button nzValue="week">Tuần</label>
+          <label nz-radio-button nzValue="month">Tháng</label>
+          <label nz-radio-button nzValue="year">Năm</label>
+        </nz-radio-group>
+      </div>
+      <div class="chart-container">
+        <!-- Thêm biểu đồ ở đây -->
+      </div>
+    </div>
+  </div>
+</div>

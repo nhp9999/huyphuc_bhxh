@@ -1,0 +1,23 @@
+import { Routes } from '@angular/router';
+import { LoginComponent } from './login/login.component';
+import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { StatisticsComponent } from './statistics/statistics.component';
+
+export const routes: Routes = [
+  { path: 'login', component: LoginComponent },
+  {
+    path: '',
+    component: MainLayoutComponent,
+    children: [
+      { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) },
+      { path: 'users', loadComponent: () => import('./users/users.component').then(m => m.UsersComponent) },
+      { 
+        path: 'reports',
+        children: [
+          { path: 'statistics', component: StatisticsComponent }
+        ]
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
+    ]
+  }
+];

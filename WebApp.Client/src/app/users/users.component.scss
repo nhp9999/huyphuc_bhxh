@@ -1,0 +1,36 @@
+.users-container {
+  padding: 24px;
+
+  .users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+    }
+  }
+
+  .action-button {
+    margin-right: 8px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  .active {
+    color: #52c41a;
+  }
+
+  .inactive {
+    color: #ff4d4f;
+  }
+
+  nz-table {
+    background: white;
+    padding: 24px;
+    border-radius: 2px;
+  }
+}
