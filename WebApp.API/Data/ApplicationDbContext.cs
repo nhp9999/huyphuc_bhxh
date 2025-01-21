@@ -11,6 +11,7 @@ namespace WebApp.API.Data
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<PaymentBill> PaymentBills { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,6 +33,20 @@ namespace WebApp.API.Data
                 entity.Property(e => e.status).HasDefaultValue("active");
                 entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.updated_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            modelBuilder.Entity<PaymentBill>(entity =>
+            {
+                entity.ToTable("payment_bills");
+
+                entity.Property(e => e.file_url).HasMaxLength(500);
+                entity.Property(e => e.cloudinary_public_id).HasMaxLength(255);
+                entity.Property(e => e.uploaded_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(p => p.uploaded_by)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

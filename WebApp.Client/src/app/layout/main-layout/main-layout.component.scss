@@ -47,8 +47,6 @@ nz-header {
   padding: 0;
   width: 100%;
   z-index: 2;
-  position: sticky;
-  top: 0;
 }
 
 .app-header {
@@ -60,7 +58,6 @@ nz-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.3s ease;
 }
 
 .header-left {
@@ -82,10 +79,6 @@ nz-header {
   &:hover {
     color: #1890ff;
     background-color: rgba(24,144,255,.1);
-  }
-
-  .anticon {
-    transition: transform .3s ease;
   }
 }
 
@@ -109,10 +102,6 @@ nz-header {
       color: #1890ff;
       background-color: rgba(24,144,255,.1);
     }
-
-    .anticon {
-      font-size: 16px;
-    }
   }
 
   nz-divider {
@@ -126,27 +115,18 @@ nz-header {
     font-weight: 500;
     color: #262626;
   }
-
-  nz-avatar {
-    background-color: #1890ff;
-    transition: all .3s ease;
-
-    &:hover {
-      transform: scale(1.05);
-    }
-  }
 }
 
 nz-content {
-  margin: 24px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: #f0f2f5;
 }
 
 .inner-content {
-  padding: 24px;
-  background: #fff;
-  height: 100%;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  margin: 24px;
+  min-height: calc(100% - 48px);
+  background: transparent;
 }
 
 nz-footer {
