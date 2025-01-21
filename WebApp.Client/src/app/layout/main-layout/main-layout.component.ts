@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -18,7 +18,6 @@ import { AuthService } from '../../services/auth.service';
     CommonModule,
     RouterOutlet,
     RouterLink,
-    RouterLinkActive,
     NzLayoutModule,
     NzMenuModule,
     NzIconModule,
@@ -31,7 +30,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss']
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   isCollapsed = false;
 
   constructor(
@@ -39,8 +38,16 @@ export class MainLayoutComponent {
     private router: Router
   ) {}
 
+  ngOnInit() {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      this.isCollapsed = savedState === 'true';
+    }
+  }
+
   toggleCollapsed(): void {
     this.isCollapsed = !this.isCollapsed;
+    localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
   }
 
   logout(): void {

@@ -2,12 +2,17 @@
   <nz-sider class="menu-sidebar"
             nzCollapsible
             nzWidth="256px"
-            nzBreakpoint="md"
             [(nzCollapsed)]="isCollapsed"
             [nzTrigger]="null">
     <div class="sidebar-logo">
       <a href="/">
-        <h1>HỆ THỐNG BHXH</h1>
+        <div class="logo-text" [class.collapsed]="isCollapsed">
+          <ng-container *ngIf="!isCollapsed">
+            <div>CTY TNHH MTV TMDV</div>
+            <div>HUY PHÚC</div>
+          </ng-container>
+          <div *ngIf="isCollapsed" class="collapsed-text">HP</div>
+        </div>
       </a>
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
@@ -18,11 +23,6 @@
       </li>
       <li nz-submenu nzTitle="Quản lý" nzIcon="appstore">
         <ul>
-          <li nz-menu-item nzMatchRouter>
-            <span nz-icon nzType="team"></span>
-            <span>Nhân viên</span>
-            <a [routerLink]="['/employees']"></a>
-          </li>
           <li nz-menu-item nzMatchRouter>
             <span nz-icon nzType="solution"></span>
             <span>Hồ sơ</span>
@@ -53,6 +53,10 @@
         <span nz-icon nzType="setting"></span>
         <span>Cài đặt</span>
         <a [routerLink]="['/settings']"></a>
+      </li>
+      <li nz-menu-item (click)="logout()" class="logout-item">
+        <span nz-icon nzType="logout"></span>
+        <span>Đăng xuất</span>
       </li>
     </ul>
   </nz-sider>

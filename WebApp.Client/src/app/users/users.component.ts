@@ -11,7 +11,23 @@ import { NzMessageModule, NzMessageService } from 'ng-zorro-antd/message';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { User, UserService } from '../services/user.service';
+import { 
+  LockOutline,
+  UnlockOutline,
+  DeleteOutline,
+  EditOutline,
+  PlusOutline,
+  SearchOutline,
+  CloseOutline,
+  UserOutline,
+  MailOutline,
+  PhoneOutline,
+  TeamOutline,
+  ApartmentOutline,
+  EnvironmentOutline
+} from '@ant-design/icons-angular/icons';
 
 @Component({
   selector: 'app-users',
@@ -29,7 +45,8 @@ import { User, UserService } from '../services/user.service';
     NzMessageModule,
     NzSelectModule,
     NzGridModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzTabsModule
   ],
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss']
@@ -70,16 +87,15 @@ export class UsersComponent implements OnInit {
       username: ['', [Validators.required, Validators.minLength(3)]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       ho_ten: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      so_dien_thoai: ['', Validators.required],
+      email: ['', [Validators.email]],
+      so_dien_thoai: [''],
       role: ['employee', Validators.required],
-      department_code: [''],
+      department_code: ['', Validators.required],
       unit: [''],
-      status: ['active'],
-      commune: [''],
-      district: [''],
-      province: [''],
-      address: ['']
+      status: ['active', Validators.required],
+      commune: ['', Validators.required],
+      district: ['', Validators.required],
+      province: ['', Validators.required]
     });
   }
 
@@ -158,8 +174,7 @@ export class UsersComponent implements OnInit {
       status: user.status,
       commune: user.commune,
       district: user.district,
-      province: user.province,
-      address: user.address
+      province: user.province
     });
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
@@ -267,33 +282,24 @@ export class UsersComponent implements OnInit {
 
   toggleStatus(user: User): void {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    const action = newStatus === 'active' ? 'mở khóa' : 'khóa';
-    
-    this.modal.confirm({
-      nzTitle: `Xác nhận ${action} tài khoản`,
-      nzContent: `Bạn có chắc chắn muốn ${action} tài khoản "${user.ho_ten || user.username}" không?`,
-      nzOkText: 'Xác nhận',
-      nzOkType: newStatus === 'active' ? 'primary' : 'default',
-      nzOnOk: () => {
-        this.isLoading = true;
-        this.userService.toggleUserStatus(user.id, newStatus).subscribe({
-          next: () => {
-            this.message.success(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công`);
-            this.loadUsers();
-            this.isLoading = false;
-          },
-          error: (error) => {
-            this.isLoading = false;
-            if (error.status === 400 && error.error?.message) {
-              this.message.error(error.error.message);
-            } else {
-              this.message.error(`Có lỗi xảy ra khi ${action} tài khoản`);
-            }
-            console.error(`Error ${action} user:`, error);
-          }
-        });
+    this.isLoading = true;
+    this.userService.toggleUserStatus(user.id, newStatus).subscribe({
+      next: () => {
+        const action = newStatus === 'active' ? 'Mở khóa' : 'Khóa';
+        this.message.success(`${action} tài khoản thành công`);
+        this.loadUsers();
+        this.isLoading = false;
       },
-      nzCancelText: 'Hủy'
+      error: (error) => {
+        this.isLoading = false;
+        if (error.status === 400 && error.error?.message) {
+          this.message.error(error.error.message);
+        } else {
+          const action = newStatus === 'active' ? 'mở khóa' : 'khóa';
+          this.message.error(`Có lỗi xảy ra khi ${action} tài khoản`);
+        }
+        console.error(`Error toggling user status:`, error);
+      }
     });
   }
 }

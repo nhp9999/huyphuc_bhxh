@@ -1,0 +1,56 @@
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { 
+  LockOutline,
+  UnlockOutline,
+  DeleteOutline,
+  EditOutline,
+  PlusOutline,
+  SearchOutline,
+  CloseOutline,
+  UserOutline,
+  MailOutline,
+  PhoneOutline,
+  TeamOutline,
+  ApartmentOutline,
+  EnvironmentOutline,
+  MenuFoldOutline,
+  MenuUnfoldOutline,
+  BellOutline,
+  LogoutOutline,
+  BarChartOutline,
+  FileTextOutline,
+  FundOutline,
+  SettingOutline,
+  DashboardOutline,
+  SolutionOutline,
+  AppstoreOutline
+} from '@ant-design/icons-angular/icons';
+
+export const icons = [
+  LockOutline,
+  UnlockOutline,
+  DeleteOutline,
+  EditOutline,
+  PlusOutline,
+  SearchOutline,
+  CloseOutline,
+  UserOutline,
+  MailOutline,
+  PhoneOutline,
+  TeamOutline,
+  ApartmentOutline,
+  EnvironmentOutline,
+  MenuFoldOutline,
+  MenuUnfoldOutline,
+  BellOutline,
+  LogoutOutline,
+  BarChartOutline,
+  FileTextOutline,
+  FundOutline,
+  SettingOutline,
+  DashboardOutline,
+  SolutionOutline,
+  AppstoreOutline
+];
+
+export const IconsProviderModule = NzIconModule.forRoot(icons); 

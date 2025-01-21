@@ -7,14 +7,30 @@
   z-index: 10;
   min-height: 100vh;
   box-shadow: 2px 0 6px rgba(0,21,41,.35);
+
+  :host ::ng-deep {
+    .ant-menu {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 64px);
+    }
+
+    .logout-item {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      
+      &:hover {
+        color: #ff4d4f !important;
+      }
+    }
+  }
 }
 
 .sidebar-logo {
   position: relative;
   height: 64px;
-  padding: 0 24px;
+  padding: 0 16px;
   overflow: hidden;
-  line-height: 64px;
   background: rgba(255,255,255,.02);
   border-bottom: 1px solid rgba(255,255,255,.05);
   transition: all .3s;
@@ -26,20 +42,33 @@
     height: 100%;
     text-decoration: none;
 
-    &:hover h1 {
+    .logo-text {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+      
+      &.collapsed {
+        .collapsed-text {
+          font-size: 20px;
+          color: #1890ff;
+          font-weight: bold;
+        }
+      }
+      
+      div:first-child {
+        margin-bottom: 4px;
+      }
+      
+      div:last-child {
+        color: #1890ff;
+      }
+    }
+
+    &:hover .logo-text div {
       color: #1890ff;
     }
-  }
-
-  h1 {
-    margin: 0;
-    color: #fff;
-    font-weight: 600;
-    font-size: 16px;
-    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    text-align: center;
-    width: 100%;
-    transition: all .3s;
   }
 }
 
