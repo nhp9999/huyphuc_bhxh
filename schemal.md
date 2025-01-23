@@ -5,7 +5,7 @@
 -- Dumped from database version 16.6 (Debian 16.6-1.pgdg120+1)
 -- Dumped by pg_dump version 16.6
 
--- Started on 2025-01-20 18:13:44
+-- Started on 2025-01-23 19:19:46
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -29,7 +29,7 @@ SET row_security = off;
 ALTER SCHEMA public OWNER TO bhxh_system_user;
 
 --
--- TOC entry 244 (class 1255 OID 16398)
+-- TOC entry 250 (class 1255 OID 16398)
 -- Name: mark_batch_as_paid(integer, integer); Type: FUNCTION; Schema: public; Owner: bhxh_system_user
 --
 
@@ -61,7 +61,7 @@ $$;
 ALTER FUNCTION public.mark_batch_as_paid(p_batch_id integer, p_user_id integer) OWNER TO bhxh_system_user;
 
 --
--- TOC entry 248 (class 1255 OID 16815)
+-- TOC entry 254 (class 1255 OID 16815)
 -- Name: update_adjustments_updated_at(); Type: FUNCTION; Schema: public; Owner: bhxh_system_user
 --
 
@@ -78,7 +78,7 @@ $$;
 ALTER FUNCTION public.update_adjustments_updated_at() OWNER TO bhxh_system_user;
 
 --
--- TOC entry 245 (class 1255 OID 16399)
+-- TOC entry 251 (class 1255 OID 16399)
 -- Name: update_batch_payment_amount(); Type: FUNCTION; Schema: public; Owner: bhxh_system_user
 --
 
@@ -104,7 +104,7 @@ $$;
 ALTER FUNCTION public.update_batch_payment_amount() OWNER TO bhxh_system_user;
 
 --
--- TOC entry 246 (class 1255 OID 16400)
+-- TOC entry 252 (class 1255 OID 16400)
 -- Name: update_payment_amount_on_support_change(); Type: FUNCTION; Schema: public; Owner: bhxh_system_user
 --
 
@@ -130,7 +130,7 @@ $$;
 ALTER FUNCTION public.update_payment_amount_on_support_change() OWNER TO bhxh_system_user;
 
 --
--- TOC entry 247 (class 1255 OID 16401)
+-- TOC entry 253 (class 1255 OID 16401)
 -- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: bhxh_system_user
 --
 
@@ -189,7 +189,7 @@ CREATE SEQUENCE public.adjustment_requests_id_seq
 ALTER SEQUENCE public.adjustment_requests_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3533 (class 0 OID 0)
+-- TOC entry 3570 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: adjustment_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -238,7 +238,7 @@ CREATE SEQUENCE public.adjustments_id_seq
 ALTER SEQUENCE public.adjustments_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3534 (class 0 OID 0)
+-- TOC entry 3571 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: adjustments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -316,7 +316,7 @@ CREATE SEQUENCE public.declaration_batch_id_seq
 ALTER SEQUENCE public.declaration_batch_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3535 (class 0 OID 0)
+-- TOC entry 3572 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: declaration_batch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -418,7 +418,7 @@ CREATE TABLE public.declarations (
 ALTER TABLE public.declarations OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3536 (class 0 OID 0)
+-- TOC entry 3573 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: TABLE declarations; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -427,7 +427,7 @@ COMMENT ON TABLE public.declarations IS 'Bảng lưu thông tin kê khai BHXH';
 
 
 --
--- TOC entry 3537 (class 0 OID 0)
+-- TOC entry 3574 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.so_cmnd; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -436,7 +436,7 @@ COMMENT ON COLUMN public.declarations.so_cmnd IS 'Số CCCD/CMND của người 
 
 
 --
--- TOC entry 3538 (class 0 OID 0)
+-- TOC entry 3575 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.actual_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -445,7 +445,7 @@ COMMENT ON COLUMN public.declarations.actual_amount IS 'Số tiền thực tế 
 
 
 --
--- TOC entry 3539 (class 0 OID 0)
+-- TOC entry 3576 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.support_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -454,7 +454,7 @@ COMMENT ON COLUMN public.declarations.support_amount IS 'Số tiền hỗ trợ'
 
 
 --
--- TOC entry 3540 (class 0 OID 0)
+-- TOC entry 3577 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.total_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -463,7 +463,7 @@ COMMENT ON COLUMN public.declarations.total_amount IS 'Tổng số tiền (actua
 
 
 --
--- TOC entry 3541 (class 0 OID 0)
+-- TOC entry 3578 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.payment_status; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -472,7 +472,7 @@ COMMENT ON COLUMN public.declarations.payment_status IS 'Trạng thái thanh to�
 
 
 --
--- TOC entry 3542 (class 0 OID 0)
+-- TOC entry 3579 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.deleted_by; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -497,12 +497,95 @@ CREATE SEQUENCE public.declarations_id_seq
 ALTER SEQUENCE public.declarations_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3543 (class 0 OID 0)
+-- TOC entry 3580 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: declarations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
 
 ALTER SEQUENCE public.declarations_id_seq OWNED BY public.declarations.id;
+
+
+--
+-- TOC entry 238 (class 1259 OID 16984)
+-- Name: ds_huyen; Type: TABLE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE TABLE public.ds_huyen (
+    id integer NOT NULL,
+    ma character varying(3) NOT NULL,
+    ten character varying(100) NOT NULL,
+    text character varying(100) NOT NULL,
+    ma_tinh character varying(2) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.ds_huyen OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 237 (class 1259 OID 16983)
+-- Name: ds_huyen_id_seq; Type: SEQUENCE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE SEQUENCE public.ds_huyen_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ds_huyen_id_seq OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 3581 (class 0 OID 0)
+-- Dependencies: 237
+-- Name: ds_huyen_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER SEQUENCE public.ds_huyen_id_seq OWNED BY public.ds_huyen.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16963)
+-- Name: ds_tinh; Type: TABLE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE TABLE public.ds_tinh (
+    id integer NOT NULL,
+    ma character varying(2) NOT NULL,
+    ten character varying(100) NOT NULL,
+    text character varying(100) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.ds_tinh OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 235 (class 1259 OID 16962)
+-- Name: ds_tinh_id_seq; Type: SEQUENCE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE SEQUENCE public.ds_tinh_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ds_tinh_id_seq OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 3582 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: ds_tinh_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER SEQUENCE public.ds_tinh_id_seq OWNED BY public.ds_tinh.id;
 
 
 --
@@ -540,7 +623,7 @@ CREATE SEQUENCE public.households_id_seq
 ALTER SEQUENCE public.households_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3544 (class 0 OID 0)
+-- TOC entry 3583 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: households_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -586,7 +669,7 @@ CREATE SEQUENCE public.notifications_id_seq
 ALTER SEQUENCE public.notifications_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3545 (class 0 OID 0)
+-- TOC entry 3584 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -628,12 +711,58 @@ CREATE SEQUENCE public.payment_bills_id_seq
 ALTER SEQUENCE public.payment_bills_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3546 (class 0 OID 0)
+-- TOC entry 3585 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: payment_bills_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
 
 ALTER SEQUENCE public.payment_bills_id_seq OWNED BY public.payment_bills.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 16946)
+-- Name: refresh_tokens; Type: TABLE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE TABLE public.refresh_tokens (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    token character varying(255) NOT NULL,
+    expires_at timestamp without time zone NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_by_ip character varying(45),
+    revoked_at timestamp without time zone,
+    revoked_by_ip character varying(45),
+    replaced_by_token character varying(255),
+    reason_revoked character varying(255)
+);
+
+
+ALTER TABLE public.refresh_tokens OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 233 (class 1259 OID 16945)
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE SEQUENCE public.refresh_tokens_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.refresh_tokens_id_seq OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 3586 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER SEQUENCE public.refresh_tokens_id_seq OWNED BY public.refresh_tokens.id;
 
 
 --
@@ -671,7 +800,7 @@ CREATE SEQUENCE public.units_id_seq
 ALTER SEQUENCE public.units_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3547 (class 0 OID 0)
+-- TOC entry 3587 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: units_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -732,7 +861,7 @@ CREATE SEQUENCE public.users_id_seq
 ALTER SEQUENCE public.users_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3548 (class 0 OID 0)
+-- TOC entry 3588 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -741,7 +870,7 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- TOC entry 3299 (class 2604 OID 16865)
+-- TOC entry 3314 (class 2604 OID 16865)
 -- Name: adjustment_requests id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -749,7 +878,7 @@ ALTER TABLE ONLY public.adjustment_requests ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- TOC entry 3294 (class 2604 OID 16794)
+-- TOC entry 3309 (class 2604 OID 16794)
 -- Name: adjustments id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -757,7 +886,7 @@ ALTER TABLE ONLY public.adjustments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3252 (class 2604 OID 16479)
+-- TOC entry 3267 (class 2604 OID 16479)
 -- Name: declaration_batch id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -765,7 +894,7 @@ ALTER TABLE ONLY public.declaration_batch ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3273 (class 2604 OID 16708)
+-- TOC entry 3288 (class 2604 OID 16708)
 -- Name: declarations id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -773,7 +902,23 @@ ALTER TABLE ONLY public.declarations ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3286 (class 2604 OID 16746)
+-- TOC entry 3323 (class 2604 OID 16987)
+-- Name: ds_huyen id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_huyen ALTER COLUMN id SET DEFAULT nextval('public.ds_huyen_id_seq'::regclass);
+
+
+--
+-- TOC entry 3321 (class 2604 OID 16966)
+-- Name: ds_tinh id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_tinh ALTER COLUMN id SET DEFAULT nextval('public.ds_tinh_id_seq'::regclass);
+
+
+--
+-- TOC entry 3301 (class 2604 OID 16746)
 -- Name: households id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -781,7 +926,7 @@ ALTER TABLE ONLY public.households ALTER COLUMN id SET DEFAULT nextval('public.h
 
 
 --
--- TOC entry 3289 (class 2604 OID 16775)
+-- TOC entry 3304 (class 2604 OID 16775)
 -- Name: notifications id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -789,7 +934,7 @@ ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3261 (class 2604 OID 16483)
+-- TOC entry 3276 (class 2604 OID 16483)
 -- Name: payment_bills id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -797,7 +942,15 @@ ALTER TABLE ONLY public.payment_bills ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3263 (class 2604 OID 16484)
+-- TOC entry 3319 (class 2604 OID 16949)
+-- Name: refresh_tokens id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.refresh_tokens ALTER COLUMN id SET DEFAULT nextval('public.refresh_tokens_id_seq'::regclass);
+
+
+--
+-- TOC entry 3278 (class 2604 OID 16484)
 -- Name: units id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -805,7 +958,7 @@ ALTER TABLE ONLY public.units ALTER COLUMN id SET DEFAULT nextval('public.units_
 
 
 --
--- TOC entry 3267 (class 2604 OID 16485)
+-- TOC entry 3282 (class 2604 OID 16485)
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -813,7 +966,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 3357 (class 2606 OID 16872)
+-- TOC entry 3378 (class 2606 OID 16872)
 -- Name: adjustment_requests adjustment_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -822,7 +975,7 @@ ALTER TABLE ONLY public.adjustment_requests
 
 
 --
--- TOC entry 3353 (class 2606 OID 16802)
+-- TOC entry 3374 (class 2606 OID 16802)
 -- Name: adjustments adjustments_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -831,7 +984,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3312 (class 2606 OID 16487)
+-- TOC entry 3333 (class 2606 OID 16487)
 -- Name: declaration_batch declaration_batch_month_year_batch_number_department_code_o_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -840,7 +993,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3314 (class 2606 OID 16489)
+-- TOC entry 3335 (class 2606 OID 16489)
 -- Name: declaration_batch declaration_batch_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -849,7 +1002,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3316 (class 2606 OID 16491)
+-- TOC entry 3337 (class 2606 OID 16491)
 -- Name: declaration_batch declaration_batch_unique_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -858,7 +1011,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3339 (class 2606 OID 16717)
+-- TOC entry 3360 (class 2606 OID 16717)
 -- Name: declarations declarations_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -867,7 +1020,43 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3347 (class 2606 OID 16754)
+-- TOC entry 3393 (class 2606 OID 16992)
+-- Name: ds_huyen ds_huyen_ma_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_huyen
+    ADD CONSTRAINT ds_huyen_ma_key UNIQUE (ma);
+
+
+--
+-- TOC entry 3395 (class 2606 OID 16990)
+-- Name: ds_huyen ds_huyen_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_huyen
+    ADD CONSTRAINT ds_huyen_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3388 (class 2606 OID 16982)
+-- Name: ds_tinh ds_tinh_ma_unique; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_tinh
+    ADD CONSTRAINT ds_tinh_ma_unique UNIQUE (ma);
+
+
+--
+-- TOC entry 3390 (class 2606 OID 16969)
+-- Name: ds_tinh ds_tinh_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_tinh
+    ADD CONSTRAINT ds_tinh_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3368 (class 2606 OID 16754)
 -- Name: households households_household_code_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -876,7 +1065,7 @@ ALTER TABLE ONLY public.households
 
 
 --
--- TOC entry 3349 (class 2606 OID 16752)
+-- TOC entry 3370 (class 2606 OID 16752)
 -- Name: households households_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -885,7 +1074,7 @@ ALTER TABLE ONLY public.households
 
 
 --
--- TOC entry 3351 (class 2606 OID 16784)
+-- TOC entry 3372 (class 2606 OID 16784)
 -- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -894,7 +1083,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3324 (class 2606 OID 16499)
+-- TOC entry 3345 (class 2606 OID 16499)
 -- Name: payment_bills payment_bills_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -903,7 +1092,16 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3328 (class 2606 OID 16501)
+-- TOC entry 3386 (class 2606 OID 16954)
+-- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3349 (class 2606 OID 16501)
 -- Name: units units_code_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -912,7 +1110,7 @@ ALTER TABLE ONLY public.units
 
 
 --
--- TOC entry 3330 (class 2606 OID 16503)
+-- TOC entry 3351 (class 2606 OID 16503)
 -- Name: units units_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -921,7 +1119,7 @@ ALTER TABLE ONLY public.units
 
 
 --
--- TOC entry 3335 (class 2606 OID 16505)
+-- TOC entry 3356 (class 2606 OID 16505)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -930,7 +1128,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3337 (class 2606 OID 16507)
+-- TOC entry 3358 (class 2606 OID 16507)
 -- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -939,7 +1137,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3358 (class 1259 OID 16884)
+-- TOC entry 3379 (class 1259 OID 16884)
 -- Name: idx_adjustment_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -947,7 +1145,7 @@ CREATE UNIQUE INDEX idx_adjustment_code ON public.adjustment_requests USING btre
 
 
 --
--- TOC entry 3359 (class 1259 OID 16878)
+-- TOC entry 3380 (class 1259 OID 16878)
 -- Name: idx_adjustment_requests_created_by; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -955,7 +1153,7 @@ CREATE INDEX idx_adjustment_requests_created_by ON public.adjustment_requests US
 
 
 --
--- TOC entry 3360 (class 1259 OID 16883)
+-- TOC entry 3381 (class 1259 OID 16883)
 -- Name: idx_adjustment_requests_is_urgent; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -963,7 +1161,7 @@ CREATE INDEX idx_adjustment_requests_is_urgent ON public.adjustment_requests USI
 
 
 --
--- TOC entry 3361 (class 1259 OID 16879)
+-- TOC entry 3382 (class 1259 OID 16879)
 -- Name: idx_adjustment_requests_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -971,7 +1169,7 @@ CREATE INDEX idx_adjustment_requests_status ON public.adjustment_requests USING 
 
 
 --
--- TOC entry 3354 (class 1259 OID 16814)
+-- TOC entry 3375 (class 1259 OID 16814)
 -- Name: idx_adjustments_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -979,7 +1177,7 @@ CREATE INDEX idx_adjustments_status ON public.adjustments USING btree (status);
 
 
 --
--- TOC entry 3355 (class 1259 OID 16813)
+-- TOC entry 3376 (class 1259 OID 16813)
 -- Name: idx_adjustments_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -987,7 +1185,7 @@ CREATE INDEX idx_adjustments_user_id ON public.adjustments USING btree (user_id)
 
 
 --
--- TOC entry 3317 (class 1259 OID 16603)
+-- TOC entry 3338 (class 1259 OID 16603)
 -- Name: idx_declaration_batch_created_by; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -995,7 +1193,7 @@ CREATE INDEX idx_declaration_batch_created_by ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3318 (class 1259 OID 16508)
+-- TOC entry 3339 (class 1259 OID 16508)
 -- Name: idx_declaration_batch_deleted_at; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1003,7 +1201,7 @@ CREATE INDEX idx_declaration_batch_deleted_at ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3319 (class 1259 OID 16607)
+-- TOC entry 3340 (class 1259 OID 16607)
 -- Name: idx_declaration_batch_department; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1011,7 +1209,7 @@ CREATE INDEX idx_declaration_batch_department ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3320 (class 1259 OID 16605)
+-- TOC entry 3341 (class 1259 OID 16605)
 -- Name: idx_declaration_batch_month_year; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1019,7 +1217,7 @@ CREATE INDEX idx_declaration_batch_month_year ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3321 (class 1259 OID 16606)
+-- TOC entry 3342 (class 1259 OID 16606)
 -- Name: idx_declaration_batch_object_type; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1027,7 +1225,7 @@ CREATE INDEX idx_declaration_batch_object_type ON public.declaration_batch USING
 
 
 --
--- TOC entry 3322 (class 1259 OID 16604)
+-- TOC entry 3343 (class 1259 OID 16604)
 -- Name: idx_declaration_batch_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1035,7 +1233,7 @@ CREATE INDEX idx_declaration_batch_status ON public.declaration_batch USING btre
 
 
 --
--- TOC entry 3340 (class 1259 OID 16719)
+-- TOC entry 3361 (class 1259 OID 16719)
 -- Name: idx_declarations_bhxh_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1043,7 +1241,7 @@ CREATE INDEX idx_declarations_bhxh_code ON public.declarations USING btree (bhxh
 
 
 --
--- TOC entry 3341 (class 1259 OID 16721)
+-- TOC entry 3362 (class 1259 OID 16721)
 -- Name: idx_declarations_created_at; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1051,7 +1249,7 @@ CREATE INDEX idx_declarations_created_at ON public.declarations USING btree (cre
 
 
 --
--- TOC entry 3342 (class 1259 OID 16760)
+-- TOC entry 3363 (class 1259 OID 16760)
 -- Name: idx_declarations_household_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1059,7 +1257,7 @@ CREATE INDEX idx_declarations_household_id ON public.declarations USING btree (h
 
 
 --
--- TOC entry 3343 (class 1259 OID 16890)
+-- TOC entry 3364 (class 1259 OID 16890)
 -- Name: idx_declarations_is_urgent; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1067,7 +1265,7 @@ CREATE INDEX idx_declarations_is_urgent ON public.declarations USING btree (is_u
 
 
 --
--- TOC entry 3344 (class 1259 OID 16720)
+-- TOC entry 3365 (class 1259 OID 16720)
 -- Name: idx_declarations_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1075,7 +1273,7 @@ CREATE INDEX idx_declarations_status ON public.declarations USING btree (status)
 
 
 --
--- TOC entry 3345 (class 1259 OID 16732)
+-- TOC entry 3366 (class 1259 OID 16732)
 -- Name: idx_declarations_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1083,7 +1281,39 @@ CREATE INDEX idx_declarations_user_id ON public.declarations USING btree (user_i
 
 
 --
--- TOC entry 3325 (class 1259 OID 16518)
+-- TOC entry 3396 (class 1259 OID 16998)
+-- Name: idx_ds_huyen_ma_tinh; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_ds_huyen_ma_tinh ON public.ds_huyen USING btree (ma_tinh);
+
+
+--
+-- TOC entry 3391 (class 1259 OID 16970)
+-- Name: idx_ds_tinh_ma; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_ds_tinh_ma ON public.ds_tinh USING btree (ma);
+
+
+--
+-- TOC entry 3383 (class 1259 OID 16960)
+-- Name: idx_refresh_tokens_token; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_refresh_tokens_token ON public.refresh_tokens USING btree (token);
+
+
+--
+-- TOC entry 3384 (class 1259 OID 16961)
+-- Name: idx_refresh_tokens_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_refresh_tokens_user_id ON public.refresh_tokens USING btree (user_id);
+
+
+--
+-- TOC entry 3346 (class 1259 OID 16518)
 -- Name: idx_units_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1091,7 +1321,7 @@ CREATE INDEX idx_units_code ON public.units USING btree (code);
 
 
 --
--- TOC entry 3326 (class 1259 OID 16519)
+-- TOC entry 3347 (class 1259 OID 16519)
 -- Name: idx_units_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1099,7 +1329,7 @@ CREATE INDEX idx_units_status ON public.units USING btree (status);
 
 
 --
--- TOC entry 3331 (class 1259 OID 16520)
+-- TOC entry 3352 (class 1259 OID 16520)
 -- Name: idx_users_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1107,7 +1337,7 @@ CREATE INDEX idx_users_status ON public.users USING btree (status);
 
 
 --
--- TOC entry 3332 (class 1259 OID 16521)
+-- TOC entry 3353 (class 1259 OID 16521)
 -- Name: idx_users_unit_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1115,7 +1345,7 @@ CREATE INDEX idx_users_unit_id ON public.users USING btree (unit_id);
 
 
 --
--- TOC entry 3333 (class 1259 OID 16522)
+-- TOC entry 3354 (class 1259 OID 16522)
 -- Name: idx_users_username; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1123,7 +1353,7 @@ CREATE INDEX idx_users_username ON public.users USING btree (username);
 
 
 --
--- TOC entry 3381 (class 2620 OID 16524)
+-- TOC entry 3418 (class 2620 OID 16524)
 -- Name: declaration_batch tr_update_payment_amount_on_support_change; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1131,7 +1361,7 @@ CREATE TRIGGER tr_update_payment_amount_on_support_change AFTER UPDATE OF suppor
 
 
 --
--- TOC entry 3384 (class 2620 OID 16816)
+-- TOC entry 3421 (class 2620 OID 16816)
 -- Name: adjustments trigger_update_adjustments_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1139,7 +1369,7 @@ CREATE TRIGGER trigger_update_adjustments_updated_at BEFORE UPDATE ON public.adj
 
 
 --
--- TOC entry 3382 (class 2620 OID 16525)
+-- TOC entry 3419 (class 2620 OID 16525)
 -- Name: units update_units_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1147,7 +1377,7 @@ CREATE TRIGGER update_units_updated_at BEFORE UPDATE ON public.units FOR EACH RO
 
 
 --
--- TOC entry 3383 (class 2620 OID 16526)
+-- TOC entry 3420 (class 2620 OID 16526)
 -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1155,7 +1385,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH RO
 
 
 --
--- TOC entry 3380 (class 2606 OID 16873)
+-- TOC entry 3415 (class 2606 OID 16873)
 -- Name: adjustment_requests adjustment_requests_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1164,7 +1394,7 @@ ALTER TABLE ONLY public.adjustment_requests
 
 
 --
--- TOC entry 3378 (class 2606 OID 16808)
+-- TOC entry 3413 (class 2606 OID 16808)
 -- Name: adjustments adjustments_processed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1173,7 +1403,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3379 (class 2606 OID 16803)
+-- TOC entry 3414 (class 2606 OID 16803)
 -- Name: adjustments adjustments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1182,7 +1412,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3362 (class 2606 OID 16527)
+-- TOC entry 3397 (class 2606 OID 16527)
 -- Name: declaration_batch declaration_batch_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1191,7 +1421,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3363 (class 2606 OID 16532)
+-- TOC entry 3398 (class 2606 OID 16532)
 -- Name: declaration_batch declaration_batch_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1200,7 +1430,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3364 (class 2606 OID 16537)
+-- TOC entry 3399 (class 2606 OID 16537)
 -- Name: declaration_batch declaration_batch_deleted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1209,7 +1439,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3365 (class 2606 OID 16542)
+-- TOC entry 3400 (class 2606 OID 16542)
 -- Name: declaration_batch declaration_batch_payment_verified_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1218,7 +1448,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3366 (class 2606 OID 16547)
+-- TOC entry 3401 (class 2606 OID 16547)
 -- Name: declaration_batch declaration_batch_rejected_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1227,7 +1457,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3367 (class 2606 OID 16552)
+-- TOC entry 3402 (class 2606 OID 16552)
 -- Name: declaration_batch declaration_batch_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1236,7 +1466,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3368 (class 2606 OID 16557)
+-- TOC entry 3403 (class 2606 OID 16557)
 -- Name: declaration_batch declaration_batch_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1245,7 +1475,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3372 (class 2606 OID 16913)
+-- TOC entry 3407 (class 2606 OID 16913)
 -- Name: declarations declarations_deleted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1254,7 +1484,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3373 (class 2606 OID 16755)
+-- TOC entry 3408 (class 2606 OID 16755)
 -- Name: declarations declarations_household_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1263,7 +1493,16 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3374 (class 2606 OID 16722)
+-- TOC entry 3417 (class 2606 OID 16993)
+-- Name: ds_huyen ds_huyen_ma_tinh_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ds_huyen
+    ADD CONSTRAINT ds_huyen_ma_tinh_fkey FOREIGN KEY (ma_tinh) REFERENCES public.ds_tinh(ma) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3409 (class 2606 OID 16722)
 -- Name: declarations fk_declarations_batch; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1272,7 +1511,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3375 (class 2606 OID 16727)
+-- TOC entry 3410 (class 2606 OID 16727)
 -- Name: declarations fk_declarations_unit; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1281,7 +1520,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3376 (class 2606 OID 16733)
+-- TOC entry 3411 (class 2606 OID 16733)
 -- Name: declarations fk_declarations_user; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1290,7 +1529,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3377 (class 2606 OID 16785)
+-- TOC entry 3412 (class 2606 OID 16785)
 -- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1299,7 +1538,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3369 (class 2606 OID 16587)
+-- TOC entry 3404 (class 2606 OID 16587)
 -- Name: payment_bills payment_bills_batch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1308,7 +1547,7 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3370 (class 2606 OID 16592)
+-- TOC entry 3405 (class 2606 OID 16592)
 -- Name: payment_bills payment_bills_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1317,7 +1556,16 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3371 (class 2606 OID 16597)
+-- TOC entry 3416 (class 2606 OID 16955)
+-- Name: refresh_tokens refresh_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT refresh_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3406 (class 2606 OID 16597)
 -- Name: users users_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -1326,7 +1574,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 2084 (class 826 OID 16391)
+-- TOC entry 2099 (class 826 OID 16391)
 -- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: -; Owner: postgres
 --
 
@@ -1334,7 +1582,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON SEQUENCES TO bhxh_system
 
 
 --
--- TOC entry 2086 (class 826 OID 16393)
+-- TOC entry 2101 (class 826 OID 16393)
 -- Name: DEFAULT PRIVILEGES FOR TYPES; Type: DEFAULT ACL; Schema: -; Owner: postgres
 --
 
@@ -1342,7 +1590,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TYPES TO bhxh_system_use
 
 
 --
--- TOC entry 2085 (class 826 OID 16392)
+-- TOC entry 2100 (class 826 OID 16392)
 -- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: -; Owner: postgres
 --
 
@@ -1350,14 +1598,14 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON FUNCTIONS TO bhxh_system
 
 
 --
--- TOC entry 2083 (class 826 OID 16390)
+-- TOC entry 2098 (class 826 OID 16390)
 -- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: -; Owner: postgres
 --
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TABLES TO bhxh_system_user;
 
 
--- Completed on 2025-01-20 18:13:48
+-- Completed on 2025-01-23 19:19:51
 
 --
 -- PostgreSQL database dump complete

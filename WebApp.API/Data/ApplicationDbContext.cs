@@ -12,6 +12,9 @@ namespace WebApp.API.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<PaymentBill> PaymentBills { get; set; }
+        public DbSet<Province> Provinces { get; set; }
+        public DbSet<District> Districts { get; set; }
+        public DbSet<Commune> Communes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +49,40 @@ namespace WebApp.API.Data
                 entity.HasOne<User>()
                     .WithMany()
                     .HasForeignKey(p => p.uploaded_by)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<District>(entity =>
+            {
+                entity.ToTable("ds_huyen");
+                entity.HasIndex(e => e.ma).IsUnique();
+                entity.Property(e => e.ma).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.ten).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.text).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ma_tinh).IsRequired().HasMaxLength(2);
+                entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne<Province>()
+                    .WithMany()
+                    .HasForeignKey(d => d.ma_tinh)
+                    .HasPrincipalKey(p => p.ma)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Commune>(entity =>
+            {
+                entity.ToTable("ds_xa");
+                entity.HasIndex(e => e.ma).IsUnique();
+                entity.Property(e => e.ma).HasMaxLength(5);
+                entity.Property(e => e.ten).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.text).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ma_huyen).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne<District>()
+                    .WithMany()
+                    .HasForeignKey(c => c.ma_huyen)
+                    .HasPrincipalKey(d => d.ma)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

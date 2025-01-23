@@ -4,6 +4,8 @@ using WebApp.API.Data;
 using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
 using BCrypt.Net;
+using System.Text;
+using System.Linq;
 
 namespace WebApp.API.Controllers
 {
@@ -46,6 +48,8 @@ namespace WebApp.API.Controllers
                         u.hamlet,
                         u.address,
                         u.last_login_at,
+                        u.last_login_ip,
+                        u.last_login_location,
                         u.first_login,
                         u.password_changed,
                         u.created_at,
@@ -89,6 +93,8 @@ namespace WebApp.API.Controllers
                         u.hamlet,
                         u.address,
                         u.last_login_at,
+                        u.last_login_ip,
+                        u.last_login_location,
                         u.first_login,
                         u.password_changed,
                         u.created_at,
@@ -274,6 +280,62 @@ namespace WebApp.API.Controllers
                 _logger.LogError($"Error updating user status {id}: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi cập nhật trạng thái người dùng" });
             }
+        }
+
+        [HttpPost("{id}/reset-password")]
+        public async Task<IActionResult> ResetPassword(int id)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(id);
+                if (user == null || user.deleted_at != null)
+                    return NotFound(new { message = "Không tìm thấy người dùng" });
+
+                // Tạo mật khẩu ngẫu nhiên 8 ký tự
+                string newPassword = GenerateRandomPassword();
+
+                // Hash mật khẩu mới
+                user.password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                user.password_changed = false;
+                user.first_login = true;
+                user.updated_at = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { password = newPassword });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error resetting password for user {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi đặt lại mật khẩu" });
+            }
+        }
+
+        private string GenerateRandomPassword()
+        {
+            const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+            const string numbers = "0123456789";
+            const string specials = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+            
+            var random = new Random();
+            var password = new StringBuilder();
+
+            // Đảm bảo có ít nhất 1 ký tự từ mỗi loại
+            password.Append(upperCase[random.Next(upperCase.Length)]);
+            password.Append(lowerCase[random.Next(lowerCase.Length)]);
+            password.Append(numbers[random.Next(numbers.Length)]);
+            password.Append(specials[random.Next(specials.Length)]);
+
+            // Thêm 8 ký tự ngẫu nhiên nữa để đủ 12 ký tự
+            string allChars = upperCase + lowerCase + numbers + specials;
+            for (int i = 0; i < 8; i++)
+            {
+                password.Append(allChars[random.Next(allChars.Length)]);
+            }
+
+            // Trộn ngẫu nhiên các ký tự
+            return new string(password.ToString().ToCharArray().OrderBy(x => random.Next()).ToArray());
         }
     }
 

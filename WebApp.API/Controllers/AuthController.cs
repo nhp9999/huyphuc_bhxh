@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using BCrypt.Net;
+using System.Net.Http;
 
 namespace WebApp.API.Controllers
 {
@@ -60,8 +61,31 @@ namespace WebApp.API.Controllers
 
                 var token = GenerateJwtToken(user);
 
-                // Update last login time
+                // Update last login time and IP
                 user.last_login_at = DateTime.UtcNow;
+                user.last_login_ip = loginDto.Ip;
+                
+                // Lấy vị trí từ IP
+                try {
+                    using (var client = new HttpClient())
+                    {
+                        var response = await client.GetAsync($"https://open.oapi.vn/ip/me");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var locationData = await response.Content.ReadFromJsonAsync<OpenApiLocationResponse>();
+                            if (locationData != null && locationData.code == "success")
+                            {
+                                user.last_login_location = $"{locationData.data.city}, {locationData.data.region}, {locationData.data.country}";
+                                _logger.LogInformation($"Location found: {user.last_login_location}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error getting location from IP: {ex.Message}");
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new
@@ -76,7 +100,9 @@ namespace WebApp.API.Controllers
                         department_code = user.department_code,
                         unit = user.unit,
                         first_login = user.first_login,
-                        password_changed = user.password_changed
+                        password_changed = user.password_changed,
+                        ip = user.last_login_ip,
+                        last_login_location = user.last_login_location
                     }
                 });
             }
@@ -177,5 +203,23 @@ namespace WebApp.API.Controllers
                 return StatusCode(500, new { message = "Lỗi kết nối database", error = ex.Message });
             }
         }
+    }
+
+    public class OpenApiLocationResponse
+    {
+        public string code { get; set; }
+        public OpenApiLocationData data { get; set; }
+    }
+
+    public class OpenApiLocationData 
+    {
+        public string ip { get; set; }
+        public string city { get; set; }
+        public string country { get; set; }
+        public string loc { get; set; }
+        public string org { get; set; }
+        public string postal { get; set; }
+        public string region { get; set; }
+        public string timezone { get; set; }
     }
 } 

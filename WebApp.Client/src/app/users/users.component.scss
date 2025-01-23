@@ -15,6 +15,12 @@
       font-size: 20px;
       font-weight: 500;
     }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
   }
 
   .filters-container {
@@ -38,6 +44,16 @@
 
   .deleted {
     color: #d9d9d9;
+  }
+
+  .location-cell {
+    max-width: 200px;
+    span {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   nz-table {
@@ -83,4 +99,71 @@ input:-webkit-autofill:active {
 input:autofill {
     background-color: white !important;
     color: rgba(0, 0, 0, 0.88) !important;
+}
+
+// Form styles
+:host ::ng-deep {
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  .ant-form-item-label {
+    padding-bottom: 4px;
+    
+    > label {
+      font-weight: 500;
+      height: 32px;
+      
+      &.ant-form-item-required:not(.ant-form-item-required-mark-optional)::before {
+        color: #ff4d4f;
+      }
+    }
+  }
+
+  .ant-input-group-addon {
+    background-color: transparent;
+  }
+
+  .ant-form-item-control-input {
+    min-height: 32px;
+  }
+
+  .ant-input, 
+  .ant-select-selector,
+  .ant-input-affix-wrapper {
+    height: 32px;
+    border-radius: 4px;
+  }
+
+  .ant-select-selector {
+    display: flex;
+    align-items: center;
+  }
+
+  .ant-input-affix-wrapper {
+    padding: 0 11px;
+    
+    .ant-input {
+      height: 30px;
+    }
+  }
+
+  nz-form-label {
+    text-align: left !important;
+  }
+}
+
+// Modal styles
+.ant-modal-body {
+  padding: 24px;
+  
+  form {
+    .ant-row {
+      margin-bottom: -16px;
+      
+      [nz-col] {
+        padding-bottom: 16px;
+      }
+    }
+  }
 }

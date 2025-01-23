@@ -1,10 +1,20 @@
 <div class="users-container">
   <div class="users-header">
     <h1>Quản lý người dùng</h1>
-    <button nz-button nzType="primary" (click)="showAddModal()">
-      <span nz-icon nzType="plus"></span>
-      Thêm mới
-    </button>
+    <div class="header-actions">
+      <button nz-button nzType="primary" nzDanger *ngIf="setOfCheckedId.size > 0" (click)="deleteSelectedUsers()">
+        <span nz-icon nzType="delete"></span>
+        Xóa {{ setOfCheckedId.size }} người dùng
+      </button>
+      <button nz-button (click)="loadUsers()" class="action-button">
+        <span nz-icon nzType="reload"></span>
+        Làm mới
+      </button>
+      <button nz-button nzType="primary" (click)="showAddModal()">
+        <span nz-icon nzType="plus"></span>
+        Thêm mới
+      </button>
+    </div>
   </div>
 
   <div class="filters-container">
@@ -40,6 +50,10 @@
             [nzScroll]="{ x: '1500px' }">
     <thead>
       <tr>
+        <th [nzChecked]="checked"
+            [nzIndeterminate]="indeterminate"
+            (nzCheckedChange)="onAllChecked($event)"
+            nzWidth="60px"></th>
         <th nzWidth="60px">ID</th>
         <th nzWidth="120px">Tên đăng nhập</th>
         <th nzWidth="150px">Họ và tên</th>
@@ -51,11 +65,16 @@
         <th nzWidth="100px">Vai trò</th>
         <th nzWidth="120px">Đơn vị</th>
         <th nzWidth="120px">Trạng thái</th>
+        <th nzWidth="120px">IP</th>
+        <th nzWidth="200px">Vị trí</th>
+        <th nzWidth="160px">Đăng nhập gần nhất</th>
         <th nzWidth="150px" nzRight="0px" nzFixed="right">Thao tác</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let user of basicTable.data">
+        <td [nzChecked]="setOfCheckedId.has(user.id)"
+            (nzCheckedChange)="onItemChecked(user.id, $event)"></td>
         <td>{{ user.id }}</td>
         <td>{{ user.username }}</td>
         <td>{{ user.ho_ten }}</td>
@@ -73,6 +92,19 @@
             {{ user.is_deleted ? 'Đã xóa' : (user.status === 'active' ? 'Hoạt động' : 'Không hoạt động') }}
           </span>
         </td>
+        <td>
+          <span *ngIf="user.last_login_ip">{{ user.last_login_ip }}</span>
+        </td>
+        <td class="location-cell">
+          <span *ngIf="user.last_login_location" nz-tooltip [nzTooltipTitle]="user.last_login_location">
+            {{ user.last_login_location }}
+          </span>
+        </td>
+        <td>
+          <span *ngIf="user.last_login_at" nz-tooltip [nzTooltipTitle]="user.last_login_at | date:'dd/MM/yyyy HH:mm:ss'">
+            {{ getTimeAgo(user.last_login_at) }}
+          </span>
+        </td>
         <td nzRight="0px" nzFixed="right">
           <button nz-button nzType="primary" (click)="showEditModal(user)" class="action-button">
             <span nz-icon nzType="edit"></span>
@@ -85,8 +117,8 @@
                   [nzTooltipTitle]="user.status === 'active' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'">
             <span nz-icon [nzType]="user.status === 'active' ? 'lock' : 'unlock'" nzTheme="outline"></span>
           </button>
-          <button nz-button nzType="default" nzDanger (click)="deleteUser(user)" class="action-button">
-            <span nz-icon nzType="delete"></span>
+          <button nz-button nzType="default" (click)="resetPassword(user)" class="action-button" nz-tooltip nzTooltipTitle="Đặt lại mật khẩu">
+            <span nz-icon nzType="key"></span>
           </button>
         </td>
       </tr>
@@ -94,90 +126,73 @@
   </nz-table>
 
   <nz-modal
+    [nzTitle]="editingUser ? 'Cập nhật người dùng' : 'Thêm người dùng'"
     [(nzVisible)]="isModalVisible"
-    [nzTitle]="editingUser?.id ? 'Sửa người dùng' : 'Thêm người dùng'"
+    [nzWidth]="900"
     (nzOnCancel)="handleCancel()"
-    (nzOnOk)="handleOk()"
-    [nzWidth]="800"
-    [nzOkText]="editingUser?.id ? 'Cập nhật' : 'Thêm mới'"
+    [nzOkText]="editingUser ? 'Cập nhật' : 'Thêm mới'"
     nzCancelText="Hủy"
+    (nzOnOk)="handleOk()"
     [nzOkLoading]="isLoading">
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="userForm" nzLayout="vertical" autocomplete="off">
+      <form nz-form [formGroup]="userForm" nzLayout="vertical">
         <div nz-row [nzGutter]="16">
           <!-- Thông tin cơ bản -->
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Tên đăng nhập</nz-form-label>
-              <nz-form-control [nzErrorTip]="usernameError">
+              <nz-form-control nzErrorTip="Vui lòng nhập tên đăng nhập!">
                 <nz-input-group [nzPrefix]="userIcon">
-                  <input nz-input formControlName="username" placeholder="Nhập tên đăng nhập" />
+                  <input nz-input 
+                         formControlName="username" 
+                         placeholder="Nhập tên đăng nhập"
+                         autocomplete="off" />
                 </nz-input-group>
                 <ng-template #userIcon>
                   <span nz-icon nzType="user"></span>
                 </ng-template>
-                <ng-template #usernameError let-control>
-                  <ng-container *ngIf="control.hasError('required')">Vui lòng nhập tên đăng nhập!</ng-container>
-                  <ng-container *ngIf="control.hasError('minlength')">Tên đăng nhập phải có ít nhất 3 ký tự!</ng-container>
-                </ng-template>
               </nz-form-control>
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8" *ngIf="!editingUser?.id">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Mật khẩu</nz-form-label>
-              <nz-form-control [nzErrorTip]="passwordError">
-                <nz-input-group [nzPrefix]="lockIcon">
-                  <input nz-input 
-                         type="password" 
-                         formControlName="password" 
-                         placeholder="Nhập mật khẩu"
-                         autocomplete="new-password" />
-                </nz-input-group>
-                <ng-template #lockIcon>
-                  <span nz-icon nzType="lock"></span>
-                </ng-template>
-                <ng-template #passwordError let-control>
-                  <ng-container *ngIf="control.hasError('required')">Vui lòng nhập mật khẩu!</ng-container>
-                  <ng-container *ngIf="control.hasError('minlength')">Mật khẩu phải có ít nhất 6 ký tự!</ng-container>
-                </ng-template>
+              <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu!">
+                <input nz-input 
+                       type="password" 
+                       formControlName="password" 
+                       placeholder="Nhập mật khẩu"
+                       autocomplete="new-password" />
               </nz-form-control>
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Họ và tên</nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng nhập họ và tên!">
-                <nz-input-group [nzPrefix]="nameIcon">
-                  <input nz-input formControlName="ho_ten" placeholder="Nhập họ và tên" />
-                </nz-input-group>
-                <ng-template #nameIcon>
-                  <span nz-icon nzType="user"></span>
-                </ng-template>
+                <input nz-input formControlName="ho_ten" placeholder="Nhập họ và tên" />
               </nz-form-control>
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <!-- Thông tin liên hệ -->
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label>Email</nz-form-label>
-              <nz-form-control [nzErrorTip]="emailError">
-                <nz-input-group [nzPrefix]="mailIcon">
-                  <input nz-input formControlName="email" type="email" placeholder="Nhập email" />
+              <nz-form-control nzErrorTip="Email không hợp lệ!">
+                <nz-input-group [nzPrefix]="emailIcon">
+                  <input nz-input formControlName="email" placeholder="Nhập email" />
                 </nz-input-group>
-                <ng-template #mailIcon>
+                <ng-template #emailIcon>
                   <span nz-icon nzType="mail"></span>
-                </ng-template>
-                <ng-template #emailError let-control>
-                  <ng-container *ngIf="control.hasError('email')">Email không hợp lệ!</ng-container>
                 </ng-template>
               </nz-form-control>
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label>Số điện thoại</nz-form-label>
               <nz-form-control>
@@ -191,7 +206,7 @@
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Vai trò</nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng chọn vai trò!">
@@ -203,7 +218,7 @@
           </div>
 
           <!-- Thông tin đơn vị -->
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Mã phòng ban</nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng nhập mã phòng ban!">
@@ -217,7 +232,7 @@
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label>Đơn vị</nz-form-label>
               <nz-form-control>
@@ -231,7 +246,7 @@
             </nz-form-item>
           </div>
 
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Trạng thái</nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng chọn trạng thái!">
@@ -244,29 +259,53 @@
           </div>
 
           <!-- Địa chỉ -->
-          <div nz-col [nzSpan]="8">
-            <nz-form-item>
-              <nz-form-label nzRequired>Xã/Phường</nz-form-label>
-              <nz-form-control nzErrorTip="Vui lòng nhập xã/phường!">
-                <input nz-input formControlName="commune" placeholder="Nhập xã/phường" />
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzSpan]="8">
-            <nz-form-item>
-              <nz-form-label nzRequired>Quận/Huyện</nz-form-label>
-              <nz-form-control nzErrorTip="Vui lòng nhập quận/huyện!">
-                <input nz-input formControlName="district" placeholder="Nhập quận/huyện" />
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzSpan]="8">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
               <nz-form-label nzRequired>Tỉnh/Thành phố</nz-form-label>
-              <nz-form-control nzErrorTip="Vui lòng nhập tỉnh/thành phố!">
-                <input nz-input formControlName="province" placeholder="Nhập tỉnh/thành phố" />
+              <nz-form-control nzErrorTip="Vui lòng chọn tỉnh/thành phố!">
+                <nz-select formControlName="province" 
+                          nzPlaceHolder="Chọn tỉnh/thành phố"
+                          nzShowSearch
+                          [nzFilterOption]="filterProvince">
+                  <nz-option *ngFor="let province of provinces" 
+                            [nzValue]="province.ma" 
+                            [nzLabel]="province.ten">
+                  </nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+            <nz-form-item>
+              <nz-form-label nzRequired>Quận/Huyện</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng chọn quận/huyện!">
+                <nz-select formControlName="district" 
+                          nzPlaceHolder="Chọn quận/huyện"
+                          nzShowSearch
+                          [nzFilterOption]="filterDistrict">
+                  <nz-option *ngFor="let district of districts" 
+                            [nzValue]="district.ma" 
+                            [nzLabel]="district.ten">
+                  </nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+            <nz-form-item>
+              <nz-form-label nzRequired>Xã/Phường</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng chọn xã/phường!">
+                <nz-select formControlName="commune" 
+                          nzPlaceHolder="Chọn xã/phường"
+                          nzShowSearch
+                          [nzFilterOption]="filterCommune">
+                  <nz-option *ngFor="let commune of communes" 
+                            [nzValue]="commune.value" 
+                            [nzLabel]="commune.ten">
+                  </nz-option>
+                </nz-select>
               </nz-form-control>
             </nz-form-item>
           </div>
