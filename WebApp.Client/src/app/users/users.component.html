@@ -27,14 +27,55 @@
           <span nz-icon nzType="search"></span>
         </ng-template>
       </div>
-      <div nz-col [nzSpan]="5">
+      <div nz-col [nzSpan]="3">
         <nz-select [(ngModel)]="selectedRole" (ngModelChange)="onRoleChange()" nzPlaceHolder="Lọc theo vai trò" [nzAllowClear]="true" style="width: 100%">
           <nz-option *ngFor="let opt of roleOptions" [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
         </nz-select>
       </div>
-      <div nz-col [nzSpan]="5">
+      <div nz-col [nzSpan]="3">
         <nz-select [(ngModel)]="selectedStatus" (ngModelChange)="onStatusChange()" nzPlaceHolder="Lọc theo trạng thái" [nzAllowClear]="true" style="width: 100%">
           <nz-option *ngFor="let opt of statusOptions" [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+        </nz-select>
+      </div>
+      <div nz-col [nzSpan]="3">
+        <nz-select [(ngModel)]="selectedProvince" 
+                  (ngModelChange)="onProvinceChange()" 
+                  nzPlaceHolder="Chọn tỉnh/thành" 
+                  [nzAllowClear]="true" 
+                  [nzShowSearch]="true"
+                  [nzFilterOption]="filterProvince"
+                  style="width: 100%">
+          <nz-option *ngFor="let province of provinces" 
+                    [nzValue]="province.ma" 
+                    [nzLabel]="province.ten"></nz-option>
+        </nz-select>
+      </div>
+      <div nz-col [nzSpan]="3">
+        <nz-select [(ngModel)]="selectedDistrict" 
+                  (ngModelChange)="onDistrictChange()" 
+                  nzPlaceHolder="Chọn quận/huyện" 
+                  [nzAllowClear]="true" 
+                  [nzShowSearch]="true"
+                  [nzFilterOption]="filterDistrict"
+                  [nzDisabled]="!selectedProvince"
+                  style="width: 100%">
+          <nz-option *ngFor="let district of districts" 
+                    [nzValue]="district.ma" 
+                    [nzLabel]="district.ten"></nz-option>
+        </nz-select>
+      </div>
+      <div nz-col [nzSpan]="3">
+        <nz-select [(ngModel)]="selectedCommune" 
+                  (ngModelChange)="onCommuneChange()" 
+                  nzPlaceHolder="Chọn phường/xã" 
+                  [nzAllowClear]="true" 
+                  [nzShowSearch]="true"
+                  [nzFilterOption]="filterCommune"
+                  [nzDisabled]="!selectedDistrict"
+                  style="width: 100%">
+          <nz-option *ngFor="let commune of communes" 
+                    [nzValue]="commune.ma" 
+                    [nzLabel]="commune.ten"></nz-option>
         </nz-select>
       </div>
       <div nz-col [nzSpan]="2">

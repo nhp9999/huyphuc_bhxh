@@ -71,6 +71,9 @@ export class UsersComponent implements OnInit {
   provinces: Province[] = [];
   districts: District[] = [];
   communes: Commune[] = [];
+  selectedProvince: string | null = null;
+  selectedDistrict: string | null = null;
+  selectedCommune: string | null = null;
 
   filterProvince = (input: string, option: { nzLabel: string | number | null }): boolean => {
     if (!input || !option.nzLabel) return true;
@@ -201,8 +204,11 @@ export class UsersComponent implements OnInit {
       
       const matchRole = !this.selectedRole || user.role === this.selectedRole;
       const matchStatus = !this.selectedStatus || user.status === this.selectedStatus;
+      const matchProvince = !this.selectedProvince || user.province === this.selectedProvince;
+      const matchDistrict = !this.selectedDistrict || user.district === this.selectedDistrict;
+      const matchCommune = !this.selectedCommune || user.commune === this.selectedCommune;
 
-      return matchSearch && matchRole && matchStatus;
+      return matchSearch && matchRole && matchStatus && matchProvince && matchDistrict && matchCommune;
     });
   }
 
@@ -221,10 +227,42 @@ export class UsersComponent implements OnInit {
     this.saveFilters();
   }
 
+  onProvinceChange(): void {
+    this.selectedDistrict = null;
+    this.selectedCommune = null;
+    this.districts = [];
+    this.communes = [];
+    if (this.selectedProvince) {
+      this.loadDistricts(this.selectedProvince);
+    }
+    this.applyFilters();
+    this.saveFilters();
+  }
+
+  onDistrictChange(): void {
+    this.selectedCommune = null;
+    this.communes = [];
+    if (this.selectedDistrict) {
+      this.loadCommunes(this.selectedDistrict);
+    }
+    this.applyFilters();
+    this.saveFilters();
+  }
+
+  onCommuneChange(): void {
+    this.applyFilters();
+    this.saveFilters();
+  }
+
   resetFilters(): void {
     this.searchValue = '';
     this.selectedRole = null;
     this.selectedStatus = null;
+    this.selectedProvince = null;
+    this.selectedDistrict = null;
+    this.selectedCommune = null;
+    this.districts = [];
+    this.communes = [];
     localStorage.removeItem('userFilters');
     this.applyFilters();
   }
@@ -565,7 +603,10 @@ export class UsersComponent implements OnInit {
     const filters = {
       searchValue: this.searchValue,
       selectedRole: this.selectedRole,
-      selectedStatus: this.selectedStatus
+      selectedStatus: this.selectedStatus,
+      selectedProvince: this.selectedProvince,
+      selectedDistrict: this.selectedDistrict,
+      selectedCommune: this.selectedCommune
     };
     localStorage.setItem('userFilters', JSON.stringify(filters));
   }
@@ -574,10 +615,19 @@ export class UsersComponent implements OnInit {
     const savedFilters = localStorage.getItem('userFilters');
     if (savedFilters) {
       const filters = JSON.parse(savedFilters);
-      this.searchValue = filters.searchValue;
+      this.searchValue = filters.searchValue || '';
       this.selectedRole = filters.selectedRole;
       this.selectedStatus = filters.selectedStatus;
-      this.applyFilters();
+      this.selectedProvince = filters.selectedProvince;
+      this.selectedDistrict = filters.selectedDistrict;
+      this.selectedCommune = filters.selectedCommune;
+
+      if (this.selectedProvince) {
+        this.loadDistricts(this.selectedProvince);
+      }
+      if (this.selectedDistrict) {
+        this.loadCommunes(this.selectedDistrict);
+      }
     }
   }
 
