@@ -1,0 +1,29 @@
+.container {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h2 {
+    margin-bottom: 0;
+  }
+}
+
+:host ::ng-deep {
+  .ant-table-thead > tr > th {
+    background-color: #f0f2f5;
+    font-weight: 600;
+  }
+
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  nz-date-picker {
+    width: 100%;
+  }
+} 

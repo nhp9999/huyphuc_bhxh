@@ -15,6 +15,7 @@ namespace WebApp.API.Data
         public DbSet<Province> Provinces { get; set; }
         public DbSet<District> Districts { get; set; }
         public DbSet<Commune> Communes { get; set; }
+        public DbSet<DotKeKhai> DotKeKhais { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -84,6 +85,18 @@ namespace WebApp.API.Data
                     .HasForeignKey(c => c.ma_huyen)
                     .HasPrincipalKey(d => d.ma)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DotKeKhai>(entity =>
+            {
+                entity.ToTable("dot_ke_khai");
+                
+                entity.Property(e => e.ten_dot).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ghi_chu).HasMaxLength(500);
+                entity.Property(e => e.ngay_tao)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+                    .HasColumnType("timestamp with time zone");
             });
         }
     }

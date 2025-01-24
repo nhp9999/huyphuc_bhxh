@@ -32,6 +32,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class MainLayoutComponent implements OnInit {
   isCollapsed = false;
+  currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   constructor(
     private authService: AuthService,

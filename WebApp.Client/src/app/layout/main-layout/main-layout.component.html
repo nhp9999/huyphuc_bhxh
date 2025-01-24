@@ -24,9 +24,9 @@
       <li nz-submenu nzTitle="Quản lý" nzIcon="appstore">
         <ul>
           <li nz-menu-item nzMatchRouter>
-            <span nz-icon nzType="solution"></span>
-            <span>Hồ sơ</span>
-            <a [routerLink]="['/documents']"></a>
+            <span nz-icon nzType="profile"></span>
+            <span>Đợt kê khai</span>
+            <a [routerLink]="['/dot-ke-khai']"></a>
           </li>
           <li nz-menu-item nzMatchRouter>
             <span nz-icon nzType="user"></span>
@@ -74,8 +74,8 @@
           </span>
           <nz-divider nzType="vertical"></nz-divider>
           <a class="header-item" nz-dropdown [nzDropdownMenu]="userMenu">
-            <nz-avatar [nzSrc]="'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'" [nzSize]="32"></nz-avatar>
-            <span class="username">Admin</span>
+            <nz-avatar [nzSrc]="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + currentUser.username" [nzSize]="32"></nz-avatar>
+            <span class="username">{{ currentUser.ho_ten || currentUser.username }}</span>
           </a>
           <nz-dropdown-menu #userMenu="nzDropdownMenu">
             <ul nz-menu>

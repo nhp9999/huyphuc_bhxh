@@ -25,7 +25,8 @@ import {
   SolutionOutline,
   AppstoreOutline,
   ReloadOutline,
-  KeyOutline
+  KeyOutline,
+  ProfileOutline
 } from '@ant-design/icons-angular/icons';
 
 export const icons = [
@@ -54,7 +55,8 @@ export const icons = [
   SolutionOutline,
   AppstoreOutline,
   ReloadOutline,
-  KeyOutline
+  KeyOutline,
+  ProfileOutline
 ];
 
 export const IconsProviderModule = NzIconModule.forRoot(icons);
