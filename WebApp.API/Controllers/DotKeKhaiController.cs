@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace WebApp.API.Controllers
 {
@@ -71,9 +72,13 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Log dữ liệu nhận được
+                _logger.LogInformation($"Received data: {JsonSerializer.Serialize(dotKeKhai)}");
+
                 // Kiểm tra dữ liệu đầu vào
                 if (!ModelState.IsValid)
                 {
+                    _logger.LogWarning($"Invalid model state: {JsonSerializer.Serialize(ModelState)}");
                     return BadRequest(ModelState);
                 }
 

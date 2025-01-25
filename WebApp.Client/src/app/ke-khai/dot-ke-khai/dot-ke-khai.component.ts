@@ -14,6 +14,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -32,7 +33,8 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
     NzDatePickerModule,
     NzSwitchModule,
     NzInputNumberModule,
-    DatePipe
+    DatePipe,
+    NzSelectModule
   ],
   templateUrl: './dot-ke-khai.component.html',
   styleUrls: ['./dot-ke-khai.component.scss']
@@ -45,6 +47,11 @@ export class DotKeKhaiComponent implements OnInit {
   form: FormGroup;
   currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   selectedIds: number[] = [];
+  filterThang = 0; // 0 means all
+  filterNam = 0; // 0 means all
+  filterDichVu = ''; // empty means all
+  namList: number[] = [];
+  originalDotKeKhais: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
 
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
@@ -59,6 +66,7 @@ export class DotKeKhaiComponent implements OnInit {
       so_dot: [1, [Validators.required, Validators.min(1)]],
       thang: [currentDate.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
       nam: [currentDate.getFullYear(), [Validators.required, Validators.min(2000)]],
+      dich_vu: ['', [Validators.required]],
       ghi_chu: [''],
       trang_thai: [true],
       nguoi_tao: [this.currentUser.username || '']
@@ -83,14 +91,22 @@ export class DotKeKhaiComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
     this.updateTenDot();
+    this.initNamList();
+  }
+
+  initNamList(): void {
+    const currentYear = new Date().getFullYear();
+    this.namList = Array.from({length: 5}, (_, i) => currentYear - i);
   }
 
   loadData(): void {
     this.loading = true;
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
-        // Lọc danh sách đợt kê khai theo người tạo
-        this.dotKeKhais = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
+        // Lưu dữ liệu gốc
+        this.originalDotKeKhais = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
+        // Áp dụng filter
+        this.applyFilter();
         this.loading = false;
       },
       error: (error) => {
@@ -98,6 +114,28 @@ export class DotKeKhaiComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  onFilterChange(): void {
+    this.applyFilter();
+  }
+
+  applyFilter(): void {
+    let filteredData = [...this.originalDotKeKhais];
+
+    if (this.filterThang > 0) {
+      filteredData = filteredData.filter(dot => dot.thang === this.filterThang);
+    }
+
+    if (this.filterNam > 0) {
+      filteredData = filteredData.filter(dot => dot.nam === this.filterNam);
+    }
+
+    if (this.filterDichVu) {
+      filteredData = filteredData.filter(dot => dot.dich_vu === this.filterDichVu);
+    }
+
+    this.dotKeKhais = filteredData;
   }
 
   getNextSoDot(nam: number): number {
@@ -130,6 +168,7 @@ export class DotKeKhaiComponent implements OnInit {
         so_dot: nextSoDot,
         thang: currentDate.getMonth() + 1,
         nam: currentYear,
+        dich_vu: '',
         ghi_chu: '',
         trang_thai: true,
         nguoi_tao: this.currentUser.username || ''
@@ -149,6 +188,7 @@ export class DotKeKhaiComponent implements OnInit {
       so_dot: nextSoDot,
       thang: currentDate.getMonth() + 1,
       nam: currentYear,
+      dich_vu: '',
       trang_thai: true,
       nguoi_tao: this.currentUser.username || ''
     });
@@ -160,16 +200,23 @@ export class DotKeKhaiComponent implements OnInit {
       this.loading = true;
       const formValue = this.form.getRawValue(); // Lấy tất cả giá trị bao gồm cả disabled controls
       
+      // Thêm log để kiểm tra dữ liệu
+      console.log('Form data:', formValue);
+      
       // Đảm bảo các trường số được chuyển đổi đúng kiểu
       const data: DotKeKhai = {
         ten_dot: formValue.ten_dot,
         so_dot: Number(formValue.so_dot),
         thang: Number(formValue.thang),
         nam: Number(formValue.nam),
+        dich_vu: formValue.dich_vu,
         ghi_chu: (formValue.ghi_chu || '').trim(),
         trang_thai: Boolean(formValue.trang_thai),
         nguoi_tao: this.currentUser.username || ''
       };
+
+      // Thêm log để kiểm tra dữ liệu trước khi gửi
+      console.log('Data to send:', data);
 
       if (this.isEdit && formValue.id) {
         data.id = Number(formValue.id);

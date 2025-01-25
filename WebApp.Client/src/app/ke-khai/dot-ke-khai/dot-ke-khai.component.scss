@@ -1,5 +1,9 @@
 .container {
   padding: 24px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: calc(100vh - 48px);
 }
 
 .header {
@@ -10,7 +14,21 @@
 
   h2 {
     margin-bottom: 0;
+    color: #262626;
+    font-weight: 600;
   }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-right: 16px;
 }
 
 :host ::ng-deep {
@@ -25,5 +43,14 @@
 
   nz-date-picker {
     width: 100%;
+  }
+
+  .ant-table-wrapper {
+    background: #ffffff;
+    border-radius: 8px;
+  }
+
+  .ant-select {
+    min-width: 120px;
   }
 } 

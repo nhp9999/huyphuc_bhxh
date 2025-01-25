@@ -47,6 +47,13 @@ namespace WebApp.API.Models
         public int nam { get; set; }
 
         /// <summary>
+        /// Loại dịch vụ (BHXH TN, BHYT)
+        /// </summary>
+        [Required(ErrorMessage = "Loại dịch vụ không được để trống")]
+        [StringLength(10)]
+        public string dich_vu { get; set; } = "BHXH TN";
+
+        /// <summary>
         /// Ghi chú
         /// </summary>
         public string ghi_chu { get; set; }

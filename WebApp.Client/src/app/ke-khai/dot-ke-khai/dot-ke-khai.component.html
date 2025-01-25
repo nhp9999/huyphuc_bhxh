@@ -2,6 +2,42 @@
   <div class="header">
     <h2>Danh sách đợt kê khai</h2>
     <div class="actions">
+      <div class="filters">
+        <nz-select
+          [(ngModel)]="filterThang"
+          (ngModelChange)="onFilterChange()"
+          [nzPlaceHolder]="'Chọn tháng'"
+          style="width: 120px">
+          <nz-option [nzValue]="0" nzLabel="Tất cả tháng"></nz-option>
+          <nz-option *ngFor="let thang of [1,2,3,4,5,6,7,8,9,10,11,12]" 
+            [nzValue]="thang" 
+            [nzLabel]="'Tháng ' + thang">
+          </nz-option>
+        </nz-select>
+
+        <nz-select
+          [(ngModel)]="filterNam"
+          (ngModelChange)="onFilterChange()"
+          [nzPlaceHolder]="'Chọn năm'"
+          style="width: 120px">
+          <nz-option [nzValue]="0" nzLabel="Tất cả năm"></nz-option>
+          <nz-option *ngFor="let nam of namList" 
+            [nzValue]="nam" 
+            [nzLabel]="nam.toString()">
+          </nz-option>
+        </nz-select>
+
+        <nz-select
+          [(ngModel)]="filterDichVu"
+          (ngModelChange)="onFilterChange()"
+          [nzPlaceHolder]="'Chọn dịch vụ'"
+          style="width: 200px">
+          <nz-option [nzValue]="''" nzLabel="Tất cả dịch vụ"></nz-option>
+          <nz-option nzValue="BHXH TN" nzLabel="BHXH TN"></nz-option>
+          <nz-option nzValue="BHYT" nzLabel="BHYT"></nz-option>
+        </nz-select>
+      </div>
+
       <button *ngIf="selectedIds.length > 0" nz-button nzType="primary" nzDanger (click)="deleteSelected()">
         <i nz-icon nzType="delete"></i>Xóa {{ selectedIds.length }} đợt đã chọn
       </button>
@@ -28,6 +64,7 @@
         <th>Tên đợt</th>
         <th>Số đợt</th>
         <th>Tháng/Năm</th>
+        <th>Dịch vụ</th>
         <th>Ghi chú</th>
         <th>Trạng thái</th>
         <th>Người tạo</th>
@@ -45,6 +82,12 @@
         <td>{{ data.ten_dot }}</td>
         <td>{{ data.so_dot }}</td>
         <td>{{ data.thang }}/{{ data.nam }}</td>
+        <td>
+          <nz-tag [nzColor]="'blue'">
+            {{ data.dich_vu === 'BHXH TN' ? 'BHXH TN' : 
+               data.dich_vu === 'BHYT' ? 'BHYT' : '' }}
+          </nz-tag>
+        </td>
         <td>{{ data.ghi_chu }}</td>
         <td>
           <nz-tag [nzColor]="data.trang_thai ? 'success' : 'error'">
@@ -104,6 +147,16 @@
         </nz-form-item>
 
         <nz-form-item>
+          <nz-form-label [nzSpan]="6" nzRequired>Dịch vụ</nz-form-label>
+          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn dịch vụ">
+            <nz-select formControlName="dich_vu" nzPlaceHolder="Chọn dịch vụ">
+              <nz-option nzValue="BHXH TN" nzLabel="BHXH TN"></nz-option>
+              <nz-option nzValue="BHYT" nzLabel="BHYT"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
           <nz-form-label [nzSpan]="6">Ghi chú</nz-form-label>
           <nz-form-control [nzSpan]="18">
             <textarea nz-input formControlName="ghi_chu" rows="4"></textarea>
@@ -132,5 +185,12 @@
 .actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-right: 16px;
 }
 </style> 

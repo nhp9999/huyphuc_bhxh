@@ -94,6 +94,10 @@ namespace WebApp.API.Data
                 entity.Property(e => e.ten_dot).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ghi_chu).HasMaxLength(500);
+                entity.Property(e => e.dich_vu)
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .HasDefaultValue("BHXH TN");
                 entity.Property(e => e.ngay_tao)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
                     .HasColumnType("timestamp with time zone");

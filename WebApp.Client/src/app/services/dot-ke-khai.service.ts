@@ -9,6 +9,7 @@ export interface DotKeKhai {
   so_dot: number;
   thang: number;
   nam: number;
+  dich_vu: string;
   ghi_chu?: string;
   trang_thai: boolean;
   ngay_tao?: Date;
