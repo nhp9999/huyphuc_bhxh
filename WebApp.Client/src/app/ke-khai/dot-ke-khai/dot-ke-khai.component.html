@@ -103,6 +103,9 @@
           <a nz-button nzType="link" nzDanger (click)="delete(data.id!)">
             <i nz-icon nzType="delete"></i>
           </a>
+          <a *ngIf="data.dich_vu === 'BHYT'" nz-button nzType="link" [routerLink]="['/dot-ke-khai', data.id, 'ke-khai-bhyt']">
+            <i nz-icon nzType="form"></i>
+          </a>
         </td>
       </tr>
     </tbody>

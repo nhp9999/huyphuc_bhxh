@@ -12,6 +12,7 @@ export const routes: Routes = [
       { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent) },
       { path: 'users', loadComponent: () => import('./users/users.component').then(m => m.UsersComponent) },
       { path: 'dot-ke-khai', loadComponent: () => import('./ke-khai/dot-ke-khai/dot-ke-khai.component').then(m => m.DotKeKhaiComponent) },
+      { path: 'dot-ke-khai/:id/ke-khai-bhyt', loadComponent: () => import('./ke-khai/ke-khai-bhyt/ke-khai-bhyt.component').then(m => m.KeKhaiBHYTComponent) },
       { 
         path: 'reports',
         children: [

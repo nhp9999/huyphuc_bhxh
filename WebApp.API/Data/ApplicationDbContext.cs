@@ -16,6 +16,8 @@ namespace WebApp.API.Data
         public DbSet<District> Districts { get; set; }
         public DbSet<Commune> Communes { get; set; }
         public DbSet<DotKeKhai> DotKeKhais { get; set; }
+        public DbSet<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
+        public DbSet<ThongTinThe> ThongTinThes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -90,17 +92,45 @@ namespace WebApp.API.Data
             modelBuilder.Entity<DotKeKhai>(entity =>
             {
                 entity.ToTable("dot_ke_khai");
-                
+
                 entity.Property(e => e.ten_dot).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.so_dot).IsRequired();
+                entity.Property(e => e.thang).IsRequired();
+                entity.Property(e => e.nam).IsRequired();
+                entity.Property(e => e.dich_vu).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ghi_chu).HasMaxLength(500);
-                entity.Property(e => e.dich_vu)
-                    .IsRequired()
-                    .HasMaxLength(10)
-                    .HasDefaultValue("BHXH TN");
-                entity.Property(e => e.ngay_tao)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-                    .HasColumnType("timestamp with time zone");
+                entity.Property(e => e.trang_thai).HasDefaultValue(true);
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<KeKhaiBHYT>(entity =>
+            {
+                entity.ToTable("ke_khai_bhyt");
+
+                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(k => k.DotKeKhai)
+                    .WithMany()
+                    .HasForeignKey(k => k.dot_ke_khai_id)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(k => k.ThongTinThe)
+                    .WithMany()
+                    .HasForeignKey(k => k.thong_tin_the_id)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ThongTinThe>(entity =>
+            {
+                entity.ToTable("thong_tin_the");
+
+                entity.HasIndex(e => e.ma_so_bhxh).IsUnique();
+                entity.HasIndex(e => e.cccd).IsUnique();
+
+                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
         }
     }

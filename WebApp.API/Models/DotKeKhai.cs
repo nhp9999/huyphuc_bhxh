@@ -54,12 +54,13 @@ namespace WebApp.API.Models
         public string dich_vu { get; set; } = "BHXH TN";
 
         /// <summary>
-        /// Ghi chú
+        /// Ghi chú cho đợt kê khai
         /// </summary>
-        public string ghi_chu { get; set; }
+        [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự")]
+        public string? ghi_chu { get; set; }
 
         /// <summary>
-        /// Trạng thái hoạt động
+        /// Trạng thái đợt kê khai
         /// </summary>
         public bool trang_thai { get; set; } = true;
 
@@ -71,6 +72,7 @@ namespace WebApp.API.Models
         /// <summary>
         /// Người tạo đợt kê khai
         /// </summary>
+        [Required(ErrorMessage = "Người tạo không được để trống")]
         public string nguoi_tao { get; set; }
 
         /// <summary>

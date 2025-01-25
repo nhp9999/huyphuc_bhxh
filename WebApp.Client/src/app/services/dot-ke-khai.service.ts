@@ -5,15 +5,15 @@ import { environment } from '../../environments/environment';
 
 export interface DotKeKhai {
   id?: number;
-  ten_dot: string;
-  so_dot: number;
-  thang: number;
   nam: number;
+  thang: number;
+  so_dot: number;
+  ten_dot: string;
+  ghi_chu: string;
   dich_vu: string;
-  ghi_chu?: string;
   trang_thai: boolean;
+  nguoi_tao: string;
   ngay_tao?: Date;
-  nguoi_tao?: string;
 }
 
 @Injectable({

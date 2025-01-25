@@ -15,6 +15,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
+import { RouterModule, Router } from '@angular/router';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -23,6 +24,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    RouterModule,
     NzTableModule,
     NzButtonModule,
     NzIconModule,
@@ -57,7 +59,8 @@ export class DotKeKhaiComponent implements OnInit {
     private dotKeKhaiService: DotKeKhaiService,
     private message: NzMessageService,
     private modal: NzModalService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     const currentDate = new Date();
     this.form = this.fb.group({
@@ -69,7 +72,7 @@ export class DotKeKhaiComponent implements OnInit {
       dich_vu: ['', [Validators.required]],
       ghi_chu: [''],
       trang_thai: [true],
-      nguoi_tao: [this.currentUser.username || '']
+      nguoi_tao: [this.currentUser.username || '', [Validators.required]]
     });
 
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
@@ -198,12 +201,8 @@ export class DotKeKhaiComponent implements OnInit {
   handleOk(): void {
     if (this.form.valid) {
       this.loading = true;
-      const formValue = this.form.getRawValue(); // Lấy tất cả giá trị bao gồm cả disabled controls
+      const formValue = this.form.getRawValue();
       
-      // Thêm log để kiểm tra dữ liệu
-      console.log('Form data:', formValue);
-      
-      // Đảm bảo các trường số được chuyển đổi đúng kiểu
       const data: DotKeKhai = {
         ten_dot: formValue.ten_dot,
         so_dot: Number(formValue.so_dot),
@@ -215,9 +214,6 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: this.currentUser.username || ''
       };
 
-      // Thêm log để kiểm tra dữ liệu trước khi gửi
-      console.log('Data to send:', data);
-
       if (this.isEdit && formValue.id) {
         data.id = Number(formValue.id);
         this.dotKeKhaiService.updateDotKeKhai(data.id, data).subscribe({
@@ -228,7 +224,17 @@ export class DotKeKhaiComponent implements OnInit {
           },
           error: (error) => {
             console.error('Lỗi khi cập nhật:', error);
-            this.message.error('Có lỗi xảy ra khi cập nhật');
+            if (error.error?.errors) {
+              const errorMessages = Object.values(error.error.errors).flat();
+              errorMessages.forEach((message: unknown) => {
+                if (typeof message === 'string') {
+                  this.message.error(message);
+                }
+              });
+            } else {
+              this.message.error('Có lỗi xảy ra khi cập nhật');
+            }
+            this.loading = false;
           },
           complete: () => {
             this.loading = false;
@@ -236,14 +242,29 @@ export class DotKeKhaiComponent implements OnInit {
         });
       } else {
         this.dotKeKhaiService.createDotKeKhai(data).subscribe({
-          next: () => {
+          next: (response) => {
             this.message.success('Thêm mới thành công');
             this.loadData();
             this.handleCancel();
+            
+            // Chuyển hướng đến trang kê khai BHYT nếu là đợt kê khai BHYT
+            if (data.dich_vu === 'BHYT' && response && response.id) {
+              this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhyt']);
+            }
           },
           error: (error) => {
             console.error('Lỗi khi thêm mới:', error);
-            this.message.error('Có lỗi xảy ra khi thêm mới');
+            if (error.error?.errors) {
+              const errorMessages = Object.values(error.error.errors).flat();
+              errorMessages.forEach((message: unknown) => {
+                if (typeof message === 'string') {
+                  this.message.error(message);
+                }
+              });
+            } else {
+              this.message.error('Có lỗi xảy ra khi thêm mới');
+            }
+            this.loading = false;
           },
           complete: () => {
             this.loading = false;
