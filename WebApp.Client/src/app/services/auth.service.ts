@@ -27,16 +27,33 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('currentUser');
   }
 
   setSession(authResult: any): void {
-    localStorage.setItem('token', authResult.token);
-    localStorage.setItem('user', JSON.stringify(authResult.user));
+    if (!authResult) return;
+
+    // Tạo object user với token
+    const user = {
+      ...authResult.user,
+      accessToken: authResult.token 
+    };
+
+    // Lưu vào localStorage
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    console.log('Saved user to localStorage:', user);
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('token');
+    const user = localStorage.getItem('currentUser');
+    if (!user) return false;
+    
+    try {
+      const userData = JSON.parse(user);
+      return !!userData.accessToken;
+    } catch {
+      return false;
+    }
   }
 } 

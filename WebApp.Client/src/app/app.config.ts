@@ -6,11 +6,17 @@ import { IconsProviderModule } from './icons-provider';
 import { vi_VN, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { apiTokenInterceptor } from './interceptors/api-token.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(
+      withInterceptors([
+        apiTokenInterceptor,
+        authInterceptor
+      ])
+    ),
     provideNzI18n(vi_VN),
     provideAnimations(),
     importProvidersFrom(IconsProviderModule)

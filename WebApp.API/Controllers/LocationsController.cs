@@ -17,11 +17,11 @@ namespace WebApp.API.Controllers
         }
 
         [HttpGet("provinces")]
-        public async Task<ActionResult<IEnumerable<Province>>> GetProvinces()
+        public async Task<ActionResult<IEnumerable<DanhMucTinh>>> GetProvinces()
         {
             try
             {
-                var provinces = await _context.Provinces
+                var provinces = await _context.DanhMucTinhs
                     .OrderBy(p => p.ma)
                     .ToListAsync();
                     
@@ -34,11 +34,11 @@ namespace WebApp.API.Controllers
         }
 
         [HttpGet("districts/{provinceId}")]
-        public async Task<ActionResult<IEnumerable<District>>> GetDistricts(string provinceId)
+        public async Task<ActionResult<IEnumerable<DanhMucHuyen>>> GetDistricts(string provinceId)
         {
             try
             {
-                var districts = await _context.Districts
+                var districts = await _context.DanhMucHuyens
                     .Where(d => d.ma_tinh == provinceId)
                     .OrderBy(d => d.ma)
                     .ToListAsync();
@@ -61,7 +61,7 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var communes = await _context.Communes
+                var communes = await _context.DanhMucXas
                     .Where(c => c.ma_huyen == districtCode)
                     .OrderBy(c => c.ma)
                     .Select(c => new

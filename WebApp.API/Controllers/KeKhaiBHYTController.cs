@@ -146,7 +146,15 @@ namespace WebApp.API.Controllers
                     return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
                 }
 
+                // Cập nhật thông tin thẻ
+                if (existingKeKhaiBHYT.ThongTinThe != null && keKhaiBHYT.ThongTinThe != null)
+                {
+                    _context.Entry(existingKeKhaiBHYT.ThongTinThe).CurrentValues.SetValues(keKhaiBHYT.ThongTinThe);
+                }
+
+                // Cập nhật thông tin kê khai
                 _context.Entry(existingKeKhaiBHYT).CurrentValues.SetValues(keKhaiBHYT);
+
                 await _context.SaveChangesAsync();
 
                 return NoContent();

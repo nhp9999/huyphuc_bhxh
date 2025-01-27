@@ -12,12 +12,13 @@ namespace WebApp.API.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<PaymentBill> PaymentBills { get; set; }
-        public DbSet<Province> Provinces { get; set; }
-        public DbSet<District> Districts { get; set; }
-        public DbSet<Commune> Communes { get; set; }
+        public DbSet<DanhMucTinh> DanhMucTinhs { get; set; }
+        public DbSet<DanhMucHuyen> DanhMucHuyens { get; set; }
+        public DbSet<DanhMucXa> DanhMucXas { get; set; }
         public DbSet<DotKeKhai> DotKeKhais { get; set; }
         public DbSet<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
         public DbSet<ThongTinThe> ThongTinThes { get; set; }
+        public DbSet<DanhMucCSKCB> DanhMucCSKCBs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,7 +56,7 @@ namespace WebApp.API.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<District>(entity =>
+            modelBuilder.Entity<DanhMucHuyen>(entity =>
             {
                 entity.ToTable("ds_huyen");
                 entity.HasIndex(e => e.ma).IsUnique();
@@ -65,14 +66,14 @@ namespace WebApp.API.Data
                 entity.Property(e => e.ma_tinh).IsRequired().HasMaxLength(2);
                 entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                entity.HasOne<Province>()
+                entity.HasOne<DanhMucTinh>()
                     .WithMany()
                     .HasForeignKey(d => d.ma_tinh)
                     .HasPrincipalKey(p => p.ma)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<Commune>(entity =>
+            modelBuilder.Entity<DanhMucXa>(entity =>
             {
                 entity.ToTable("ds_xa");
                 entity.HasIndex(e => e.ma).IsUnique();
@@ -82,7 +83,7 @@ namespace WebApp.API.Data
                 entity.Property(e => e.ma_huyen).IsRequired().HasMaxLength(3);
                 entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                entity.HasOne<District>()
+                entity.HasOne<DanhMucHuyen>()
                     .WithMany()
                     .HasForeignKey(c => c.ma_huyen)
                     .HasPrincipalKey(d => d.ma)
@@ -131,6 +132,12 @@ namespace WebApp.API.Data
 
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            modelBuilder.Entity<DanhMucCSKCB>(entity =>
+            {
+                entity.ToTable("dm_cskcb");
+                entity.HasKey(e => e.id);
             });
         }
     }

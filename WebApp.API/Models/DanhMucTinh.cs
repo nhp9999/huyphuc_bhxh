@@ -3,14 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebApp.API.Models
 {
-    [Table("ds_huyen")]
-    public class District
+    [Table("ds_tinh")]
+    public class DanhMucTinh
     {
         [Key]
         public int id { get; set; }
 
         [Required]
-        [StringLength(3)]
+        [StringLength(2)]
         public string ma { get; set; }
 
         [Required]
@@ -20,11 +20,6 @@ namespace WebApp.API.Models
         [Required]
         [StringLength(100)]
         public string text { get; set; }
-
-        [Required]
-        [StringLength(2)]
-        [Column("ma_tinh")]
-        public string ma_tinh { get; set; }
 
         public DateTime created_at { get; set; }
     }

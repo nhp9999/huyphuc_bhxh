@@ -18,10 +18,11 @@ export interface District {
 }
 
 export interface Commune {
-  text: string;
-  value: string;
+  id: number;
+  ma: string;
   ten: string;
-  ma: string | null;
+  text: string;
+  ma_huyen: string;
 }
 
 export interface ApiResponse<T> {

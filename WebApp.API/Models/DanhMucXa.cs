@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace WebApp.API.Models
 {
     [Table("ds_xa")]
-    public class Commune
+    public class DanhMucXa
     {
         [Key]
         public int id { get; set; }

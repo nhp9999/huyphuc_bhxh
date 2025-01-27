@@ -19,11 +19,17 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Mã số BHXH</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã số BHXH (tối đa 10 số)">
-              <input nz-input 
-                formControlName="ma_so_bhxh" 
-                placeholder="Nhập mã số BHXH" 
-                maxlength="10"
-                (keypress)="onlyNumber($event)" />
+              <div class="custom-input-group">
+                <input nz-input 
+                  formControlName="ma_so_bhxh" 
+                  placeholder="Nhập mã số BHXH" 
+                  maxlength="10"
+                  (keypress)="onlyNumber($event)"
+                  (keyup.enter)="$event.preventDefault(); onSearchBHYT()" />
+                <button nz-button nzType="primary" (click)="onSearchBHYT()">
+                  <i nz-icon nzType="search"></i>
+                </button>
+              </div>
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -187,9 +193,12 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Tỉnh NKQ</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn tỉnh">
-              <nz-select formControlName="tinh_nkq" nzPlaceHolder="Chọn tỉnh">
-                <nz-option nzValue="hanoi" nzLabel="Hà Nội"></nz-option>
-                <nz-option nzValue="hochiminh" nzLabel="Hồ Chí Minh"></nz-option>
+              <nz-select formControlName="tinh_nkq" nzPlaceHolder="Chọn tỉnh" nzShowSearch>
+                <nz-option 
+                  *ngFor="let tinh of danhMucTinhs" 
+                  [nzValue]="tinh.ma"
+                  [nzLabel]="tinh.ten">
+                </nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -199,12 +208,12 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Huyện NKQ</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn huyện">
-              <nz-select formControlName="huyen_nkq" nzPlaceHolder="Chọn huyện">
-                <nz-option nzValue="hoankiem" nzLabel="Hoàn Kiếm"></nz-option>
-                <nz-option nzValue="dongda" nzLabel="Đống Đa"></nz-option>
-                <nz-option nzValue="caugiay" nzLabel="Cầu Giấy"></nz-option>
-                <nz-option nzValue="thanhxuan" nzLabel="Thanh Xuân"></nz-option>
-                <nz-option nzValue="hadong" nzLabel="Hà Đông"></nz-option>
+              <nz-select formControlName="huyen_nkq" nzPlaceHolder="Chọn huyện" nzShowSearch>
+                <nz-option 
+                  *ngFor="let huyen of danhMucHuyens" 
+                  [nzValue]="huyen.ma"
+                  [nzLabel]="huyen.ten">
+                </nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -214,12 +223,12 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Xã NKQ</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn xã">
-              <nz-select formControlName="xa_nkq" nzPlaceHolder="Chọn xã">
-                <nz-option nzValue="phuonglieng" nzLabel="Phương Liên"></nz-option>
-                <nz-option nzValue="thanhcong" nzLabel="Thành Công"></nz-option>
-                <nz-option nzValue="langha" nzLabel="Láng Hạ"></nz-option>
-                <nz-option nzValue="kimma" nzLabel="Kim Mã"></nz-option>
-                <nz-option nzValue="ngocthanh" nzLabel="Ngọc Thành"></nz-option>
+              <nz-select formControlName="xa_nkq" nzPlaceHolder="Chọn xã" nzShowSearch>
+                <nz-option 
+                  *ngFor="let xa of danhMucXas" 
+                  [nzValue]="xa.ma"
+                  [nzLabel]="xa.ten">
+                </nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -238,15 +247,16 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Bệnh viện (KCB ban đầu)</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn bệnh viện">
-              <nz-select formControlName="benh_vien_kcb" nzPlaceHolder="Chọn bệnh viện" nzShowSearch>
-                <nz-option nzValue="bvbachhmai" nzLabel="Bệnh viện Bạch Mai"></nz-option>
-                <nz-option nzValue="bvvietduc" nzLabel="Bệnh viện Việt Đức"></nz-option>
-                <nz-option nzValue="bvk" nzLabel="Bệnh viện K"></nz-option>
-                <nz-option nzValue="bvematw" nzLabel="Bệnh viện Mắt Trung ương"></nz-option>
-                <nz-option nzValue="bvtaytuu" nzLabel="Bệnh viện Tây Tựu"></nz-option>
-                <nz-option nzValue="bvdongda" nzLabel="Bệnh viện Đống Đa"></nz-option>
-                <nz-option nzValue="bvthanhxuan" nzLabel="Bệnh viện Thanh Xuân"></nz-option>
-                <nz-option nzValue="bvhadong" nzLabel="Bệnh viện Hà Đông"></nz-option>
+              <nz-select 
+                formControlName="benh_vien_kcb" 
+                nzPlaceHolder="Chọn bệnh viện" 
+                nzShowSearch
+                [nzFilterOption]="filterOption">
+                <nz-option 
+                  *ngFor="let benhVien of danhMucCSKCBs" 
+                  [nzValue]="benhVien.value"
+                  [nzLabel]="benhVien.ten">
+                </nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>

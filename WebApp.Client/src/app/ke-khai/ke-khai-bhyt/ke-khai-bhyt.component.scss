@@ -48,6 +48,18 @@
         color: rgba(0, 0, 0, 0.85);
         font-size: 14px;
         height: 22px;
+        font-weight: 600 !important;
+      }
+
+      .ant-form-item-required::before {
+        display: inline-block;
+        margin-right: 4px;
+        color: #ff4d4f;
+        font-size: 14px;
+        font-family: SimSun, sans-serif;
+        line-height: 1;
+        content: "*";
+        font-weight: normal !important;
       }
     }
 
@@ -81,17 +93,6 @@ nz-table {
   }
 }
 
-// Thêm dấu * màu đỏ cho các trường bắt buộc
-.ant-form-item-required::before {
-  display: inline-block;
-  margin-right: 4px;
-  color: #ff4d4f;
-  font-size: 14px;
-  font-family: SimSun, sans-serif;
-  line-height: 1;
-  content: "*";
-}
-
 .table-actions {
   display: flex;
   justify-content: space-between;
@@ -105,30 +106,72 @@ nz-table {
 }
 
 :host ::ng-deep {
-  .ant-table-thead > tr > th {
-    background-color: #f0f2f5;
-    font-weight: 600;
-  }
-
-  .ant-form-item {
-    margin-bottom: 16px;
-  }
-
-  .ant-table-wrapper {
-    background: #ffffff;
-    border-radius: 8px;
-  }
-
+  // Reset tất cả control về cùng kích thước
+  .ant-input,
+  .ant-select-selector,
+  .ant-picker,
+  nz-select,
   nz-date-picker {
-    width: 100%;
+    height: 36px !important;
   }
 
-  nz-input-number {
-    width: 100%;
+  // Style cho custom input group
+  .custom-input-group {
+    display: flex;
+    align-items: center;
+    
+    input {
+      height: 36px !important;
+      border-radius: 2px 0 0 2px;
+    }
+    
+    button {
+      height: 36px !important;
+      width: 36px !important;
+      min-width: 36px !important;
+      padding: 0 !important;
+      border-radius: 0 2px 2px 0 !important;
+      margin-left: -1px !important;
+      
+      i {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+    }
   }
 
-  [nz-input] {
-    width: 100%;
+  // Style cho các control khác
+  .ant-select-selector {
+    height: 36px !important;
+    padding: 0 11px !important;
+    display: flex !important;
+    align-items: center !important;
+
+    .ant-select-selection-item {
+      line-height: 34px !important;
+    }
+  }
+
+  .ant-picker {
+    height: 36px !important;
+    padding: 0 11px !important;
+    
+    .ant-picker-input {
+      height: 36px !important;
+      
+      input {
+        height: 36px !important;
+      }
+    }
+  }
+
+  // Điều chỉnh input placeholder
+  .ant-input::placeholder,
+  .ant-select-selection-placeholder,
+  .ant-picker-input > input::placeholder {
+    line-height: 36px !important;
   }
 }
 
