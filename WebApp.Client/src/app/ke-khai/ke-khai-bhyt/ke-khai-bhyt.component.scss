@@ -78,13 +78,23 @@
 nz-table {
   ::ng-deep {
     .ant-table-thead > tr > th {
+      white-space: nowrap;
       background-color: #f0f2f5;
       font-weight: 600;
       padding: 12px 16px;
     }
 
     .ant-table-tbody > tr > td {
+      white-space: nowrap;
       padding: 12px 16px;
+    }
+
+    .ant-table-container {
+      overflow-x: auto;
+    }
+
+    .ant-table {
+      min-width: 100%;
     }
 
     .ant-checkbox-wrapper {

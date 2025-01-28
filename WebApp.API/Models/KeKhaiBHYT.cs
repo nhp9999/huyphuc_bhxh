@@ -78,24 +78,24 @@ namespace WebApp.API.Models
         public DateTime han_the_moi_den { get; set; }
 
         /// <summary>
-        /// Tình nhận quyết định
+        /// Tỉnh nhận quyết định
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(20)]
         public string tinh_nkq { get; set; }
 
         /// <summary>
         /// Huyện nhận quyết định
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(20)]
         public string huyen_nkq { get; set; }
 
         /// <summary>
         /// Xã nhận quyết định
         /// </summary>
         [Required]
-        [StringLength(100)]
+        [StringLength(20)]
         public string xa_nkq { get; set; }
 
         /// <summary>

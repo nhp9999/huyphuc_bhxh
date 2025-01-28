@@ -21,18 +21,20 @@ export interface ThongTinThe {
   so_dien_thoai: string;
   ma_hgd?: string;
   ma_tinh_ks?: string;
-  nguoi_tao: string;
-  ngay_tao?: Date;
-  noiNhanHoSo?: NoiNhanHoSo;
   ma_huyen_ks?: string;
   ma_xa_ks?: string;
   ma_tinh_nkq?: string;
   ma_huyen_nkq?: string;
   ma_xa_nkq?: string;
+  dia_chi_nkq?: string;
+  benh_vien_kcb?: string;
+  ma_benh_vien?: string;
   so_the_bhyt?: string;
   ma_dan_toc?: string;
   quoc_tich?: string;
-  ma_benh_vien?: string;
+  nguoi_tao: string;
+  ngay_tao?: Date;
+  noiNhanHoSo?: NoiNhanHoSo;
 }
 
 export interface DotKeKhai {
@@ -65,6 +67,7 @@ export interface KeKhaiBHYT {
   xa_nkq: string;
   dia_chi_nkq: string;
   benh_vien_kcb: string;
+  ma_benh_vien: string;
   nguoi_tao: string;
   ngay_tao?: Date;
 }
@@ -122,6 +125,7 @@ export interface DanhMucCSKCB {
   ten: string;
   ma: string | null;
   created_at: Date;
+  ma_tinh_kcb: string;
 }
 
 @Injectable({

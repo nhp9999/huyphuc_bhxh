@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebApp.API.Models
 {
+    [Table("dm_cskcb")]
     public class DanhMucCSKCB
     {
         [Key]
@@ -19,8 +21,9 @@ namespace WebApp.API.Models
         [StringLength(200)]
         public string ten { get; set; }
 
+        [Column("ma_tinh_kcb")]
         [StringLength(10)]
-        public string? ma { get; set; }
+        public string ma_tinh_kcb { get; set; }
 
         public DateTime created_at { get; set; }
     }

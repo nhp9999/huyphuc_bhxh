@@ -2,6 +2,9 @@
   <div class="header">
     <h2>Kê khai bảo hiểm y tế</h2>
     <div class="header-actions">
+      <button nz-button (click)="refresh()">
+        <i nz-icon nzType="reload"></i>Làm mới
+      </button>
       <button nz-button nzType="primary" (click)="handleOk()">
         <i nz-icon nzType="save"></i>Lưu
       </button>
@@ -261,6 +264,38 @@
             </nz-form-control>
           </nz-form-item>
         </div>
+
+        <!-- Huyện KS -->
+        <div nz-col [nzSpan]="4" style="display: none;">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Huyện KS</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn huyện KS">
+              <nz-select formControlName="ma_huyen_ks" nzPlaceHolder="Chọn huyện KS" nzShowSearch>
+                <nz-option 
+                  *ngFor="let huyen of danhMucHuyenKS" 
+                  [nzValue]="huyen.ma"
+                  [nzLabel]="huyen.ten">
+                </nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <!-- Xã KS -->
+        <div nz-col [nzSpan]="4" style="display: none;">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Xã KS</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn xã KS">
+              <nz-select formControlName="ma_xa_ks" nzPlaceHolder="Chọn xã KS" nzShowSearch>
+                <nz-option 
+                  *ngFor="let xa of danhMucXaKS" 
+                  [nzValue]="xa.ma"
+                  [nzLabel]="xa.ten">
+                </nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
       </div>
     </form>
   </nz-card>
@@ -297,6 +332,9 @@
         <th>Số điện thoại</th>
         <th>Người thứ</th>
         <th>Số tháng đóng</th>
+        <th>Tỉnh NKQ</th>
+        <th>Huyện NKQ</th>
+        <th>Xã NKQ</th>
         <th style="width: 100px;">Thao tác</th>
       </tr>
     </thead>
@@ -317,6 +355,9 @@
         <td>{{ data.thongTinThe?.so_dien_thoai }}</td>
         <td>{{ data.nguoi_thu }}</td>
         <td>{{ data.so_thang_dong }}</td>
+        <td>{{ getTinhTen(data.tinh_nkq) }}</td>
+        <td>{{ getHuyenTen(data.huyen_nkq) }}</td>
+        <td>{{ getXaTen(data.xa_nkq) }}</td>
         <td>
           <a nz-button nzType="link" (click)="showModal(data)">
             <i nz-icon nzType="edit"></i>
