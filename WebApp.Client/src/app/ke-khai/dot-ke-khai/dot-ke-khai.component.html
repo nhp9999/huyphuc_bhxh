@@ -97,8 +97,8 @@
         </td>
         <td>{{ data.ghi_chu }}</td>
         <td>
-          <nz-tag [nzColor]="data.trang_thai ? 'success' : 'error'">
-            {{ data.trang_thai ? 'Hoạt động' : 'Không hoạt động' }}
+          <nz-tag [nzColor]="getTagColor(data.trang_thai)">
+            {{ getTagText(data.trang_thai) }}
           </nz-tag>
         </td>
         <td>{{ data.nguoi_tao }}</td>
@@ -176,7 +176,13 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="6">Trạng thái</nz-form-label>
           <nz-form-control [nzSpan]="18">
-            <nz-switch formControlName="trang_thai"></nz-switch>
+            <nz-select formControlName="trang_thai" style="width: 100%">
+              <nz-option nzValue="chua_gui" nzLabel="Chưa gửi"></nz-option>
+              <nz-option nzValue="da_gui" nzLabel="Đã gửi"></nz-option>
+              <nz-option nzValue="cho_thanh_toan" nzLabel="Chờ thanh toán"></nz-option>
+              <nz-option nzValue="hoan_thanh" nzLabel="Hoàn thành"></nz-option>
+              <nz-option nzValue="tu_choi" nzLabel="Từ chối"></nz-option>
+            </nz-select>
           </nz-form-control>
         </nz-form-item>
       </form>

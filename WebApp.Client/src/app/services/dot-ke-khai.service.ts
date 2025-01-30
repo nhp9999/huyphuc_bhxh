@@ -11,7 +11,7 @@ export interface DotKeKhai {
   nam: number;
   dich_vu: string;
   ghi_chu: string;
-  trang_thai: boolean;
+  trang_thai: string;
   nguoi_tao: string;
   ngay_tao?: Date;
   checked?: boolean;

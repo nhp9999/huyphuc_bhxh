@@ -62,7 +62,7 @@ namespace WebApp.API.Models
         /// <summary>
         /// Trạng thái đợt kê khai
         /// </summary>
-        public bool trang_thai { get; set; } = true;
+        public string trang_thai { get; set; } = "chua_gui";
 
         /// <summary>
         /// Ngày tạo đợt kê khai

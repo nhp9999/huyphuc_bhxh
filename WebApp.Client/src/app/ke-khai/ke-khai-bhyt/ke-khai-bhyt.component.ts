@@ -579,7 +579,7 @@ export class KeKhaiBHYTComponent implements OnInit {
             trang_thai: this.dotKeKhai!.trang_thai,
             nguoi_tao: this.currentUser.username,
             ghi_chu: this.dotKeKhai!.ghi_chu || ''
-          } as DotKeKhai,
+          },
           thongTinThe: thongTinTheData,
           nguoi_thu: formValue.nguoi_thu,
           so_thang_dong: formValue.so_thang_dong,

@@ -12,7 +12,6 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
-import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { RouterModule, Router } from '@angular/router';
@@ -44,7 +43,6 @@ import { NzIconService } from 'ng-zorro-antd/icon';
     NzFormModule,
     NzInputModule,
     NzDatePickerModule,
-    NzSwitchModule,
     NzInputNumberModule,
     DatePipe,
     NzSelectModule,
@@ -97,7 +95,7 @@ export class DotKeKhaiComponent implements OnInit {
       nam: [currentDate.getFullYear(), [Validators.required, Validators.min(2000)]],
       dich_vu: ['', [Validators.required]],
       ghi_chu: [''],
-      trang_thai: [true],
+      trang_thai: ['chua_gui'],
       nguoi_tao: [this.currentUser.username || '', [Validators.required]]
     });
 
@@ -207,7 +205,7 @@ export class DotKeKhaiComponent implements OnInit {
         nam: currentYear,
         dich_vu: '',
         ghi_chu: '',
-        trang_thai: true,
+        trang_thai: 'chua_gui',
         nguoi_tao: this.currentUser.username || ''
       });
       this.updateTenDot();
@@ -226,7 +224,7 @@ export class DotKeKhaiComponent implements OnInit {
       thang: currentDate.getMonth() + 1,
       nam: currentYear,
       dich_vu: '',
-      trang_thai: true,
+      trang_thai: 'chua_gui',
       nguoi_tao: this.currentUser.username || ''
     });
     this.updateTenDot();
@@ -244,7 +242,7 @@ export class DotKeKhaiComponent implements OnInit {
         nam: Number(formValue.nam),
         dich_vu: formValue.dich_vu,
         ghi_chu: formValue.ghi_chu || '',
-        trang_thai: Boolean(formValue.trang_thai),
+        trang_thai: formValue.trang_thai,
         nguoi_tao: this.currentUser.username || ''
       };
 
@@ -394,5 +392,27 @@ export class DotKeKhaiComponent implements OnInit {
     if (data.dich_vu === 'BHYT') {
       this.router.navigate(['/dot-ke-khai', data.id, 'ke-khai-bhyt']);
     }
+  }
+
+  getTagColor(trangThai: string): string {
+    const colors: Record<string, string> = {
+      'chua_gui': 'default',
+      'da_gui': 'processing',
+      'cho_thanh_toan': 'warning',
+      'hoan_thanh': 'success',
+      'tu_choi': 'error'
+    };
+    return colors[trangThai] || 'default';
+  }
+
+  getTagText(trangThai: string): string {
+    const texts: Record<string, string> = {
+      'chua_gui': 'Chưa gửi',
+      'da_gui': 'Đã gửi',
+      'cho_thanh_toan': 'Chờ thanh toán',
+      'hoan_thanh': 'Hoàn thành',
+      'tu_choi': 'Từ chối'
+    };
+    return texts[trangThai] || trangThai;
   }
 } 

@@ -39,13 +39,13 @@ export interface ThongTinThe {
 
 export interface DotKeKhai {
   id?: number;
-  nam: number;
-  thang: number;
-  so_dot: number;
   ten_dot: string;
-  ghi_chu: string;
+  so_dot: number;
+  thang: number;
+  nam: number;
   dich_vu: string;
-  trang_thai: boolean;
+  ghi_chu: string;
+  trang_thai: string;
   nguoi_tao: string;
   ngay_tao?: Date;
 }
