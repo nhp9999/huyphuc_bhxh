@@ -24,7 +24,8 @@ namespace WebApp.API.Models
         public DateTime ngay_sinh { get; set; }
 
         [Required]
-        public bool gioi_tinh { get; set; }
+        [StringLength(3)]
+        public string gioi_tinh { get; set; }
 
         [StringLength(15)]
         public string so_dien_thoai { get; set; }

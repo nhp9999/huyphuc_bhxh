@@ -88,8 +88,8 @@
             <nz-form-label [nzSpan]="24" nzRequired>Giới tính</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn giới tính">
               <nz-select formControlName="gioi_tinh" nzPlaceHolder="Chọn giới tính">
-                <nz-option [nzValue]="true" nzLabel="Nam"></nz-option>
-                <nz-option [nzValue]="false" nzLabel="Nữ"></nz-option>
+                <nz-option nzValue="Nam" nzLabel="Nam"></nz-option>
+                <nz-option nzValue="Nữ" nzLabel="Nữ"></nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -191,7 +191,8 @@
           </nz-form-item>
         </div>
 
-        <div nz-col [nzSpan]="4">
+        <!-- Ẩn ô ngày biên lai -->
+        <div nz-col [nzSpan]="4" style="display: none;">
           <nz-form-item>
             <nz-form-label [nzSpan]="24">Ngày biên lai</nz-form-label>
             <nz-form-control [nzSpan]="24">
@@ -366,13 +367,13 @@
         <td>{{ data.thongTinThe?.cccd }}</td>
         <td>{{ data.thongTinThe?.ho_ten }}</td>
         <td>{{ data.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
-        <td>{{ data.thongTinThe?.gioi_tinh ? 'Nam' : 'Nữ' }}</td>
+        <td>{{ data.thongTinThe?.gioi_tinh }}</td>
         <td>{{ data.thongTinThe?.so_dien_thoai }}</td>
         <td>{{ data.nguoi_thu }}</td>
         <td>{{ data.so_thang_dong }}</td>
-        <td>{{ getTinhTen(data.tinh_nkq) }}</td>
-        <td>{{ getHuyenTen(data.huyen_nkq) }}</td>
-        <td>{{ getXaTen(data.xa_nkq) }}</td>
+        <td>{{ data.tinh_nkq }}</td>
+        <td>{{ data.huyen_nkq }}</td>
+        <td>{{ data.xa_nkq }}</td>
         <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
         <td>{{ data.benh_vien_kcb }}</td>
         <td>

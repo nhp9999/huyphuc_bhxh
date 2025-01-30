@@ -53,7 +53,6 @@ namespace WebApp.API.Controllers
                         xa_nkq = k.xa_nkq,
                         dia_chi_nkq = k.dia_chi_nkq,
                         benh_vien_kcb = k.benh_vien_kcb,
-                        ma_benh_vien = k.ma_benh_vien,
                         nguoi_tao = k.nguoi_tao,
                         ngay_tao = k.ngay_tao,
                         ngay_bien_lai = k.ngay_bien_lai,

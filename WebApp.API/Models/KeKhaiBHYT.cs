@@ -112,13 +112,6 @@ namespace WebApp.API.Models
         [StringLength(200)]
         public string benh_vien_kcb { get; set; }
 
-        /// <summary>  
-        /// Tên bệnh viện khám chữa bệnh
-        /// </summary>
-        [Required]
-        [StringLength(200)] 
-        public string ten_benh_vien_kcb { get; set; }
-
         /// <summary>
         /// Người tạo
         /// </summary>
