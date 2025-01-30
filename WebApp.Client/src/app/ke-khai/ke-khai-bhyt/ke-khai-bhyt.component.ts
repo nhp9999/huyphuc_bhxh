@@ -213,24 +213,14 @@ export class KeKhaiBHYTComponent implements OnInit {
 
     // Thêm subscription cho benh_vien_kcb
     this.form.get('benh_vien_kcb')?.valueChanges.subscribe(value => {
-      console.log('benh_vien_kcb changed:', value);
       if (value) {
-        // Tìm bệnh viện trong danh sách
         const benhVien = this.danhMucCSKCBs.find(bv => bv.value === value);
         if (benhVien) {
-          console.log('Found hospital:', benhVien);
-          // Cập nhật mã bệnh viện
           this.form.patchValue({
+            benh_vien_kcb: benhVien.ten,
             ma_benh_vien: benhVien.value
           }, { emitEvent: false });
-        } else {
-          console.log('Hospital not found for value:', value);
         }
-      } else {
-        // Reset mã bệnh viện khi không chọn bệnh viện
-        this.form.patchValue({
-          ma_benh_vien: ''
-        }, { emitEvent: false });
       }
     });
 
@@ -270,6 +260,7 @@ export class KeKhaiBHYTComponent implements OnInit {
       ma_dan_toc: [''],
       quoc_tich: [''],
       ma_benh_vien: [''],
+      ngay_bien_lai: [new Date()],
     });
   }
 
@@ -428,6 +419,11 @@ export class KeKhaiBHYTComponent implements OnInit {
 
       // Log để kiểm tra
       console.log('Form values after patch:', this.form.value);
+    } else {
+      // Khi tạo mới, đặt ngày biên lai mặc định là ngày hôm nay
+      this.form.patchValue({
+        ngay_bien_lai: new Date()
+      });
     }
   }
 
@@ -478,12 +474,9 @@ export class KeKhaiBHYTComponent implements OnInit {
           ma_tinh_nkq: formValue.tinh_nkq || '',
           ma_huyen_nkq: formValue.huyen_nkq || '',
           ma_xa_nkq: formValue.xa_nkq || '',
-          dia_chi_nkq: formValue.dia_chi_nkq || '',
-          benh_vien_kcb: formValue.benh_vien_kcb || '',
+          dia_chi_nkq: formValue.dia_chi_nkq,
+          benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
           ma_benh_vien: formValue.ma_benh_vien || '',
-          so_the_bhyt: formValue.so_the_bhyt || '',
-          ma_dan_toc: formValue.ma_dan_toc || '',
-          quoc_tich: formValue.quoc_tich || '',
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           noiNhanHoSo: {
@@ -511,10 +504,11 @@ export class KeKhaiBHYTComponent implements OnInit {
           huyen_nkq: formValue.huyen_nkq,
           xa_nkq: formValue.xa_nkq,
           dia_chi_nkq: formValue.dia_chi_nkq,
-          benh_vien_kcb: formValue.benh_vien_kcb,
+          benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
           ma_benh_vien: formValue.ma_benh_vien || '',
           nguoi_tao: this.currentUser.username,
-          ngay_tao: new Date()
+          ngay_tao: new Date(),
+          ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
         };
 
         // Cập nhật cả hai đối tượng
@@ -597,10 +591,11 @@ export class KeKhaiBHYTComponent implements OnInit {
           huyen_nkq: formValue.huyen_nkq,
           xa_nkq: formValue.xa_nkq,
           dia_chi_nkq: formValue.dia_chi_nkq,
-          benh_vien_kcb: formValue.benh_vien_kcb,
+          benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
           ma_benh_vien: formValue.ma_benh_vien || '',
           nguoi_tao: this.currentUser.username,
-          ngay_tao: new Date()
+          ngay_tao: new Date(),
+          ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
         };
 
         // Tạo mới KeKhaiBHYT
@@ -768,7 +763,7 @@ export class KeKhaiBHYTComponent implements OnInit {
               // Tìm trong danh sách bệnh viện có value trùng với maBenhVien
               const benhVien = this.danhMucCSKCBs.find(bv => bv.value === data.maBenhVien);
               if (benhVien) {
-                benhVienKCB = benhVien.value;
+                benhVienKCB = benhVien.ten;
                 console.log('Tìm thấy bệnh viện KCB:', benhVien);
               } else {
                 console.log('Không tìm thấy bệnh viện với mã:', data.maBenhVien);
@@ -834,7 +829,8 @@ export class KeKhaiBHYTComponent implements OnInit {
               han_the_cu: denNgayTheCu,
               ma_dan_toc: data.danToc || '',
               quoc_tich: data.quocTich || '',
-              so_the_bhyt: data.soTheBHYT || ''
+              so_the_bhyt: data.soTheBHYT || '',
+              ngay_bien_lai: data.ngayBienLai ? new Date(data.ngayBienLai) : new Date(),
             });
 
             // Log để kiểm tra
@@ -897,7 +893,7 @@ export class KeKhaiBHYTComponent implements OnInit {
   // Thêm phương thức để lấy tên bệnh viện từ mã
   getBenhVienTen(value: string): string {
     const benhVien = this.danhMucCSKCBs.find(bv => bv.value === value);
-    return benhVien ? benhVien.ten : '';
+    return benhVien ? benhVien.ten : value;
   }
 
   // Thêm phương thức xử lý khi tìm kiếm bằng mã số BHXH

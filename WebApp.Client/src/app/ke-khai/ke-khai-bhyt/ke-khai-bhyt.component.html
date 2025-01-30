@@ -191,6 +191,21 @@
           </nz-form-item>
         </div>
 
+        <div nz-col [nzSpan]="4">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Ngày biên lai</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <nz-date-picker 
+                formControlName="ngay_bien_lai" 
+                nzFormat="dd/MM/yyyy"
+                [nzPlaceHolder]="'Chọn ngày'"
+                [nzPopupStyle]="{ 'font-family': 'Arial' }"
+                nzAllowClear>
+              </nz-date-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
         <!-- Hàng 3 -->
         <div nz-col [nzSpan]="4">
           <nz-form-item>
@@ -323,7 +338,6 @@
             (ngModelChange)="onAllChecked($event)">
           </label>
         </th>
-        <th style="width: 60px;">STT</th>
         <th>Mã số BHXH</th>
         <th>CCCD</th>
         <th>Họ tên</th>
@@ -335,6 +349,8 @@
         <th>Tỉnh NKQ</th>
         <th>Huyện NKQ</th>
         <th>Xã NKQ</th>
+        <th>Ngày biên lai</th>
+        <th>Bệnh viện KCB</th>
         <th style="width: 100px;">Thao tác</th>
       </tr>
     </thead>
@@ -346,7 +362,6 @@
             (ngModelChange)="onItemChecked(data.id!, $event)">
           </label>
         </td>
-        <td>{{ i + 1 }}</td>
         <td>{{ data.thongTinThe?.ma_so_bhxh }}</td>
         <td>{{ data.thongTinThe?.cccd }}</td>
         <td>{{ data.thongTinThe?.ho_ten }}</td>
@@ -358,6 +373,8 @@
         <td>{{ getTinhTen(data.tinh_nkq) }}</td>
         <td>{{ getHuyenTen(data.huyen_nkq) }}</td>
         <td>{{ getXaTen(data.xa_nkq) }}</td>
+        <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
+        <td>{{ data.benh_vien_kcb }}</td>
         <td>
           <a nz-button nzType="link" (click)="showModal(data)">
             <i nz-icon nzType="edit"></i>

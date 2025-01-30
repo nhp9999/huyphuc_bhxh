@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { DotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -16,6 +16,17 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { RouterModule, Router } from '@angular/router';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { 
+  SaveOutline,
+  PlusOutline,
+  CloseOutline,
+  EditOutline,
+  DeleteOutline,
+  FormOutline,
+  ReloadOutline 
+} from '@ant-design/icons-angular/icons';
+import { NzIconService } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -36,8 +47,10 @@ import { RouterModule, Router } from '@angular/router';
     NzSwitchModule,
     NzInputNumberModule,
     DatePipe,
-    NzSelectModule
+    NzSelectModule,
+    NzCheckboxModule
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './dot-ke-khai.component.html',
   styleUrls: ['./dot-ke-khai.component.scss']
 })
@@ -54,14 +67,27 @@ export class DotKeKhaiComponent implements OnInit {
   filterDichVu = ''; // empty means all
   namList: number[] = [];
   originalDotKeKhais: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
+  isAllChecked = false;
 
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
     private message: NzMessageService,
     private modal: NzModalService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private iconService: NzIconService
   ) {
+    // Đăng ký các icons
+    this.iconService.addIcon(
+      SaveOutline,
+      PlusOutline,
+      CloseOutline,
+      EditOutline,
+      DeleteOutline,
+      FormOutline,
+      ReloadOutline
+    );
+
     const currentDate = new Date();
     this.form = this.fb.group({
       id: [null],
@@ -106,8 +132,13 @@ export class DotKeKhaiComponent implements OnInit {
     this.loading = true;
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
-        // Lưu dữ liệu gốc
-        this.originalDotKeKhais = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
+        // Lưu dữ liệu gốc với thuộc tính checked
+        this.originalDotKeKhais = data
+          .filter(dot => dot.nguoi_tao === this.currentUser.username)
+          .map(item => ({
+            ...item,
+            checked: this.selectedIds.includes(item.id!)
+          }));
         // Áp dụng filter
         this.applyFilter();
         this.loading = false;
@@ -138,7 +169,10 @@ export class DotKeKhaiComponent implements OnInit {
       filteredData = filteredData.filter(dot => dot.dich_vu === this.filterDichVu);
     }
 
-    this.dotKeKhais = filteredData;
+    this.dotKeKhais = filteredData.map(item => ({
+      ...item,
+      checked: this.selectedIds.includes(item.id!)
+    }));
   }
 
   getNextSoDot(nam: number): number {
@@ -209,7 +243,7 @@ export class DotKeKhaiComponent implements OnInit {
         thang: Number(formValue.thang),
         nam: Number(formValue.nam),
         dich_vu: formValue.dich_vu,
-        ghi_chu: (formValue.ghi_chu || '').trim(),
+        ghi_chu: formValue.ghi_chu || '',
         trang_thai: Boolean(formValue.trang_thai),
         nguoi_tao: this.currentUser.username || ''
       };
@@ -301,7 +335,18 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   onAllChecked(checked: boolean): void {
-    this.selectedIds = checked ? this.dotKeKhais.map(item => item.id!).filter(id => id) : [];
+    this.isAllChecked = checked;
+    this.dotKeKhais.forEach(data => {
+      data.checked = checked;
+      if (checked) {
+        if (!this.selectedIds.includes(data.id!)) {
+          this.selectedIds.push(data.id!);
+        }
+      }
+    });
+    if (!checked) {
+      this.selectedIds = [];
+    }
   }
 
   onItemChecked(id: number, checked: boolean): void {
@@ -310,6 +355,9 @@ export class DotKeKhaiComponent implements OnInit {
     } else {
       this.selectedIds = this.selectedIds.filter(item => item !== id);
     }
+    
+    // Cập nhật trạng thái isAllChecked
+    this.isAllChecked = this.dotKeKhais.every(data => this.selectedIds.includes(data.id!));
   }
 
   deleteSelected(): void {
@@ -340,5 +388,11 @@ export class DotKeKhaiComponent implements OnInit {
           });
       }
     });
+  }
+
+  onRowClick(data: DotKeKhai): void {
+    if (data.dich_vu === 'BHYT') {
+      this.router.navigate(['/dot-ke-khai', data.id, 'ke-khai-bhyt']);
+    }
   }
 } 

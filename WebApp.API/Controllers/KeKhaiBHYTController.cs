@@ -33,20 +33,36 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var dotKeKhai = await _context.DotKeKhais.FindAsync(dotKeKhaiId);
-                if (dotKeKhai == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy đợt kê khai" });
-                }
-
-                var result = await _context.KeKhaiBHYTs
-                    .Include(k => k.ThongTinThe)
+                var keKhaiBHYTs = await _context.KeKhaiBHYTs
                     .Include(k => k.DotKeKhai)
+                    .Include(k => k.ThongTinThe)
                     .Where(k => k.dot_ke_khai_id == dotKeKhaiId)
-                    .OrderByDescending(x => x.ngay_tao)
+                    .Select(k => new KeKhaiBHYT
+                    {
+                        id = k.id,
+                        dot_ke_khai_id = k.dot_ke_khai_id,
+                        thong_tin_the_id = k.thong_tin_the_id,
+                        nguoi_thu = k.nguoi_thu,
+                        so_thang_dong = k.so_thang_dong,
+                        phuong_an_dong = k.phuong_an_dong,
+                        han_the_cu = k.han_the_cu,
+                        han_the_moi_tu = k.han_the_moi_tu,
+                        han_the_moi_den = k.han_the_moi_den,
+                        tinh_nkq = k.tinh_nkq,
+                        huyen_nkq = k.huyen_nkq,
+                        xa_nkq = k.xa_nkq,
+                        dia_chi_nkq = k.dia_chi_nkq,
+                        benh_vien_kcb = k.benh_vien_kcb,
+                        ma_benh_vien = k.ma_benh_vien,
+                        nguoi_tao = k.nguoi_tao,
+                        ngay_tao = k.ngay_tao,
+                        ngay_bien_lai = k.ngay_bien_lai,
+                        DotKeKhai = k.DotKeKhai,
+                        ThongTinThe = k.ThongTinThe
+                    })
                     .ToListAsync();
 
-                return Ok(result);
+                return Ok(keKhaiBHYTs);
             }
             catch (Exception ex)
             {

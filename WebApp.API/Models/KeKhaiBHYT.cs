@@ -106,11 +106,18 @@ namespace WebApp.API.Models
         public string dia_chi_nkq { get; set; }
 
         /// <summary>
-        /// Bệnh viện khám chữa bệnh
+        /// Bệnh viện khám chữa bệnh (mã)
         /// </summary>
         [Required]
         [StringLength(200)]
         public string benh_vien_kcb { get; set; }
+
+        /// <summary>  
+        /// Tên bệnh viện khám chữa bệnh
+        /// </summary>
+        [Required]
+        [StringLength(200)] 
+        public string ten_benh_vien_kcb { get; set; }
 
         /// <summary>
         /// Người tạo
@@ -123,5 +130,10 @@ namespace WebApp.API.Models
         /// Ngày tạo
         /// </summary>
         public DateTime ngay_tao { get; set; }
+
+        /// <summary>
+        /// Ngày biên lai
+        /// </summary>
+        public DateTime? ngay_bien_lai { get; set; }
     }
 } 

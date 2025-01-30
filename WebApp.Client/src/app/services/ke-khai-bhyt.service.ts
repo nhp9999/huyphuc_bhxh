@@ -69,7 +69,8 @@ export interface KeKhaiBHYT {
   benh_vien_kcb: string;
   ma_benh_vien: string;
   nguoi_tao: string;
-  ngay_tao?: Date;
+  ngay_tao: Date;
+  ngay_bien_lai?: Date | null;
 }
 
 export interface ThongTinBHYTResponse {
@@ -96,6 +97,7 @@ export interface ThongTinBHYTResponse {
     soTheBHYT: string;
     tuNgayTheCu: string;
     denNgayTheCu: string;
+    ngayBienLai?: string;
     typeId: string | null;
     phuongAn: string;
     mucLuongNsTw: number;
@@ -120,12 +122,42 @@ export interface ThongTinBHYTResponse {
 
 export interface DanhMucCSKCB {
   id: number;
-  value: string;
+  value: string;  // Mã bệnh viện
   text: string;
-  ten: string;
+  ten: string;    // Tên bệnh viện
   ma: string | null;
   created_at: Date;
   ma_tinh_kcb: string;
+}
+
+export interface BHYTSearchResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    maSoBHXH: string;
+    hoTen: string;
+    soDienThoai: string;
+    ccns: string;
+    ngaySinh: string;
+    gioiTinh: number;
+    quocTich: string;
+    danToc: string;
+    cmnd: string;
+    maTinhKS: string;
+    maHuyenKS: string;
+    maXaKS: string;
+    maTinhNkq: string;
+    maHuyenNkq: string;
+    maXaNkq: string;
+    noiNhanHoSo: string | NoiNhanHoSo;
+    maHoGiaDinh: string;
+    maBenhVien: string;
+    soTheBHYT: string;
+    tuNgayTheCu: string;
+    denNgayTheCu: string;
+    ngayBienLai?: string;
+    isThamGiaBb: number;
+  };
 }
 
 @Injectable({
