@@ -23,9 +23,16 @@ import {
   EditOutline,
   DeleteOutline,
   FormOutline,
-  ReloadOutline 
+  FileDoneOutline,
+  ReloadOutline,
+  ArrowUpOutline,
+  ArrowDownOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
+import { NzBadgeModule } from 'ng-zorro-antd/badge';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { NzCardModule } from 'ng-zorro-antd/card';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -46,7 +53,11 @@ import { NzIconService } from 'ng-zorro-antd/icon';
     NzInputNumberModule,
     DatePipe,
     NzSelectModule,
-    NzCheckboxModule
+    NzCheckboxModule,
+    NzTabsModule,
+    NzBadgeModule,
+    NzStatisticModule,
+    NzCardModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './dot-ke-khai.component.html',
@@ -60,12 +71,20 @@ export class DotKeKhaiComponent implements OnInit {
   form: FormGroup;
   currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   selectedIds: number[] = [];
-  filterThang = 0; // 0 means all
-  filterNam = 0; // 0 means all
-  filterDichVu = ''; // empty means all
-  namList: number[] = [];
   originalDotKeKhais: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
   isAllChecked = false;
+  selectedTabIndex = 0;
+  filteredDotKeKhais: DotKeKhai[] = [];
+
+  // Map trạng thái theo tab index
+  private readonly trangThaiMap = [
+    '', // Tất cả
+    'chua_gui',
+    'da_gui',
+    'cho_thanh_toan',
+    'hoan_thanh',
+    'tu_choi'
+  ];
 
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
@@ -83,7 +102,10 @@ export class DotKeKhaiComponent implements OnInit {
       EditOutline,
       DeleteOutline,
       FormOutline,
-      ReloadOutline
+      FileDoneOutline,
+      ReloadOutline,
+      ArrowUpOutline,
+      ArrowDownOutline
     );
 
     const currentDate = new Date();
@@ -118,70 +140,47 @@ export class DotKeKhaiComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
     this.updateTenDot();
-    this.initNamList();
-  }
-
-  initNamList(): void {
-    const currentYear = new Date().getFullYear();
-    this.namList = Array.from({length: 5}, (_, i) => currentYear - i);
   }
 
   loadData(): void {
     this.loading = true;
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
-        // Lưu dữ liệu gốc với thuộc tính checked
-        this.originalDotKeKhais = data
-          .filter(dot => dot.nguoi_tao === this.currentUser.username)
-          .map(item => ({
-            ...item,
-            checked: this.selectedIds.includes(item.id!)
-          }));
-        // Áp dụng filter
-        this.applyFilter();
+        this.dotKeKhais = data;
+        this.filterData();
         this.loading = false;
       },
-      error: (error) => {
+      error: () => {
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
         this.loading = false;
       }
     });
   }
 
-  onFilterChange(): void {
-    this.applyFilter();
+  onTabChange(index: number): void {
+    this.selectedTabIndex = index;
+    this.filterData();
   }
 
-  applyFilter(): void {
-    let filteredData = [...this.originalDotKeKhais];
+  filterData(): void {
+    let filtered = [...this.dotKeKhais];
 
-    if (this.filterThang > 0) {
-      filteredData = filteredData.filter(dot => dot.thang === this.filterThang);
+    // Lọc theo trạng thái (tab)
+    const selectedTrangThai = this.trangThaiMap[this.selectedTabIndex];
+    if (selectedTrangThai) {
+      filtered = filtered.filter(item => item.trang_thai === selectedTrangThai);
     }
 
-    if (this.filterNam > 0) {
-      filteredData = filteredData.filter(dot => dot.nam === this.filterNam);
-    }
-
-    if (this.filterDichVu) {
-      filteredData = filteredData.filter(dot => dot.dich_vu === this.filterDichVu);
-    }
-
-    this.dotKeKhais = filteredData.map(item => ({
-      ...item,
-      checked: this.selectedIds.includes(item.id!)
-    }));
+    this.filteredDotKeKhais = filtered;
   }
 
   getNextSoDot(nam: number): number {
-    // Lọc các đợt kê khai trong năm hiện tại của người dùng hiện tại
-    const dotKeKhaisInYear = this.dotKeKhais.filter(dot => 
+    const dotKeKhaisInYear = this.filteredDotKeKhais.filter(dot => 
       dot.nam === nam && dot.nguoi_tao === this.currentUser.username
     );
     if (dotKeKhaisInYear.length === 0) {
-      return 1; // Nếu không có đợt nào trong năm, trả về 1
+      return 1;
     }
-    // Tìm số đợt lớn nhất và cộng thêm 1
     const maxSoDot = Math.max(...dotKeKhaisInYear.map(dot => dot.so_dot));
     return maxSoDot + 1;
   }
@@ -334,7 +333,7 @@ export class DotKeKhaiComponent implements OnInit {
 
   onAllChecked(checked: boolean): void {
     this.isAllChecked = checked;
-    this.dotKeKhais.forEach(data => {
+    this.filteredDotKeKhais.forEach(data => {
       data.checked = checked;
       if (checked) {
         if (!this.selectedIds.includes(data.id!)) {
@@ -414,5 +413,13 @@ export class DotKeKhaiComponent implements OnInit {
       'tu_choi': 'Từ chối'
     };
     return texts[trangThai] || trangThai;
+  }
+
+  getCounts(trangThai: string): number {
+    return this.dotKeKhais.filter(item => item.trang_thai === trangThai).length;
+  }
+
+  getTotalDotKeKhai(): number {
+    return this.dotKeKhais.length;
   }
 } 
