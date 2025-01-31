@@ -113,6 +113,7 @@
           <th>Số đợt</th>
           <th>Tháng/Năm</th>
           <th>Dịch vụ</th>
+          <th>Đơn vị</th>
           <th>Trạng thái</th>
           <th>Ngày tạo</th>
           <th>Ghi chú</th>
@@ -140,6 +141,7 @@
                  data.dich_vu === 'BHYT' ? 'BHYT' : '' }}
             </nz-tag>
           </td>
+          <td>{{ getDonViName(data.don_vi_id) }}</td>
           <td>
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">
               {{ getTagText(data.trang_thai) }}
@@ -204,6 +206,23 @@
             <nz-select formControlName="dich_vu" nzPlaceHolder="Chọn dịch vụ">
               <nz-option nzValue="BHXH TN" nzLabel="BHXH TN"></nz-option>
               <nz-option nzValue="BHYT" nzLabel="BHYT"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6" nzRequired>Đơn vị</nz-form-label>
+          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn đơn vị">
+            <nz-select 
+              formControlName="don_vi_id" 
+              nzPlaceHolder="Chọn đơn vị"
+              nzShowSearch
+              [nzLoading]="loading">
+              <nz-option
+                *ngFor="let donVi of donVis"
+                [nzValue]="donVi.id"
+                [nzLabel]="donVi.tenDonVi">
+              </nz-option>
             </nz-select>
           </nz-form-control>
         </nz-form-item>

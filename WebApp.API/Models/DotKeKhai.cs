@@ -86,5 +86,10 @@ namespace WebApp.API.Models
                 ten_dot = $"Đợt {so_dot} Tháng {thang} năm {nam}";
             }
         }
+
+        [Column("don_vi_id")]
+        [ForeignKey("DonVi")]
+        public int DonViId { get; set; }
+        public virtual DonVi DonVi { get; set; }
     }
 } 

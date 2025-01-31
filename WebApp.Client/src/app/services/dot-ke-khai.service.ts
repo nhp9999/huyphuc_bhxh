@@ -15,6 +15,7 @@ export interface DotKeKhai {
   nguoi_tao: string;
   ngay_tao?: Date;
   checked?: boolean;
+  don_vi_id: number;
 }
 
 @Injectable({

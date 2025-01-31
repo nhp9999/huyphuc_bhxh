@@ -33,6 +33,7 @@ import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { DonViService } from '../../services/don-vi.service';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -75,6 +76,7 @@ export class DotKeKhaiComponent implements OnInit {
   isAllChecked = false;
   selectedTabIndex = 0;
   filteredDotKeKhais: DotKeKhai[] = [];
+  donVis: any[] = [];
 
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
@@ -92,7 +94,8 @@ export class DotKeKhaiComponent implements OnInit {
     private modal: NzModalService,
     private fb: FormBuilder,
     private router: Router,
-    private iconService: NzIconService
+    private iconService: NzIconService,
+    private donViService: DonViService
   ) {
     // Đăng ký các icons
     this.iconService.addIcon(
@@ -118,7 +121,8 @@ export class DotKeKhaiComponent implements OnInit {
       dich_vu: ['', [Validators.required]],
       ghi_chu: [''],
       trang_thai: ['chua_gui'],
-      nguoi_tao: [this.currentUser.username || '', [Validators.required]]
+      nguoi_tao: [this.currentUser.username || '', [Validators.required]],
+      don_vi_id: [null, [Validators.required]],
     });
 
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
@@ -139,6 +143,7 @@ export class DotKeKhaiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    this.loadDonVis();
     this.updateTenDot();
   }
 
@@ -153,6 +158,17 @@ export class DotKeKhaiComponent implements OnInit {
       error: () => {
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
         this.loading = false;
+      }
+    });
+  }
+
+  loadDonVis(): void {
+    this.donViService.getDonVis().subscribe({
+      next: (data) => {
+        this.donVis = data;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
       }
     });
   }
@@ -205,7 +221,8 @@ export class DotKeKhaiComponent implements OnInit {
         dich_vu: '',
         ghi_chu: '',
         trang_thai: 'chua_gui',
-        nguoi_tao: this.currentUser.username || ''
+        nguoi_tao: this.currentUser.username || '',
+        don_vi_id: null,
       });
       this.updateTenDot();
     }
@@ -224,7 +241,8 @@ export class DotKeKhaiComponent implements OnInit {
       nam: currentYear,
       dich_vu: '',
       trang_thai: 'chua_gui',
-      nguoi_tao: this.currentUser.username || ''
+      nguoi_tao: this.currentUser.username || '',
+      don_vi_id: null,
     });
     this.updateTenDot();
   }
@@ -242,7 +260,8 @@ export class DotKeKhaiComponent implements OnInit {
         dich_vu: formValue.dich_vu,
         ghi_chu: formValue.ghi_chu || '',
         trang_thai: formValue.trang_thai,
-        nguoi_tao: this.currentUser.username || ''
+        nguoi_tao: this.currentUser.username || '',
+        don_vi_id: formValue.don_vi_id,
       };
 
       if (this.isEdit && formValue.id) {
@@ -421,5 +440,10 @@ export class DotKeKhaiComponent implements OnInit {
 
   getTotalDotKeKhai(): number {
     return this.dotKeKhais.length;
+  }
+
+  getDonViName(donViId: number): string {
+    const donVi = this.donVis.find(d => d.id === donViId);
+    return donVi ? donVi.tenDonVi : '';
   }
 } 

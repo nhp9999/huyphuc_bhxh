@@ -34,6 +34,7 @@ namespace WebApp.API.Controllers
             try
             {
                 var result = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
                     .OrderByDescending(x => x.ngay_tao)
                     .ToListAsync();
                     

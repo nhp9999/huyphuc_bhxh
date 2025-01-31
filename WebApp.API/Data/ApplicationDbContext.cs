@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebApp.API.Data
 {
@@ -19,6 +20,7 @@ namespace WebApp.API.Data
         public DbSet<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
         public DbSet<ThongTinThe> ThongTinThes { get; set; }
         public DbSet<DanhMucCSKCB> DanhMucCSKCBs { get; set; }
+        public DbSet<DonVi> DonVis { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -103,6 +105,12 @@ namespace WebApp.API.Data
                 entity.Property(e => e.trang_thai).HasDefaultValue(true);
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+
+                entity.HasOne(d => d.DonVi)
+                    .WithMany()
+                    .HasForeignKey(d => d.DonViId)
+                    .HasConstraintName("FK_DotKeKhai_DonVi")
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<KeKhaiBHYT>(entity =>
@@ -138,6 +146,22 @@ namespace WebApp.API.Data
             {
                 entity.ToTable("dm_cskcb");
                 entity.HasKey(e => e.id);
+            });
+
+            modelBuilder.Entity<DonVi>(entity =>
+            {
+                entity.ToTable("don_vi");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.MaCoQuanBHXH).HasColumnName("ma_co_quan_bhxh").HasMaxLength(10);
+                entity.Property(e => e.MaSoBHXH).HasColumnName("ma_so_bhxh").HasMaxLength(10);
+                entity.Property(e => e.TenDonVi).HasColumnName("ten_don_vi").HasMaxLength(255);
+                entity.Property(e => e.IsBHXHTN).HasColumnName("is_bhxhtn");
+                entity.Property(e => e.IsBHYT).HasColumnName("is_bhyt");
+                entity.Property(e => e.DmKhoiKcbId).HasColumnName("dm_khoi_kcb_id");
+                entity.Property(e => e.Type).HasColumnName("type");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             });
         }
     }
