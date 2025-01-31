@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { IpService } from '../services/ip.service';
 
 @Component({
   selector: 'app-login',
@@ -24,7 +25,8 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private ipService: IpService
   ) { }
 
   togglePassword(): void {
@@ -51,23 +53,47 @@ export class LoginComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.loginData.username, this.loginData.password).subscribe({
-      next: (response) => {
-        if (this.rememberMe) {
-          localStorage.setItem('remember_username', this.loginData.username);
-        }
-        this.authService.setSession(response);
-        this.isLoading = false;
-        // Chuyển hướng đến trang dashboard sau khi đăng nhập thành công
-        this.router.navigate(['/dashboard']);
+    this.ipService.getIpAddress().subscribe({
+      next: (ip) => {
+        this.authService.login(this.loginData.username, this.loginData.password, ip).subscribe({
+          next: (response) => {
+            if (this.rememberMe) {
+              localStorage.setItem('remember_username', this.loginData.username);
+            }
+            this.authService.setSession(response);
+            this.isLoading = false;
+            this.router.navigate(['/dashboard']);
+          },
+          error: (error: HttpErrorResponse) => {
+            this.isLoading = false;
+            if (error.status === 401) {
+              this.errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng';
+            } else {
+              this.errorMessage = 'Có lỗi xảy ra, vui lòng thử lại sau';
+            }
+          }
+        });
       },
-      error: (error: HttpErrorResponse) => {
-        this.isLoading = false;
-        if (error.status === 401) {
-          this.errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng';
-        } else {
-          this.errorMessage = 'Có lỗi xảy ra, vui lòng thử lại sau';
-        }
+      error: () => {
+        // Nếu không lấy được IP, vẫn tiếp tục login
+        this.authService.login(this.loginData.username, this.loginData.password).subscribe({
+          next: (response) => {
+            if (this.rememberMe) {
+              localStorage.setItem('remember_username', this.loginData.username);
+            }
+            this.authService.setSession(response);
+            this.isLoading = false;
+            this.router.navigate(['/dashboard']);
+          },
+          error: (error: HttpErrorResponse) => {
+            this.isLoading = false;
+            if (error.status === 401) {
+              this.errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng';
+            } else {
+              this.errorMessage = 'Có lỗi xảy ra, vui lòng thử lại sau';
+            }
+          }
+        });
       }
     });
   }

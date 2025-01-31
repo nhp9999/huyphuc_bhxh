@@ -1,29 +1,32 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+
+interface LoginResponse {
+  token: string;
+  user: any;
+}
+
+interface LoginRequest {
+  username: string;
+  password: string;
+  ip?: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}`;
+  constructor(private http: HttpClient) {}
 
-  constructor(private http: HttpClient) { }
-
-  login(username: string, password: string): Observable<any> {
-    // Lấy IP trước khi đăng nhập
-    return this.http.get<{ip: string}>('https://api.ipify.org/?format=json')
-      .pipe(
-        switchMap(ipResponse => {
-          // Gửi request đăng nhập kèm IP
-          return this.http.post(`${this.apiUrl}/auth/login`, { 
-            username, 
-            password,
-            ip: ipResponse.ip 
-          });
-        })
-      );
+  login(username: string, password: string, ip?: string): Observable<LoginResponse> {
+    const loginData: LoginRequest = {
+      username,
+      password,
+      ip
+    };
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, loginData);
   }
 
   logout(): void {
