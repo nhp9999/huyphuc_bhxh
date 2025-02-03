@@ -23,7 +23,7 @@ namespace WebApp.API.Models
         [StringLength(200, ErrorMessage = "Tên đợt kê khai không được vượt quá 200 ký tự")]
         [RegularExpression(@"^Đợt \d+ Tháng \d{1,2} năm \d{4}$", 
             ErrorMessage = "Tên đợt phải có định dạng: Đợt [số đợt] Tháng [tháng] năm [năm]")]
-        public string ten_dot { get; set; }
+        public string ten_dot { get; set; } = string.Empty;
 
         /// <summary>
         /// Số đợt trong năm
@@ -57,7 +57,7 @@ namespace WebApp.API.Models
         /// Ghi chú cho đợt kê khai
         /// </summary>
         [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự")]
-        public string? ghi_chu { get; set; }
+        public string? ghi_chu { get; set; } = string.Empty;
 
         /// <summary>
         /// Trạng thái đợt kê khai
@@ -73,7 +73,7 @@ namespace WebApp.API.Models
         /// Người tạo đợt kê khai
         /// </summary>
         [Required(ErrorMessage = "Người tạo không được để trống")]
-        public string nguoi_tao { get; set; }
+        public string nguoi_tao { get; set; } = string.Empty;
 
         /// <summary>
         /// Tạo tên đợt tự động theo định dạng: Đợt [số đợt] Tháng [tháng] năm [năm]
@@ -89,7 +89,17 @@ namespace WebApp.API.Models
 
         [Column("don_vi_id")]
         [ForeignKey("DonVi")]
-        public int DonViId { get; set; }
-        public virtual DonVi DonVi { get; set; }
+        [Required(ErrorMessage = "Đơn vị không được để trống")]
+        public int don_vi_id { get; set; }
+        public virtual DonVi? DonVi { get; set; }
+
+        public DotKeKhai()
+        {
+            ten_dot = string.Empty;
+            dich_vu = "BHXH TN";
+            trang_thai = "chua_gui";
+            nguoi_tao = string.Empty;
+            ghi_chu = string.Empty;
+        }
     }
 } 

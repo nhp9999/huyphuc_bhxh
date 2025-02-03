@@ -16,25 +16,42 @@ namespace WebApp.API.Controllers
             _context = context;
         }
 
-        // GET: api/don-vi
+        // GET: api/DonVi
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVis()
         {
-            return await _context.DonVis.ToListAsync();
+            try 
+            {
+                var donVis = await _context.DonVis
+                    .OrderBy(d => d.TenDonVi)
+                    .ToListAsync();
+                return Ok(donVis);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách đơn vị", error = ex.Message });
+            }
         }
 
-        // GET: api/don-vi/5
+        // GET: api/DonVi/5
         [HttpGet("{id}")]
         public async Task<ActionResult<DonVi>> GetDonVi(int id)
         {
-            var donVi = await _context.DonVis.FindAsync(id);
-
-            if (donVi == null)
+            try
             {
-                return NotFound();
-            }
+                var donVi = await _context.DonVis.FindAsync(id);
 
-            return donVi;
+                if (donVi == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đơn vị" });
+                }
+
+                return Ok(donVi);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi lấy thông tin đơn vị", error = ex.Message });
+            }
         }
     }
 } 

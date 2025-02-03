@@ -104,7 +104,7 @@
           <th>
             <label nz-checkbox
               [(ngModel)]="isAllChecked"
-              [nzIndeterminate]="selectedIds.length > 0 && selectedIds.length < filteredDotKeKhais.length"
+              [nzIndeterminate]="selectedIds.length > 0 && selectedIds.length < dotKeKhais.length"
               (ngModelChange)="onAllChecked($event)">
             </label>
           </th>
@@ -127,8 +127,8 @@
             style="cursor: pointer;">
           <td (click)="$event.stopPropagation()">
             <label nz-checkbox
-              [(ngModel)]="data.checked"
-              (ngModelChange)="onItemChecked(data.id!, $event)">
+              [ngModel]="getCheckedStatus(data)"
+              (ngModelChange)="onItemChecked($event, data)">
             </label>
           </td>
           <td>{{ i + 1 }}</td>
@@ -201,16 +201,6 @@
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Dịch vụ</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn dịch vụ">
-            <nz-select formControlName="dich_vu" nzPlaceHolder="Chọn dịch vụ">
-              <nz-option nzValue="BHXH TN" nzLabel="BHXH TN"></nz-option>
-              <nz-option nzValue="BHYT" nzLabel="BHYT"></nz-option>
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
           <nz-form-label [nzSpan]="6" nzRequired>Đơn vị</nz-form-label>
           <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn đơn vị">
             <nz-select 
@@ -221,7 +211,7 @@
               <nz-option
                 *ngFor="let donVi of donVis"
                 [nzValue]="donVi.id"
-                [nzLabel]="donVi.tenDonVi">
+                [nzLabel]="donVi.tenDonVi + (donVi.IsBHYT ? ' (BHYT)' : '')">
               </nz-option>
             </nz-select>
           </nz-form-control>

@@ -74,13 +74,35 @@ namespace WebApp.API.Controllers
             try
             {
                 // Log dữ liệu nhận được
-                _logger.LogInformation($"Received data: {JsonSerializer.Serialize(dotKeKhai)}");
+                var requestData = JsonSerializer.Serialize(dotKeKhai, new JsonSerializerOptions 
+                { 
+                    WriteIndented = true 
+                });
+                _logger.LogInformation($"Received data:\n{requestData}");
+
+                // Kiểm tra đơn vị tồn tại trước khi validate
+                var donVi = await _context.DonVis.FindAsync(dotKeKhai.don_vi_id);
+                if (donVi == null)
+                {
+                    ModelState.AddModelError("don_vi_id", "Không tìm thấy đơn vị");
+                    return BadRequest(new { errors = new[] { "Không tìm thấy đơn vị" } });
+                }
+
+                // Tự động xác định dịch vụ từ đơn vị
+                dotKeKhai.dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN";
+
+                // Gán DonVi vào dotKeKhai
+                dotKeKhai.DonVi = null; // Tránh lỗi circular reference
 
                 // Kiểm tra dữ liệu đầu vào
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning($"Invalid model state: {JsonSerializer.Serialize(ModelState)}");
-                    return BadRequest(ModelState);
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    _logger.LogWarning($"Validation errors:\n{string.Join("\n", errors)}");
+                    return BadRequest(new { errors = errors });
                 }
 
                 // Tự động tạo tên đợt
@@ -90,8 +112,12 @@ namespace WebApp.API.Controllers
                     return BadRequest(new { message = "Không thể tạo tên đợt do dữ liệu không hợp lệ" });
                 }
 
+                // Sử dụng giá trị nguoi_tao từ request
+                if (string.IsNullOrEmpty(dotKeKhai.nguoi_tao))
+                {
+                    return BadRequest(new { message = "Người tạo không được để trống" });
+                }
                 dotKeKhai.ngay_tao = DateTime.UtcNow;
-                dotKeKhai.nguoi_tao = User.Identity?.Name;
                 
                 _context.DotKeKhais.Add(dotKeKhai);
                 await _context.SaveChangesAsync();
@@ -114,6 +140,17 @@ namespace WebApp.API.Controllers
                 {
                     return BadRequest(new { message = "ID không khớp" });
                 }
+
+                // Kiểm tra đơn vị tồn tại và cập nhật dịch vụ
+                var donVi = await _context.DonVis.FindAsync(dotKeKhai.don_vi_id);
+                if (donVi == null)
+                {
+                    ModelState.AddModelError("don_vi_id", "Không tìm thấy đơn vị");
+                    return BadRequest(new { errors = new[] { "Không tìm thấy đơn vị" } });
+                }
+
+                // Tự động xác định dịch vụ từ đơn vị
+                dotKeKhai.dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN";
 
                 // Kiểm tra dữ liệu đầu vào
                 if (!ModelState.IsValid)
@@ -171,6 +208,36 @@ namespace WebApp.API.Controllers
             {
                 _logger.LogError($"Error deleting dot ke khai {id}: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi xóa đợt kê khai", error = ex.Message });
+            }
+        }
+
+        [HttpGet("next-so-dot")]
+        public async Task<ActionResult<int>> GetNextSoDot(
+            [FromQuery] int donViId, 
+            [FromQuery] int thang,
+            [FromQuery] int nam)
+        {
+            try
+            {
+                var donVi = await _context.DonVis.FindAsync(donViId);
+                if (donVi == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy đơn vị" });
+                }
+
+                var lastDotKeKhai = await _context.DotKeKhais
+                    .Where(d => d.don_vi_id == donViId 
+                        && d.thang == thang
+                        && d.nam == nam)
+                    .OrderByDescending(d => d.so_dot)
+                    .FirstOrDefaultAsync();
+
+                return Ok((lastDotKeKhai?.so_dot ?? 0) + 1);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting next so dot: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy số đợt tiếp theo" });
             }
         }
 

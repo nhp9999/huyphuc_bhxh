@@ -1,6 +1,6 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { DotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
+import { DotKeKhai, CreateDotKeKhai, UpdateDotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -34,6 +34,8 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { DonViService } from '../../services/don-vi.service';
+import { combineLatest } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -77,6 +79,7 @@ export class DotKeKhaiComponent implements OnInit {
   selectedTabIndex = 0;
   filteredDotKeKhais: DotKeKhai[] = [];
   donVis: any[] = [];
+  checkedSet = new Set<number>();
 
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
@@ -118,7 +121,6 @@ export class DotKeKhaiComponent implements OnInit {
       so_dot: [1, [Validators.required, Validators.min(1)]],
       thang: [currentDate.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
       nam: [currentDate.getFullYear(), [Validators.required, Validators.min(2000)]],
-      dich_vu: ['', [Validators.required]],
       ghi_chu: [''],
       trang_thai: ['chua_gui'],
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
@@ -145,14 +147,48 @@ export class DotKeKhaiComponent implements OnInit {
     this.loadData();
     this.loadDonVis();
     this.updateTenDot();
+    
+    // Combine các valueChanges
+    combineLatest([
+      this.form.get('don_vi_id')!.valueChanges,
+      this.form.get('thang')!.valueChanges,
+      this.form.get('nam')!.valueChanges
+    ]).pipe(
+      debounceTime(300) // Đợi 300ms sau thay đổi cuối
+    ).subscribe(() => {
+      this.updateSoDot();
+    });
+
+    // Subscribe to dotKeKhais stream
+    this.dotKeKhaiService.dotKeKhais$.subscribe(data => {
+      this.dotKeKhais = data;
+      this.filterData();
+    });
+  }
+
+  private updateSoDot(): void {
+    const donViId = this.form.get('don_vi_id')?.value;
+    const thang = this.form.get('thang')?.value;
+    const nam = this.form.get('nam')?.value;
+
+    if (donViId && thang && nam) {
+      this.dotKeKhaiService.getNextSoDot(donViId, thang, nam).subscribe({
+        next: (nextSoDot) => {
+          this.form.patchValue({ so_dot: nextSoDot }, { emitEvent: false });
+          this.updateTenDot();
+        },
+        error: (error) => {
+          console.error('Lỗi khi lấy số đợt:', error);
+          this.message.error('Lỗi khi lấy số đợt tiếp theo');
+        }
+      });
+    }
   }
 
   loadData(): void {
     this.loading = true;
     this.dotKeKhaiService.getDotKeKhais().subscribe({
-      next: (data) => {
-        this.dotKeKhais = data;
-        this.filterData();
+      next: () => {
         this.loading = false;
       },
       error: () => {
@@ -209,22 +245,16 @@ export class DotKeKhaiComponent implements OnInit {
       });
     } else {
       const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const nextSoDot = this.getNextSoDot(currentYear);
-      
-      this.form.reset({
+      this.form.patchValue({
         id: null,
         ten_dot: '',
-        so_dot: nextSoDot,
         thang: currentDate.getMonth() + 1,
-        nam: currentYear,
-        dich_vu: '',
+        nam: currentDate.getFullYear(),
         ghi_chu: '',
         trang_thai: 'chua_gui',
         nguoi_tao: this.currentUser.username || '',
-        don_vi_id: null,
+        don_vi_id: null
       });
-      this.updateTenDot();
     }
     this.isVisible = true;
   }
@@ -239,7 +269,7 @@ export class DotKeKhaiComponent implements OnInit {
       so_dot: nextSoDot,
       thang: currentDate.getMonth() + 1,
       nam: currentYear,
-      dich_vu: '',
+      ghi_chu: '',
       trang_thai: 'chua_gui',
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
@@ -251,26 +281,45 @@ export class DotKeKhaiComponent implements OnInit {
     if (this.form.valid) {
       this.loading = true;
       const formValue = this.form.getRawValue();
+      const selectedDonVi = this.donVis.find(d => d.id === formValue.don_vi_id);
+      if (!selectedDonVi) {
+        this.message.error('Không tìm thấy thông tin đơn vị');
+        this.loading = false;
+        return;
+      }
       
-      const data: DotKeKhai = {
+      const baseData: CreateDotKeKhai = {
         ten_dot: formValue.ten_dot,
         so_dot: Number(formValue.so_dot),
         thang: Number(formValue.thang),
         nam: Number(formValue.nam),
-        dich_vu: formValue.dich_vu,
+        dich_vu: selectedDonVi.is_bhyt ? 'BHYT' : 'BHXH TN',
         ghi_chu: formValue.ghi_chu || '',
-        trang_thai: formValue.trang_thai,
+        trang_thai: formValue.trang_thai || 'chua_gui',
         nguoi_tao: this.currentUser.username || '',
-        don_vi_id: formValue.don_vi_id,
+        don_vi_id: Number(formValue.don_vi_id),
       };
 
-      if (this.isEdit && formValue.id) {
-        data.id = Number(formValue.id);
-        this.dotKeKhaiService.updateDotKeKhai(data.id, data).subscribe({
+      // Log dữ liệu trước khi gửi
+      console.log('Data to be sent:', baseData);
+
+      if (!baseData.don_vi_id || !baseData.nguoi_tao) {
+        this.message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+        this.loading = false;
+        return;
+      }
+
+      if (this.isEdit) {
+        const updateData: UpdateDotKeKhai = {
+          ...baseData,
+          id: formValue.id
+        };
+        
+        this.dotKeKhaiService.updateDotKeKhai(updateData.id, updateData).subscribe({
           next: () => {
             this.message.success('Cập nhật thành công');
-            this.loadData();
             this.handleCancel();
+            this.loading = false;
           },
           error: (error) => {
             console.error('Lỗi khi cập nhật:', error);
@@ -291,32 +340,46 @@ export class DotKeKhaiComponent implements OnInit {
           }
         });
       } else {
-        this.dotKeKhaiService.createDotKeKhai(data).subscribe({
+        this.dotKeKhaiService.createDotKeKhai(baseData).subscribe({
           next: (response) => {
             this.message.success('Thêm mới thành công');
-            this.loadData();
             this.handleCancel();
+            this.loading = false;
             
-            // Chuyển hướng đến trang kê khai BHYT nếu là đợt kê khai BHYT
-            if (data.dich_vu === 'BHYT' && response && response.id) {
+            if (baseData.dich_vu === 'BHYT' && response && response.id) {
               this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhyt']);
             }
           },
           error: (error) => {
             console.error('Lỗi khi thêm mới:', error);
             if (error.error?.errors) {
-              const errorMessages = Object.values(error.error.errors).flat();
+              let errorMessages: string[] = [];
+              // Xử lý trường hợp errors là array
+              if (Array.isArray(error.error.errors)) {
+                errorMessages = error.error.errors;
+              } 
+              // Xử lý trường hợp errors là object
+              else {
+                Object.keys(error.error.errors).forEach(key => {
+                  const messages = error.error.errors[key];
+                  if (Array.isArray(messages)) {
+                    errorMessages.push(...messages);
+                  } else if (typeof messages === 'string') {
+                    errorMessages.push(messages);
+                  }
+                });
+              }
+
               errorMessages.forEach((message: unknown) => {
                 if (typeof message === 'string') {
                   this.message.error(message);
                 }
               });
+            } else if (error.error?.message) {
+              this.message.error(error.error.message);
             } else {
               this.message.error('Có lỗi xảy ra khi thêm mới');
             }
-            this.loading = false;
-          },
-          complete: () => {
             this.loading = false;
           }
         });
@@ -342,7 +405,6 @@ export class DotKeKhaiComponent implements OnInit {
         this.dotKeKhaiService.deleteDotKeKhai(id).subscribe({
           next: () => {
             this.message.success('Xóa thành công');
-            this.loadData();
           },
           error: () => this.message.error('Có lỗi xảy ra khi xóa')
         });
@@ -350,30 +412,34 @@ export class DotKeKhaiComponent implements OnInit {
     });
   }
 
-  onAllChecked(checked: boolean): void {
-    this.isAllChecked = checked;
-    this.filteredDotKeKhais.forEach(data => {
-      data.checked = checked;
-      if (checked) {
-        if (!this.selectedIds.includes(data.id!)) {
-          this.selectedIds.push(data.id!);
-        }
-      }
-    });
-    if (!checked) {
-      this.selectedIds = [];
-    }
+  getCheckedStatus(data: DotKeKhai): boolean {
+    return this.checkedSet.has(data.id!);
   }
 
-  onItemChecked(id: number, checked: boolean): void {
+  onItemChecked(checked: boolean, data: DotKeKhai): void {
     if (checked) {
-      this.selectedIds = [...this.selectedIds, id];
+      this.checkedSet.add(data.id!);
     } else {
-      this.selectedIds = this.selectedIds.filter(item => item !== id);
+      this.checkedSet.delete(data.id!);
     }
-    
-    // Cập nhật trạng thái isAllChecked
-    this.isAllChecked = this.dotKeKhais.every(data => this.selectedIds.includes(data.id!));
+    this.updateSelectedIds();
+  }
+
+  updateSelectedIds(): void {
+    this.selectedIds = Array.from(this.checkedSet);
+    this.isAllChecked = this.selectedIds.length === this.filteredDotKeKhais.length;
+  }
+
+  onAllChecked(checked: boolean): void {
+    this.isAllChecked = checked;
+    this.filteredDotKeKhais.forEach(item => {
+      if (checked) {
+        this.checkedSet.add(item.id!);
+      } else {
+        this.checkedSet.delete(item.id!);
+      }
+    });
+    this.updateSelectedIds();
   }
 
   deleteSelected(): void {
@@ -444,6 +510,6 @@ export class DotKeKhaiComponent implements OnInit {
 
   getDonViName(donViId: number): string {
     const donVi = this.donVis.find(d => d.id === donViId);
-    return donVi ? donVi.tenDonVi : '';
+    return donVi ? `${donVi.tenDonVi}${donVi.IsBHYT ? ' (BHYT)' : ''}` : '';
   }
 } 

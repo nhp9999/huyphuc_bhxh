@@ -7,6 +7,7 @@ import { vi_VN, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { apiTokenInterceptor } from './interceptors/api-token.interceptor';
+import { DonViService } from './services/don-vi.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,6 +20,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideNzI18n(vi_VN),
     provideAnimations(),
-    importProvidersFrom(IconsProviderModule)
+    importProvidersFrom(IconsProviderModule),
+    DonViService
   ]
 };

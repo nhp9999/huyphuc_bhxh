@@ -96,21 +96,24 @@ namespace WebApp.API.Data
             {
                 entity.ToTable("dot_ke_khai");
 
+                entity.Property(e => e.id).HasColumnName("id");
                 entity.Property(e => e.ten_dot).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.so_dot).IsRequired();
                 entity.Property(e => e.thang).IsRequired();
                 entity.Property(e => e.nam).IsRequired();
                 entity.Property(e => e.dich_vu).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ghi_chu).HasMaxLength(500);
-                entity.Property(e => e.trang_thai).HasDefaultValue(true);
+                entity.Property(e => e.trang_thai).HasDefaultValue("chua_gui");
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.don_vi_id).HasColumnName("don_vi_id");
 
                 entity.HasOne(d => d.DonVi)
                     .WithMany()
-                    .HasForeignKey(d => d.DonViId)
+                    .HasForeignKey(d => d.don_vi_id)
                     .HasConstraintName("FK_DotKeKhai_DonVi")
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired(false);
             });
 
             modelBuilder.Entity<KeKhaiBHYT>(entity =>
