@@ -1,6 +1,19 @@
 <div class="container">
   <div class="header">
-    <h2>Kê khai bảo hiểm y tế</h2>
+    <div class="header-info">
+      <h2>Kê khai bảo hiểm y tế</h2>
+      <div class="header-details">
+        <span class="detail-item">
+          <i nz-icon nzType="calendar" nzTheme="outline"></i>
+          {{ dotKeKhai?.ten_dot }}
+        </span>
+        <nz-divider nzType="vertical"></nz-divider>
+        <span class="detail-item">
+          <i nz-icon nzType="apartment" nzTheme="outline"></i>
+          {{ donViName }}
+        </span>
+      </div>
+    </div>
     <div class="header-actions">
       <button nz-button (click)="refresh()">
         <i nz-icon nzType="reload"></i>Làm mới
@@ -142,6 +155,24 @@
                 <nz-option nzValue="dao_han" nzLabel="Đáo hạn"></nz-option>
                 <nz-option nzValue="dung_dong" nzLabel="Dừng đóng"></nz-option>
               </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <div nz-col [nzSpan]="4">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Số tiền cần đóng</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <nz-input-number
+                formControlName="so_tien_can_dong"
+                [nzMin]="0"
+                [nzMax]="999999999"
+                [nzStep]="1000"
+                [nzFormatter]="formatCurrency"
+                [nzParser]="parseCurrency"
+                [nzDisabled]="true"
+                nzPlaceHolder="Số tiền tự động tính">
+              </nz-input-number>
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -342,6 +373,7 @@
         <th>Mã số BHXH</th>
         <th>CCCD</th>
         <th>Họ tên</th>
+        <th>Số tiền cần đóng</th>
         <th>Ngày sinh</th>
         <th>Giới tính</th>
         <th>Số điện thoại</th>
@@ -366,6 +398,7 @@
         <td>{{ data.thongTinThe?.ma_so_bhxh }}</td>
         <td>{{ data.thongTinThe?.cccd }}</td>
         <td>{{ data.thongTinThe?.ho_ten }}</td>
+        <td>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>
         <td>{{ data.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
         <td>{{ data.thongTinThe?.gioi_tinh }}</td>
         <td>{{ data.thongTinThe?.so_dien_thoai }}</td>

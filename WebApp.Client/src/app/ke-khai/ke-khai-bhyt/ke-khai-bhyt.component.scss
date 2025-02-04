@@ -13,18 +13,44 @@
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 24px;
+    
+    .header-info {
+      h2 {
+        margin-bottom: 8px;
+        color: #262626;
+        font-weight: 600;
+      }
 
-    h2 {
-      margin-bottom: 0;
-      color: #262626;
-      font-weight: 600;
+      .header-details {
+        display: flex;
+        align-items: center;
+        color: rgba(0, 0, 0, 0.65);
+        font-size: 14px;
+
+        .detail-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          i {
+            font-size: 16px;
+            color: #1890ff;
+          }
+        }
+
+        .ant-divider {
+          margin: 0 16px;
+          height: 16px;
+        }
+      }
     }
 
     .header-actions {
       display: flex;
       gap: 8px;
+      margin-top: 4px;
     }
   }
 }
@@ -182,6 +208,25 @@ nz-table {
   .ant-select-selection-placeholder,
   .ant-picker-input > input::placeholder {
     line-height: 36px !important;
+  }
+
+  // Style cho input disabled
+  .ant-input[disabled] {
+    color: #262626;
+    background-color: transparent;
+    border: none;
+    cursor: default;
+    padding-left: 0;
+    font-weight: 500;
+
+    &[nz-borderless] {
+      border-bottom: 1px dashed #d9d9d9;
+      border-radius: 0;
+      
+      &:hover {
+        border-bottom-color: #40a9ff;
+      }
+    }
   }
 }
 

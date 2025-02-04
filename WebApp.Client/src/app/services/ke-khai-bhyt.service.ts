@@ -59,7 +59,7 @@ export interface KeKhaiBHYT {
   nguoi_thu: number;
   so_thang_dong: number;
   phuong_an_dong: string;
-  han_the_cu?: Date | null;
+  han_the_cu: Date | null;
   han_the_moi_tu: Date;
   han_the_moi_den: Date;
   tinh_nkq: string;
@@ -71,6 +71,7 @@ export interface KeKhaiBHYT {
   nguoi_tao: string;
   ngay_tao: Date;
   ngay_bien_lai?: Date | null;
+  so_tien_can_dong: number;
 }
 
 export interface ThongTinBHYTResponse {

@@ -13,6 +13,7 @@ namespace WebApp.API.Models
         /// ID kê khai BHYT
         /// </summary>
         [Key]
+        [Column("id")]
         public int id { get; set; }
 
         /// <summary>
@@ -128,5 +129,27 @@ namespace WebApp.API.Models
         /// Ngày biên lai
         /// </summary>
         public DateTime? ngay_bien_lai { get; set; }
+
+        /// <summary>
+        /// Số tiền cần đóng
+        /// </summary>
+        [Column("so_tien_can_dong")]
+        [Required]
+        public decimal SoTienCanDong { get; set; }
+
+        // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
+        public KeKhaiBHYT()
+        {
+            phuong_an_dong = "";
+            tinh_nkq = "";
+            huyen_nkq = "";
+            xa_nkq = "";
+            dia_chi_nkq = "";
+            benh_vien_kcb = "";
+            nguoi_tao = "";
+            ngay_tao = DateTime.Now;
+            DotKeKhai = new DotKeKhai();
+            ThongTinThe = new ThongTinThe();
+        }
     }
 } 

@@ -31,9 +31,12 @@ import {
   CloseOutline,
   EditOutline,
   DeleteOutline,
-  ReloadOutline
+  ReloadOutline,
+  ApartmentOutline,
+  CalendarOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
+import { DonViService, DonVi } from '../../services/don-vi.service';
 
 registerLocaleData(vi);
 
@@ -88,6 +91,8 @@ export class KeKhaiBHYTComponent implements OnInit {
   danhMucCSKCBs: DanhMucCSKCB[] = [];
   danhMucHuyenKS: DanhMucHuyen[] = [];
   danhMucXaKS: DanhMucXa[] = [];
+  donViName: string = '';
+  private donViCache: DonVi[] = [];
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -98,7 +103,8 @@ export class KeKhaiBHYTComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private i18n: NzI18nService,
-    private iconService: NzIconService
+    private iconService: NzIconService,
+    private donViService: DonViService
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -107,7 +113,9 @@ export class KeKhaiBHYTComponent implements OnInit {
       CloseOutline,
       EditOutline,
       DeleteOutline,
-      ReloadOutline
+      ReloadOutline,
+      ApartmentOutline,
+      CalendarOutline
     );
     this.initForm();
     this.loadDanhMucCSKCB();
@@ -226,6 +234,15 @@ export class KeKhaiBHYTComponent implements OnInit {
     if (this.danhMucCSKCBs.length === 0) {
       this.loadDanhMucCSKCB();
     }
+
+    // Thêm subscription cho nguoi_thu và so_thang_dong
+    this.form.get('nguoi_thu')?.valueChanges.subscribe(() => {
+      this.capNhatSoTienCanDong();
+    });
+
+    this.form.get('so_thang_dong')?.valueChanges.subscribe(() => {
+      this.capNhatSoTienCanDong();
+    });
   }
 
   initForm(): void {
@@ -261,6 +278,7 @@ export class KeKhaiBHYTComponent implements OnInit {
       quoc_tich: [''],
       ma_benh_vien: [''],
       ngay_bien_lai: [new Date()],
+      so_tien_can_dong: [0, [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -268,6 +286,30 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.dotKeKhaiService.getDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
         this.dotKeKhai = data;
+        // Kiểm tra cache trước khi gọi API
+        if (data.don_vi_id) {
+          if (this.donViCache.length > 0) {
+            const donVi = this.donViCache.find(d => d.id === data.don_vi_id);
+            if (donVi) {
+              this.donViName = donVi.tenDonVi + (donVi.isBHYT ? ' (BHYT)' : '');
+              return;
+            }
+          }
+
+          this.donViService.getDonVis().subscribe({
+            next: (donVis: DonVi[]) => {
+              this.donViCache = donVis; // Lưu vào cache
+              const donVi = donVis.find(d => d.id === data.don_vi_id);
+              if (donVi) {
+                this.donViName = donVi.tenDonVi + (donVi.isBHYT ? ' (BHYT)' : '');
+              }
+            },
+            error: (error: Error) => {
+              console.error('Error loading don vi:', error);
+              this.message.error('Có lỗi xảy ra khi tải thông tin đơn vị');
+            }
+          });
+        }
       },
       error: (error) => {
         this.message.error('Có lỗi xảy ra khi tải thông tin đợt kê khai');
@@ -414,7 +456,8 @@ export class KeKhaiBHYTComponent implements OnInit {
         han_the_moi_den: data.han_the_moi_den,
         dia_chi_nkq: data.dia_chi_nkq,
         benh_vien_kcb: data.benh_vien_kcb,
-        ma_benh_vien: data.ma_benh_vien
+        ma_benh_vien: data.ma_benh_vien,
+        so_tien_can_dong: data.so_tien_can_dong,
       });
 
       // Log để kiểm tra
@@ -509,6 +552,7 @@ export class KeKhaiBHYTComponent implements OnInit {
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
+          so_tien_can_dong: formValue.so_tien_can_dong || 0,
         };
 
         // Cập nhật cả hai đối tượng
@@ -596,6 +640,7 @@ export class KeKhaiBHYTComponent implements OnInit {
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
+          so_tien_can_dong: formValue.so_tien_can_dong || 0,
         };
 
         // Tạo mới KeKhaiBHYT
@@ -689,13 +734,8 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.isAllChecked = this.keKhaiBHYTs.every(item => this.selectedIds.includes(item.id!));
   }
 
-  formatCurrency = (value: number): string => {
-    return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  };
-
-  parseCurrency = (value: string): number => {
-    return Number(value.replace(/\$\s?|(,*)/g, ''));
-  };
+  formatCurrency = (value: number): string => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  parseCurrency = (value: string): number => Number(value.replace(/\$\s?|(,*)/g, ''));
 
   onlyNumber(event: KeyboardEvent): boolean {
     const charCode = (event.which) ? event.which : event.keyCode;
@@ -747,13 +787,16 @@ export class KeKhaiBHYTComponent implements OnInit {
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     if (maSoBHXH && maSoBHXH.length === 10) {
       this.loading = true;
+      
+      // Gọi API tra cứu BHYT
       this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
         next: async (response) => {
           if (response.success) {
+            // Xử lý dữ liệu từ API như cũ
             const data = response.data;
             console.log('BHYT search response:', data);
 
-            // Kiểm tra hạn thẻ cũ
+            // Kiểm tra hạn thẻ cũ và xử lý như cũ
             const denNgayTheCu = this.parseDate(data.denNgayTheCu);
             if (denNgayTheCu) {
               const today = new Date();
@@ -785,16 +828,16 @@ export class KeKhaiBHYTComponent implements OnInit {
               }
             }
 
-            // Nếu không cần cảnh báo hoặc người dùng đã xác nhận tiếp tục
             await this.processSearchResult(data);
-
           } else {
-            this.message.error(response.message || 'Không tìm thấy thông tin BHYT');
+            // Nếu API không thành công, tìm trong bảng thong_tin_the
+            this.searchInLocalDatabase(maSoBHXH);
           }
         },
         error: (error) => {
-          console.error('Error searching BHYT:', error);
-          this.message.error('Có lỗi xảy ra khi tìm kiếm thông tin BHYT');
+          console.error('Error searching BHYT from API:', error);
+          // Khi có lỗi từ API, tìm trong bảng thong_tin_the
+          this.searchInLocalDatabase(maSoBHXH);
         },
         complete: () => {
           this.loading = false;
@@ -805,8 +848,57 @@ export class KeKhaiBHYTComponent implements OnInit {
     }
   }
 
-  // Tách logic xử lý dữ liệu tìm kiếm thành một hàm riêng
-  private async processSearchResult(data: any): Promise<void> {
+  // Thêm phương thức mới để tìm kiếm trong database local
+  private searchInLocalDatabase(maSoBHXH: string): void {
+    this.keKhaiBHYTService.getThongTinTheByMaSoBHXH(maSoBHXH).subscribe({
+      next: async (thongTinThe) => {
+        if (thongTinThe) {
+          console.log('Found in local database:', thongTinThe);
+          
+          // Chuyển đổi dữ liệu từ ThongTinThe sang format phù hợp
+          const localData = {
+            maSoBHXH: thongTinThe.ma_so_bhxh,
+            cmnd: thongTinThe.cccd,
+            hoTen: thongTinThe.ho_ten,
+            ngaySinh: thongTinThe.ngay_sinh,
+            gioiTinh: thongTinThe.gioi_tinh ? 1 : 2, // true = Nam (1), false = Nữ (2)
+            soDienThoai: thongTinThe.so_dien_thoai,
+            maHoGiaDinh: thongTinThe.ma_hgd,
+            maTinhKS: thongTinThe.ma_tinh_ks,
+            maHuyenKS: thongTinThe.ma_huyen_ks,
+            maXaKS: thongTinThe.ma_xa_ks,
+            maTinhNkq: thongTinThe.ma_tinh_nkq,
+            maHuyenNkq: thongTinThe.ma_huyen_nkq,
+            maXaNkq: thongTinThe.ma_xa_nkq,
+            noiNhanHoSo: thongTinThe.noiNhanHoSo || {
+              tinh: '',
+              huyen: '',
+              xa: '',
+              diaChi: thongTinThe.dia_chi_nkq || ''
+            },
+            maBenhVien: thongTinThe.ma_benh_vien,
+            danToc: thongTinThe.ma_dan_toc,
+            quocTich: thongTinThe.quoc_tich,
+            soTheBHYT: thongTinThe.so_the_bhyt
+          };
+
+          await this.processSearchResult(localData, true);
+        } else {
+          this.message.error('Không tìm thấy thông tin BHYT');
+        }
+      },
+      error: (error) => {
+        console.error('Error searching in local database:', error);
+        this.message.error('Có lỗi xảy ra khi tìm kiếm thông tin BHYT');
+      },
+      complete: () => {
+        this.loading = false;
+      }
+    });
+  }
+
+  // Cập nhật hàm processSearchResult để nhận thêm tham số
+  private async processSearchResult(data: any, isFromLocal: boolean = false): Promise<void> {
     let benhVienKCB = '';
     if (data.maBenhVien) {
       if (this.danhMucCSKCBs.length === 0) {
@@ -876,6 +968,7 @@ export class KeKhaiBHYTComponent implements OnInit {
       quoc_tich: data.quocTich || '',
       so_the_bhyt: data.soTheBHYT || '',
       ngay_bien_lai: data.ngayBienLai ? new Date(data.ngayBienLai) : new Date(),
+      so_tien_can_dong: data.soTienCanDong,
     });
 
     // Log để kiểm tra
@@ -892,7 +985,12 @@ export class KeKhaiBHYTComponent implements OnInit {
       this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
     }
 
-    this.message.success('Đã tìm thấy thông tin BHYT');
+    // Chỉ hiển thị thông báo nếu dữ liệu không phải từ local
+    if (!isFromLocal) {
+      this.message.success('Đã tìm thấy thông tin BHYT');
+    } else {
+      this.message.success('Đã tìm thấy thông tin BHYT trong cơ sở dữ liệu');
+    }
   }
 
   // Thêm hàm kiểm tra phương án đóng
@@ -1002,5 +1100,36 @@ export class KeKhaiBHYTComponent implements OnInit {
   getBenhVienDisplay(maBenhVien: string): string {
     const benhVien = this.danhMucCSKCBs.find(bv => bv.value === maBenhVien);
     return benhVien ? benhVien.ten : maBenhVien;
+  }
+
+  // Thêm hàm tính số tiền cần đóng
+  tinhSoTienCanDong(nguoiThu: number, soThangDong: number): number {
+    const mucDong = 2340000 * 0.045;
+    let tyLe = 1;
+    
+    if (nguoiThu >= 1 && nguoiThu <= 5) {
+      switch(nguoiThu) {
+        case 1: tyLe = 1; break;
+        case 2: tyLe = 0.7; break;
+        case 3: tyLe = 0.6; break;
+        case 4: tyLe = 0.5; break;
+        case 5: tyLe = 0.4; break;
+      }
+    }
+
+    return Math.round(mucDong * tyLe * soThangDong);
+  }
+
+  // Thêm hàm xử lý khi thay đổi người thứ hoặc số tháng đóng
+  capNhatSoTienCanDong(): void {
+    const nguoiThu = this.form.get('nguoi_thu')?.value;
+    const soThangDong = this.form.get('so_thang_dong')?.value;
+    
+    if (nguoiThu && soThangDong) {
+      const soTienCanDong = this.tinhSoTienCanDong(nguoiThu, soThangDong);
+      this.form.patchValue({
+        so_tien_can_dong: soTienCanDong
+      }, { emitEvent: false });
+    }
   }
 } 
