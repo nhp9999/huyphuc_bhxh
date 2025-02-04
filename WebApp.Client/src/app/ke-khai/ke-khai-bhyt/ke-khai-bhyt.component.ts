@@ -243,9 +243,75 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.form.get('so_thang_dong')?.valueChanges.subscribe(() => {
       this.capNhatSoTienCanDong();
     });
+
+    // Subscribe to changes in ngay_bien_lai and han_the_cu
+    this.form.get('ngay_bien_lai')?.valueChanges.subscribe(value => {
+      console.log('=== BẮT ĐẦU TÍNH TOÁN NGÀY ===');
+      console.log('1. Ngày biên lai thay đổi:', value);
+      if (value) {
+        const ngayBienLai = new Date(value);
+        console.log('2. Ngày biên lai sau khi parse:', ngayBienLai);
+        const hanTheCu = this.form.get('han_the_cu')?.value ? new Date(this.form.get('han_the_cu')?.value) : null;
+        console.log('3. Hạn thẻ cũ:', hanTheCu);
+        const hanTheMoiTu = this.tinhHanTheMoiTu(ngayBienLai, hanTheCu);
+        console.log('4. Hạn thẻ mới từ được tính:', hanTheMoiTu);
+        
+        this.form.patchValue({
+          han_the_moi_tu: hanTheMoiTu
+        }, { emitEvent: false });
+
+        // Tính lại hạn thẻ mới đến
+        const soThangDong = this.form.get('so_thang_dong')?.value;
+        console.log('5. Số tháng đóng:', soThangDong);
+        if (soThangDong) {
+          const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, soThangDong);
+          console.log('6. Hạn thẻ mới đến được tính:', hanTheMoiDen);
+          this.form.patchValue({
+            han_the_moi_den: hanTheMoiDen
+          }, { emitEvent: false });
+        }
+        console.log('=== KẾT THÚC TÍNH TOÁN NGÀY ===');
+      }
+    });
+
+    this.form.get('han_the_cu')?.valueChanges.subscribe(value => {
+      const ngayBienLai = this.form.get('ngay_bien_lai')?.value;
+      if (ngayBienLai) {
+        const hanTheCu = value ? new Date(value) : null;
+        const hanTheMoiTu = this.tinhHanTheMoiTu(new Date(ngayBienLai), hanTheCu);
+        
+        this.form.patchValue({
+          han_the_moi_tu: hanTheMoiTu
+        }, { emitEvent: false });
+      }
+    });
+
+    // Subscribe to changes in so_thang_dong
+    this.form.get('so_thang_dong')?.valueChanges.subscribe(soThangDong => {
+      console.log('=== BẮT ĐẦU TÍNH TOÁN HẠN THẺ MỚI ĐẾN ===');
+      console.log('1. Số tháng đóng thay đổi:', soThangDong);
+      
+      if (soThangDong) {
+        const hanTheMoiTu = this.form.get('han_the_moi_tu')?.value;
+        console.log('2. Hạn thẻ mới từ:', hanTheMoiTu);
+        
+        if (hanTheMoiTu) {
+          const hanTheMoiDen = this.tinhHanTheMoiDen(new Date(hanTheMoiTu), soThangDong);
+          console.log('3. Hạn thẻ mới đến được tính:', hanTheMoiDen);
+          
+          this.form.patchValue({
+            han_the_moi_den: hanTheMoiDen
+          }, { emitEvent: false });
+        }
+      }
+      console.log('=== KẾT THÚC TÍNH TOÁN HẠN THẺ MỚI ĐẾN ===');
+    });
   }
 
   initForm(): void {
+    const today = new Date();
+    console.log('Ngày biên lai mặc định:', today);
+    
     this.form = this.fb.group({
       id: [null],
       thong_tin_the_id: [null],
@@ -277,9 +343,11 @@ export class KeKhaiBHYTComponent implements OnInit {
       ma_dan_toc: [''],
       quoc_tich: [''],
       ma_benh_vien: [''],
-      ngay_bien_lai: [new Date()],
+      ngay_bien_lai: [today],
       so_tien_can_dong: [0, [Validators.required, Validators.min(0)]]
     });
+
+    console.log('Form sau khi khởi tạo:', this.form.value);
   }
 
   loadDotKeKhai(): void {
@@ -292,6 +360,12 @@ export class KeKhaiBHYTComponent implements OnInit {
             const donVi = this.donViCache.find(d => d.id === data.don_vi_id);
             if (donVi) {
               this.donViName = donVi.tenDonVi + (donVi.isBHYT ? ' (BHYT)' : '');
+              // Nếu là DTTS, tự động set người thứ là 1
+              if (this.donViName.includes('DTTS')) {
+                this.form.patchValue({
+                  nguoi_thu: 1
+                });
+              }
               return;
             }
           }
@@ -302,6 +376,12 @@ export class KeKhaiBHYTComponent implements OnInit {
               const donVi = donVis.find(d => d.id === data.don_vi_id);
               if (donVi) {
                 this.donViName = donVi.tenDonVi + (donVi.isBHYT ? ' (BHYT)' : '');
+                // Nếu là DTTS, tự động set người thứ là 1
+                if (this.donViName.includes('DTTS')) {
+                  this.form.patchValue({
+                    nguoi_thu: 1
+                  });
+                }
               }
             },
             error: (error: Error) => {
@@ -1107,6 +1187,19 @@ export class KeKhaiBHYTComponent implements OnInit {
     const mucDong = 2340000 * 0.045;
     let tyLe = 1;
     
+    // Kiểm tra nếu đơn vị là DTTS
+    if (this.donViName.includes('DTTS')) {
+      // Công thức cho DTTS: 2.340.000×4,5%×(100%−70%) x số tháng đóng
+      return Math.round(mucDong * 0.3 * soThangDong); // 0.3 = 100% - 70%
+    }
+
+    // Kiểm tra nếu đơn vị là NLNN
+    if (this.donViName.includes('NLNN')) {
+      // Công thức cho NLNN: 2.340.000×4,5%×(100%−30%) x số tháng đóng
+      return Math.round(mucDong * 0.7 * soThangDong); // 0.7 = 100% - 30%
+    }
+    
+    // Công thức thông thường cho các đơn vị khác
     if (nguoiThu >= 1 && nguoiThu <= 5) {
       switch(nguoiThu) {
         case 1: tyLe = 1; break;
@@ -1131,5 +1224,84 @@ export class KeKhaiBHYTComponent implements OnInit {
         so_tien_can_dong: soTienCanDong
       }, { emitEvent: false });
     }
+  }
+
+  // Thêm hàm tính hạn thẻ mới từ
+  tinhHanTheMoiTu(ngayBienLai: Date, hanTheCu: Date | null): Date {
+    // Log để debug
+    console.log('Tính hạn thẻ mới từ với:', {
+      ngayBienLai: ngayBienLai,
+      hanTheCu: hanTheCu,
+      donViName: this.donViName
+    });
+
+    // Đảm bảo ngayBienLai là Date object và reset time về 00:00:00
+    const ngayBL = new Date(ngayBienLai);
+    ngayBL.setHours(0, 0, 0, 0);
+
+    // Trường hợp DTTS
+    if (this.donViName.includes('DTTS')) {
+      // Lấy ngày đầu tháng của ngày biên lai
+      const result = new Date(ngayBL.getFullYear(), ngayBL.getMonth(), 1);
+      console.log('DTTS - Hạn thẻ mới từ:', result);
+      return result;
+    }
+    
+    // Trường hợp HGD và NLNN
+    if (this.donViName.includes('NLNN') || !this.donViName.includes('DTTS')) {
+      if (!hanTheCu) {
+        // Nếu không có hạn thẻ cũ, cộng 30 ngày
+        const result = new Date(ngayBL.getTime());
+        result.setDate(result.getDate() + 30);
+        console.log('Không có hạn thẻ cũ - Hạn thẻ mới từ:', result);
+        return result;
+      }
+
+      // Đảm bảo hanTheCu là Date object và reset time về 00:00:00
+      const hanTC = new Date(hanTheCu);
+      hanTC.setHours(0, 0, 0, 0);
+
+      // Nếu ngày biên lai lớn hơn hạn thẻ cũ
+      if (ngayBL.getTime() > hanTC.getTime()) {
+        const result = new Date(ngayBL.getTime());
+        result.setDate(result.getDate() + 1);
+        console.log('Ngày biên lai lớn hơn hạn thẻ cũ - Hạn thẻ mới từ:', result);
+        return result;
+      }
+
+      // Nếu hạn thẻ cũ lớn hơn ngày biên lai
+      if (hanTC.getTime() > ngayBL.getTime()) {
+        const result = new Date(hanTC.getTime());
+        result.setDate(result.getDate() + 1);
+        console.log('Hạn thẻ cũ lớn hơn ngày biên lai - Hạn thẻ mới từ:', result);
+        return result;
+      }
+    }
+
+    // Mặc định cộng 30 ngày nếu không rơi vào các trường hợp trên
+    const result = new Date(ngayBL.getTime());
+    result.setDate(result.getDate() + 30);
+    console.log('Mặc định - Hạn thẻ mới từ:', result);
+    return result;
+  }
+
+  // Thêm hàm tính hạn thẻ mới đến
+  tinhHanTheMoiDen(hanTheMoiTu: Date, soThangDong: number): Date {
+    // Log để debug
+    console.log('Tính hạn thẻ mới đến với:', {
+      hanTheMoiTu: hanTheMoiTu,
+      soThangDong: soThangDong
+    });
+
+    // Tạo bản sao của hanTheMoiTu để không ảnh hưởng đến ngày gốc
+    const result = new Date(hanTheMoiTu);
+    
+    // Cộng số tháng đóng vào hạn thẻ mới từ
+    result.setMonth(result.getMonth() + soThangDong);
+
+    // Log kết quả để debug
+    console.log('Hạn thẻ mới đến được tính:', result);
+    
+    return result;
   }
 } 
