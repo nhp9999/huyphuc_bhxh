@@ -47,6 +47,9 @@ interface NoiNhanHoSo {
   xa?: string;
 }
 
+// Thêm interface để định nghĩa kiểu dữ liệu cho giới tính
+type GioiTinh = 'Nam' | 'Nữ';
+
 @Component({
   selector: 'app-ke-khai-bhyt',
   standalone: true,
@@ -93,6 +96,13 @@ export class KeKhaiBHYTComponent implements OnInit {
   danhMucXaKS: DanhMucXa[] = [];
   donViName: string = '';
   private donViCache: DonVi[] = [];
+  isSearchMultipleVisible = false;
+  isSearchingMultiple = false;
+  multipleSearchText = '';
+  multipleSearchNguoiThu: number = 1;
+  multipleSearchSoThangDong: number = 3;
+  // Thêm biến để lưu bệnh viện được chọn
+  multipleSearchBenhVien: string = '';
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -118,7 +128,6 @@ export class KeKhaiBHYTComponent implements OnInit {
       CalendarOutline
     );
     this.initForm();
-    this.loadDanhMucCSKCB();
   }
 
   ngOnInit(): void {
@@ -128,6 +137,9 @@ export class KeKhaiBHYTComponent implements OnInit {
       this.loadData();
       this.loadDanhMucTinh();
     });
+
+    // Load danh mục CSKCB một lần duy nhất ở đây
+    this.loadDanhMucCSKCB();
 
     // Subscribe to changes in tinh_nkq to load huyện NKQ
     this.form.get('tinh_nkq')?.valueChanges.subscribe(maTinh => {
@@ -230,10 +242,6 @@ export class KeKhaiBHYTComponent implements OnInit {
         }
       }
     });
-
-    if (this.danhMucCSKCBs.length === 0) {
-      this.loadDanhMucCSKCB();
-    }
 
     // Thêm subscription cho nguoi_thu và so_thang_dong
     this.form.get('nguoi_thu')?.valueChanges.subscribe(() => {
@@ -433,8 +441,10 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
       next: (data: DanhMucHuyen[]) => {
         this.danhMucHuyens = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+        console.log('Loaded danh mục huyện:', this.danhMucHuyens); // Log để debug
       },
       error: (error: any) => {
+        console.error('Lỗi khi load danh mục huyện:', error);
         this.message.error('Có lỗi xảy ra khi tải danh sách quận/huyện');
       }
     });
@@ -1132,17 +1142,32 @@ export class KeKhaiBHYTComponent implements OnInit {
 
   getTinhTen(maTinh: string): string {
     const tinh = this.danhMucTinhs.find(t => t.ma === maTinh);
-    return tinh ? tinh.ten : maTinh;
+    if (!tinh) {
+      console.warn(`Không tìm thấy tỉnh với mã: ${maTinh}`);
+      return maTinh; // Trả về mã nếu không tìm thấy tên
+    }
+    return tinh.ten;
   }
 
   getHuyenTen(maHuyen: string): string {
+    console.log('getHuyenTen được gọi với mã:', maHuyen);
+    console.log('Danh mục huyện hiện tại:', this.danhMucHuyens);
+    
     const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
-    return huyen ? huyen.ten : maHuyen;
+    if (!huyen) {
+      console.warn(`Không tìm thấy huyện với mã: ${maHuyen}`);
+      return maHuyen;
+    }
+    return huyen.ten;
   }
 
   getXaTen(maXa: string): string {
     const xa = this.danhMucXas.find(x => x.ma === maXa);
-    return xa ? xa.ten : maXa;
+    if (!xa) {
+      console.warn(`Không tìm thấy xã với mã: ${maXa}`);
+      return maXa; // Trả về mã nếu không tìm thấy tên
+    }
+    return xa.ten;
   }
 
   refresh(): void {
@@ -1216,7 +1241,7 @@ export class KeKhaiBHYTComponent implements OnInit {
 
     // Trường hợp DTTS
     if (this.donViName.includes('DTTS')) {
-      // Lấy ngày đầu tháng của ngày biên lai
+      // Lấy ngày đầu tháng của ngày biên lai hiện tại (không phải tháng tiếp theo)
       const result = new Date(ngayBL.getFullYear(), ngayBL.getMonth(), 1);
       console.log('DTTS - Hạn thẻ mới từ:', result);
       return result;
@@ -1315,6 +1340,388 @@ export class KeKhaiBHYTComponent implements OnInit {
         return 'Người thứ 5 trở đi';
       default:
         return '';
+    }
+  }
+
+  // Thêm các hàm xử lý modal tìm kiếm nhiều mã số
+  showSearchMultipleModal(): void {
+    this.isSearchMultipleVisible = true;
+    this.multipleSearchText = '';
+    this.multipleSearchBenhVien = '';
+    
+    // Bỏ việc gán giá trị mặc định
+    this.multipleSearchNguoiThu = null as any;
+    this.multipleSearchSoThangDong = null as any;
+
+    // Chỉ set người thứ = 1 nếu là DTTS
+    if (this.donViName.includes('DTTS')) {
+      this.multipleSearchNguoiThu = 1;
+    }
+  }
+
+  handleSearchMultipleCancel(): void {
+    this.isSearchMultipleVisible = false;
+  }
+
+  // Thêm hàm mới để tạo kê khai từ dữ liệu API
+  private async createKeKhaiFromApiData(data: any): Promise<boolean> {
+    try {
+      // Kiểm tra dữ liệu đầu vào
+      if (!data || !data.maSoBHXH || !data.hoTen || !data.ngaySinh) {
+        console.error('Dữ liệu không hợp lệ:', data);
+        this.message.error('Dữ liệu không đầy đủ hoặc không hợp lệ');
+        return false;
+      }
+
+      // Xử lý ngày sinh
+      let ngaySinh: Date;
+      try {
+        // Thử parse theo định dạng dd/MM/yyyy
+        const parts = data.ngaySinh.split('/');
+        if (parts.length === 3) {
+          ngaySinh = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        } else {
+          // Nếu không phải dd/MM/yyyy thì thử parse trực tiếp
+          ngaySinh = new Date(data.ngaySinh);
+        }
+
+        if (isNaN(ngaySinh.getTime())) {
+          console.error('Ngày sinh không hợp lệ:', data.ngaySinh);
+          this.message.error('Ngày sinh không hợp lệ');
+          return false;
+        }
+
+        // Log để debug
+        console.log('Ngày sinh sau khi parse:', {
+          raw: data.ngaySinh,
+          parsed: ngaySinh,
+          iso: ngaySinh.toISOString()
+        });
+
+      } catch (error) {
+        console.error('Lỗi khi parse ngày sinh:', error);
+        this.message.error('Ngày sinh không đúng định dạng');
+        return false;
+      }
+
+      // Chuyển đổi giới tính sang kiểu GioiTinh
+      const gioiTinh: GioiTinh = data.gioiTinh === 1 ? 'Nam' : 'Nữ';
+
+      // Xử lý địa chỉ
+      let diaChiNKQ = '';
+      if (typeof data.noiNhanHoSo === 'string') {
+        diaChiNKQ = data.noiNhanHoSo;
+      } else if (data.noiNhanHoSo?.diaChi) {
+        diaChiNKQ = data.noiNhanHoSo.diaChi;
+      } else {
+        diaChiNKQ = 'Chưa có địa chỉ'; // Giá trị mặc định
+      }
+
+      // Load danh mục tỉnh nếu chưa có
+      if (this.danhMucTinhs.length === 0) {
+        await new Promise<void>((resolve) => {
+          this.diaChiService.getDanhMucTinh().subscribe({
+            next: (tinhs) => {
+              this.danhMucTinhs = tinhs.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+              console.log('Loaded danh mục tỉnh:', this.danhMucTinhs);
+              resolve();
+            },
+            error: (error) => {
+              console.error('Lỗi khi load danh mục tỉnh:', error);
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Load danh mục huyện theo mã tỉnh
+      if (data.maTinhNkq) {
+        await new Promise<void>((resolve) => {
+          this.diaChiService.getDanhMucHuyenByMaTinh(data.maTinhNkq).subscribe({
+            next: (huyens) => {
+              this.danhMucHuyens = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+              console.log('Loaded danh mục huyện cho tỉnh', data.maTinhNkq, ':', this.danhMucHuyens);
+              resolve();
+            },
+            error: (error) => {
+              console.error('Lỗi khi load danh mục huyện:', error);
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Load danh mục xã theo mã huyện
+      if (data.maHuyenNkq) {
+        await new Promise<void>((resolve) => {
+          this.diaChiService.getDanhMucXaByMaHuyen(data.maHuyenNkq).subscribe({
+            next: (xas) => {
+              this.danhMucXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+              console.log('Loaded danh mục xã cho huyện', data.maHuyenNkq, ':', this.danhMucXas);
+              resolve();
+            },
+            error: (error) => {
+              console.error('Lỗi khi load danh mục xã:', error);
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Kiểm tra và log thông tin chuyển đổi
+      const tinhNKQ = this.getTinhTen(data.maTinhNkq || '');
+      const huyenNKQ = this.getHuyenTen(data.maHuyenNkq || '');
+      const xaNKQ = this.getXaTen(data.maXaNkq || '');
+
+      console.log('Thông tin địa chỉ:', {
+        maTinh: data.maTinhNkq,
+        maHuyen: data.maHuyenNkq,
+        maXa: data.maXaNkq,
+        tenTinh: tinhNKQ,
+        tenHuyen: huyenNKQ,
+        tenXa: xaNKQ,
+        danhMucXas: this.danhMucXas
+      });
+
+      // Sử dụng bệnh viện được chọn từ modal nếu có
+      const maBenhVien = this.multipleSearchBenhVien || data.maBenhVien || '';
+
+      // Tạo ThongTinThe với bệnh viện đã chọn
+      const thongTinTheData: ThongTinThe = {
+        ma_so_bhxh: data.maSoBHXH,
+        cccd: data.cmnd || '',
+        ho_ten: data.hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: gioiTinh,
+        so_dien_thoai: data.soDienThoai || '',
+        ma_hgd: data.maHoGiaDinh || '',
+        ma_tinh_ks: data.maTinhKS || '',
+        ma_huyen_ks: data.maHuyenKS || '',
+        ma_xa_ks: data.maXaKS || '',
+        ma_tinh_nkq: data.maTinhNkq || '',
+        ma_huyen_nkq: data.maHuyenNkq || '',
+        ma_xa_nkq: data.maXaNkq || '',
+        dia_chi_nkq: diaChiNKQ,
+        benh_vien_kcb: this.getBenhVienTen(maBenhVien),
+        ma_benh_vien: maBenhVien,
+        so_the_bhyt: data.soTheBHYT || '',
+        ma_dan_toc: data.danToc || '',
+        quoc_tich: data.quocTich || '',
+        nguoi_tao: this.currentUser.username,
+        ngay_tao: new Date(),
+        noiNhanHoSo: {
+          tinh: tinhNKQ,
+          huyen: huyenNKQ,
+          xa: xaNKQ,
+          diaChi: diaChiNKQ
+        }
+      };
+
+      try {
+        // Tạo mới ThongTinThe và lấy kết quả trả về
+        const createdThongTinThe = await this.keKhaiBHYTService.createThongTinThe(thongTinTheData).toPromise();
+
+        if (!createdThongTinThe || !createdThongTinThe.id) {
+          this.message.error('Không thể tạo thông tin thẻ');
+          return false;
+        }
+
+        // Tính toán các ngày tháng
+        const ngayBienLai = new Date();
+        
+        // Xử lý hạn thẻ cũ
+        let hanTheCu: Date | null = null;
+        if (data.denNgayTheCu) {
+          // Chuyển đổi chuỗi ngày thành Date object
+          const parts = data.denNgayTheCu.split('/');
+          if (parts.length === 3) {
+            // Nếu ngày ở định dạng dd/MM/yyyy
+            hanTheCu = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          } else {
+            // Thử parse trực tiếp nếu là định dạng ISO
+            hanTheCu = new Date(data.denNgayTheCu);
+          }
+
+          // Kiểm tra tính hợp lệ của ngày
+          if (isNaN(hanTheCu.getTime())) {
+            console.warn('Hạn thẻ cũ không hợp lệ:', data.denNgayTheCu);
+            hanTheCu = null; // Reset về null nếu không hợp lệ
+          }
+        }
+
+        // Tính toán hạn thẻ mới
+        const hanTheMoiTu = this.tinhHanTheMoiTu(ngayBienLai, hanTheCu);
+        const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, this.multipleSearchSoThangDong);
+        const soTienCanDong = this.tinhSoTienCanDong(this.multipleSearchNguoiThu, this.multipleSearchSoThangDong);
+
+        // Log để debug
+        console.log('Thông tin ngày tháng:', {
+          ngayBienLai,
+          hanTheCu,
+          hanTheMoiTu,
+          hanTheMoiDen,
+          rawDenNgayTheCu: data.denNgayTheCu
+        });
+
+        // Tạo KeKhaiBHYT
+        const keKhaiBHYTData: KeKhaiBHYT = {
+          dot_ke_khai_id: this.dotKeKhaiId,
+          thong_tin_the_id: createdThongTinThe.id,
+          dotKeKhai: this.dotKeKhai || undefined,
+          thongTinThe: createdThongTinThe,
+          nguoi_thu: this.multipleSearchNguoiThu,
+          so_thang_dong: this.multipleSearchSoThangDong,
+          phuong_an_dong: this.checkPhuongAnDong(hanTheCu),
+          han_the_cu: hanTheCu,
+          han_the_moi_tu: hanTheMoiTu,
+          han_the_moi_den: hanTheMoiDen,
+          tinh_nkq: tinhNKQ,
+          huyen_nkq: huyenNKQ,
+          xa_nkq: xaNKQ,
+          dia_chi_nkq: diaChiNKQ,
+          benh_vien_kcb: this.getBenhVienTen(maBenhVien),
+          ma_benh_vien: maBenhVien,
+          nguoi_tao: this.currentUser.username,
+          ngay_tao: new Date(),
+          ngay_bien_lai: ngayBienLai,
+          so_tien_can_dong: soTienCanDong
+        };
+
+        // Tạo mới kê khai
+        await this.keKhaiBHYTService.create(this.dotKeKhaiId, keKhaiBHYTData).toPromise();
+        return true;
+
+      } catch (error: any) {
+        if (error?.status === 400) {
+          this.message.error('Dữ liệu không hợp lệ: ' + (error?.error?.message || 'Vui lòng kiểm tra lại thông tin'));
+        } else {
+          this.message.error('Có lỗi xảy ra khi tạo kê khai');
+        }
+        console.error('Chi tiết lỗi:', error);
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Lỗi khi xử lý dữ liệu:', error);
+      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
+      return false;
+    }
+  }
+
+  // Cập nhật hàm handleSearchMultipleOk để sử dụng hàm mới
+  async handleSearchMultipleOk(): Promise<void> {
+    if (!this.multipleSearchText.trim()) {
+      this.message.warning('Vui lòng nhập danh sách mã số BHXH');
+      return;
+    }
+
+    if (!this.multipleSearchNguoiThu) {
+      this.message.warning('Vui lòng chọn người thứ');
+      return;
+    }
+
+    if (!this.multipleSearchSoThangDong) {
+      this.message.warning('Vui lòng chọn số tháng đóng');
+      return;
+    }
+
+    this.isSearchingMultiple = true;
+    let loadingMessageId: string | undefined;
+    
+    try {
+      const maSoBHXHList = this.multipleSearchText
+        .split('\n')
+        .map(item => item.trim())
+        .filter(item => item.length === 10);
+
+      if (maSoBHXHList.length === 0) {
+        this.message.warning('Không tìm thấy mã số BHXH hợp lệ (phải có 10 số)');
+        return;
+      }
+
+      const totalCount = maSoBHXHList.length;
+      let successCount = 0;
+      let failedCount = 0;
+      let processedCount = 0;
+
+      // Hiển thị loading message ban đầu
+      loadingMessageId = this.message.loading(
+        `Đang xử lý 0/${totalCount} mã số BHXH...`, 
+        { nzDuration: 0 }
+      ).messageId;
+
+      for (const maSoBHXH of maSoBHXHList) {
+        try {
+          // Cập nhật thông báo tiến trình
+          processedCount++;
+
+          // Cập nhật nội dung loading message
+          if (loadingMessageId) {
+            this.message.remove(loadingMessageId);
+            loadingMessageId = this.message.loading(
+              `Đang xử lý ${processedCount}/${totalCount} mã số BHXH...`,
+              { nzDuration: 0 }
+            ).messageId;
+          }
+
+          const response = await this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).toPromise();
+          if (response && response.success) {
+            const success = await this.createKeKhaiFromApiData(response.data);
+            if (success) {
+              successCount++;
+            } else {
+              failedCount++;
+              console.warn(`Không thể tạo kê khai cho mã số ${maSoBHXH}`);
+            }
+          } else {
+            failedCount++;
+            console.warn(`Không tìm thấy thông tin cho mã số ${maSoBHXH}`);
+          }
+        } catch (error) {
+          failedCount++;
+          console.error(`Lỗi khi xử lý mã số BHXH ${maSoBHXH}:`, error);
+        }
+      }
+
+      // Đóng loading message cuối cùng
+      if (loadingMessageId) {
+        this.message.remove(loadingMessageId);
+      }
+
+      // Hiển thị thông báo kết quả
+      if (successCount > 0 && failedCount > 0) {
+        this.message.warning(
+          `Đã tạo ${successCount}/${totalCount} kê khai BHYT thành công, ` +
+          `${failedCount} mã số không thể tạo`
+        );
+      } else if (successCount > 0) {
+        this.message.success(
+          `Đã tạo thành công ${successCount} kê khai BHYT`
+        );
+      } else if (failedCount > 0) {
+        this.message.error(
+          `Không thể tạo kê khai cho ${failedCount} mã số BHXH`
+        );
+      }
+
+      if (successCount > 0) {
+        this.loadData();
+      }
+
+      this.isSearchMultipleVisible = false;
+    } catch (error) {
+      console.error('Lỗi khi xử lý tìm kiếm nhiều:', error);
+      this.message.error('Có lỗi xảy ra khi tạo kê khai');
+      // Đảm bảo đóng loading message nếu có lỗi
+      if (loadingMessageId) {
+        this.message.remove(loadingMessageId);
+      }
+    } finally {
+      this.isSearchingMultiple = false;
+      // Đảm bảo đóng loading message trong mọi trường hợp
+      if (loadingMessageId) {
+        this.message.remove(loadingMessageId);
+      }
     }
   }
 } 

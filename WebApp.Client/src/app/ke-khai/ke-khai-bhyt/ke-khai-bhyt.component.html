@@ -18,6 +18,9 @@
       <button nz-button (click)="refresh()">
         <i nz-icon nzType="reload"></i>Làm mới
       </button>
+      <button nz-button nzType="default" (click)="showSearchMultipleModal()">
+        <i nz-icon nzType="search"></i>Tìm nhiều mã số
+      </button>
       <button nz-button nzType="primary" (click)="handleOk()">
         <i nz-icon nzType="save"></i>Lưu
       </button>
@@ -410,4 +413,82 @@
       </tr>
     </tbody>
   </nz-table>
-</div> 
+</div>
+
+<!-- Thêm modal tìm kiếm nhiều mã số vào cuối file -->
+<nz-modal
+  [(nzVisible)]="isSearchMultipleVisible"
+  [nzTitle]="'Tìm kiếm nhiều mã số BHXH'"
+  (nzOnCancel)="handleSearchMultipleCancel()"
+  (nzOnOk)="handleSearchMultipleOk()"
+  [nzOkText]="'Tìm kiếm'"
+  [nzCancelText]="'Hủy'"
+  [nzOkLoading]="isSearchingMultiple"
+  [nzWidth]="600"
+>
+  <ng-container *nzModalContent>
+    <!-- Textarea nhập mã số BHXH -->
+    <textarea
+      nz-input
+      [(ngModel)]="multipleSearchText"
+      [nzAutosize]="{ minRows: 4, maxRows: 8 }"
+      placeholder="Nhập danh sách mã số BHXH, mỗi mã số một dòng"
+      style="width: 100%; margin-bottom: 16px; resize: none;"
+    ></textarea>
+
+    <!-- Người thứ -->
+    <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 8px;">Người thứ:</div>
+      <nz-select 
+        [(ngModel)]="multipleSearchNguoiThu"
+        [nzPlaceHolder]="'Chọn người thứ'"
+        [nzDisabled]="donViName.includes('DTTS')"
+        style="width: 100%;"
+      >
+        <nz-option [nzValue]="1" [nzLabel]="'Người thứ 1'"></nz-option>
+        <nz-option [nzValue]="2" [nzLabel]="'Người thứ 2'"></nz-option>
+        <nz-option [nzValue]="3" [nzLabel]="'Người thứ 3'"></nz-option>
+        <nz-option [nzValue]="4" [nzLabel]="'Người thứ 4'"></nz-option>
+        <nz-option [nzValue]="5" [nzLabel]="'Người thứ 5 trở đi'"></nz-option>
+      </nz-select>
+    </div>
+
+    <!-- Số tháng đóng -->
+    <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 8px;">Số tháng đóng:</div>
+      <nz-select 
+        [(ngModel)]="multipleSearchSoThangDong"
+        [nzPlaceHolder]="'Chọn số tháng đóng'"
+        style="width: 100%;"
+      >
+        <nz-option [nzValue]="3" [nzLabel]="'3 tháng'"></nz-option>
+        <nz-option [nzValue]="6" [nzLabel]="'6 tháng'"></nz-option>
+        <nz-option [nzValue]="12" [nzLabel]="'12 tháng'"></nz-option>
+      </nz-select>
+    </div>
+
+    <!-- KCB ban đầu -->
+    <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 8px;">KCB ban đầu:</div>
+      <nz-select 
+        [(ngModel)]="multipleSearchBenhVien"
+        [nzShowSearch]="true"
+        [nzAllowClear]="true"
+        [nzPlaceHolder]="'Chọn bệnh viện'"
+        style="width: 100%;"
+      >
+        <nz-option
+          *ngFor="let bv of danhMucCSKCBs"
+          [nzValue]="bv.value"
+          [nzLabel]="bv.ten"
+        ></nz-option>
+      </nz-select>
+    </div>
+
+    <!-- Ghi chú -->
+    <div style="color: rgba(0, 0, 0, 0.45); font-size: 12px;">
+      <i nz-icon nzType="info-circle" nzTheme="outline"></i>
+      <span style="margin-left: 8px;">Lưu ý: Mỗi mã số BHXH nhập trên một dòng</span>
+    </div>
+  </ng-container>
+</nz-modal> 

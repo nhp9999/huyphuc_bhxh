@@ -17,7 +17,7 @@ export interface ThongTinThe {
   cccd: string;
   ho_ten: string;
   ngay_sinh: Date;
-  gioi_tinh: boolean;
+  gioi_tinh: 'Nam' | 'Nữ';
   so_dien_thoai: string;
   ma_hgd?: string;
   ma_tinh_ks?: string;
