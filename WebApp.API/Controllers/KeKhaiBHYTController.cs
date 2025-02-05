@@ -114,14 +114,62 @@ namespace WebApp.API.Controllers
                     return NotFound(new { message = "Không tìm thấy đợt kê khai" });
                 }
 
+                // Kiểm tra xem mã số BHXH đã tồn tại trong đợt kê khai này chưa
+                var existingKeKhai = await _context.KeKhaiBHYTs
+                    .Include(k => k.ThongTinThe)
+                    .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId 
+                        && k.ThongTinThe.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh);
+
+                if (existingKeKhai != null)
+                {
+                    return BadRequest(new { 
+                        success = false,
+                        message = $"Mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã được kê khai trong đợt kê khai này" 
+                    });
+                }
+
+                // Kiểm tra xem mã số BHXH đã được kê khai trong vòng 1 tuần qua chưa
+                var oneWeekAgo = DateTime.UtcNow.AddDays(-7);
+                var recentKeKhai = await _context.KeKhaiBHYTs
+                    .Include(k => k.ThongTinThe)
+                    .Include(k => k.DotKeKhai)
+                    .Where(k => k.ThongTinThe.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh
+                        && k.ngay_tao >= oneWeekAgo
+                        && k.dot_ke_khai_id != dotKeKhaiId)
+                    .OrderByDescending(k => k.ngay_tao)
+                    .FirstOrDefaultAsync();
+
+                if (recentKeKhai != null)
+                {
+                    var dotKeKhaiInfo = $"Đợt {recentKeKhai.DotKeKhai.so_dot} tháng {recentKeKhai.DotKeKhai.thang} năm {recentKeKhai.DotKeKhai.nam}";
+                    return BadRequest(new { 
+                        success = false,
+                        message = $"Mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã được kê khai trong {dotKeKhaiInfo}" 
+                    });
+                }
+
                 // Kiểm tra xem ThongTinThe đã tồn tại chưa
                 var existingThongTinThe = await _context.ThongTinThes
                     .FirstOrDefaultAsync(t => t.id == keKhaiBHYT.ThongTinThe.id);
 
-                if (existingThongTinThe != null)
+                if (existingThongTinThe == null)
                 {
-                    // Nếu đã tồn tại, sử dụng lại thông tin thẻ đó
-                    keKhaiBHYT.ThongTinThe = existingThongTinThe;
+                    // Nếu không tìm thấy theo id, kiểm tra theo mã số BHXH
+                    existingThongTinThe = await _context.ThongTinThes
+                        .FirstOrDefaultAsync(t => t.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh);
+                    
+                    if (existingThongTinThe != null)
+                    {
+                        // Nếu tìm thấy theo mã số BHXH, sử dụng lại thông tin thẻ đó
+                        keKhaiBHYT.ThongTinThe = null;
+                        keKhaiBHYT.thong_tin_the_id = existingThongTinThe.id;
+                    }
+                }
+                else 
+                {
+                    // Nếu tìm thấy theo id, sử dụng lại thông tin thẻ đó
+                    keKhaiBHYT.ThongTinThe = null;
+                    keKhaiBHYT.thong_tin_the_id = existingThongTinThe.id;
                 }
 
                 // Gán DotKeKhai từ database
@@ -133,12 +181,20 @@ namespace WebApp.API.Controllers
                 _context.KeKhaiBHYTs.Add(keKhaiBHYT);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetKeKhaiBHYT), new { dotKeKhaiId, id = keKhaiBHYT.id }, keKhaiBHYT);
+                return CreatedAtAction(nameof(GetKeKhaiBHYT), new { dotKeKhaiId, id = keKhaiBHYT.id }, new {
+                    success = true,
+                    message = "Tạo kê khai BHYT thành công",
+                    data = keKhaiBHYT
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error creating ke khai BHYT: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi tạo kê khai BHYT", error = ex.Message });
+                return StatusCode(500, new {
+                    success = false,
+                    message = "Lỗi khi tạo kê khai BHYT",
+                    error = ex.Message
+                });
             }
         }
 

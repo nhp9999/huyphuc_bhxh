@@ -710,13 +710,17 @@ export class KeKhaiBHYTComponent implements OnInit {
 
         // Tạo mới KeKhaiBHYT
         this.keKhaiBHYTService.create(this.dotKeKhaiId, data).subscribe({
-          next: () => {
+          next: (response) => {
             this.message.success('Thêm mới thành công');
             this.isVisible = false;
             this.loadData();
           },
           error: (error) => {
-            this.message.error('Có lỗi xảy ra: ' + error.error);
+            if (error.error && error.error.message) {
+              this.message.error(error.error.message);
+            } else {
+              this.message.error('Có lỗi xảy ra khi tạo mới');
+            }
             this.loading = false;
           }
         });
