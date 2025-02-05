@@ -56,6 +56,7 @@ namespace WebApp.API.Controllers
                         nguoi_tao = k.nguoi_tao,
                         ngay_tao = k.ngay_tao,
                         ngay_bien_lai = k.ngay_bien_lai,
+                        so_tien_can_dong = k.so_tien_can_dong,
                         DotKeKhai = k.DotKeKhai,
                         ThongTinThe = k.ThongTinThe
                     })
@@ -238,6 +239,32 @@ namespace WebApp.API.Controllers
         private bool KeKhaiBHYTExists(int dotKeKhaiId, int id)
         {
             return _context.KeKhaiBHYTs.Any(e => e.dot_ke_khai_id == dotKeKhaiId && e.id == id);
+        }
+
+        [HttpPatch("{dotKeKhaiId}/ke-khai-bhyt/{id}/toggle-urgent")]
+        public async Task<IActionResult> ToggleUrgent(int dotKeKhaiId, int id)
+        {
+            try
+            {
+                var keKhaiBHYT = await _context.KeKhaiBHYTs
+                    .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
+                    
+                if (keKhaiBHYT == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
+                }
+
+                // Toggle trạng thái urgent
+                keKhaiBHYT.is_urgent = !keKhaiBHYT.is_urgent;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { is_urgent = keKhaiBHYT.is_urgent });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error toggling urgent status for ke khai BHYT {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi cập nhật trạng thái gấp", error = ex.Message });
+            }
         }
     }
 

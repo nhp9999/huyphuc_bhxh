@@ -113,6 +113,20 @@ nz-table {
     .ant-table-tbody > tr > td {
       white-space: nowrap;
       padding: 12px 16px;
+
+      a {
+        cursor: pointer;
+        color: #1890ff;
+        
+        &.urgent {
+          color: #ff4d4f;
+          font-weight: 500;
+        }
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
     .ant-table-container {
@@ -132,12 +146,22 @@ nz-table {
 .table-actions {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
 
-  .left-actions,
-  .right-actions {
+  .left-actions {
     display: flex;
     gap: 8px;
+  }
+
+  .right-actions {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.85);
+
+    .amount {
+      color: #1890ff;
+      margin-left: 4px;
+    }
   }
 }
 

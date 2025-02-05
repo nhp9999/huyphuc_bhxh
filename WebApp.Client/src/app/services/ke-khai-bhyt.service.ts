@@ -55,11 +55,11 @@ export interface KeKhaiBHYT {
   dot_ke_khai_id: number;
   thong_tin_the_id: number;
   dotKeKhai?: DotKeKhai;
-  thongTinThe?: ThongTinThe;
+  thongTinThe: ThongTinThe;
   nguoi_thu: number;
   so_thang_dong: number;
   phuong_an_dong: string;
-  han_the_cu: Date | null;
+  han_the_cu?: Date | null;
   han_the_moi_tu: Date;
   han_the_moi_den: Date;
   tinh_nkq: string;
@@ -72,6 +72,7 @@ export interface KeKhaiBHYT {
   ngay_tao: Date;
   ngay_bien_lai?: Date | null;
   so_tien_can_dong: number;
+  is_urgent?: boolean;
 }
 
 export interface ThongTinBHYTResponse {
@@ -178,18 +179,18 @@ export class KeKhaiBHYTService {
       map(data => {
         return data.map(item => ({
           ...item,
-          thongTinThe: item.thongTinThe ? {
+          thongTinThe: {
             ...item.thongTinThe,
-            ngay_sinh: item.thongTinThe.ngay_sinh ? new Date(item.thongTinThe.ngay_sinh) : new Date(),
+            ngay_sinh: new Date(item.thongTinThe.ngay_sinh),
             ngay_tao: item.thongTinThe.ngay_tao ? new Date(item.thongTinThe.ngay_tao) : undefined
-          } : undefined,
+          },
           dotKeKhai: item.dotKeKhai ? {
             ...item.dotKeKhai,
             ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined
           } : undefined,
           han_the_cu: item.han_the_cu ? new Date(item.han_the_cu) : null,
-          han_the_moi_tu: item.han_the_moi_tu ? new Date(item.han_the_moi_tu) : new Date(),
-          han_the_moi_den: item.han_the_moi_den ? new Date(item.han_the_moi_den) : new Date(),
+          han_the_moi_tu: new Date(item.han_the_moi_tu),
+          han_the_moi_den: new Date(item.han_the_moi_den),
           ngay_tao: item.ngay_tao ? new Date(item.ngay_tao) : undefined
         })) as KeKhaiBHYT[];
       })
@@ -260,5 +261,9 @@ export class KeKhaiBHYTService {
   // Thêm method để lấy danh sách bệnh viện
   getDanhMucCSKCB(): Observable<DanhMucCSKCB[]> {
     return this.http.get<DanhMucCSKCB[]>(this.danhMucCSKCBUrl);
+  }
+
+  toggleUrgent(dotKeKhaiId: number, id: number): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`, {});
   }
 } 

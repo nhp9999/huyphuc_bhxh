@@ -134,8 +134,13 @@ namespace WebApp.API.Models
         /// Số tiền cần đóng
         /// </summary>
         [Column("so_tien_can_dong")]
-        [Required]
-        public decimal SoTienCanDong { get; set; }
+        public decimal so_tien_can_dong { get; set; }
+
+        /// <summary>
+        /// Đánh dấu kê khai cần xử lý gấp
+        /// </summary>
+        [Column("is_urgent")]
+        public bool is_urgent { get; set; }
 
         // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
         public KeKhaiBHYT()

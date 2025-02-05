@@ -509,40 +509,27 @@ export class KeKhaiBHYTComponent implements OnInit {
             }
           });
         }
-        if (data.thongTinThe.ma_huyen_ks) {
-          // Tạo một biến riêng để lưu danh sách xã KS
-          this.diaChiService.getDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_ks).subscribe({
-            next: (xas) => {
-              this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-              console.log('Loaded xã KS:', this.danhMucXaKS);
-            },
-            error: (error) => {
-              console.error('Error loading xã KS:', error);
-              this.message.error('Có lỗi xảy ra khi tải danh sách xã/phường KS');
-            }
-          });
-        }
+
+        // Sau đó patch các thông tin khác
+        this.form.patchValue({
+          id: data.id,
+          thong_tin_the_id: data.thong_tin_the_id,
+          nguoi_thu: data.nguoi_thu,
+          so_thang_dong: data.so_thang_dong,
+          phuong_an_dong: data.phuong_an_dong,
+          han_the_cu: data.han_the_cu,
+          han_the_moi_tu: data.han_the_moi_tu,
+          han_the_moi_den: data.han_the_moi_den,
+          dia_chi_nkq: data.dia_chi_nkq,
+          benh_vien_kcb: data.benh_vien_kcb,
+          ma_benh_vien: data.ma_benh_vien,
+          so_tien_can_dong: data.so_tien_can_dong,
+        });
+
+        // Log để kiểm tra
+        console.log('Form values after patch:', this.form.value);
       }
 
-      // Sau đó patch các thông tin khác
-      this.form.patchValue({
-        id: data.id,
-        thong_tin_the_id: data.thong_tin_the_id,
-        nguoi_thu: data.nguoi_thu,
-        so_thang_dong: data.so_thang_dong,
-        phuong_an_dong: data.phuong_an_dong,
-        han_the_cu: data.han_the_cu,
-        han_the_moi_tu: data.han_the_moi_tu,
-        han_the_moi_den: data.han_the_moi_den,
-        dia_chi_nkq: data.dia_chi_nkq,
-        benh_vien_kcb: data.benh_vien_kcb,
-        ma_benh_vien: data.ma_benh_vien,
-        so_tien_can_dong: data.so_tien_can_dong,
-      });
-
-      // Log để kiểm tra
-      console.log('Form values after patch:', this.form.value);
-    } else {
       // Khi tạo mới, đặt ngày biên lai mặc định là ngày hôm nay
       this.form.patchValue({
         ngay_bien_lai: new Date()
@@ -562,14 +549,12 @@ export class KeKhaiBHYTComponent implements OnInit {
   }
 
   handleOk(): void {
-    if (this.form.valid && this.dotKeKhai) {
-      this.loading = true;
+    if (this.form.valid) {
       const formValue = this.form.value;
-
-      // Tìm tên tỉnh, huyện, xã từ mã cho noiNhanHoSo
-      const tinhSelected = this.danhMucTinhs.find(t => t.ma === formValue.tinh_nkq);
-      const huyenSelected = this.danhMucHuyens.find(h => h.ma === formValue.huyen_nkq);
-      const xaSelected = this.danhMucXas.find(x => x.ma === formValue.xa_nkq);
+      const soTienCanDong = this.tinhSoTienCanDong(formValue.nguoi_thu, formValue.so_thang_dong);
+      
+      // Gán giá trị so_tien_can_dong vào form
+      formValue.so_tien_can_dong = soTienCanDong;
 
       if (this.isEdit) {
         const keKhaiBHYTId = formValue.id;
@@ -603,9 +588,9 @@ export class KeKhaiBHYTComponent implements OnInit {
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           noiNhanHoSo: {
-            tinh: tinhSelected?.ten || '',
-            huyen: huyenSelected?.ten || '',
-            xa: xaSelected?.ten || '',
+            tinh: this.getTinhTen(formValue.tinh_nkq),
+            huyen: this.getHuyenTen(formValue.huyen_nkq),
+            xa: this.getXaTen(formValue.xa_nkq),
             diaChi: formValue.dia_chi_nkq
           }
         };
@@ -615,7 +600,7 @@ export class KeKhaiBHYTComponent implements OnInit {
           id: keKhaiBHYTId,
           dot_ke_khai_id: this.dotKeKhaiId,
           thong_tin_the_id: thongTinTheId,
-          dotKeKhai: this.dotKeKhai,
+          dotKeKhai: this.dotKeKhai || undefined,
           thongTinThe: updateData,
           nguoi_thu: formValue.nguoi_thu,
           so_thang_dong: formValue.so_thang_dong,
@@ -673,9 +658,9 @@ export class KeKhaiBHYTComponent implements OnInit {
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           noiNhanHoSo: {
-            tinh: tinhSelected?.ten || '',
-            huyen: huyenSelected?.ten || '',
-            xa: xaSelected?.ten || '',
+            tinh: this.getTinhTen(formValue.tinh_nkq),
+            huyen: this.getHuyenTen(formValue.huyen_nkq),
+            xa: this.getXaTen(formValue.xa_nkq),
             diaChi: formValue.dia_chi_nkq
           },
           ma_huyen_ks: formValue.ma_huyen_ks || '',
@@ -693,17 +678,7 @@ export class KeKhaiBHYTComponent implements OnInit {
         const data: KeKhaiBHYT = {
           dot_ke_khai_id: this.dotKeKhaiId,
           thong_tin_the_id: thongTinTheData.id!,
-          dotKeKhai: {
-            id: this.dotKeKhaiId,
-            nam: this.dotKeKhai!.nam,
-            thang: this.dotKeKhai!.thang,
-            so_dot: this.dotKeKhai!.so_dot,
-            ten_dot: this.dotKeKhai!.ten_dot,
-            dich_vu: this.dotKeKhai!.dich_vu,
-            trang_thai: this.dotKeKhai!.trang_thai,
-            nguoi_tao: this.currentUser.username,
-            ghi_chu: this.dotKeKhai!.ghi_chu || ''
-          },
+          dotKeKhai: this.dotKeKhai || undefined,
           thongTinThe: thongTinTheData,
           nguoi_thu: formValue.nguoi_thu,
           so_thang_dong: formValue.so_thang_dong,
@@ -1303,5 +1278,43 @@ export class KeKhaiBHYTComponent implements OnInit {
     console.log('Hạn thẻ mới đến được tính:', result);
     
     return result;
+  }
+
+  // Thêm phương thức tính tổng số tiền
+  getTongSoTienCanDong(): number {
+    return this.keKhaiBHYTs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0);
+  }
+
+  toggleUrgent(id: number): void {
+    this.keKhaiBHYTService.toggleUrgent(this.dotKeKhaiId, id).subscribe({
+      next: () => {
+        // Cập nhật lại trạng thái trong danh sách
+        const item = this.keKhaiBHYTs.find(x => x.id === id);
+        if (item) {
+          item.is_urgent = !item.is_urgent;
+        }
+      },
+      error: (error) => {
+        console.error('Error toggling urgent status:', error);
+        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái gấp');
+      }
+    });
+  }
+
+  getNguoiThuText(nguoiThu: number): string {
+    switch (nguoiThu) {
+      case 1:
+        return 'Người thứ 1';
+      case 2:
+        return 'Người thứ 2';
+      case 3:
+        return 'Người thứ 3';
+      case 4:
+        return 'Người thứ 4';
+      case 5:
+        return 'Người thứ 5 trở đi';
+      default:
+        return '';
+    }
   }
 } 

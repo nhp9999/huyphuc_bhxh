@@ -159,23 +159,8 @@
           </nz-form-item>
         </div>
 
-        <div nz-col [nzSpan]="4">
-          <nz-form-item>
-            <nz-form-label [nzSpan]="24" nzRequired>Số tiền cần đóng</nz-form-label>
-            <nz-form-control [nzSpan]="24">
-              <nz-input-number
-                formControlName="so_tien_can_dong"
-                [nzMin]="0"
-                [nzMax]="999999999"
-                [nzStep]="1000"
-                [nzFormatter]="formatCurrency"
-                [nzParser]="parseCurrency"
-                [nzDisabled]="true"
-                nzPlaceHolder="Số tiền tự động tính">
-              </nz-input-number>
-            </nz-form-control>
-          </nz-form-item>
-        </div>
+        <!-- Ẩn trường số tiền cần đóng -->
+        <input type="hidden" formControlName="so_tien_can_dong">
 
         <div nz-col [nzSpan]="4">
           <nz-form-item>
@@ -353,6 +338,9 @@
         <i nz-icon nzType="delete"></i>Xóa {{ selectedIds.length }} bản ghi đã chọn
       </button>
     </div>
+    <div class="right-actions">
+      <span>Tổng tiền: <strong class="amount">{{ getTongSoTienCanDong() | number:'1.0-0' }}đ</strong></span>
+    </div>
   </div>
 
   <nz-table
@@ -373,7 +361,6 @@
         <th>Mã số BHXH</th>
         <th>CCCD</th>
         <th>Họ tên</th>
-        <th>Số tiền cần đóng</th>
         <th>Ngày sinh</th>
         <th>Giới tính</th>
         <th>Số điện thoại</th>
@@ -382,8 +369,8 @@
         <th>Tỉnh NKQ</th>
         <th>Huyện NKQ</th>
         <th>Xã NKQ</th>
-        <th>Ngày biên lai</th>
         <th>Bệnh viện KCB</th>
+        <th>Số tiền cần đóng</th>
         <th style="width: 100px;">Thao tác</th>
       </tr>
     </thead>
@@ -395,20 +382,23 @@
             (ngModelChange)="onItemChecked(data.id!, $event)">
           </label>
         </td>
-        <td>{{ data.thongTinThe?.ma_so_bhxh }}</td>
-        <td>{{ data.thongTinThe?.cccd }}</td>
-        <td>{{ data.thongTinThe?.ho_ten }}</td>
-        <td>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>
-        <td>{{ data.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
-        <td>{{ data.thongTinThe?.gioi_tinh }}</td>
-        <td>{{ data.thongTinThe?.so_dien_thoai }}</td>
-        <td>{{ data.nguoi_thu }}</td>
-        <td>{{ data.so_thang_dong }}</td>
+        <td>
+          <a [class.urgent]="data.is_urgent" (click)="toggleUrgent(data.id!)">
+            {{ data.thongTinThe.ma_so_bhxh }}
+          </a>
+        </td>
+        <td>{{ data.thongTinThe.cccd }}</td>
+        <td>{{ data.thongTinThe.ho_ten }}</td>
+        <td>{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</td>
+        <td>{{ data.thongTinThe.gioi_tinh }}</td>
+        <td>{{ data.thongTinThe.so_dien_thoai }}</td>
+        <td>{{ getNguoiThuText(data.nguoi_thu) }}</td>
+        <td>{{ data.so_thang_dong }} tháng</td>
         <td>{{ data.tinh_nkq }}</td>
         <td>{{ data.huyen_nkq }}</td>
         <td>{{ data.xa_nkq }}</td>
-        <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
         <td>{{ data.benh_vien_kcb }}</td>
+        <td>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>
         <td>
           <a nz-button nzType="link" (click)="showModal(data)">
             <i nz-icon nzType="edit"></i>
