@@ -36,6 +36,7 @@ export interface DotKeKhai {
   don_vi_id: number;
   ngay_tao?: Date;
   checked?: boolean;
+  tong_so_tien?: number;
   DonVi?: {
     id: number;
     tenDonVi: string;
@@ -55,13 +56,23 @@ export class DotKeKhaiService {
   constructor(private http: HttpClient) { }
 
   getDotKeKhais(): Observable<DotKeKhai[]> {
-    return this.http.get<DotKeKhai[]>(this.apiUrl).pipe(
-      tap(data => this.dotKeKhaisSubject.next(data))
+    return this.http.get<DotKeKhai[]>(`${this.apiUrl}?includeTongSoTien=true`).pipe(
+      tap(data => {
+        console.log('Response from API:', {
+          total: data.length,
+          data: data.map(d => ({
+            id: d.id,
+            ten_dot: d.ten_dot,
+            tong_so_tien: d.tong_so_tien
+          }))
+        });
+        this.dotKeKhaisSubject.next(data);
+      })
     );
   }
 
   getDotKeKhai(id: number): Observable<DotKeKhai> {
-    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}`);
+    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}?includeTongSoTien=true`);
   }
 
   createDotKeKhai(dotKeKhai: CreateDotKeKhai): Observable<DotKeKhai> {
@@ -102,5 +113,18 @@ export class DotKeKhaiService {
         nam: nam.toString()
       }
     });
+  }
+
+  updateTongSoTien(id: number): Observable<DotKeKhai> {
+    // Thay vì gọi API update-tong-so-tien, ta sẽ lấy tổng số tiền từ bảng ke_khai_bhyt
+    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}`).pipe(
+      tap(dotKeKhai => {
+        const currentData = this.dotKeKhaisSubject.value;
+        const updatedData = currentData.map(item => 
+          item.id === id ? { ...item, tong_so_tien: dotKeKhai.tong_so_tien } : item
+        );
+        this.dotKeKhaisSubject.next(updatedData);
+      })
+    );
   }
 } 

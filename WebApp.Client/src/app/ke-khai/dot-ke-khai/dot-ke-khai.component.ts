@@ -26,7 +26,8 @@ import {
   FileDoneOutline,
   ReloadOutline,
   ArrowUpOutline,
-  ArrowDownOutline
+  ArrowDownOutline,
+  DollarOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -111,7 +112,8 @@ export class DotKeKhaiComponent implements OnInit {
       FileDoneOutline,
       ReloadOutline,
       ArrowUpOutline,
-      ArrowDownOutline
+      ArrowDownOutline,
+      DollarOutline
     );
 
     const currentDate = new Date();
@@ -187,11 +189,16 @@ export class DotKeKhaiComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
+    // Lấy danh sách đợt kê khai
     this.dotKeKhaiService.getDotKeKhais().subscribe({
-      next: () => {
+      next: (data) => {
+        console.log('Danh sách đợt kê khai:', data); // Log để debug
+        this.dotKeKhais = data;
+        this.filterData();
         this.loading = false;
       },
-      error: () => {
+      error: (error) => {
+        console.error('Lỗi khi tải dữ liệu:', error);
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
         this.loading = false;
       }
@@ -510,6 +517,10 @@ export class DotKeKhaiComponent implements OnInit {
 
   getDonViName(donViId: number): string {
     const donVi = this.donVis.find(d => d.id === donViId);
-    return donVi ? `${donVi.tenDonVi}${donVi.IsBHYT ? ' (BHYT)' : ''}` : '';
+    return donVi ? donVi.tenDonVi : '';
+  }
+
+  getTotalAmount(): number {
+    return this.filteredDotKeKhais.reduce((total, dot) => total + (dot.tong_so_tien || 0), 0);
   }
 } 

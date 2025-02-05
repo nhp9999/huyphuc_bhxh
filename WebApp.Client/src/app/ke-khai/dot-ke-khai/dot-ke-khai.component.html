@@ -46,17 +46,13 @@
       </div>
     </div>
 
-    <div class="stat-card info">
+    <div class="stat-card success">
       <div class="stat-icon">
-        <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+        <span nz-icon nzType="dollar" nzTheme="outline"></span>
       </div>
       <div class="stat-content">
-        <div class="stat-value">98%</div>
-        <div class="stat-label">Tỷ lệ hoàn thành</div>
-      </div>
-      <div class="stat-trend up">
-        <span nz-icon nzType="arrow-up"></span>
-        <span>2%</span>
+        <div class="stat-value">{{ getTotalAmount() | number:'1.0-0' }}</div>
+        <div class="stat-label">Tổng số tiền (đ)</div>
       </div>
     </div>
   </div>
@@ -108,20 +104,19 @@
               (ngModelChange)="onAllChecked($event)">
             </label>
           </th>
-          <th>STT</th>
           <th>Tên đợt</th>
           <th>Số đợt</th>
           <th>Tháng/Năm</th>
           <th>Dịch vụ</th>
           <th>Đơn vị</th>
+          <th>Tổng số tiền</th>
           <th>Trạng thái</th>
-          <th>Ngày tạo</th>
           <th>Ghi chú</th>
           <th>Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let data of basicTable.data; let i = index" 
+        <tr *ngFor="let data of basicTable.data" 
             (click)="onRowClick(data)"
             [ngClass]="{'clickable-row': data.dich_vu === 'BHYT'}"
             style="cursor: pointer;">
@@ -131,7 +126,6 @@
               (ngModelChange)="onItemChecked($event, data)">
             </label>
           </td>
-          <td>{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
           <td>{{ data.so_dot }}</td>
           <td>{{ data.thang }}/{{ data.nam }}</td>
@@ -142,12 +136,12 @@
             </nz-tag>
           </td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
+          <td>{{ data.tong_so_tien != null ? (data.tong_so_tien | number:'1.0-0') + ' đ' : '0 đ' }}</td>
           <td>
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">
               {{ getTagText(data.trang_thai) }}
             </nz-tag>
           </td>
-          <td>{{ data.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ data.ghi_chu }}</td>
           <td (click)="$event.stopPropagation()">
             <a nz-button nzType="link" (click)="showModal(data)">

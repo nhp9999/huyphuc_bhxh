@@ -33,12 +33,29 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var result = await _context.DotKeKhais
+                var dotKeKhais = await _context.DotKeKhais
                     .Include(d => d.DonVi)
-                    .OrderByDescending(x => x.ngay_tao)
+                    .Select(d => new DotKeKhai
+                    {
+                        id = d.id,
+                        ten_dot = d.ten_dot,
+                        so_dot = d.so_dot,
+                        thang = d.thang,
+                        nam = d.nam,
+                        dich_vu = d.dich_vu,
+                        ghi_chu = d.ghi_chu,
+                        trang_thai = d.trang_thai,
+                        nguoi_tao = d.nguoi_tao,
+                        don_vi_id = d.don_vi_id,
+                        ngay_tao = d.ngay_tao,
+                        DonVi = d.DonVi,
+                        tong_so_tien = _context.KeKhaiBHYTs
+                            .Where(k => k.dot_ke_khai_id == d.id)
+                            .Sum(k => k.so_tien_can_dong)
+                    })
                     .ToListAsync();
-                    
-                return Ok(result);
+
+                return Ok(dotKeKhais);
             }
             catch (Exception ex)
             {
@@ -52,7 +69,27 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                var dotKeKhai = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
+                    .Select(d => new DotKeKhai
+                    {
+                        id = d.id,
+                        ten_dot = d.ten_dot,
+                        so_dot = d.so_dot,
+                        thang = d.thang,
+                        nam = d.nam,
+                        dich_vu = d.dich_vu,
+                        ghi_chu = d.ghi_chu,
+                        trang_thai = d.trang_thai,
+                        nguoi_tao = d.nguoi_tao,
+                        don_vi_id = d.don_vi_id,
+                        ngay_tao = d.ngay_tao,
+                        DonVi = d.DonVi,
+                        tong_so_tien = _context.KeKhaiBHYTs
+                            .Where(k => k.dot_ke_khai_id == d.id)
+                            .Sum(k => k.so_tien_can_dong)
+                    })
+                    .FirstOrDefaultAsync(d => d.id == id);
 
                 if (dotKeKhai == null)
                 {

@@ -93,6 +93,12 @@ namespace WebApp.API.Models
         public int don_vi_id { get; set; }
         public virtual DonVi? DonVi { get; set; }
 
+        [Column("tong_so_tien")]
+        public decimal? tong_so_tien { get; set; }
+
+        // Navigation property cho KeKhaiBHYT
+        public virtual ICollection<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
+
         public DotKeKhai()
         {
             ten_dot = string.Empty;
