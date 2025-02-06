@@ -15,6 +15,8 @@ export interface CreateDotKeKhai {
   trang_thai: string;
   nguoi_tao: string;
   don_vi_id: number;
+  ma_ho_so?: string;
+  KeKhaiBHYTs?: any[];
 }
 
 // Interface cho việc cập nhật
@@ -37,6 +39,8 @@ export interface DotKeKhai {
   ngay_tao?: Date;
   checked?: boolean;
   tong_so_tien?: number;
+  ma_ho_so?: string;
+  KeKhaiBHYTs?: any[];
   DonVi?: {
     id: number;
     tenDonVi: string;

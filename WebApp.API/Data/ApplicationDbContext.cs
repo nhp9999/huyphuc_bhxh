@@ -122,10 +122,12 @@ namespace WebApp.API.Data
 
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.dot_ke_khai_id).HasColumnName("dot_ke_khai_id");
 
                 entity.HasOne(k => k.DotKeKhai)
-                    .WithMany()
+                    .WithMany(d => d.KeKhaiBHYTs)
                     .HasForeignKey(k => k.dot_ke_khai_id)
+                    .HasConstraintName("FK_KeKhaiBHYT_DotKeKhai")
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(k => k.ThongTinThe)

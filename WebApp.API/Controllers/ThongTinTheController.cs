@@ -124,8 +124,18 @@ namespace WebApp.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                thongTinThe.ngay_tao = DateTime.UtcNow;
+                // Kiểm tra xem mã số BHXH đã tồn tại chưa
+                var existingThongTinThe = await _context.ThongTinThes
+                    .FirstOrDefaultAsync(x => x.ma_so_bhxh == thongTinThe.ma_so_bhxh);
 
+                if (existingThongTinThe != null)
+                {
+                    // Nếu đã tồn tại, trả về thông tin thẻ cũ
+                    return Ok(existingThongTinThe);
+                }
+
+                // Nếu chưa tồn tại, tạo mới
+                thongTinThe.ngay_tao = DateTime.UtcNow;
                 _context.ThongTinThes.Add(thongTinThe);
                 await _context.SaveChangesAsync();
 

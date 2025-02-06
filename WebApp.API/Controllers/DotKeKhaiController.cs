@@ -269,7 +269,19 @@ namespace WebApp.API.Controllers
                     .OrderByDescending(d => d.so_dot)
                     .FirstOrDefaultAsync();
 
-                return Ok((lastDotKeKhai?.so_dot ?? 0) + 1);
+                var nextSoDot = (lastDotKeKhai?.so_dot ?? 0) + 1;
+
+                // Kiểm tra xem số đợt tiếp theo đã tồn tại chưa
+                while (await _context.DotKeKhais.AnyAsync(d => 
+                    d.don_vi_id == donViId 
+                    && d.thang == thang 
+                    && d.nam == nam 
+                    && d.so_dot == nextSoDot))
+                {
+                    nextSoDot++;
+                }
+
+                return Ok(nextSoDot);
             }
             catch (Exception ex)
             {

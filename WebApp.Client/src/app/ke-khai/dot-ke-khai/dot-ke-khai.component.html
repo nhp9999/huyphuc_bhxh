@@ -63,7 +63,8 @@
       <nz-tabset 
         [(nzSelectedIndex)]="selectedTabIndex" 
         (nzSelectedIndexChange)="onTabChange($event)"
-        [nzAnimated]="false">
+        [nzAnimated]="false"
+        [nzTabPosition]="'top'">
         <nz-tab nzTitle="Tất cả"></nz-tab>
         <nz-tab [nzTitle]="chuaGuiTemplate">
           <ng-template #chuaGuiTemplate>
@@ -163,40 +164,12 @@
     [nzCancelText]="'Hủy'"
     (nzOnCancel)="handleCancel()"
     (nzOnOk)="handleOk()"
-    [nzWidth]="600">
+    [nzWidth]="500">
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="form">
+      <form nz-form [formGroup]="form" class="compact-form">
         <nz-form-item>
-          <nz-form-label [nzSpan]="6">Tên đợt</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <input nz-input formControlName="ten_dot" readonly />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Số đợt</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Số đợt phải lớn hơn 0">
-            <nz-input-number formControlName="so_dot" [nzMin]="1" [nzStep]="1" style="width: 100%"></nz-input-number>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Tháng</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Tháng phải từ 1 đến 12">
-            <nz-input-number formControlName="thang" [nzMin]="1" [nzMax]="12" [nzStep]="1" style="width: 100%"></nz-input-number>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Năm</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Năm phải từ 2000 trở đi">
-            <nz-input-number formControlName="nam" [nzMin]="2000" [nzStep]="1" style="width: 100%"></nz-input-number>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Đơn vị</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn đơn vị">
+          <nz-form-label [nzSpan]="5" nzRequired>Đơn vị</nz-form-label>
+          <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đơn vị">
             <nz-select 
               formControlName="don_vi_id" 
               nzPlaceHolder="Chọn đơn vị"
@@ -212,22 +185,9 @@
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label [nzSpan]="6">Ghi chú</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <textarea nz-input formControlName="ghi_chu" rows="4"></textarea>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6">Trạng thái</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <nz-select formControlName="trang_thai" style="width: 100%">
-              <nz-option nzValue="chua_gui" nzLabel="Chưa gửi"></nz-option>
-              <nz-option nzValue="da_gui" nzLabel="Đã gửi"></nz-option>
-              <nz-option nzValue="cho_thanh_toan" nzLabel="Chờ thanh toán"></nz-option>
-              <nz-option nzValue="hoan_thanh" nzLabel="Hoàn thành"></nz-option>
-              <nz-option nzValue="tu_choi" nzLabel="Từ chối"></nz-option>
-            </nz-select>
+          <nz-form-label [nzSpan]="5">Ghi chú</nz-form-label>
+          <nz-form-control [nzSpan]="19">
+            <textarea nz-input formControlName="ghi_chu" rows="3" placeholder="Nhập ghi chú"></textarea>
           </nz-form-control>
         </nz-form-item>
       </form>
@@ -253,5 +213,42 @@
   display: flex;
   gap: 8px;
   margin-right: 16px;
+}
+
+.compact-form {
+  padding: 8px 0;
+}
+
+.compact-form nz-form-item {
+  margin-bottom: 16px;
+}
+
+.compact-form nz-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.compact-form nz-form-label {
+  padding: 0 8px;
+}
+
+:host ::ng-deep .ant-modal-body {
+  padding: 16px;
+}
+
+:host ::ng-deep .ant-modal-footer {
+  padding: 12px 16px;
+}
+
+:host ::ng-deep .ant-modal-header {
+  padding: 12px 16px;
+}
+
+:host ::ng-deep .ant-form-item-label > label {
+  font-size: 14px;
+}
+
+:host ::ng-deep .ant-select-selection-placeholder,
+:host ::ng-deep .ant-input::placeholder {
+  font-size: 14px;
 }
 </style> 

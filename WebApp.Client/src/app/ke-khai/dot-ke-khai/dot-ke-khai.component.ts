@@ -1,5 +1,5 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { DotKeKhai, CreateDotKeKhai, UpdateDotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
@@ -55,7 +55,6 @@ import { debounceTime } from 'rxjs/operators';
     NzInputModule,
     NzDatePickerModule,
     NzInputNumberModule,
-    DatePipe,
     NzSelectModule,
     NzCheckboxModule,
     NzTabsModule,
@@ -127,6 +126,7 @@ export class DotKeKhaiComponent implements OnInit {
       trang_thai: ['chua_gui'],
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
       don_vi_id: [null, [Validators.required]],
+      ma_ho_so: [''],
     });
 
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
@@ -260,7 +260,8 @@ export class DotKeKhaiComponent implements OnInit {
         ghi_chu: '',
         trang_thai: 'chua_gui',
         nguoi_tao: this.currentUser.username || '',
-        don_vi_id: null
+        don_vi_id: null,
+        ma_ho_so: '',
       });
     }
     this.isVisible = true;
@@ -280,6 +281,7 @@ export class DotKeKhaiComponent implements OnInit {
       trang_thai: 'chua_gui',
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
+      ma_ho_so: '',
     });
     this.updateTenDot();
   }
@@ -295,7 +297,7 @@ export class DotKeKhaiComponent implements OnInit {
         return;
       }
       
-      const baseData: CreateDotKeKhai = {
+      const createData: CreateDotKeKhai = {
         ten_dot: formValue.ten_dot,
         so_dot: Number(formValue.so_dot),
         thang: Number(formValue.thang),
@@ -305,12 +307,14 @@ export class DotKeKhaiComponent implements OnInit {
         trang_thai: formValue.trang_thai || 'chua_gui',
         nguoi_tao: this.currentUser.username || '',
         don_vi_id: Number(formValue.don_vi_id),
+        ma_ho_so: formValue.ma_ho_so || '',
+        KeKhaiBHYTs: []
       };
 
       // Log dữ liệu trước khi gửi
-      console.log('Data to be sent:', baseData);
+      console.log('Data to be sent:', createData);
 
-      if (!baseData.don_vi_id || !baseData.nguoi_tao) {
+      if (!createData.don_vi_id || !createData.nguoi_tao) {
         this.message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
         this.loading = false;
         return;
@@ -318,8 +322,18 @@ export class DotKeKhaiComponent implements OnInit {
 
       if (this.isEdit) {
         const updateData: UpdateDotKeKhai = {
-          ...baseData,
-          id: formValue.id
+          id: formValue.id,
+          ten_dot: formValue.ten_dot,
+          so_dot: Number(formValue.so_dot),
+          thang: Number(formValue.thang),
+          nam: Number(formValue.nam),
+          dich_vu: selectedDonVi.is_bhyt ? 'BHYT' : 'BHXH TN',
+          ghi_chu: formValue.ghi_chu || '',
+          trang_thai: formValue.trang_thai || 'chua_gui',
+          nguoi_tao: formValue.nguoi_tao || this.currentUser.username || '',
+          don_vi_id: Number(formValue.don_vi_id),
+          ma_ho_so: formValue.ma_ho_so || '',
+          KeKhaiBHYTs: []
         };
         
         this.dotKeKhaiService.updateDotKeKhai(updateData.id, updateData).subscribe({
@@ -347,13 +361,13 @@ export class DotKeKhaiComponent implements OnInit {
           }
         });
       } else {
-        this.dotKeKhaiService.createDotKeKhai(baseData).subscribe({
+        this.dotKeKhaiService.createDotKeKhai(createData).subscribe({
           next: (response) => {
             this.message.success('Thêm mới thành công');
             this.handleCancel();
             this.loading = false;
             
-            if (baseData.dich_vu === 'BHYT' && response && response.id) {
+            if (createData.dich_vu === 'BHYT' && response && response.id) {
               this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhyt']);
             }
           },

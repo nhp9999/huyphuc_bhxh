@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace WebApp.API.Models
 {
@@ -97,6 +99,7 @@ namespace WebApp.API.Models
         public decimal? tong_so_tien { get; set; }
 
         // Navigation property cho KeKhaiBHYT
+        [JsonIgnore]
         public virtual ICollection<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
 
         public DotKeKhai()
@@ -106,6 +109,7 @@ namespace WebApp.API.Models
             trang_thai = "chua_gui";
             nguoi_tao = string.Empty;
             ghi_chu = string.Empty;
+            KeKhaiBHYTs = new List<KeKhaiBHYT>();
         }
     }
 } 

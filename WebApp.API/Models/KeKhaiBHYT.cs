@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace WebApp.API.Models
 {
@@ -20,13 +21,15 @@ namespace WebApp.API.Models
         /// ID đợt kê khai
         /// </summary>
         [Required]
+        [Column("dot_ke_khai_id")]
         public int dot_ke_khai_id { get; set; }
 
         /// <summary>
         /// Navigation property cho đợt kê khai
         /// </summary>
+        [JsonIgnore]
         [ForeignKey("dot_ke_khai_id")]
-        public virtual DotKeKhai DotKeKhai { get; set; }
+        public virtual DotKeKhai? DotKeKhai { get; set; }
 
         /// <summary>
         /// ID thông tin thẻ
@@ -153,8 +156,6 @@ namespace WebApp.API.Models
             benh_vien_kcb = "";
             nguoi_tao = "";
             ngay_tao = DateTime.Now;
-            DotKeKhai = new DotKeKhai();
-            ThongTinThe = new ThongTinThe();
         }
     }
 } 
