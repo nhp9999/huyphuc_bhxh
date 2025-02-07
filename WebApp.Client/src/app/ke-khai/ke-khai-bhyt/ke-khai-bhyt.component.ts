@@ -113,6 +113,14 @@ export class KeKhaiBHYTComponent implements OnInit {
   // Thêm biến để lưu bệnh viện được chọn
   multipleSearchBenhVien: string = '';
 
+  // Thêm các biến thống kê
+  thongKe = {
+    daoHan: 0,
+    tangMoi: 0,
+    dungDong: 0,
+    tongSoTien: 0
+  };
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -418,18 +426,12 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.loading = true;
     this.keKhaiBHYTService.getByDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
-        console.log('Received data:', data);
-        this.keKhaiBHYTs = data.map(item => {
-          if (!item.thongTinThe) {
-            console.warn('thongTinThe is missing for item:', item);
-          }
-          return item;
-        });
+        this.keKhaiBHYTs = data;
+        this.tinhThongKe(); // Tính thống kê sau khi load dữ liệu
         this.loading = false;
       },
       error: (error) => {
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
-        console.error('Error loading data:', error);
         this.loading = false;
       }
     });
@@ -1797,5 +1799,15 @@ export class KeKhaiBHYTComponent implements OnInit {
         this.message.remove(loadingMessageId);
       }
     }
+  }
+
+  // Thêm phương thức tính thống kê
+  tinhThongKe(): void {
+    this.thongKe = {
+      daoHan: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dao_han').length,
+      tangMoi: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'tang_moi').length,
+      dungDong: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dung_dong').length,
+      tongSoTien: this.keKhaiBHYTs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0)
+    };
   }
 } 

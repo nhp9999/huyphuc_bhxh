@@ -86,7 +86,6 @@ export class DotKeKhaiComponent implements OnInit {
   private readonly trangThaiMap = [
     '', // Tất cả
     'chua_gui',
-    'da_gui',
     'cho_thanh_toan',
     'hoan_thanh',
     'tu_choi'

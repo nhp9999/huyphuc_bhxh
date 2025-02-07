@@ -155,12 +155,27 @@ nz-table {
   }
 
   .right-actions {
-    font-size: 14px;
-    color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
-    .amount {
-      color: #1890ff;
-      margin-left: 4px;
+    span {
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.85);
+
+      strong {
+        margin-left: 4px;
+        font-weight: 600;
+        
+        &.amount {
+          color: #1890ff;
+        }
+      }
+    }
+
+    .ant-divider {
+      margin: 0;
+      height: 16px;
     }
   }
 }

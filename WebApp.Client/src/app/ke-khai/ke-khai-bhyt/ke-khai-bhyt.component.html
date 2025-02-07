@@ -342,7 +342,13 @@
       </button>
     </div>
     <div class="right-actions">
-      <span>Tổng tiền: <strong class="amount">{{ getTongSoTienCanDong() | number:'1.0-0' }}đ</strong></span>
+      <span>Đáo hạn: <strong>{{ thongKe.daoHan }}</strong></span>
+      <nz-divider nzType="vertical"></nz-divider>
+      <span>Tăng mới: <strong>{{ thongKe.tangMoi }}</strong></span>
+      <nz-divider nzType="vertical"></nz-divider>
+      <span>Dừng đóng: <strong>{{ thongKe.dungDong }}</strong></span>
+      <nz-divider nzType="vertical"></nz-divider>
+      <span>Tổng tiền: <strong class="amount">{{ thongKe.tongSoTien | number:'1.0-0' }}đ</strong></span>
     </div>
   </div>
 
