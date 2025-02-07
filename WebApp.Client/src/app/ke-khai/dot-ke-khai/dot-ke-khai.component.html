@@ -106,10 +106,9 @@
             </label>
           </th>
           <th>Tên đợt</th>
-          <th>Số đợt</th>
-          <th>Tháng/Năm</th>
           <th>Dịch vụ</th>
           <th>Đơn vị</th>
+          <th>Tổng số thẻ</th>
           <th>Tổng số tiền</th>
           <th>Trạng thái</th>
           <th>Ghi chú</th>
@@ -128,8 +127,6 @@
             </label>
           </td>
           <td>{{ data.ten_dot }}</td>
-          <td>{{ data.so_dot }}</td>
-          <td>{{ data.thang }}/{{ data.nam }}</td>
           <td>
             <nz-tag [nzColor]="'blue'">
               {{ data.dich_vu === 'BHXH TN' ? 'BHXH TN' : 
@@ -137,6 +134,7 @@
             </nz-tag>
           </td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
+          <td>{{ data.tong_so_the != null ? data.tong_so_the : '0' }}</td>
           <td>{{ data.tong_so_tien != null ? (data.tong_so_tien | number:'1.0-0') + ' đ' : '0 đ' }}</td>
           <td>
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">

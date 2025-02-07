@@ -51,7 +51,9 @@ namespace WebApp.API.Controllers
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
-                            .Sum(k => k.so_tien_can_dong)
+                            .Sum(k => k.so_tien_can_dong),
+                        tong_so_the = _context.KeKhaiBHYTs
+                            .Count(k => k.dot_ke_khai_id == d.id)
                     })
                     .ToListAsync();
 
@@ -87,7 +89,9 @@ namespace WebApp.API.Controllers
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
-                            .Sum(k => k.so_tien_can_dong)
+                            .Sum(k => k.so_tien_can_dong),
+                        tong_so_the = _context.KeKhaiBHYTs
+                            .Count(k => k.dot_ke_khai_id == d.id)
                     })
                     .FirstOrDefaultAsync(d => d.id == id);
 

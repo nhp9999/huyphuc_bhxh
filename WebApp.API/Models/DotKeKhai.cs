@@ -98,6 +98,9 @@ namespace WebApp.API.Models
         [Column("tong_so_tien")]
         public decimal? tong_so_tien { get; set; }
 
+        [Column("tong_so_the")]
+        public int? tong_so_the { get; set; }
+
         // Navigation property cho KeKhaiBHYT
         [JsonIgnore]
         public virtual ICollection<KeKhaiBHYT> KeKhaiBHYTs { get; set; }

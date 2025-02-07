@@ -39,6 +39,7 @@ export interface DotKeKhai {
   ngay_tao?: Date;
   checked?: boolean;
   tong_so_tien?: number;
+  tong_so_the?: number;
   ma_ho_so?: string;
   KeKhaiBHYTs?: any[];
   DonVi?: {
@@ -60,14 +61,15 @@ export class DotKeKhaiService {
   constructor(private http: HttpClient) { }
 
   getDotKeKhais(): Observable<DotKeKhai[]> {
-    return this.http.get<DotKeKhai[]>(`${this.apiUrl}?includeTongSoTien=true`).pipe(
+    return this.http.get<DotKeKhai[]>(`${this.apiUrl}?includeTongSoTien=true&includeTongSoThe=true`).pipe(
       tap(data => {
         console.log('Response from API:', {
           total: data.length,
           data: data.map(d => ({
             id: d.id,
             ten_dot: d.ten_dot,
-            tong_so_tien: d.tong_so_tien
+            tong_so_tien: d.tong_so_tien,
+            tong_so_the: d.tong_so_the
           }))
         });
         this.dotKeKhaisSubject.next(data);
@@ -76,7 +78,7 @@ export class DotKeKhaiService {
   }
 
   getDotKeKhai(id: number): Observable<DotKeKhai> {
-    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}?includeTongSoTien=true`);
+    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}?includeTongSoTien=true&includeTongSoThe=true`);
   }
 
   createDotKeKhai(dotKeKhai: CreateDotKeKhai): Observable<DotKeKhai> {
