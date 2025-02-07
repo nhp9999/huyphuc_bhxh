@@ -548,9 +548,9 @@ export class DotKeKhaiComponent implements OnInit {
 
     // Mở modal thanh toán
     const modalRef = this.modal.create({
-      nzTitle: 'Thanh toán đợt kê khai',
+      nzTitle: 'QR Thanh toán',
       nzContent: ThanhToanModalComponent,
-      nzWidth: 600,
+      nzWidth: 800,
       nzData: {
         dotKeKhai: data
       },

@@ -22,11 +22,21 @@ export interface VietQRResponse {
   }
 }
 
+export interface PaymentConfirmResponse {
+  code: string;
+  desc: string;
+  data: {
+    status: 'success' | 'failed';
+    message?: string;
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class VietQRService {
   private apiUrl = 'https://api.vietqr.io/v2/generate';
+  private baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
@@ -43,5 +53,13 @@ export class VietQRService {
     };
 
     return this.http.post<VietQRResponse>(this.apiUrl, body, { headers });
+  }
+
+  confirmPayment(dotKeKhaiId: number, billUrl?: string, publicId?: string): Observable<PaymentConfirmResponse> {
+    const body = {
+      billUrl,
+      publicId
+    };
+    return this.http.post<PaymentConfirmResponse>(`${this.baseUrl}/api/viet-qr/confirm-payment/${dotKeKhaiId}`, body);
   }
 } 

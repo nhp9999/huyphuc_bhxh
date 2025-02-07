@@ -1,6 +1,6 @@
 <div class="container">
   <div class="header">
-    <h2>Danh sách đợt kê khai</h2>
+    <h2>Danh sách kê khai</h2>
     <button nz-button nzType="primary" (click)="showModal()">
       <i nz-icon nzType="plus"></i>Thêm mới
     </button>
@@ -14,7 +14,7 @@
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ dotKeKhais.length }}</div>
-        <div class="stat-label">Tổng đợt kê khai</div>
+        <div class="stat-label">Tổng kê khai</div>
       </div>
     </div>
 
@@ -24,10 +24,11 @@
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ getCounts('hoan_thanh') }}</div>
-        <div class="stat-label">Đợt đã hoàn thành</div>
+        <div class="stat-label">Hoàn thành</div>
       </div>
       <div class="stat-trend up">
         <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+
         <span>8%</span>
       </div>
     </div>
@@ -38,7 +39,7 @@
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ getCounts('tu_choi') }}</div>
-        <div class="stat-label">Đợt bị từ chối</div>
+        <div class="stat-label">Từ chối</div>
       </div>
       <div class="stat-trend down">
         <span nz-icon nzType="arrow-down" nzTheme="outline"></span>

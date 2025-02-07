@@ -1,14 +1,17 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NzModalRef } from 'ng-zorro-antd/modal';
+import { NzModalRef, NzModalService } from 'ng-zorro-antd/modal';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { DotKeKhai } from '../../../services/dot-ke-khai.service';
-import { VietQRService } from '../../../services/viet-qr.service';
+import { VietQRService, PaymentConfirmResponse } from '../../../services/viet-qr.service';
 import { environment } from '../../../../environments/environment';
+import { DownloadOutline, CheckCircleOutline } from '@ant-design/icons-angular/icons';
+import { NzIconService } from 'ng-zorro-antd/icon';
+import { UploadBillModalComponent } from '../upload-bill-modal/upload-bill-modal.component';
 
 @Component({
   selector: 'app-thanh-toan-modal',
@@ -21,25 +24,63 @@ import { environment } from '../../../../environments/environment';
     NzIconModule
   ],
   template: `
-    <div class="qr-container" *ngIf="!loading; else loadingTpl">
-      <nz-card>
-        <div class="qr-header">
-          <h2>Quét mã để thanh toán</h2>
-          <div class="bank-info">
-            <p class="bank-name">AGRIBANK - Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam</p>
-            <p class="account-number">Số tài khoản: <strong>{{ environment.vietQR.accountNo }}</strong></p>
-            <p class="account-name">Tên tài khoản: <strong>{{ environment.vietQR.accountName }}</strong></p>
+    <div class="qr-container" *ngIf="!loading; else loadingTpl">      
+      <div class="qr-content">
+        <div class="payment-info">
+          <div class="qr-section">
+            <div class="qr-wrapper">
+              <img [src]="qrDataUrl" *ngIf="qrDataUrl" alt="QR Code" />
+              <div class="qr-actions">
+                <button nz-button nzType="default" (click)="downloadQR()">
+                  <i nz-icon nzType="download" nzTheme="outline"></i>
+                  Tải mã QR
+                </button>
+              </div>
+            </div>
           </div>
-          <p class="amount">Số tiền: <strong>{{ dotKeKhai.tong_so_tien | number:'1.0-0' }} đ</strong></p>
-          <p class="note">Nội dung: <strong>{{ dotKeKhai.ten_dot }}</strong></p>
+
+          <div class="info-section">
+            <div class="info-group">
+              <div class="info-label">Tên đợt:</div>
+              <div class="info-value">{{ dotKeKhai.ten_dot }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Ngân hàng:</div>
+              <div class="info-value">AGRIBANK</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Số tài khoản:</div>
+              <div class="info-value">{{ environment.vietQR.accountNo }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Tên tài khoản:</div>
+              <div class="info-value">{{ environment.vietQR.accountName }}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Số tiền:</div>
+              <div class="info-value amount">{{ dotKeKhai.tong_so_tien | number:'1.0-0' }} đ</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Nội dung:</div>
+              <div class="info-value">{{ dotKeKhai.ten_dot }}</div>
+            </div>
+          </div>
         </div>
-        <div class="qr-content">
-          <img [src]="qrDataUrl" *ngIf="qrDataUrl" alt="QR Code" />
-        </div>
-        <div class="qr-footer">
-          <p>Vui lòng quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
-        </div>
-      </nz-card>
+      </div>
+
+      <div class="qr-footer">
+        <p>Vui lòng quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+        <button 
+          nz-button 
+          nzType="primary" 
+          [nzLoading]="isConfirming"
+          (click)="confirmPayment()"
+          class="confirm-button"
+        >
+          <i nz-icon nzType="check-circle" nzTheme="outline"></i>
+          Xác nhận thanh toán
+        </button>
+      </div>
     </div>
     <ng-template #loadingTpl>
       <div class="loading-container">
@@ -52,17 +93,21 @@ import { environment } from '../../../../environments/environment';
 export class ThanhToanModalComponent implements OnInit {
   @Input() dotKeKhai!: DotKeKhai;
   loading = true;
+  isConfirming = false;
   qrDataUrl: string = '';
   environment = environment;
 
   constructor(
     private modal: NzModalRef,
+    private modalService: NzModalService,
     private vietQRService: VietQRService,
-    private message: NzMessageService
-  ) {}
+    private message: NzMessageService,
+    private iconService: NzIconService
+  ) {
+    this.iconService.addIcon(DownloadOutline, CheckCircleOutline);
+  }
 
   ngOnInit(): void {
-    // Lấy dữ liệu từ modal data
     if (!this.dotKeKhai) {
       this.dotKeKhai = this.modal.getConfig().nzData?.dotKeKhai;
     }
@@ -88,7 +133,7 @@ export class ThanhToanModalComponent implements OnInit {
       accountName: environment.vietQR.accountName,
       acqId: environment.vietQR.acqId,
       amount: this.dotKeKhai.tong_so_tien,
-      addInfo: 'Thanh toan ' + this.dotKeKhai.ten_dot,
+      addInfo: this.dotKeKhai.ten_dot,
       format: 'base64',
       template: 'compact'
     };
@@ -107,6 +152,48 @@ export class ThanhToanModalComponent implements OnInit {
         console.error('Lỗi khi tạo mã QR:', error);
         this.message.error('Có lỗi xảy ra khi tạo mã QR');
         this.modal.close();
+      }
+    });
+  }
+
+  downloadQR(): void {
+    if (!this.qrDataUrl) {
+      this.message.warning('Chưa có mã QR để tải');
+      return;
+    }
+
+    // Tạo một thẻ a ẩn để tải ảnh
+    const link = document.createElement('a');
+    link.href = this.qrDataUrl;
+    link.download = `QR_${this.dotKeKhai.ten_dot.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  confirmPayment(): void {
+    if (!this.dotKeKhai?.id) {
+      this.message.error('Không có thông tin đợt kê khai');
+      return;
+    }
+
+    // Mở modal upload bill
+    const uploadModal = this.modalService.create({
+      nzTitle: 'Upload bill thanh toán',
+      nzContent: UploadBillModalComponent,
+      nzWidth: 520,
+      nzData: {
+        dotKeKhaiId: this.dotKeKhai.id
+      },
+      nzFooter: null,
+      nzClosable: true,
+      nzMaskClosable: false
+    });
+
+    // Xử lý kết quả sau khi upload bill
+    uploadModal.afterClose.subscribe((result) => {
+      if (result?.code === '00') {
+        this.modal.close(true);
       }
     });
   }
