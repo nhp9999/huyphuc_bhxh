@@ -37,6 +37,7 @@ import {
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { DonViService, DonVi } from '../../services/don-vi.service';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
 
 registerLocaleData(vi);
 
@@ -49,6 +50,13 @@ interface NoiNhanHoSo {
 
 // Thêm interface để định nghĩa kiểu dữ liệu cho giới tính
 type GioiTinh = 'Nam' | 'Nữ';
+
+// Thêm các biến mới để lưu kết quả tìm kiếm
+interface SearchResult {
+  maSoBHXH: string;
+  status: 'success' | 'error';
+  message: string;
+}
 
 @Component({
   selector: 'app-ke-khai-bhyt',
@@ -71,7 +79,8 @@ type GioiTinh = 'Nam' | 'Nữ';
     NzGridModule,
     NzInputNumberModule,
     NzCheckboxModule,
-    DatePipe
+    DatePipe,
+    NzTabsModule
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -1368,13 +1377,13 @@ export class KeKhaiBHYTComponent implements OnInit {
   }
 
   // Thêm hàm mới để tạo kê khai từ dữ liệu API
-  private async createKeKhaiFromApiData(data: any): Promise<boolean> {
+  private async createKeKhaiFromApiData(data: any): Promise<{ success: boolean; message?: string }> {
     try {
       // Kiểm tra dữ liệu đầu vào
       if (!data || !data.maSoBHXH || !data.hoTen || !data.ngaySinh) {
         console.error('Dữ liệu không hợp lệ:', data);
         this.message.error('Dữ liệu không đầy đủ hoặc không hợp lệ');
-        return false;
+        return { success: false };
       }
 
       // Xử lý ngày sinh
@@ -1392,7 +1401,7 @@ export class KeKhaiBHYTComponent implements OnInit {
         if (isNaN(ngaySinh.getTime())) {
           console.error('Ngày sinh không hợp lệ:', data.ngaySinh);
           this.message.error('Ngày sinh không hợp lệ');
-          return false;
+          return { success: false };
         }
 
         // Log để debug
@@ -1405,7 +1414,7 @@ export class KeKhaiBHYTComponent implements OnInit {
       } catch (error) {
         console.error('Lỗi khi parse ngày sinh:', error);
         this.message.error('Ngày sinh không đúng định dạng');
-        return false;
+        return { success: false };
       }
 
       // Chuyển đổi giới tính sang kiểu GioiTinh
@@ -1526,8 +1535,10 @@ export class KeKhaiBHYTComponent implements OnInit {
         const createdThongTinThe = await this.keKhaiBHYTService.createThongTinThe(thongTinTheData).toPromise();
 
         if (!createdThongTinThe || !createdThongTinThe.id) {
-          this.message.error('Không thể tạo thông tin thẻ');
-          return false;
+          return { 
+            success: false, 
+            message: 'Không thể tạo thông tin thẻ' 
+          };
         }
 
         // Tính toán các ngày tháng
@@ -1593,22 +1604,24 @@ export class KeKhaiBHYTComponent implements OnInit {
 
         // Tạo mới kê khai
         await this.keKhaiBHYTService.create(this.dotKeKhaiId, keKhaiBHYTData).toPromise();
-        return true;
+        return { success: true };
 
       } catch (error: any) {
         if (error?.status === 400) {
-          this.message.error('Dữ liệu không hợp lệ: ' + (error?.error?.message || 'Vui lòng kiểm tra lại thông tin'));
-        } else {
-          this.message.error('Có lỗi xảy ra khi tạo kê khai');
+          return {
+            success: false,
+            message: error?.error?.message || 'Vui lòng kiểm tra lại thông tin'
+          };
         }
-        console.error('Chi tiết lỗi:', error);
-        return false;
+        throw error; // Ném lỗi để xử lý ở catch bên ngoài
       }
 
     } catch (error) {
       console.error('Lỗi khi xử lý dữ liệu:', error);
-      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
-      return false;
+      return {
+        success: false,
+        message: 'Có lỗi xảy ra khi xử lý dữ liệu'
+      };
     }
   }
 
@@ -1647,8 +1660,8 @@ export class KeKhaiBHYTComponent implements OnInit {
       let successCount = 0;
       let failedCount = 0;
       let processedCount = 0;
+      const searchResults: SearchResult[] = [];
 
-      // Hiển thị loading message ban đầu
       loadingMessageId = this.message.loading(
         `Đang xử lý 0/${totalCount} mã số BHXH...`, 
         { nzDuration: 0 }
@@ -1656,10 +1669,8 @@ export class KeKhaiBHYTComponent implements OnInit {
 
       for (const maSoBHXH of maSoBHXHList) {
         try {
-          // Cập nhật thông báo tiến trình
           processedCount++;
 
-          // Cập nhật nội dung loading message
           if (loadingMessageId) {
             this.message.remove(loadingMessageId);
             loadingMessageId = this.message.loading(
@@ -1670,59 +1681,118 @@ export class KeKhaiBHYTComponent implements OnInit {
 
           const response = await this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).toPromise();
           if (response && response.success) {
-            const success = await this.createKeKhaiFromApiData(response.data);
-            if (success) {
+            const result = await this.createKeKhaiFromApiData(response.data);
+            if (result.success) {
               successCount++;
+              searchResults.push({
+                maSoBHXH,
+                status: 'success',
+                message: 'Tạo kê khai thành công'
+              });
             } else {
               failedCount++;
-              console.warn(`Không thể tạo kê khai cho mã số ${maSoBHXH}`);
+              searchResults.push({
+                maSoBHXH,
+                status: 'error',
+                message: result.message || 'Không thể tạo kê khai'
+              });
             }
           } else {
             failedCount++;
-            console.warn(`Không tìm thấy thông tin cho mã số ${maSoBHXH}`);
+            searchResults.push({
+              maSoBHXH,
+              status: 'error',
+              message: 'Không tìm thấy thông tin'
+            });
           }
         } catch (error) {
           failedCount++;
-          console.error(`Lỗi khi xử lý mã số BHXH ${maSoBHXH}:`, error);
+          searchResults.push({
+            maSoBHXH,
+            status: 'error',
+            message: 'Có lỗi xảy ra khi xử lý'
+          });
         }
       }
 
-      // Đóng loading message cuối cùng
       if (loadingMessageId) {
         this.message.remove(loadingMessageId);
       }
 
-      // Hiển thị thông báo kết quả
-      if (successCount > 0 && failedCount > 0) {
-        this.message.warning(
-          `Đã tạo ${successCount}/${totalCount} kê khai BHYT thành công, ` +
-          `${failedCount} mã số không thể tạo`
-        );
-      } else if (successCount > 0) {
-        this.message.success(
-          `Đã tạo thành công ${successCount} kê khai BHYT`
-        );
-      } else if (failedCount > 0) {
-        this.message.error(
-          `Không thể tạo kê khai cho ${failedCount} mã số BHXH`
-        );
-      }
+      // Hiển thị modal kết quả
+      this.modal.create({
+        nzTitle: 'Kết quả tìm kiếm và tạo kê khai',
+        nzContent: `
+          <div style="margin-bottom: 16px;">
+            <div style="font-weight: 500; margin-bottom: 8px; text-align: center;">
+              Tổng số: ${totalCount} mã số
+            </div>
+            <div style="display: flex; justify-content: center; gap: 32px;">
+              <div style="color: #52c41a;">
+                Thành công: ${successCount}
+              </div>
+              <div style="color: #ff4d4f;">
+                Thất bại: ${failedCount}
+              </div>
+            </div>
+          </div>
+          <nz-tabset>
+            <!-- Tab thất bại -->
+            <nz-tab nzTitle="Thất bại (${failedCount})">
+              <div style="max-height: 300px; overflow-y: auto; padding: 8px 0;">
+                ${searchResults
+                  .filter(result => result.status === 'error')
+                  .map(result => `
+                    <div style="padding: 8px; margin-bottom: 8px; border-radius: 4px; background: #fff1f0; border: 1px solid #ffa39e;">
+                      <div style="font-weight: 500;">Mã số: ${result.maSoBHXH}</div>
+                      <div style="color: #ff4d4f;">
+                        ${result.message}
+                      </div>
+                    </div>
+                  `).join('')}
+                ${searchResults.filter(result => result.status === 'error').length === 0 ? 
+                  '<div style="text-align: center; color: #8c8c8c; padding: 16px;">Không có kê khai thất bại</div>' : ''}
+              </div>
+            </nz-tab>
+
+            <!-- Tab thành công -->
+            <nz-tab nzTitle="Thành công (${successCount})">
+              <div style="max-height: 300px; overflow-y: auto; padding: 8px 0;">
+                ${searchResults
+                  .filter(result => result.status === 'success')
+                  .map(result => `
+                    <div style="padding: 8px; margin-bottom: 8px; border-radius: 4px; background: #f6ffed; border: 1px solid #b7eb8f;">
+                      <div style="font-weight: 500;">Mã số: ${result.maSoBHXH}</div>
+                      <div style="color: #52c41a;">
+                        ${result.message}
+                      </div>
+                    </div>
+                  `).join('')}
+                ${searchResults.filter(result => result.status === 'success').length === 0 ? 
+                  '<div style="text-align: center; color: #8c8c8c; padding: 16px;">Không có kê khai thành công</div>' : ''}
+              </div>
+            </nz-tab>
+          </nz-tabset>
+        `,
+        nzWidth: 600, // Giảm độ rộng modal vì không còn chia 2 cột
+        nzMaskClosable: false,
+        nzClosable: true,
+        nzOkText: 'Đóng',
+        nzCancelText: null,
+        nzClassName: 'search-result-modal' // Thêm class để style nếu cần
+      });
 
       if (successCount > 0) {
         this.loadData();
       }
 
       this.isSearchMultipleVisible = false;
+
     } catch (error) {
       console.error('Lỗi khi xử lý tìm kiếm nhiều:', error);
       this.message.error('Có lỗi xảy ra khi tạo kê khai');
-      // Đảm bảo đóng loading message nếu có lỗi
-      if (loadingMessageId) {
-        this.message.remove(loadingMessageId);
-      }
     } finally {
       this.isSearchingMultiple = false;
-      // Đảm bảo đóng loading message trong mọi trường hợp
       if (loadingMessageId) {
         this.message.remove(loadingMessageId);
       }
