@@ -153,8 +153,6 @@ export class UploadBillModalComponent implements OnInit {
           currentFile.status = 'done';
           currentFile['cloudinaryResponse'] = response;
         }
-        
-        this.message.success('Upload thành công');
       } else {
         item.onError!(new Error('Upload failed'), item.file);
         this.message.error('Upload thất bại');
