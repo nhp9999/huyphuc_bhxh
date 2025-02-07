@@ -37,6 +37,7 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { DonViService } from '../../services/don-vi.service';
 import { combineLatest } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.component';
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -536,5 +537,35 @@ export class DotKeKhaiComponent implements OnInit {
 
   getTotalAmount(): number {
     return this.filteredDotKeKhais.reduce((total, dot) => total + (dot.tong_so_tien || 0), 0);
+  }
+
+  showThanhToanModal(data: DotKeKhai): void {
+    // Kiểm tra nếu không phải trạng thái chờ thanh toán
+    if (data.trang_thai !== 'cho_thanh_toan') {
+      this.message.warning('Đợt kê khai này không ở trạng thái chờ thanh toán');
+      return;
+    }
+
+    // Mở modal thanh toán
+    const modalRef = this.modal.create({
+      nzTitle: 'Thanh toán đợt kê khai',
+      nzContent: ThanhToanModalComponent,
+      nzWidth: 600,
+      nzData: {
+        dotKeKhai: data
+      },
+      nzFooter: null,
+      nzClosable: true,
+      nzMaskClosable: false,
+      nzClassName: 'thanh-toan-modal'
+    });
+
+    // Subscribe để nhận kết quả từ modal nếu cần
+    modalRef.afterClose.subscribe(result => {
+      if (result) {
+        // Xử lý sau khi modal đóng nếu cần
+        this.loadData();
+      }
+    });
   }
 } 
