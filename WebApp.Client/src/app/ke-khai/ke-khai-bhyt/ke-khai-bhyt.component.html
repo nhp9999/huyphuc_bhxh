@@ -603,13 +603,34 @@
               {{ thongTinCCCD.name }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Ngày sinh" [nzSpan]="3">
-              {{ thongTinCCCD.dob }}
+              {{ thongTinCCCD.dob | date:'dd/MM/yyyy' }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Giới tính" [nzSpan]="3">
               {{ thongTinCCCD.sex }}
             </nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Địa chỉ" [nzSpan]="3">
+            <nz-descriptions-item nzTitle="Quốc tịch" [nzSpan]="3">
+              {{ thongTinCCCD.nationality }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quê quán" [nzSpan]="3">
+              {{ thongTinCCCD.home }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Địa chỉ thường trú" [nzSpan]="3">
               {{ thongTinCCCD.address }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày hết hạn" [nzSpan]="3">
+              {{ thongTinCCCD.doe | date:'dd/MM/yyyy' }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tỉnh/Thành phố" [nzSpan]="3">
+              {{ thongTinCCCD.address_entities?.province }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quận/Huyện" [nzSpan]="3">
+              {{ thongTinCCCD.address_entities?.district }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Phường/Xã" [nzSpan]="3">
+              {{ thongTinCCCD.address_entities?.ward }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Đường/Phố" [nzSpan]="3">
+              {{ thongTinCCCD.address_entities?.street }}
             </nz-descriptions-item>
           </nz-descriptions>
         </nz-spin>

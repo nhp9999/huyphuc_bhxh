@@ -254,6 +254,29 @@ nz-table {
       }
     }
   }
+
+  // Thêm styles cho descriptions trong modal quét CCCD
+  .ant-descriptions {
+    background: #fff;
+    padding: 16px;
+    border-radius: 4px;
+    
+    .ant-descriptions-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .ant-descriptions-item-label {
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.85);
+      background: #fafafa;
+    }
+
+    .ant-descriptions-item-content {
+      color: rgba(0, 0, 0, 0.65);
+    }
+  }
 }
 
 nz-form-item {

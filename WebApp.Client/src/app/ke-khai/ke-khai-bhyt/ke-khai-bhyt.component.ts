@@ -62,6 +62,36 @@ interface SearchResult {
   message: string;
 }
 
+// Thêm interface để định nghĩa kiểu dữ liệu cho thông tin CCCD
+interface ThongTinCCCD {
+  id: string;                    // Số CCCD
+  id_prob: string;              // Độ chính xác số CCCD
+  name: string;                 // Họ và tên
+  name_prob: string;            // Độ chính xác họ tên
+  dob: string;                  // Ngày sinh
+  dob_prob: string;             // Độ chính xác ngày sinh
+  sex: string;                  // Giới tính
+  sex_prob: string;             // Độ chính xác giới tính
+  nationality: string;          // Quốc tịch
+  nationality_prob: string;     // Độ chính xác quốc tịch
+  home: string;                 // Quê quán
+  home_prob: string;            // Độ chính xác quê quán
+  address: string;              // Địa chỉ thường trú
+  address_prob: string;         // Độ chính xác địa chỉ
+  doe: string;                  // Ngày hết hạn
+  doe_prob: string;             // Độ chính xác ngày hết hạn
+  overall_score: string;        // Điểm tổng thể
+  number_of_name_lines: string; // Số dòng tên
+  address_entities: {           // Thông tin địa chỉ chi tiết
+    province: string;           // Tỉnh/thành phố
+    district: string;           // Quận/huyện
+    ward: string;               // Phường/xã
+    street: string;             // Đường/phố
+  };
+  type_new: string;             // Loại CCCD mới
+  type: string;                 // Loại CCCD
+}
+
 @Component({
   selector: 'app-ke-khai-bhyt',
   standalone: true,
@@ -133,7 +163,7 @@ export class KeKhaiBHYTComponent implements OnInit {
   isQuetCCCDVisible = false;
   loadingQuetCCCD = false;
   avatarUrl?: string;
-  thongTinCCCD: any;
+  thongTinCCCD: ThongTinCCCD | null = null;
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -1854,9 +1884,18 @@ export class KeKhaiBHYTComponent implements OnInit {
           this.form.patchValue({
             cccd: this.thongTinCCCD.id,
             ho_ten: this.thongTinCCCD.name,
-            ngay_sinh: new Date(this.thongTinCCCD.dob),
-            gioi_tinh: this.thongTinCCCD.sex === 'NAM' ? 'Nam' : 'Nữ'
+            ngay_sinh: new Date(this.formatDate(this.thongTinCCCD.dob)),
+            gioi_tinh: this.thongTinCCCD.sex === 'NAM' ? 'Nam' : 'Nữ',
+            quoc_tich: this.thongTinCCCD.nationality,
+            dia_chi_nkq: this.thongTinCCCD.address
           });
+
+          // Cập nhật địa chỉ từ address_entities nếu có
+          if (this.thongTinCCCD.address_entities) {
+            const { province, district, ward } = this.thongTinCCCD.address_entities;
+            // Tìm và cập nhật mã tỉnh/huyện/xã tương ứng
+            this.updateAddressFields(province, district, ward);
+          }
         }
       },
       error: (error) => {
@@ -1865,5 +1904,34 @@ export class KeKhaiBHYTComponent implements OnInit {
         console.error('Lỗi khi quét CCCD:', error);
       }
     });
+  }
+
+  // Thêm phương thức hỗ trợ format ngày
+  private formatDate(dateStr: string): string {
+    const [day, month, year] = dateStr.split('/');
+    return `${year}-${month}-${day}`; // Chuyển về định dạng YYYY-MM-DD
+  }
+
+  // Thêm phương thức cập nhật các trường địa chỉ
+  private async updateAddressFields(province: string, district: string, ward: string) {
+    // Tìm mã tỉnh
+    const tinh = this.danhMucTinhs.find(t => t.ten.toUpperCase().includes(province));
+    if (tinh) {
+      this.form.patchValue({ tinh_nkq: tinh.ma });
+      
+      // Load và tìm mã huyện
+      await this.loadDanhMucHuyenByMaTinh(tinh.ma);
+      const huyen = this.danhMucHuyens.find(h => h.ten.toUpperCase().includes(district));
+      if (huyen) {
+        this.form.patchValue({ huyen_nkq: huyen.ma });
+        
+        // Load và tìm mã xã
+        await this.loadDanhMucXaByMaHuyen(huyen.ma);
+        const xa = this.danhMucXas.find(x => x.ten.toUpperCase().includes(ward));
+        if (xa) {
+          this.form.patchValue({ xa_nkq: xa.ma });
+        }
+      }
+    }
   }
 } 
