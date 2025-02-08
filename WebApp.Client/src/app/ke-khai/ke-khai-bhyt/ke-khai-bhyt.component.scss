@@ -193,27 +193,14 @@ nz-table {
   // Style cho custom input group
   .custom-input-group {
     display: flex;
-    align-items: center;
-    
+    gap: 8px;
+
     input {
-      height: 36px !important;
-      border-radius: 2px 0 0 2px;
+      flex: 1;
     }
-    
+
     button {
-      height: 36px !important;
-      width: 36px !important;
-      min-width: 36px !important;
-      padding: 0 !important;
-      border-radius: 0 2px 2px 0 !important;
-      margin-left: -1px !important;
-      
-      i {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-      }
+      flex-shrink: 0;
     }
   }
 
@@ -391,4 +378,43 @@ nz-input-number {
 
 .result-list::-webkit-scrollbar-thumb:hover {
   background: #bfbfbf;
+}
+
+.avatar-uploader {
+  width: 100%;
+  height: 300px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  background: #fafafa;
+  transition: border-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  &:hover {
+    border-color: #1890ff;
+  }
+}
+
+.upload-icon {
+  font-size: 32px;
+  color: #999;
+}
+
+.ant-upload-text {
+  margin-top: 8px;
+  color: #666;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+nz-descriptions {
+  margin-top: 16px;
 } 

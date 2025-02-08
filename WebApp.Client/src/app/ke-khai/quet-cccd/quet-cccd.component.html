@@ -1,0 +1,41 @@
+<div class="quet-cccd-container">
+  <nz-card [nzTitle]="'Quét thông tin CCCD'">
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzSpan]="12">
+        <nz-upload
+          class="avatar-uploader"
+          [nzShowUploadList]="false"
+          [nzBeforeUpload]="beforeUpload"
+          (nzChange)="handleChange($event)"
+        >
+          <ng-container *ngIf="!avatarUrl">
+            <i class="upload-icon" nz-icon [nzType]="loading ? 'loading' : 'plus'"></i>
+            <div class="ant-upload-text">Tải ảnh lên</div>
+          </ng-container>
+          <img *ngIf="avatarUrl" [src]="avatarUrl" class="avatar" />
+        </nz-upload>
+      </div>
+      <div nz-col [nzSpan]="12">
+        <nz-spin [nzSpinning]="loading">
+          <nz-descriptions [nzTitle]="'Thông tin CCCD'" [nzBordered]="true" *ngIf="thongTinCCCD">
+            <nz-descriptions-item [nzSpan]="3" [nzLabel]="'Số CCCD'">
+              {{ thongTinCCCD.id }}
+            </nz-descriptions-item>
+            <nz-descriptions-item [nzSpan]="3" [nzLabel]="'Họ và tên'">
+              {{ thongTinCCCD.name }}
+            </nz-descriptions-item>
+            <nz-descriptions-item [nzSpan]="3" [nzLabel]="'Ngày sinh'">
+              {{ thongTinCCCD.dob }}
+            </nz-descriptions-item>
+            <nz-descriptions-item [nzSpan]="3" [nzLabel]="'Giới tính'">
+              {{ thongTinCCCD.sex }}
+            </nz-descriptions-item>
+            <nz-descriptions-item [nzSpan]="3" [nzLabel]="'Địa chỉ'">
+              {{ thongTinCCCD.address }}
+            </nz-descriptions-item>
+          </nz-descriptions>
+        </nz-spin>
+      </div>
+    </div>
+  </nz-card>
+</div> 

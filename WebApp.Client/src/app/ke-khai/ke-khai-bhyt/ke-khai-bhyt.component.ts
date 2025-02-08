@@ -38,6 +38,10 @@ import {
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { DonViService, DonVi } from '../../services/don-vi.service';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
+import { NzUploadModule, NzUploadFile } from 'ng-zorro-antd/upload';
+import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { CCCDService } from '../../services/cccd.service';
 
 registerLocaleData(vi);
 
@@ -80,7 +84,10 @@ interface SearchResult {
     NzInputNumberModule,
     NzCheckboxModule,
     DatePipe,
-    NzTabsModule
+    NzTabsModule,
+    NzUploadModule,
+    NzDescriptionsModule,
+    NzSpinModule
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -123,6 +130,10 @@ export class KeKhaiBHYTComponent implements OnInit {
 
   isSearchResultVisible = false;
   searchResults: SearchResult[] = [];
+  isQuetCCCDVisible = false;
+  loadingQuetCCCD = false;
+  avatarUrl?: string;
+  thongTinCCCD: any;
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -134,7 +145,8 @@ export class KeKhaiBHYTComponent implements OnInit {
     private route: ActivatedRoute,
     private i18n: NzI18nService,
     private iconService: NzIconService,
-    private donViService: DonViService
+    private donViService: DonViService,
+    private cccdService: CCCDService
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -1778,5 +1790,80 @@ export class KeKhaiBHYTComponent implements OnInit {
 
   getErrorCount(): number {
     return this.getErrorResults().length;
+  }
+
+  showQuetCCCDModal(): void {
+    this.isQuetCCCDVisible = true;
+    this.avatarUrl = undefined;
+    this.thongTinCCCD = null;
+  }
+
+  handleQuetCCCDCancel(): void {
+    this.isQuetCCCDVisible = false;
+  }
+
+  beforeUpload = (file: NzUploadFile): boolean => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isJpgOrPng) {
+      this.message.error('Bạn chỉ có thể tải lên file JPG/PNG!');
+      return false;
+    }
+    const isLt2M = (file.size || 0) / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      this.message.error('Ảnh phải nhỏ hơn 2MB!');
+      return false;
+    }
+    this.quetCCCD(file as any);
+    return false;
+  };
+
+  private getBase64(img: File, callback: (img: string) => void): void {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result!.toString()));
+    reader.readAsDataURL(img);
+  }
+
+  handleChange(info: { file: NzUploadFile }): void {
+    switch (info.file.status) {
+      case 'uploading':
+        this.loadingQuetCCCD = true;
+        break;
+      case 'done':
+        this.getBase64(info.file.originFileObj!, (img: string) => {
+          this.loadingQuetCCCD = false;
+          this.avatarUrl = img;
+        });
+        break;
+      case 'error':
+        this.message.error('Tải ảnh lên thất bại!');
+        this.loadingQuetCCCD = false;
+        break;
+    }
+  }
+
+  quetCCCD(file: File): void {
+    this.loadingQuetCCCD = true;
+    this.cccdService.quetCCCD(file).subscribe({
+      next: (response) => {
+        this.thongTinCCCD = response.data[0];
+        this.loadingQuetCCCD = false;
+        this.message.success('Quét CCCD thành công!');
+        
+        // Cập nhật form với thông tin từ CCCD
+        if (this.thongTinCCCD) {
+          this.form.patchValue({
+            cccd: this.thongTinCCCD.id,
+            ho_ten: this.thongTinCCCD.name,
+            ngay_sinh: new Date(this.thongTinCCCD.dob),
+            gioi_tinh: this.thongTinCCCD.sex === 'NAM' ? 'Nam' : 'Nữ'
+          });
+        }
+      },
+      error: (error) => {
+        this.loadingQuetCCCD = false;
+        this.message.error('Quét CCCD thất bại!');
+        console.error('Lỗi khi quét CCCD:', error);
+      }
+    });
   }
 } 

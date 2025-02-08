@@ -57,11 +57,16 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>CCCD</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập CCCD (12 số)">
-              <input nz-input 
-                formControlName="cccd" 
-                placeholder="Nhập CCCD" 
-                maxlength="12"
-                (keypress)="onlyNumber($event)" />
+              <div class="custom-input-group">
+                <input nz-input 
+                  formControlName="cccd" 
+                  placeholder="Nhập CCCD" 
+                  maxlength="12"
+                  (keypress)="onlyNumber($event)" />
+                <button nz-button nzType="primary" (click)="showQuetCCCDModal()">
+                  <i nz-icon nzType="camera"></i>
+                </button>
+              </div>
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -562,4 +567,53 @@
       </nz-tab>
     </nz-tabset>
   </ng-container>
+</nz-modal>
+
+<!-- Modal quét CCCD -->
+<nz-modal
+  [(nzVisible)]="isQuetCCCDVisible"
+  [nzTitle]="'Quét thông tin CCCD'"
+  [nzWidth]="1000"
+  (nzOnCancel)="handleQuetCCCDCancel()"
+  [nzFooter]="null"
+>
+  <div *nzModalContent>
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzSpan]="12">
+        <nz-upload
+          class="avatar-uploader"
+          [nzShowUploadList]="false"
+          [nzBeforeUpload]="beforeUpload"
+          (nzChange)="handleChange($event)"
+        >
+          <ng-container *ngIf="!avatarUrl">
+            <i class="upload-icon" nz-icon [nzType]="loadingQuetCCCD ? 'loading' : 'plus'"></i>
+            <div class="ant-upload-text">Tải ảnh CCCD lên</div>
+          </ng-container>
+          <img *ngIf="avatarUrl" [src]="avatarUrl" class="avatar" />
+        </nz-upload>
+      </div>
+      <div nz-col [nzSpan]="12">
+        <nz-spin [nzSpinning]="loadingQuetCCCD">
+          <nz-descriptions nzTitle="Thông tin CCCD" [nzBordered]="true" *ngIf="thongTinCCCD">
+            <nz-descriptions-item nzTitle="Số CCCD" [nzSpan]="3">
+              {{ thongTinCCCD.id }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Họ và tên" [nzSpan]="3">
+              {{ thongTinCCCD.name }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày sinh" [nzSpan]="3">
+              {{ thongTinCCCD.dob }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Giới tính" [nzSpan]="3">
+              {{ thongTinCCCD.sex }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Địa chỉ" [nzSpan]="3">
+              {{ thongTinCCCD.address }}
+            </nz-descriptions-item>
+          </nz-descriptions>
+        </nz-spin>
+      </div>
+    </div>
+  </div>
 </nz-modal> 
