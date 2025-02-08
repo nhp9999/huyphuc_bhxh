@@ -121,6 +121,9 @@ export class KeKhaiBHYTComponent implements OnInit {
     tongSoTien: 0
   };
 
+  isSearchResultVisible = false;
+  searchResults: SearchResult[] = [];
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -1381,11 +1384,23 @@ export class KeKhaiBHYTComponent implements OnInit {
   // Thêm hàm mới để tạo kê khai từ dữ liệu API
   private async createKeKhaiFromApiData(data: any): Promise<{ success: boolean; message?: string }> {
     try {
-      // Kiểm tra dữ liệu đầu vào
-      if (!data || !data.maSoBHXH || !data.hoTen || !data.ngaySinh) {
-        console.error('Dữ liệu không hợp lệ:', data);
-        this.message.error('Dữ liệu không đầy đủ hoặc không hợp lệ');
-        return { success: false };
+      // Kiểm tra và tạo danh sách các trường bị thiếu
+      const missingFields = [];
+      if (!data?.maSoBHXH) missingFields.push('Mã số BHXH');
+      if (!data?.hoTen) missingFields.push('Họ tên');
+      if (!data?.ngaySinh) missingFields.push('Ngày sinh');
+      if (!data?.cmnd) missingFields.push('CCCD');
+      if (!data?.gioiTinh) missingFields.push('Giới tính');
+      if (!data?.maTinhNkq) missingFields.push('Tỉnh nơi khám bệnh');
+      if (!data?.maHuyenNkq) missingFields.push('Huyện nơi khám bệnh');
+      if (!data?.maXaNkq) missingFields.push('Xã nơi khám bệnh');
+
+      // Nếu có trường bị thiếu, trả về thông báo chi tiết
+      if (missingFields.length > 0) {
+        return {
+          success: false,
+          message: `Thiếu thông tin: ${missingFields.join(', ')}`
+        };
       }
 
       // Xử lý ngày sinh
@@ -1401,22 +1416,17 @@ export class KeKhaiBHYTComponent implements OnInit {
         }
 
         if (isNaN(ngaySinh.getTime())) {
-          console.error('Ngày sinh không hợp lệ:', data.ngaySinh);
-          this.message.error('Ngày sinh không hợp lệ');
-          return { success: false };
+          return {
+            success: false,
+            message: 'Ngày sinh không hợp lệ'
+          };
         }
 
-        // Log để debug
-        console.log('Ngày sinh sau khi parse:', {
-          raw: data.ngaySinh,
-          parsed: ngaySinh,
-          iso: ngaySinh.toISOString()
-        });
-
       } catch (error) {
-        console.error('Lỗi khi parse ngày sinh:', error);
-        this.message.error('Ngày sinh không đúng định dạng');
-        return { success: false };
+        return {
+          success: false,
+          message: 'Ngày sinh không đúng định dạng (dd/MM/yyyy)'
+        };
       }
 
       // Chuyển đổi giới tính sang kiểu GioiTinh
@@ -1488,15 +1498,18 @@ export class KeKhaiBHYTComponent implements OnInit {
       const huyenNKQ = this.getHuyenTen(data.maHuyenNkq || '');
       const xaNKQ = this.getXaTen(data.maXaNkq || '');
 
-      console.log('Thông tin địa chỉ:', {
-        maTinh: data.maTinhNkq,
-        maHuyen: data.maHuyenNkq,
-        maXa: data.maXaNkq,
-        tenTinh: tinhNKQ,
-        tenHuyen: huyenNKQ,
-        tenXa: xaNKQ,
-        danhMucXas: this.danhMucXas
-      });
+      // Kiểm tra thông tin địa chỉ
+      if (!tinhNKQ || !huyenNKQ || !xaNKQ) {
+        const missingAddress = [];
+        if (!tinhNKQ) missingAddress.push('Tỉnh');
+        if (!huyenNKQ) missingAddress.push('Huyện'); 
+        if (!xaNKQ) missingAddress.push('Xã');
+        
+        return {
+          success: false,
+          message: `Không tìm thấy thông tin ${missingAddress.join(', ')} nơi khám bệnh`
+        };
+      }
 
       // Sử dụng bệnh viện được chọn từ modal nếu có
       const maBenhVien = this.multipleSearchBenhVien || data.maBenhVien || '';
@@ -1645,6 +1658,7 @@ export class KeKhaiBHYTComponent implements OnInit {
     }
 
     this.isSearchingMultiple = true;
+    this.searchResults = [];
     let loadingMessageId: string | undefined;
     
     try {
@@ -1662,7 +1676,6 @@ export class KeKhaiBHYTComponent implements OnInit {
       let successCount = 0;
       let failedCount = 0;
       let processedCount = 0;
-      const searchResults: SearchResult[] = [];
 
       loadingMessageId = this.message.loading(
         `Đang xử lý 0/${totalCount} mã số BHXH...`, 
@@ -1686,14 +1699,14 @@ export class KeKhaiBHYTComponent implements OnInit {
             const result = await this.createKeKhaiFromApiData(response.data);
             if (result.success) {
               successCount++;
-              searchResults.push({
+              this.searchResults.push({
                 maSoBHXH,
                 status: 'success',
                 message: 'Tạo kê khai thành công'
               });
             } else {
               failedCount++;
-              searchResults.push({
+              this.searchResults.push({
                 maSoBHXH,
                 status: 'error',
                 message: result.message || 'Không thể tạo kê khai'
@@ -1701,18 +1714,18 @@ export class KeKhaiBHYTComponent implements OnInit {
             }
           } else {
             failedCount++;
-            searchResults.push({
+            this.searchResults.push({
               maSoBHXH,
               status: 'error',
-              message: 'Không tìm thấy thông tin'
+              message: response?.message || 'Không tìm thấy thông tin BHYT'
             });
           }
         } catch (error) {
           failedCount++;
-          searchResults.push({
+          this.searchResults.push({
             maSoBHXH,
             status: 'error',
-            message: 'Có lỗi xảy ra khi xử lý'
+            message: 'Lỗi khi xử lý mã số BHXH'
           });
         }
       }
@@ -1721,84 +1734,23 @@ export class KeKhaiBHYTComponent implements OnInit {
         this.message.remove(loadingMessageId);
       }
 
-      // Hiển thị modal kết quả
-      this.modal.create({
-        nzTitle: 'Kết quả tìm kiếm và tạo kê khai',
-        nzContent: `
-          <div style="margin-bottom: 16px;">
-            <div style="font-weight: 500; margin-bottom: 8px; text-align: center;">
-              Tổng số: ${totalCount} mã số
-            </div>
-            <div style="display: flex; justify-content: center; gap: 32px;">
-              <div style="color: #52c41a;">
-                Thành công: ${successCount}
-              </div>
-              <div style="color: #ff4d4f;">
-                Thất bại: ${failedCount}
-              </div>
-            </div>
-          </div>
-          <nz-tabset>
-            <!-- Tab thất bại -->
-            <nz-tab nzTitle="Thất bại (${failedCount})">
-              <div style="max-height: 300px; overflow-y: auto; padding: 8px 0;">
-                ${searchResults
-                  .filter(result => result.status === 'error')
-                  .map(result => `
-                    <div style="padding: 8px; margin-bottom: 8px; border-radius: 4px; background: #fff1f0; border: 1px solid #ffa39e;">
-                      <div style="font-weight: 500;">Mã số: ${result.maSoBHXH}</div>
-                      <div style="color: #ff4d4f;">
-                        ${result.message}
-                      </div>
-                    </div>
-                  `).join('')}
-                ${searchResults.filter(result => result.status === 'error').length === 0 ? 
-                  '<div style="text-align: center; color: #8c8c8c; padding: 16px;">Không có kê khai thất bại</div>' : ''}
-              </div>
-            </nz-tab>
-
-            <!-- Tab thành công -->
-            <nz-tab nzTitle="Thành công (${successCount})">
-              <div style="max-height: 300px; overflow-y: auto; padding: 8px 0;">
-                ${searchResults
-                  .filter(result => result.status === 'success')
-                  .map(result => `
-                    <div style="padding: 8px; margin-bottom: 8px; border-radius: 4px; background: #f6ffed; border: 1px solid #b7eb8f;">
-                      <div style="font-weight: 500;">Mã số: ${result.maSoBHXH}</div>
-                      <div style="color: #52c41a;">
-                        ${result.message}
-                      </div>
-                    </div>
-                  `).join('')}
-                ${searchResults.filter(result => result.status === 'success').length === 0 ? 
-                  '<div style="text-align: center; color: #8c8c8c; padding: 16px;">Không có kê khai thành công</div>' : ''}
-              </div>
-            </nz-tab>
-          </nz-tabset>
-        `,
-        nzWidth: 600, // Giảm độ rộng modal vì không còn chia 2 cột
-        nzMaskClosable: false,
-        nzClosable: true,
-        nzOkText: 'Đóng',
-        nzCancelText: null,
-        nzClassName: 'search-result-modal' // Thêm class để style nếu cần
-      });
-
-      if (successCount > 0) {
-        this.loadData();
-      }
-
+      this.message.success(`Đã xử lý ${successCount}/${totalCount} mã số BHXH thành công`);
       this.isSearchMultipleVisible = false;
-
+      this.isSearchResultVisible = true;
+      this.loadData();
     } catch (error) {
-      console.error('Lỗi khi xử lý tìm kiếm nhiều:', error);
-      this.message.error('Có lỗi xảy ra khi tạo kê khai');
+      this.message.error('Có lỗi xảy ra khi xử lý danh sách mã số BHXH');
     } finally {
       this.isSearchingMultiple = false;
       if (loadingMessageId) {
         this.message.remove(loadingMessageId);
       }
     }
+  }
+
+  handleSearchResultCancel(): void {
+    this.isSearchResultVisible = false;
+    this.searchResults = [];
   }
 
   // Thêm phương thức tính thống kê
@@ -1809,5 +1761,22 @@ export class KeKhaiBHYTComponent implements OnInit {
       dungDong: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dung_dong').length,
       tongSoTien: this.keKhaiBHYTs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0)
     };
+  }
+
+  // Thêm các phương thức helper
+  getSuccessResults(): SearchResult[] {
+    return this.searchResults.filter(r => r.status === 'success');
+  }
+
+  getErrorResults(): SearchResult[] {
+    return this.searchResults.filter(r => r.status === 'error');
+  }
+
+  getSuccessCount(): number {
+    return this.getSuccessResults().length;
+  }
+
+  getErrorCount(): number {
+    return this.getErrorResults().length;
   }
 } 

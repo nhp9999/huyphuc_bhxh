@@ -497,4 +497,69 @@
       <span style="margin-left: 8px;">Lưu ý: Mỗi mã số BHXH nhập trên một dòng</span>
     </div>
   </ng-container>
+</nz-modal>
+
+<!-- Modal kết quả tìm kiếm -->
+<nz-modal
+  [(nzVisible)]="isSearchResultVisible"
+  nzTitle="Kết quả tìm kiếm và tạo kê khai"
+  (nzOnCancel)="handleSearchResultCancel()"
+  [nzWidth]="800"
+  [nzFooter]="null">
+  
+  <ng-container *nzModalContent>
+    <div class="search-result-summary">
+      <div class="total">
+        Tổng số: {{ searchResults.length }} mã số
+      </div>
+      <div class="stats">
+        <div class="success">
+          Thành công: {{ getSuccessCount() }}
+        </div>
+        <div class="error">
+          Thất bại: {{ getErrorCount() }}
+        </div>
+      </div>
+    </div>
+
+    <nz-tabset>
+      <nz-tab [nzTitle]="'Thất bại (' + getErrorCount() + ')'">
+        <div class="result-list">
+          <ng-container *ngFor="let result of getErrorResults()">
+            <div class="result-item error">
+              <div class="result-header">
+                <span class="label">Mã số BHXH:</span>
+                <span class="value">{{ result.maSoBHXH }}</span>
+              </div>
+              <div class="result-message">
+                {{ result.message }}
+              </div>
+            </div>
+          </ng-container>
+          <div *ngIf="getErrorCount() === 0" class="empty-message">
+            Không có kê khai thất bại
+          </div>
+        </div>
+      </nz-tab>
+
+      <nz-tab [nzTitle]="'Thành công (' + getSuccessCount() + ')'">
+        <div class="result-list">
+          <ng-container *ngFor="let result of getSuccessResults()">
+            <div class="result-item success">
+              <div class="result-header">
+                <span class="label">Mã số BHXH:</span>
+                <span class="value">{{ result.maSoBHXH }}</span>
+              </div>
+              <div class="result-message">
+                {{ result.message }}
+              </div>
+            </div>
+          </ng-container>
+          <div *ngIf="getSuccessCount() === 0" class="empty-message">
+            Không có kê khai thành công
+          </div>
+        </div>
+      </nz-tab>
+    </nz-tabset>
+  </ng-container>
 </nz-modal> 

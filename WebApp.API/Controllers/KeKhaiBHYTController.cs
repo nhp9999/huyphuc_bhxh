@@ -124,7 +124,7 @@ namespace WebApp.API.Controllers
                 {
                     return BadRequest(new { 
                         success = false,
-                        message = $"Mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã được kê khai trong đợt kê khai này" 
+                        message = $"Mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã được kê khai trong đợt này" 
                     });
                 }
 
