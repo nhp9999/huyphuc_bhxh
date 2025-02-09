@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { tap, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -12,13 +13,23 @@ export class CCCDService {
 
   constructor(private http: HttpClient) { }
 
-  quetCCCD(imageFile: File): Observable<any> {
+  quetCCCD(file: File): Observable<any> {
     const formData = new FormData();
-    formData.append('image', imageFile);
+    formData.append('image', file);
 
     const headers = new HttpHeaders()
       .set('api-key', this.apiKey);
 
-    return this.http.post(this.apiUrl, formData, { headers });
+    console.log('Sending request to FPT.AI with file:', file);
+
+    return this.http.post(this.apiUrl, formData, { headers }).pipe(
+      tap(response => {
+        console.log('FPT.AI Response:', response);
+      }),
+      catchError(error => {
+        console.error('FPT.AI Error:', error);
+        return throwError(() => error);
+      })
+    );
   }
 } 

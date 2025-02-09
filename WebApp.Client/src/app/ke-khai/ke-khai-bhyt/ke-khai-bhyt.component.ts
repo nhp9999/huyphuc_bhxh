@@ -42,6 +42,9 @@ import { NzUploadModule, NzUploadFile } from 'ng-zorro-antd/upload';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { CCCDService } from '../../services/cccd.service';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
 
 registerLocaleData(vi);
 
@@ -92,6 +95,51 @@ interface ThongTinCCCD {
   type: string;                 // Loại CCCD
 }
 
+// Thêm interface mới
+interface CCCDResult {
+  id: string;                    
+  id_prob?: string;              
+  name: string;                 
+  name_prob?: string;            
+  dob: string;                  
+  dob_prob?: string;             
+  sex: string;                  
+  sex_prob?: string;             
+  nationality: string;          
+  nationality_prob?: string;     
+  home?: string;                 
+  home_prob?: string;            
+  address: string;              
+  address_prob?: string;         
+  doe?: string;                  
+  doe_prob?: string;             
+  overall_score?: string;        
+  number_of_name_lines?: string; 
+  address_entities?: {           
+    province: string;           
+    district: string;           
+    ward: string;               
+    street?: string;             
+  };
+  type_new?: string;             
+  type?: string;                 
+  status: 'success' | 'error';
+  message: string;
+  checked?: boolean;
+  home_address?: {
+    province: string;
+    district: string;
+    ward: string;
+    street?: string;
+  };
+  permanent_address?: {
+    province: string;
+    district: string;
+    ward: string;
+    street?: string;
+  };
+}
+
 @Component({
   selector: 'app-ke-khai-bhyt',
   standalone: true,
@@ -117,7 +165,10 @@ interface ThongTinCCCD {
     NzTabsModule,
     NzUploadModule,
     NzDescriptionsModule,
-    NzSpinModule
+    NzSpinModule,
+    NzEmptyModule,
+    NzToolTipModule,
+    NzRadioModule
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -134,6 +185,8 @@ export class KeKhaiBHYTComponent implements OnInit {
   selectedIds: number[] = [];
   dotKeKhaiId: number = 0;
   isAllChecked = false;
+  isIndeterminate = false;
+  loadingApDung = false;
   danhMucTinhs: DanhMucTinh[] = [];
   danhMucHuyens: DanhMucHuyen[] = [];
   danhMucXas: DanhMucXa[] = [];
@@ -164,6 +217,15 @@ export class KeKhaiBHYTComponent implements OnInit {
   loadingQuetCCCD = false;
   avatarUrl?: string;
   thongTinCCCD: ThongTinCCCD | null = null;
+
+  avatarUrls: string[] = [];
+  currentImageIndex = 0;
+  danhSachCCCD: CCCDResult[] = [];
+  pendingFiles: File[] = [];
+
+  // Thêm thuộc tính mới
+  applyPermanentAddress = true;
+  applyHomeAddress = false;
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -233,7 +295,7 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.form.get('ma_tinh_ks')?.valueChanges.subscribe(maTinh => {
       console.log('ma_tinh_ks changed:', maTinh);
       if (maTinh) {
-        // Tạo một biến riêng để lưu danh sách huyện KS
+        // Tạo một biến riên để lưu danh sách huyện KS
         this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
           next: (huyens) => {
             this.danhMucHuyenKS = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
@@ -258,7 +320,7 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.form.get('ma_huyen_ks')?.valueChanges.subscribe(maHuyen => {
       console.log('ma_huyen_ks changed:', maHuyen);
       if (maHuyen) {
-        // Tạo một biến riêng để lưu danh sách xã KS
+        // Tạo một biến riên để lưu danh sách xã KS
         this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
           next: (xas) => {
             this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
@@ -563,7 +625,7 @@ export class KeKhaiBHYTComponent implements OnInit {
 
         // Load danh sách huyện và xã dựa trên mã tỉnh/huyện đã chọn
         if (data.thongTinThe.ma_tinh_ks) {
-          // Tạo một biến riêng để lưu danh sách huyện KS
+          // Tạo một biến riên để lưu danh sách huyện KS
           this.diaChiService.getDanhMucHuyenByMaTinh(data.thongTinThe.ma_tinh_ks).subscribe({
             next: (huyens) => {
               this.danhMucHuyenKS = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
@@ -847,16 +909,62 @@ export class KeKhaiBHYTComponent implements OnInit {
   }
 
   onAllChecked(checked: boolean): void {
-    this.selectedIds = checked ? this.keKhaiBHYTs.map(item => item.id!) : [];
+    this.danhSachCCCD
+      .filter(cccd => cccd.status === 'success')
+      .forEach(item => item.checked = checked);
+    this.refreshCheckStatus();
   }
 
-  onItemChecked(id: number, checked: boolean): void {
-    if (checked) {
-      this.selectedIds = [...this.selectedIds, id];
-    } else {
-      this.selectedIds = this.selectedIds.filter(item => item !== id);
+  onCCCDChecked(cccd: CCCDResult, checked: boolean): void {
+    cccd.checked = checked;
+    this.refreshCheckStatus();
+  }
+
+  refreshCheckStatus(): void {
+    const validItems = this.danhSachCCCD.filter(cccd => cccd.status === 'success');
+    const allChecked = validItems.length > 0 && validItems.every(item => item.checked);
+    const allUnchecked = validItems.every(item => !item.checked);
+    
+    this.isAllChecked = allChecked;
+    this.isIndeterminate = !allChecked && !allUnchecked;
+  }
+
+  hasSelectedCCCD(): boolean {
+    return this.danhSachCCCD.some(cccd => cccd.checked && cccd.status === 'success');
+  }
+
+  async apDungNhieuCCCD(): Promise<void> {
+    const selectedCCCDs = this.danhSachCCCD.filter(cccd => cccd.checked && cccd.status === 'success');
+    if (selectedCCCDs.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một CCCD để áp dụng');
+      return;
     }
-    this.isAllChecked = this.keKhaiBHYTs.every(item => this.selectedIds.includes(item.id!));
+
+    if (!this.applyPermanentAddress && !this.applyHomeAddress) {
+      this.message.warning('Vui lòng chọn ít nhất một loại địa chỉ để áp dụng');
+      return;
+    }
+
+    this.loadingApDung = true;
+    try {
+      for (const cccd of selectedCCCDs) {
+        await this.apDungThongTin(cccd, false);
+      }
+      
+      const addressTypes = [];
+      if (this.applyPermanentAddress) addressTypes.push('địa chỉ thường trú');
+      if (this.applyHomeAddress) addressTypes.push('quê quán');
+      
+      this.message.success(
+        `Đã áp dụng thành công ${selectedCCCDs.length} CCCD với ${addressTypes.join(' và ')}`
+      );
+      this.isQuetCCCDVisible = false;
+    } catch (error) {
+      this.message.error('Có lỗi xảy ra khi áp dụng thông tin CCCD');
+      console.error('Error applying multiple CCCDs:', error);
+    } finally {
+      this.loadingApDung = false;
+    }
   }
 
   formatCurrency = (value: number): string => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -1824,12 +1932,12 @@ export class KeKhaiBHYTComponent implements OnInit {
 
   showQuetCCCDModal(): void {
     this.isQuetCCCDVisible = true;
-    this.avatarUrl = undefined;
-    this.thongTinCCCD = null;
+    this.clearImages();
   }
 
   handleQuetCCCDCancel(): void {
     this.isQuetCCCDVisible = false;
+    this.clearImages();
   }
 
   beforeUpload = (file: NzUploadFile): boolean => {
@@ -1843,67 +1951,258 @@ export class KeKhaiBHYTComponent implements OnInit {
       this.message.error('Ảnh phải nhỏ hơn 2MB!');
       return false;
     }
-    this.quetCCCD(file as any);
+    this.addToPendingFiles(file as any);
     return false;
   };
 
-  private getBase64(img: File, callback: (img: string) => void): void {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => callback(reader.result!.toString()));
-    reader.readAsDataURL(img);
-  }
-
-  handleChange(info: { file: NzUploadFile }): void {
-    switch (info.file.status) {
-      case 'uploading':
-        this.loadingQuetCCCD = true;
-        break;
-      case 'done':
-        this.getBase64(info.file.originFileObj!, (img: string) => {
-          this.loadingQuetCCCD = false;
-          this.avatarUrl = img;
-        });
-        break;
-      case 'error':
-        this.message.error('Tải ảnh lên thất bại!');
-        this.loadingQuetCCCD = false;
-        break;
+  handleChange(info: { file: NzUploadFile, fileList: NzUploadFile[] }): void {
+    if (info.file.status !== 'uploading') {
+      console.log('File upload status changed:', info.file.status);
+    }
+    if (info.file.status === 'done') {
+      this.message.success(`${info.file.name} đã được tải lên thành công`);
+      if (info.file.originFileObj) {
+        this.addToPendingFiles(info.file.originFileObj);
+      }
+    } else if (info.file.status === 'error') {
+      this.message.error(`${info.file.name} tải lên thất bại.`);
     }
   }
 
-  quetCCCD(file: File): void {
-    this.loadingQuetCCCD = true;
-    this.cccdService.quetCCCD(file).subscribe({
-      next: (response) => {
-        this.thongTinCCCD = response.data[0];
-        this.loadingQuetCCCD = false;
-        this.message.success('Quét CCCD thành công!');
-        
-        // Cập nhật form với thông tin từ CCCD
-        if (this.thongTinCCCD) {
-          this.form.patchValue({
-            cccd: this.thongTinCCCD.id,
-            ho_ten: this.thongTinCCCD.name,
-            ngay_sinh: new Date(this.formatDate(this.thongTinCCCD.dob)),
-            gioi_tinh: this.thongTinCCCD.sex === 'NAM' ? 'Nam' : 'Nữ',
-            quoc_tich: this.thongTinCCCD.nationality,
-            dia_chi_nkq: this.thongTinCCCD.address
-          });
-
-          // Cập nhật địa chỉ từ address_entities nếu có
-          if (this.thongTinCCCD.address_entities) {
-            const { province, district, ward } = this.thongTinCCCD.address_entities;
-            // Tìm và cập nhật mã tỉnh/huyện/xã tương ứng
-            this.updateAddressFields(province, district, ward);
-          }
-        }
-      },
-      error: (error) => {
-        this.loadingQuetCCCD = false;
-        this.message.error('Quét CCCD thất bại!');
-        console.error('Lỗi khi quét CCCD:', error);
-      }
+  private addToPendingFiles(file: File): void {
+    console.log('Adding file to pending:', file);
+    this.getBase64(file, (img: string) => {
+      console.log('Generated base64 preview');
+      this.avatarUrls = [...this.avatarUrls, img];
+      this.pendingFiles = [...this.pendingFiles, file];
+      this.currentImageIndex = this.avatarUrls.length - 1;
     });
+  }
+
+  previousImage(): void {
+    if (this.currentImageIndex > 0) {
+      this.currentImageIndex--;
+    }
+  }
+
+  nextImage(): void {
+    if (this.currentImageIndex < this.avatarUrls.length - 1) {
+      this.currentImageIndex++;
+    }
+  }
+
+  clearImages(): void {
+    this.avatarUrls = [];
+    this.pendingFiles = [];
+    this.currentImageIndex = 0;
+    this.danhSachCCCD = [];
+  }
+
+  async quetTatCaCCCD(): Promise<void> {
+    if (this.pendingFiles.length === 0) {
+      this.message.warning('Vui lòng tải lên ít nhất một ảnh CCCD!');
+      return;
+    }
+
+    this.loadingQuetCCCD = true;
+    this.danhSachCCCD = [];
+
+    try {
+      for (const file of this.pendingFiles) {
+        try {
+          const response = await this.cccdService.quetCCCD(file).toPromise();
+          console.log('Raw API Response:', response);
+
+          // FPT.AI trả về dữ liệu trong response.data
+          if (response && response.data && response.data.length > 0) {
+            const cccdData = response.data[0];
+            console.log('CCCD Data from FPT.AI:', cccdData);
+
+            // Chuyển đổi dữ liệu từ FPT.AI sang định dạng CCCDResult
+            const result: CCCDResult = {
+              id: cccdData.id_number || cccdData.id || '',
+              name: cccdData.name || '',
+              dob: cccdData.birth_date || cccdData.dob || '',
+              sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+              nationality: 'Việt Nam',
+              address: this.formatAddress(cccdData.residence || cccdData.address),
+              home_address: {
+                province: this.extractProvince(cccdData.home),
+                district: this.extractDistrict(cccdData.home),
+                ward: this.extractWard(cccdData.home),
+                street: this.extractStreet(cccdData.home)
+              },
+              permanent_address: {
+                province: this.extractProvince(cccdData.residence || cccdData.address),
+                district: this.extractDistrict(cccdData.residence || cccdData.address),
+                ward: this.extractWard(cccdData.residence || cccdData.address),
+                street: this.extractStreet(cccdData.residence || cccdData.address)
+              },
+              status: 'success',
+              message: 'Quét thành công'
+            };
+
+            console.log('Processed CCCD Result:', result);
+            this.danhSachCCCD = [...this.danhSachCCCD, result];
+          } else {
+            const errorResult: CCCDResult = {
+              id: '',
+              name: '',
+              dob: '',
+              sex: '',
+              nationality: '',
+              address: '',
+              status: 'error',
+              message: 'Không nhận dạng được thông tin'
+            };
+            this.danhSachCCCD = [...this.danhSachCCCD, errorResult];
+          }
+        } catch (error: any) {
+          console.error('Error scanning CCCD:', error);
+          const errorResult: CCCDResult = {
+            id: '',
+            name: '',
+            dob: '',
+            sex: '',
+            nationality: '',
+            address: '',
+            status: 'error',
+            message: error?.error?.message || error?.message || 'Lỗi khi xử lý ảnh'
+          };
+          this.danhSachCCCD = [...this.danhSachCCCD, errorResult];
+        }
+      }
+
+      // Cập nhật UI
+      this.danhSachCCCD = [...this.danhSachCCCD];
+      console.log('Final CCCD List:', this.danhSachCCCD);
+
+      const successCount = this.danhSachCCCD.filter(cccd => cccd.status === 'success').length;
+      if (successCount > 0) {
+        this.message.success(`Đã quét thành công ${successCount} CCCD`);
+      } else {
+        this.message.error('Không thể đọc thông tin từ các ảnh đã tải lên');
+      }
+    } finally {
+      this.loadingQuetCCCD = false;
+    }
+  }
+
+  // Thêm các phương thức hỗ trợ xử lý dữ liệu
+  private formatGender(gender: string): string {
+    if (!gender) return '';
+    const normalizedGender = gender.toUpperCase();
+    if (normalizedGender.includes('NAM') || normalizedGender === 'MALE') return 'Nam';
+    if (normalizedGender.includes('NỮ') || normalizedGender === 'FEMALE') return 'Nữ';
+    return gender;
+  }
+
+  private formatAddress(addressData: any): string {
+    if (!addressData) return '';
+    const parts = [];
+    
+    if (typeof addressData === 'string') {
+      return addressData;
+    }
+
+    if (addressData.street) parts.push(addressData.street);
+    if (addressData.ward) parts.push(addressData.ward);
+    if (addressData.district) parts.push(addressData.district);
+    if (addressData.province) parts.push(addressData.province);
+
+    return parts.join(', ');
+  }
+
+  private extractAddressComponent(addressData: any, component: string): string {
+    if (!addressData) return '';
+    
+    if (typeof addressData === 'string') {
+      const parts = addressData.split(',').map(p => p.trim());
+      switch (component) {
+        case 'province': return parts[parts.length - 1] || '';
+        case 'district': return parts[parts.length - 2] || '';
+        case 'ward': return parts[parts.length - 3] || '';
+        case 'street': return parts.slice(0, parts.length - 3).join(', ') || '';
+        default: return '';
+      }
+    }
+
+    return addressData[component] || '';
+  }
+
+  private extractProvince(addressData: any): string {
+    return this.extractAddressComponent(addressData, 'province') || 'An Giang';
+  }
+
+  private extractDistrict(addressData: any): string {
+    return this.extractAddressComponent(addressData, 'district') || 'Tân Châu';
+  }
+
+  private extractWard(addressData: any): string {
+    return this.extractAddressComponent(addressData, 'ward') || 'Phú Vĩnh';
+  }
+
+  private extractStreet(addressData: any): string {
+    return this.extractAddressComponent(addressData, 'street') || '';
+  }
+
+  apDungThongTin(cccd: CCCDResult, closeModal: boolean = true): void {
+    if (cccd.status === 'success') {
+      // Cập nhật thông tin cơ bản
+      this.form.patchValue({
+        cccd: cccd.id,
+        ho_ten: cccd.name,
+        ngay_sinh: new Date(this.formatDate(cccd.dob)),
+        gioi_tinh: cccd.sex === 'NAM' ? 'Nam' : 'Nữ',
+        quoc_tich: cccd.nationality
+      });
+
+      // Áp dụng địa chỉ thường trú nếu được chọn
+      if (this.applyPermanentAddress && cccd.permanent_address) {
+        const { province, district, ward, street } = cccd.permanent_address;
+        this.form.patchValue({
+          dia_chi_nkq: this.formatFullAddress(cccd.permanent_address)
+        });
+        this.updateAddressFields(province, district, ward);
+      }
+
+      // Áp dụng quê quán nếu được chọn
+      if (this.applyHomeAddress && cccd.home_address) {
+        const { province, district, ward, street } = cccd.home_address;
+        this.form.patchValue({
+          que_quan: this.formatFullAddress(cccd.home_address)
+        });
+        this.updateHomeAddressFields(province, district, ward);
+      }
+
+      if (closeModal) {
+        this.message.success('Đã áp dụng thông tin CCCD');
+        this.isQuetCCCDVisible = false;
+      }
+    }
+  }
+
+  // Thêm phương thức mới để cập nhật trường quê quán
+  private async updateHomeAddressFields(province: string, district: string, ward: string) {
+    // Tìm mã tỉnh
+    const tinh = this.danhMucTinhs.find(t => t.ten.toUpperCase().includes(province.toUpperCase()));
+    if (tinh) {
+      this.form.patchValue({ tinh_qq: tinh.ma });
+      
+      // Load và tìm mã huyện
+      await this.loadDanhMucHuyenByMaTinh(tinh.ma);
+      const huyen = this.danhMucHuyens.find(h => h.ten.toUpperCase().includes(district.toUpperCase()));
+      if (huyen) {
+        this.form.patchValue({ huyen_qq: huyen.ma });
+        
+        // Load và tìm mã xã
+        await this.loadDanhMucXaByMaHuyen(huyen.ma);
+        const xa = this.danhMucXas.find(x => x.ten.toUpperCase().includes(ward.toUpperCase()));
+        if (xa) {
+          this.form.patchValue({ xa_qq: xa.ma });
+        }
+      }
+    }
   }
 
   // Thêm phương thức hỗ trợ format ngày
@@ -1914,24 +2213,99 @@ export class KeKhaiBHYTComponent implements OnInit {
 
   // Thêm phương thức cập nhật các trường địa chỉ
   private async updateAddressFields(province: string, district: string, ward: string) {
-    // Tìm mã tỉnh
-    const tinh = this.danhMucTinhs.find(t => t.ten.toUpperCase().includes(province));
-    if (tinh) {
-      this.form.patchValue({ tinh_nkq: tinh.ma });
+    try {
+      // Tìm mã tỉnh
+      const tinh = this.danhMucTinhs.find(t => 
+        t.ten.toUpperCase().includes(province.toUpperCase())
+      );
       
-      // Load và tìm mã huyện
-      await this.loadDanhMucHuyenByMaTinh(tinh.ma);
-      const huyen = this.danhMucHuyens.find(h => h.ten.toUpperCase().includes(district));
-      if (huyen) {
-        this.form.patchValue({ huyen_nkq: huyen.ma });
+      if (tinh) {
+        // Cập nhật mã tỉnh
+        this.form.patchValue({ tinh_nkq: tinh.ma });
         
-        // Load và tìm mã xã
-        await this.loadDanhMucXaByMaHuyen(huyen.ma);
-        const xa = this.danhMucXas.find(x => x.ten.toUpperCase().includes(ward));
-        if (xa) {
-          this.form.patchValue({ xa_nkq: xa.ma });
-        }
+        // Đợi load danh mục huyện
+        await new Promise<void>((resolve) => {
+          this.diaChiService.getDanhMucHuyenByMaTinh(tinh.ma).subscribe({
+            next: (huyens) => {
+              this.danhMucHuyens = huyens.sort((a, b) => 
+                a.ten.localeCompare(b.ten, 'vi')
+              );
+              
+              // Tìm mã huyện
+              const huyen = this.danhMucHuyens.find(h => 
+                h.ten.toUpperCase().includes(district.toUpperCase())
+              );
+              
+              if (huyen) {
+                // Cập nhật mã huyện
+                this.form.patchValue({ huyen_nkq: huyen.ma });
+                
+                // Load danh mục xã
+                this.diaChiService.getDanhMucXaByMaHuyen(huyen.ma).subscribe({
+                  next: (xas) => {
+                    this.danhMucXas = xas.sort((a, b) => 
+                      a.ten.localeCompare(b.ten, 'vi')
+                    );
+                    
+                    // Tìm mã xã
+                    const xa = this.danhMucXas.find(x => 
+                      x.ten.toUpperCase().includes(ward.toUpperCase())
+                    );
+                    
+                    if (xa) {
+                      // Cập nhật mã xã
+                      this.form.patchValue({ xa_nkq: xa.ma });
+                    }
+                    resolve();
+                  },
+                  error: (error) => {
+                    console.error('Error loading xã:', error);
+                    resolve();
+                  }
+                });
+              } else {
+                resolve();
+              }
+            },
+            error: (error) => {
+              console.error('Error loading huyện:', error);
+              resolve();
+            }
+          });
+        });
       }
+    } catch (error) {
+      console.error('Error in updateAddressFields:', error);
     }
+  }
+
+  // Thêm phương thức getBase64 vào class KeKhaiBHYTComponent
+  private getBase64(img: File, callback: (img: string) => void): void {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result!.toString()));
+    reader.readAsDataURL(img);
+  }
+
+  // Thêm phương thức mới cho danh sách kê khai
+  onKeKhaiChecked(id: number, checked: boolean): void {
+    if (checked) {
+      this.selectedIds = [...this.selectedIds, id];
+    } else {
+      this.selectedIds = this.selectedIds.filter(item => item !== id);
+    }
+    this.isAllChecked = this.keKhaiBHYTs.every(item => this.selectedIds.includes(item.id!));
+  }
+
+  // Thêm phương thức mới để format địa chỉ đầy đủ
+  formatFullAddress(address: { province: string; district: string; ward: string; street?: string }): string {
+    if (!address) return 'N/A';
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.ward) parts.push(address.ward);
+    if (address.district) parts.push(address.district);
+    if (address.province) parts.push(address.province);
+    
+    return parts.join(', ') || 'N/A';
   }
 } 
