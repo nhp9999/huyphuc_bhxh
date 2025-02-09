@@ -50,6 +50,7 @@ interface KeKhaiBHYT {
   email: string;
   so_tien: number;
   ghi_chu?: string;
+  so_the_bhyt: string;
 }
 
 @Component({
@@ -583,13 +584,18 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   exportData(data: DotKeKhai): void {
+    if (!data || !data.id) {
+      this.message.warning('Không tìm thấy thông tin đợt kê khai');
+      return;
+    }
+
     if (data.dich_vu !== 'BHYT') {
       this.message.warning('Chỉ hỗ trợ xuất dữ liệu kê khai BHYT');
       return;
     }
 
     this.loading = true;
-    this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(data.id!).subscribe({
+    this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(data.id).subscribe({
       next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
         // Chuẩn bị dữ liệu để xuất
         const exportData = {
@@ -607,11 +613,9 @@ export class DotKeKhaiComponent implements OnInit {
             cccd: item.cccd,
             ngay_sinh: new Date(item.ngay_sinh).toLocaleDateString('vi-VN'),
             gioi_tinh: item.gioi_tinh,
-            dia_chi: item.dia_chi,
             so_dien_thoai: item.so_dien_thoai,
-            email: item.email,
-            so_tien: item.so_tien,
-            ghi_chu: item.ghi_chu
+            so_the_bhyt: item.so_the_bhyt,
+            so_tien: item.so_tien
           }))
         };
 
@@ -640,9 +644,13 @@ export class DotKeKhaiComponent implements OnInit {
         this.message.success('Xuất dữ liệu kê khai BHYT thành công');
         this.loading = false;
       },
-      error: (error: unknown) => {
+      error: (error: any) => {
         console.error('Lỗi khi lấy dữ liệu kê khai BHYT:', error);
-        this.message.error('Có lỗi xảy ra khi xuất dữ liệu kê khai BHYT');
+        if (error.status === 404) {
+          this.message.error(`Không tìm thấy đợt kê khai có ID: ${data.id}`);
+        } else {
+          this.message.error('Có lỗi xảy ra khi xuất dữ liệu kê khai BHYT');
+        }
         this.loading = false;
       }
     });

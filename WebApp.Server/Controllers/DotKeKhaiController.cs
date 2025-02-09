@@ -294,6 +294,61 @@ namespace WebApp.API.Controllers
             }
         }
 
+        [HttpGet("{id}/ke-khai-bhyt")]
+        public async Task<ActionResult<IEnumerable<KeKhaiBHYT>>> GetKeKhaiBHYTs(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"Bắt đầu lấy danh sách kê khai BHYT cho đợt {id}");
+
+                // Kiểm tra đợt kê khai có tồn tại không
+                var dotKeKhai = await _context.DotKeKhais
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(d => d.id == id);
+
+                if (dotKeKhai == null)
+                {
+                    _logger.LogWarning($"Không tìm thấy đợt kê khai ID: {id}");
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai có ID: {id}" });
+                }
+
+                _logger.LogInformation($"Tìm thấy đợt kê khai: {JsonSerializer.Serialize(dotKeKhai)}");
+
+                if (dotKeKhai.dich_vu != "BHYT")
+                {
+                    _logger.LogWarning($"Đợt kê khai {id} không phải loại BHYT. Loại dịch vụ: {dotKeKhai.dich_vu}");
+                    return BadRequest(new { message = $"Đợt kê khai này không phải là BHYT (Loại dịch vụ: {dotKeKhai.dich_vu})" });
+                }
+
+                // Lấy danh sách kê khai BHYT
+                var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                    .Include(k => k.ThongTinThe)
+                    .Where(k => k.dot_ke_khai_id == id)
+                    .Select(k => new
+                    {
+                        ho_ten = k.ThongTinThe.ho_ten,
+                        cccd = k.ThongTinThe.cccd,
+                        ma_so_bhxh = k.ThongTinThe.ma_so_bhxh,
+                        ngay_sinh = k.ThongTinThe.ngay_sinh,
+                        gioi_tinh = k.ThongTinThe.gioi_tinh,
+                        so_dien_thoai = k.ThongTinThe.so_dien_thoai,
+                        so_the_bhyt = k.ThongTinThe.so_the_bhyt,
+                        so_tien = k.so_tien_can_dong
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"Tìm thấy {keKhaiBHYTs.Count} bản ghi kê khai BHYT cho đợt {id}");
+                
+                return Ok(keKhaiBHYTs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi lấy danh sách kê khai BHYT cho đợt {id}: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách kê khai BHYT", error = ex.Message });
+            }
+        }
+
         private bool DotKeKhaiExists(int id)
         {
             return _context.DotKeKhais.Any(e => e.id == id);

@@ -14,6 +14,7 @@ export interface KeKhaiBHYT {
   email: string;
   so_tien: number;
   ghi_chu?: string;
+  so_the_bhyt: string;
 }
 
 // Interface cho việc tạo mới
