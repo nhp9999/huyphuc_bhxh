@@ -28,7 +28,7 @@
             <span>Đợt kê khai</span>
             <a [routerLink]="['/dot-ke-khai']"></a>
           </li>
-          <li nz-menu-item nzMatchRouter>
+          <li nz-menu-item nzMatchRouter *ngIf="isAdmin">
             <span nz-icon nzType="user"></span>
             <span>Người dùng</span>
             <a [routerLink]="['/users']"></a>

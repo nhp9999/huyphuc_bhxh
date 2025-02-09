@@ -32,6 +32,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class MainLayoutComponent implements OnInit {
   isCollapsed = false;
+  isAdmin: boolean = false;
   currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   constructor(
@@ -44,6 +45,8 @@ export class MainLayoutComponent implements OnInit {
     if (savedState !== null) {
       this.isCollapsed = savedState === 'true';
     }
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    this.isAdmin = currentUser.role === 'admin';
   }
 
   toggleCollapsed(): void {
