@@ -27,7 +27,8 @@ import {
   ReloadOutline,
   ArrowUpOutline,
   ArrowDownOutline,
-  DollarOutline
+  DollarOutline,
+  ExportOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -38,6 +39,18 @@ import { DonViService } from '../../services/don-vi.service';
 import { combineLatest } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.component';
+
+interface KeKhaiBHYT {
+  ho_ten: string;
+  cccd: string;
+  ngay_sinh: Date;
+  gioi_tinh: string;
+  dia_chi: string;
+  so_dien_thoai: string;
+  email: string;
+  so_tien: number;
+  ghi_chu?: string;
+}
 
 @Component({
   selector: 'app-dot-ke-khai',
@@ -112,7 +125,8 @@ export class DotKeKhaiComponent implements OnInit {
       ReloadOutline,
       ArrowUpOutline,
       ArrowDownOutline,
-      DollarOutline
+      DollarOutline,
+      ExportOutline
     );
 
     const currentDate = new Date();
@@ -564,6 +578,72 @@ export class DotKeKhaiComponent implements OnInit {
       if (result) {
         // Xử lý sau khi modal đóng nếu cần
         this.loadData();
+      }
+    });
+  }
+
+  exportData(data: DotKeKhai): void {
+    if (data.dich_vu !== 'BHYT') {
+      this.message.warning('Chỉ hỗ trợ xuất dữ liệu kê khai BHYT');
+      return;
+    }
+
+    this.loading = true;
+    this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(data.id!).subscribe({
+      next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
+        // Chuẩn bị dữ liệu để xuất
+        const exportData = {
+          dot_ke_khai: {
+            ten_dot: data.ten_dot,
+            don_vi: this.getDonViName(data.don_vi_id),
+            tong_so_the: data.tong_so_the || 0,
+            tong_so_tien: data.tong_so_tien || 0,
+            trang_thai: this.getTagText(data.trang_thai),
+            ghi_chu: data.ghi_chu || '',
+            ngay_tao: data.ngay_tao ? new Date(data.ngay_tao).toLocaleDateString('vi-VN') : '',
+          },
+          ke_khai_bhyt: keKhaiBHYTs.map((item: KeKhaiBHYT) => ({
+            ho_ten: item.ho_ten,
+            cccd: item.cccd,
+            ngay_sinh: new Date(item.ngay_sinh).toLocaleDateString('vi-VN'),
+            gioi_tinh: item.gioi_tinh,
+            dia_chi: item.dia_chi,
+            so_dien_thoai: item.so_dien_thoai,
+            email: item.email,
+            so_tien: item.so_tien,
+            ghi_chu: item.ghi_chu
+          }))
+        };
+
+        // Chuyển đổi dữ liệu thành chuỗi JSON
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // Tạo blob từ chuỗi JSON
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // Tạo URL cho blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Tạo thẻ a để tải xuống
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.json`;
+        
+        // Thêm thẻ a vào document và click
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        this.message.success('Xuất dữ liệu kê khai BHYT thành công');
+        this.loading = false;
+      },
+      error: (error: unknown) => {
+        console.error('Lỗi khi lấy dữ liệu kê khai BHYT:', error);
+        this.message.error('Có lỗi xảy ra khi xuất dữ liệu kê khai BHYT');
+        this.loading = false;
       }
     });
   }

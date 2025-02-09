@@ -4,6 +4,18 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+export interface KeKhaiBHYT {
+  ho_ten: string;
+  cccd: string;
+  ngay_sinh: Date;
+  gioi_tinh: string;
+  dia_chi: string;
+  so_dien_thoai: string;
+  email: string;
+  so_tien: number;
+  ghi_chu?: string;
+}
+
 // Interface cho việc tạo mới
 export interface CreateDotKeKhai {
   ten_dot: string;
@@ -132,5 +144,9 @@ export class DotKeKhaiService {
         this.dotKeKhaisSubject.next(updatedData);
       })
     );
+  }
+
+  getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId: number): Observable<KeKhaiBHYT[]> {
+    return this.http.get<KeKhaiBHYT[]>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`);
   }
 } 
