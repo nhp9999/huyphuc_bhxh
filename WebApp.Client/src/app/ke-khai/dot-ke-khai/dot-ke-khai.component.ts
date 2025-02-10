@@ -39,6 +39,7 @@ import { DonViService } from '../../services/don-vi.service';
 import { combineLatest } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.component';
+import * as XLSX from 'xlsx';
 
 interface KeKhaiBHYT {
   ho_ten: string;
@@ -597,49 +598,64 @@ export class DotKeKhaiComponent implements OnInit {
     this.loading = true;
     this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(data.id).subscribe({
       next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
-        // Chuẩn bị dữ liệu để xuất
-        const exportData = {
-          dot_ke_khai: {
-            ten_dot: data.ten_dot,
-            don_vi: this.getDonViName(data.don_vi_id),
-            tong_so_the: data.tong_so_the || 0,
-            tong_so_tien: data.tong_so_tien || 0,
-            trang_thai: this.getTagText(data.trang_thai),
-            ghi_chu: data.ghi_chu || '',
-            ngay_tao: data.ngay_tao ? new Date(data.ngay_tao).toLocaleDateString('vi-VN') : '',
-          },
-          ke_khai_bhyt: keKhaiBHYTs.map((item: KeKhaiBHYT) => ({
-            ho_ten: item.ho_ten,
-            cccd: item.cccd,
-            ngay_sinh: new Date(item.ngay_sinh).toLocaleDateString('vi-VN'),
-            gioi_tinh: item.gioi_tinh,
-            so_dien_thoai: item.so_dien_thoai,
-            so_the_bhyt: item.so_the_bhyt,
-            so_tien: item.so_tien
-          }))
-        };
+        // Chuẩn bị dữ liệu cho sheet thông tin đợt kê khai
+        const dotKeKhaiInfo = [
+          ['THÔNG TIN ĐỢT KÊ KHAI'],
+          ['Tên đợt', data.ten_dot],
+          ['Đơn vị', this.getDonViName(data.don_vi_id)],
+          ['Tổng số thẻ', data.tong_so_the || 0],
+          ['Tổng số tiền', data.tong_so_tien || 0],
+          ['Trạng thái', this.getTagText(data.trang_thai)],
+          ['Ghi chú', data.ghi_chu || ''],
+          ['Ngày tạo', data.ngay_tao ? new Date(data.ngay_tao).toLocaleDateString('vi-VN') : '']
+        ];
 
-        // Chuyển đổi dữ liệu thành chuỗi JSON
-        const jsonString = JSON.stringify(exportData, null, 2);
-        
-        // Tạo blob từ chuỗi JSON
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        
-        // Tạo URL cho blob
-        const url = window.URL.createObjectURL(blob);
-        
-        // Tạo thẻ a để tải xuống
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.json`;
-        
-        // Thêm thẻ a vào document và click
-        document.body.appendChild(a);
-        a.click();
-        
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Chuẩn bị dữ liệu cho sheet danh sách kê khai
+        const keKhaiHeaders = [
+          'Họ và tên',
+          'CCCD',
+          'Ngày sinh',
+          'Giới tính',
+          'Số điện thoại',
+          'Số thẻ BHYT',
+          'Số tiền'
+        ];
+
+        const keKhaiData = keKhaiBHYTs.map(item => [
+          item.ho_ten,
+          item.cccd,
+          new Date(item.ngay_sinh).toLocaleDateString('vi-VN'),
+          item.gioi_tinh,
+          item.so_dien_thoai,
+          item.so_the_bhyt,
+          item.so_tien
+        ]);
+
+        // Tạo workbook và thêm các sheets
+        const wb = XLSX.utils.book_new();
+
+        // Thêm sheet thông tin đợt kê khai
+        const ws1 = XLSX.utils.aoa_to_sheet(dotKeKhaiInfo);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Thông tin đợt kê khai');
+
+        // Thêm sheet danh sách kê khai
+        const ws2 = XLSX.utils.aoa_to_sheet([keKhaiHeaders, ...keKhaiData]);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Danh sách kê khai');
+
+        // Tạo style cho sheet
+        ws1['!cols'] = [{ wch: 15 }, { wch: 30 }];
+        ws2['!cols'] = [
+          { wch: 30 }, // Họ và tên
+          { wch: 15 }, // CCCD
+          { wch: 15 }, // Ngày sinh
+          { wch: 10 }, // Giới tính
+          { wch: 15 }, // Số điện thoại
+          { wch: 20 }, // Số thẻ BHYT
+          { wch: 15 }  // Số tiền
+        ];
+
+        // Xuất file Excel
+        XLSX.writeFile(wb, `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.xlsx`);
         
         this.message.success('Xuất dữ liệu kê khai BHYT thành công');
         this.loading = false;
