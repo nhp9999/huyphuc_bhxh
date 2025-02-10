@@ -117,8 +117,29 @@ namespace WebApp.API.Controllers
                 // Kiểm tra xem mã số BHXH đã tồn tại trong đợt kê khai này chưa
                 var existingKeKhai = await _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
-                    .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId 
-                        && k.ThongTinThe.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh);
+                    .Where(k => k.dot_ke_khai_id == dotKeKhaiId)
+                    .Select(k => new {
+                        k.id,
+                        k.dot_ke_khai_id,
+                        k.thong_tin_the_id,
+                        ma_so_bhxh = k.ThongTinThe.ma_so_bhxh,
+                        k.tinh_nkq,
+                        k.huyen_nkq,
+                        k.xa_nkq,
+                        k.dia_chi_nkq,
+                        k.nguoi_thu,
+                        k.so_thang_dong,
+                        k.phuong_an_dong,
+                        k.han_the_cu,
+                        k.han_the_moi_tu,
+                        k.han_the_moi_den,
+                        k.benh_vien_kcb,
+                        k.nguoi_tao,
+                        k.ngay_tao,
+                        k.ngay_bien_lai,
+                        k.so_tien_can_dong
+                    })
+                    .FirstOrDefaultAsync(k => k.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh);
 
                 if (existingKeKhai != null)
                 {
@@ -136,12 +157,24 @@ namespace WebApp.API.Controllers
                     .Where(k => k.ThongTinThe.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh
                         && k.ngay_tao >= oneWeekAgo
                         && k.dot_ke_khai_id != dotKeKhaiId)
-                    .OrderByDescending(k => k.ngay_tao)
+                    .Select(k => new {
+                        k.id,
+                        k.dot_ke_khai_id,
+                        k.thong_tin_the_id,
+                        k.ThongTinThe.ma_so_bhxh,
+                        k.tinh_nkq,
+                        k.huyen_nkq,
+                        k.xa_nkq,
+                        k.DotKeKhai.so_dot,
+                        k.DotKeKhai.thang,
+                        k.DotKeKhai.nam
+                    })
+                    .OrderByDescending(k => k.id)
                     .FirstOrDefaultAsync();
 
                 if (recentKeKhai != null)
                 {
-                    var dotKeKhaiInfo = $"Đợt {recentKeKhai.DotKeKhai.so_dot} tháng {recentKeKhai.DotKeKhai.thang} năm {recentKeKhai.DotKeKhai.nam}";
+                    var dotKeKhaiInfo = $"Đợt {recentKeKhai.so_dot} tháng {recentKeKhai.thang} năm {recentKeKhai.nam}";
                     return BadRequest(new { 
                         success = false,
                         message = $"Mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã được kê khai trong {dotKeKhaiInfo}" 

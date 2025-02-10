@@ -331,9 +331,25 @@ namespace WebApp.API.Controllers
                         ma_so_bhxh = k.ThongTinThe.ma_so_bhxh,
                         ngay_sinh = k.ThongTinThe.ngay_sinh,
                         gioi_tinh = k.ThongTinThe.gioi_tinh,
+                        phuong_an_dong = k.phuong_an_dong,
                         so_dien_thoai = k.ThongTinThe.so_dien_thoai,
                         so_the_bhyt = k.ThongTinThe.so_the_bhyt,
-                        so_tien = k.so_tien_can_dong
+                        so_tien = k.so_tien_can_dong,
+                        nguoi_thu = k.nguoi_thu,
+                        ngay_bien_lai = k.ngay_bien_lai,
+                        ma_tinh_nkq = k.ThongTinThe.ma_tinh_nkq,
+                        ma_huyen_nkq = k.ThongTinThe.ma_huyen_nkq,
+                        ma_xa_nkq = k.ThongTinThe.ma_xa_nkq,
+                        dia_chi_nkq = k.dia_chi_nkq,
+                        so_thang_dong = k.so_thang_dong,
+                        ma_benh_vien = k.ThongTinThe.ma_benh_vien,
+                        ma_hgd = k.ThongTinThe.ma_hgd,
+                        quoc_tich = k.ThongTinThe.quoc_tich,
+                        ma_tinh_ks = k.ThongTinThe.ma_tinh_ks,
+                        ma_huyen_ks = k.ThongTinThe.ma_huyen_ks,
+                        ma_xa_ks = k.ThongTinThe.ma_xa_ks,
+                        han_the_moi_tu = k.han_the_moi_tu,
+                        is_urgent = k.is_urgent
                     })
                     .ToListAsync();
 

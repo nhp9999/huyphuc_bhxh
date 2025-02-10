@@ -15,6 +15,11 @@ export interface KeKhaiBHYT {
   so_tien: number;
   ghi_chu?: string;
   so_the_bhyt: string;
+  ma_so_bhxh?: string;
+  nguoi_thu: number;
+  phuong_an_dong?: string;
+  ngay_bien_lai?: Date;
+  ma_tinh_nkq?: string;
 }
 
 // Interface cho việc tạo mới

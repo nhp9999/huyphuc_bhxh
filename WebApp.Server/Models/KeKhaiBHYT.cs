@@ -62,7 +62,7 @@ namespace WebApp.API.Models
         /// </summary>
         [Required]
         [StringLength(50)]
-        public string phuong_an_dong { get; set; }
+        public string? phuong_an_dong { get; set; }
 
         /// <summary>
         /// Hạn thẻ cũ
