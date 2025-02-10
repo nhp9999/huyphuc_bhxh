@@ -72,7 +72,7 @@ export interface KeKhaiBHYT {
   ngay_tao: Date;
   ngay_bien_lai?: Date | null;
   so_tien_can_dong: number;
-  is_urgent?: boolean;
+  is_urgent: boolean;
 }
 
 export interface ThongTinBHYTResponse {
@@ -263,7 +263,10 @@ export class KeKhaiBHYTService {
     return this.http.get<DanhMucCSKCB[]>(this.danhMucCSKCBUrl);
   }
 
-  toggleUrgent(dotKeKhaiId: number, id: number): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`, {});
+  toggleUrgent(dotKeKhaiId: number, id: number): Observable<{success: boolean; is_urgent: boolean}> {
+    return this.http.patch<{success: boolean; is_urgent: boolean}>(
+      `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`, 
+      {}
+    );
   }
 } 

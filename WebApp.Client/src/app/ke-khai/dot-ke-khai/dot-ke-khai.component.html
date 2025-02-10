@@ -147,14 +147,12 @@
             </a>
             <a *ngIf="data.trang_thai === 'cho_thanh_toan'" 
                nz-button 
-               nzType="link" 
-               nzType="primary"
+               nzType="link"
                (click)="showThanhToanModal(data)">
-              <i nz-icon nzType="dollar"></i>
+              <i nz-icon nzType="dollar" nzTheme="outline"></i>
             </a>
             <a nz-button 
                nzType="link" 
-               nzType="primary"
                (click)="exportData(data)">
               <i nz-icon nzType="export"></i>
             </a>

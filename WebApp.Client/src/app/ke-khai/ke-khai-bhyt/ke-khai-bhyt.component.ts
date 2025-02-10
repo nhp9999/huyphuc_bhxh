@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -33,7 +33,9 @@ import {
   DeleteOutline,
   ReloadOutline,
   ApartmentOutline,
-  CalendarOutline
+  CalendarOutline,
+  IdcardOutline, // Thêm icon CCCD
+  SearchOutline  // Thêm icon Search
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { DonViService, DonVi } from '../../services/don-vi.service';
@@ -173,7 +175,7 @@ interface CCCDResult {
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
 })
-export class KeKhaiBHYTComponent implements OnInit {
+export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   keKhaiBHYTs: KeKhaiBHYT[] = [];
   thongTinThe: ThongTinThe | null = null;
   dotKeKhai: DotKeKhai | null = null;
@@ -249,7 +251,9 @@ export class KeKhaiBHYTComponent implements OnInit {
       DeleteOutline,
       ReloadOutline,
       ApartmentOutline,
-      CalendarOutline
+      CalendarOutline,
+      IdcardOutline,  // Thêm vào danh sách
+      SearchOutline   // Thêm vào danh sách
     );
     this.initForm();
   }
@@ -440,6 +444,10 @@ export class KeKhaiBHYTComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    localStorage.removeItem('urgentItems');
+  }
+
   initForm(): void {
     const today = new Date();
     console.log('Ngày biên lai mặc định:', today);
@@ -533,8 +541,14 @@ export class KeKhaiBHYTComponent implements OnInit {
     this.loading = true;
     this.keKhaiBHYTService.getByDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
-        this.keKhaiBHYTs = data;
-        this.tinhThongKe(); // Tính thống kê sau khi load dữ liệu
+        // Khôi phục trạng thái urgent từ localStorage
+        const urgentItems = JSON.parse(localStorage.getItem('urgentItems') || '{}');
+        
+        this.keKhaiBHYTs = data.map(item => ({
+          ...item,
+          is_urgent: urgentItems[item.id!] || false // Sử dụng giá trị từ localStorage hoặc false
+        }));
+        this.tinhThongKe();
         this.loading = false;
       },
       error: (error) => {
@@ -712,9 +726,12 @@ export class KeKhaiBHYTComponent implements OnInit {
           ma_xa_nkq: formValue.xa_nkq || '',
           dia_chi_nkq: formValue.dia_chi_nkq,
           benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
-          ma_benh_vien: formValue.ma_benh_vien || '',
+          ma_benh_vien: formValue.benh_vien_kcb || '',
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
+          so_the_bhyt: formValue.so_the_bhyt || '', // Đảm bảo giá trị không null
+          ma_dan_toc: formValue.ma_dan_toc || '',
+          quoc_tich: formValue.quoc_tich || '',
           noiNhanHoSo: {
             tinh: this.getTinhTen(formValue.tinh_nkq),
             huyen: this.getHuyenTen(formValue.huyen_nkq),
@@ -741,11 +758,12 @@ export class KeKhaiBHYTComponent implements OnInit {
           xa_nkq: this.getXaTen(formValue.xa_nkq),
           dia_chi_nkq: formValue.dia_chi_nkq,
           benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
-          ma_benh_vien: formValue.ma_benh_vien || '',
+          ma_benh_vien: formValue.benh_vien_kcb || '',
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
           so_tien_can_dong: formValue.so_tien_can_dong || 0,
+          is_urgent: false // Thêm trường này
         };
 
         // Cập nhật cả hai đối tượng
@@ -824,6 +842,7 @@ export class KeKhaiBHYTComponent implements OnInit {
           ngay_tao: new Date(),
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
           so_tien_can_dong: formValue.so_tien_can_dong || 0,
+          is_urgent: false // Thêm trường này
         };
 
         // Tạo mới KeKhaiBHYT
@@ -1478,14 +1497,23 @@ export class KeKhaiBHYTComponent implements OnInit {
     return this.keKhaiBHYTs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0);
   }
 
-  toggleUrgent(id: number): void {
+  toggleUrgent(id: number, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
     this.keKhaiBHYTService.toggleUrgent(this.dotKeKhaiId, id).subscribe({
-      next: () => {
-        // Cập nhật lại trạng thái trong danh sách
+      next: (response) => {
+        // Cập nhật trạng thái trong danh sách local
         const item = this.keKhaiBHYTs.find(x => x.id === id);
         if (item) {
-          item.is_urgent = !item.is_urgent;
+          item.is_urgent = response.is_urgent; // Sử dụng giá trị từ response
+          // Lưu vào localStorage để duy trì trạng thái
+          const urgentItems = JSON.parse(localStorage.getItem('urgentItems') || '{}');
+          urgentItems[id] = response.is_urgent;
+          localStorage.setItem('urgentItems', JSON.stringify(urgentItems));
         }
+        this.message.success(item?.is_urgent ? 'Đã đánh dấu gấp' : 'Đã bỏ đánh dấu gấp');
       },
       error: (error) => {
         console.error('Error toggling urgent status:', error);
@@ -1534,6 +1562,26 @@ export class KeKhaiBHYTComponent implements OnInit {
   // Thêm hàm mới để tạo kê khai từ dữ liệu API
   private async createKeKhaiFromApiData(data: any): Promise<{ success: boolean; message?: string }> {
     try {
+      // Kiểm tra hạn thẻ cũ
+      if (data.denNgayTheCu) {
+        const denNgayTheCu = this.parseDate(data.denNgayTheCu);
+        if (denNgayTheCu) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const timeDiff = denNgayTheCu.getTime() - today.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+          
+          // Nếu thẻ còn hạn sử dụng > 60 ngày
+          if (daysDiff > 60) {
+            return {
+              success: false,
+              message: `Thẻ BHYT còn ${daysDiff} ngày sử dụng (> 60 ngày). Không thể tạo kê khai.`
+            };
+          }
+        }
+      }
+
       // Kiểm tra và tạo danh sách các trường bị thiếu
       const missingFields = [];
       if (!data?.maSoBHXH) missingFields.push('Mã số BHXH');
@@ -1764,7 +1812,8 @@ export class KeKhaiBHYTComponent implements OnInit {
           nguoi_tao: this.currentUser.username,
           ngay_tao: new Date(),
           ngay_bien_lai: ngayBienLai,
-          so_tien_can_dong: soTienCanDong
+          so_tien_can_dong: soTienCanDong,
+          is_urgent: false // Thêm trường này
         };
 
         // Tạo mới kê khai
@@ -2307,5 +2356,121 @@ export class KeKhaiBHYTComponent implements OnInit {
     if (address.province) parts.push(address.province);
     
     return parts.join(', ') || 'N/A';
+  }
+
+  // Thêm phương thức showEditForm
+  showEditForm(data: KeKhaiBHYT): void {
+    this.isVisible = true;
+    this.isEdit = true;
+    this.form.reset();
+
+    if (data) {
+      console.log('Modal data:', data);
+      
+      // Đảm bảo danh mục bệnh viện đã được load
+      if (!this.danhMucCSKCBs || this.danhMucCSKCBs.length === 0) {
+        this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
+          next: (cskcbs) => {
+            this.danhMucCSKCBs = cskcbs;
+            // Truyền data gốc vào setFormValues
+            this.setFormValues(data);
+          },
+          error: (error) => {
+            console.error('Error loading CSKCB:', error);
+            this.message.error('Có lỗi xảy ra khi tải danh sách cơ sở KCB');
+          }
+        });
+      } else {
+        // Truyền data gốc vào setFormValues
+        this.setFormValues(data);
+      }
+    }
+  }
+
+  // Tách phần gán giá trị form ra một phương thức riêng
+  private setFormValues(data: KeKhaiBHYT): void {
+    if (data.thongTinThe) {
+      this.form.patchValue({
+        ma_so_bhxh: data.thongTinThe.ma_so_bhxh,
+        cccd: data.thongTinThe.cccd,
+        ho_ten: data.thongTinThe.ho_ten,
+        ngay_sinh: data.thongTinThe.ngay_sinh,
+        gioi_tinh: data.thongTinThe.gioi_tinh,
+        so_dien_thoai: data.thongTinThe.so_dien_thoai,
+        ma_hgd: data.thongTinThe.ma_hgd,
+        ma_tinh_ks: data.thongTinThe.ma_tinh_ks,
+        ma_huyen_ks: data.thongTinThe.ma_huyen_ks,
+        ma_xa_ks: data.thongTinThe.ma_xa_ks,
+        tinh_nkq: data.thongTinThe.ma_tinh_nkq,
+        huyen_nkq: data.thongTinThe.ma_huyen_nkq,
+        xa_nkq: data.thongTinThe.ma_xa_nkq,
+        dia_chi_nkq: data.thongTinThe.dia_chi_nkq || '',
+        // Tìm bệnh viện trong danh mục và gán value
+        benh_vien_kcb: this.danhMucCSKCBs.find(bv => bv.ma === data.ma_benh_vien)?.value || '',
+        so_the_bhyt: data.thongTinThe.so_the_bhyt,
+        ma_dan_toc: data.thongTinThe.ma_dan_toc,
+        quoc_tich: data.thongTinThe.quoc_tich
+      });
+
+      // Load danh sách huyện và xã dựa trên mã tỉnh/huyện đã chọn
+      if (data.thongTinThe.ma_tinh_ks) {
+        this.diaChiService.getDanhMucHuyenByMaTinh(data.thongTinThe.ma_tinh_ks).subscribe({
+          next: (huyens) => {
+            this.danhMucHuyenKS = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+            console.log('Loaded huyện KS:', this.danhMucHuyenKS);
+          },
+          error: (error) => {
+            console.error('Error loading huyện KS:', error);
+            this.message.error('Có lỗi xảy ra khi tải danh sách quận/huyện KS');
+          }
+        });
+      }
+
+      // ... phần code còn lại giữ nguyên ...
+    }
+
+    // Patch các thông tin khác
+    this.form.patchValue({
+      id: data.id,
+      thong_tin_the_id: data.thong_tin_the_id,
+      nguoi_thu: data.nguoi_thu,
+      so_thang_dong: data.so_thang_dong,
+      phuong_an_dong: data.phuong_an_dong,
+      han_the_cu: data.han_the_cu,
+      han_the_moi_tu: data.han_the_moi_tu,
+      han_the_moi_den: data.han_the_moi_den,
+      dia_chi_nkq: data.dia_chi_nkq,
+      so_tien_can_dong: data.so_tien_can_dong,
+      ngay_bien_lai: data.ngay_bien_lai || new Date()
+    });
+
+    // Log để kiểm tra
+    console.log('Form values after patch:', this.form.value);
+  }
+
+  getPhuongAnDongText(phuongAnDong: string): string {
+    switch (phuongAnDong) {
+      case 'tang_moi':
+        return 'Tăng mới';
+      case 'dao_han':
+        return 'Đáo hạn';
+      case 'dung_dong':
+        return 'Dừng đóng';
+      default:
+        return '';
+    }
+  }
+
+  getPhuongAnDongColor(phuongAnDong: string): string {
+    switch (phuongAnDong) {
+      case 'tang_moi':
+        return 'blue';
+      case 'dao_han':
+        return 'green';
+      case 'dung_dong':
+        return 'red';
+      default:
+        return 'default';
+    }
   }
 } 

@@ -193,14 +193,51 @@ nz-table {
   // Style cho custom input group
   .custom-input-group {
     display: flex;
-    gap: 8px;
+    position: relative;
+    width: 100%;
 
     input {
-      flex: 1;
+      width: 100%;
+      padding-right: 40px;
     }
 
     button {
-      flex-shrink: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100% !important;
+      margin: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      padding: 0 8px;
+      border-radius: 0 2px 2px 0;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      &:focus {
+        outline: none;
+      }
+
+      i {
+        font-size: 16px;
+        color: rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    // Thêm style cho button primary (nút tìm kiếm)
+    button[nzType="primary"] {
+      border-left: 1px solid #d9d9d9;
+      
+      &:hover {
+        background: #40a9ff;
+      }
+
+      i {
+        color: #fff;
+      }
     }
   }
 
@@ -275,6 +312,43 @@ nz-table {
 
     .ant-descriptions-item-content {
       color: rgba(0, 0, 0, 0.65);
+    }
+  }
+
+  // Đảm bảo input và button có cùng chiều cao
+  .custom-input-group {
+    .ant-input {
+      height: 36px !important;
+      line-height: 36px !important;
+    }
+
+    .ant-btn {
+      height: 36px !important;
+      line-height: 34px !important;
+    }
+  }
+
+  nz-tag {
+    min-width: 80px;
+    text-align: center;
+    margin: 0;
+    
+    &.ant-tag-blue {
+      color: #1890ff;
+      background: #e6f7ff;
+      border-color: #91d5ff;
+    }
+    
+    &.ant-tag-green {
+      color: #52c41a;
+      background: #f6ffed;
+      border-color: #b7eb8f;
+    }
+    
+    &.ant-tag-red {
+      color: #ff4d4f;
+      background: #fff1f0;
+      border-color: #ffa39e;
     }
   }
 }
@@ -527,5 +601,14 @@ nz-tag {
   
   label {
     margin: 0;
+  }
+}
+
+.urgent {
+  color: #ff4d4f !important;
+  font-weight: 500;
+  
+  &:hover {
+    opacity: 0.85;
   }
 } 

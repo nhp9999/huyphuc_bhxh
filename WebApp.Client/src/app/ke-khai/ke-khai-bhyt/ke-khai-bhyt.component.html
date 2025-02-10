@@ -64,7 +64,7 @@
                   maxlength="12"
                   (keypress)="onlyNumber($event)" />
                 <button nz-button nzType="primary" (click)="showQuetCCCDModal()">
-                  <i nz-icon nzType="camera"></i>
+                  <i nz-icon nzType="idcard"></i>
                 </button>
               </div>
             </nz-form-control>
@@ -379,6 +379,7 @@
         <th>Giới tính</th>
         <th>Số điện thoại</th>
         <th>Người thứ</th>
+        <th>Phương án đóng</th>
         <th>Số tháng đóng</th>
         <th>Tỉnh NKQ</th>
         <th>Huyện NKQ</th>
@@ -389,7 +390,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let data of basicTable.data; let i = index">
+      <tr *ngFor="let data of basicTable.data; let i = index" (click)="showEditForm(data)">
         <td>
           <label nz-checkbox 
             [ngModel]="selectedIds.includes(data.id!)" 
@@ -397,7 +398,7 @@
           </label>
         </td>
         <td>
-          <a [class.urgent]="data.is_urgent" (click)="toggleUrgent(data.id!)">
+          <a [class.urgent]="data.is_urgent" (click)="toggleUrgent(data.id!, $event)">
             {{ data.thongTinThe.ma_so_bhxh }}
           </a>
         </td>
@@ -407,6 +408,7 @@
         <td>{{ data.thongTinThe.gioi_tinh }}</td>
         <td>{{ data.thongTinThe.so_dien_thoai }}</td>
         <td>{{ getNguoiThuText(data.nguoi_thu) }}</td>
+        <td>{{ getPhuongAnDongText(data.phuong_an_dong) }}</td>
         <td>{{ data.so_thang_dong }} tháng</td>
         <td>{{ data.tinh_nkq }}</td>
         <td>{{ data.huyen_nkq }}</td>
