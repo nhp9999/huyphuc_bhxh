@@ -682,6 +682,15 @@
                   <button 
                     nz-button 
                     nz-tooltip
+                    nzTooltipTitle="Sao chép thông tin"
+                    nzType="link" 
+                    (click)="copyThongTin(cccd)"
+                  >
+                    <i nz-icon nzType="copy"></i>
+                  </button>
+                  <button 
+                    nz-button 
+                    nz-tooltip
                     [nzTooltipTitle]="cccd.status === 'error' ? 'Không thể áp dụng thông tin lỗi' : 'Áp dụng thông tin'"
                     nzType="link" 
                     (click)="apDungThongTin(cccd)" 
@@ -707,7 +716,6 @@
 
   <ng-template #modalFooter>
     <div style="display: flex; align-items: center; gap: 16px;">
-      <!-- Thay radio group bằng các checkbox -->
       <div class="address-options">
         <label nz-checkbox [(ngModel)]="applyPermanentAddress">
           Áp dụng địa chỉ thường trú
@@ -719,6 +727,12 @@
 
       <div style="flex: 1;"></div>
       
+      <button nz-button (click)="copyNhieuThongTin()" [disabled]="!hasSelectedCCCD()">
+        <i nz-icon nzType="copy"></i>Sao chép đã chọn
+      </button>
+      <button nz-button (click)="xuatTK1()" [disabled]="!hasSelectedCCCD()">
+        <i nz-icon nzType="file-excel"></i>Xuất TK1
+      </button>
       <button nz-button (click)="handleQuetCCCDCancel()">Đóng</button>
       <button 
         nz-button 

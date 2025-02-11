@@ -47,6 +47,11 @@ import { CCCDService } from '../../services/cccd.service';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import * as XLSX from 'xlsx';
+import * as docx from 'docxtemplater';
+import PizZip from 'pizzip';
+import { saveAs } from 'file-saver';
+import Docxtemplater from 'docxtemplater';
 
 registerLocaleData(vi);
 
@@ -2162,37 +2167,24 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     return parts.join(', ');
   }
 
-  private extractAddressComponent(addressData: any, component: string): string {
-    if (!addressData) return '';
-    
-    if (typeof addressData === 'string') {
-      const parts = addressData.split(',').map(p => p.trim());
-      switch (component) {
-        case 'province': return parts[parts.length - 1] || '';
-        case 'district': return parts[parts.length - 2] || '';
-        case 'ward': return parts[parts.length - 3] || '';
-        case 'street': return parts.slice(0, parts.length - 3).join(', ') || '';
-        default: return '';
-      }
-    }
-
-    return addressData[component] || '';
+  private extractProvince(address?: any): string {
+    if (!address) return '';
+    return typeof address === 'object' ? (address.province || '').trim() : '';
   }
 
-  private extractProvince(addressData: any): string {
-    return this.extractAddressComponent(addressData, 'province') || 'An Giang';
+  private extractDistrict(address?: any): string {
+    if (!address) return '';
+    return typeof address === 'object' ? (address.district || '').trim() : '';
   }
 
-  private extractDistrict(addressData: any): string {
-    return this.extractAddressComponent(addressData, 'district') || 'Tân Châu';
+  private extractWard(address?: any): string {
+    if (!address) return '';
+    return typeof address === 'object' ? (address.ward || '').trim() : '';
   }
 
-  private extractWard(addressData: any): string {
-    return this.extractAddressComponent(addressData, 'ward') || 'Phú Vĩnh';
-  }
-
-  private extractStreet(addressData: any): string {
-    return this.extractAddressComponent(addressData, 'street') || '';
+  private extractStreet(address?: any): string {
+    if (!address) return '';
+    return typeof address === 'object' ? (address.street || '').trim() : '';
   }
 
   apDungThongTin(cccd: CCCDResult, closeModal: boolean = true): void {
@@ -2346,16 +2338,16 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   // Thêm phương thức mới để format địa chỉ đầy đủ
-  formatFullAddress(address: { province: string; district: string; ward: string; street?: string }): string {
-    if (!address) return 'N/A';
+  public formatFullAddress(address?: { province: string; district: string; ward: string; street?: string }): string {
+    if (!address) return '';
     
     const parts = [];
-    if (address.street) parts.push(address.street);
-    if (address.ward) parts.push(address.ward);
-    if (address.district) parts.push(address.district);
-    if (address.province) parts.push(address.province);
+    if (address.street?.trim()) parts.push(address.street.trim());
+    if (address.ward?.trim()) parts.push(address.ward.trim());
+    if (address.district?.trim()) parts.push(address.district.trim());
+    if (address.province?.trim()) parts.push(address.province.trim());
     
-    return parts.join(', ') || 'N/A';
+    return parts.join(', ') || '';
   }
 
   // Thêm phương thức showEditForm
@@ -2472,5 +2464,221 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       default:
         return 'default';
     }
+  }
+
+  async xuatTK1(): Promise<void> {
+    const selectedCCCDs = this.danhSachCCCD.filter(cccd => cccd.checked && cccd.status === 'success');
+    if (selectedCCCDs.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một CCCD để xuất TK1');
+      return;
+    }
+
+    try {
+      // Tải file mẫu
+      const response = await fetch('assets/templates/FileMau_TK1.docx');
+      if (!response.ok) {
+        throw new Error('Không tìm thấy file mẫu TK1');
+      }
+      const buffer = await response.arrayBuffer();
+
+      // Xử lý từng CCCD đã chọn
+      for (const cccd of selectedCCCDs) {
+        const zip = new PizZip(buffer);
+        const doc = new Docxtemplater().loadZip(zip);
+
+        // Format ngày sinh
+        const ngaySinh = cccd.dob ? this.formatDateForTK1(cccd.dob) : '';
+
+        // Xử lý địa chỉ thường trú từ address
+        const addressParts = this.parseAddress(cccd.address || '');
+        
+        // Xử lý quê quán từ home
+        const homeParts = this.parseAddress(cccd.home || '');
+
+        // Lấy ngày tháng năm hiện tại cho phần chữ ký
+        const now = new Date();
+        const ngay = now.getDate();
+        const thang = now.getMonth() + 1;
+        const nam = now.getFullYear();
+
+        const data = {
+          hoten: cccd.name || '',
+          gioitinh: cccd.sex || '',
+          ngaysinh: ngaySinh,
+          quoctich: cccd.nationality || 'Việt Nam',
+          dantoc: 'Kinh',
+          cccd: cccd.id || '',
+          dienthoai: '',
+          email: '',
+          noisinh_xa: homeParts.ward || '',
+          noisinh_huyen: homeParts.district || '',
+          noisinh_tinh: homeParts.province || '',
+          diachi: addressParts.street || '',
+          diachi_xa: addressParts.ward || '',
+          diachi_huyen: addressParts.district || '',
+          diachi_tinh: addressParts.province || '',
+          ngay: ngay.toString(),
+          thang: thang.toString(),
+          nam: nam.toString(),
+          noidung: 'Xin mã số'
+        };
+
+        doc.setData(data);
+
+        try {
+          doc.render();
+          const out = doc.getZip().generate({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          });
+
+          // Tạo tên file riêng cho từng người
+          const fileName = `tk1-${cccd.name}-${new Date().getTime()}.docx`;
+          saveAs(out, fileName);
+        } catch (error) {
+          console.error(`Lỗi khi render template cho ${cccd.name}:`, error);
+          this.message.error(`Có lỗi xảy ra khi tạo file TK1 cho ${cccd.name}`);
+        }
+      }
+
+      this.message.success(`Đã xuất ${selectedCCCDs.length} file TK1 thành công`);
+    } catch (error) {
+      console.error('Lỗi xuất TK1:', error);
+      this.message.error('Có lỗi xảy ra khi xuất TK1');
+    }
+  }
+
+  // Thêm phương thức mới để parse địa chỉ từ chuỗi
+  private parseAddress(addressStr: string): {
+    street?: string;
+    ward?: string;
+    district?: string;
+    province?: string;
+  } {
+    if (!addressStr) return {};
+
+    // Tách chuỗi địa chỉ theo dấu phẩy và chuẩn hóa mỗi phần
+    const parts = addressStr.split(',')
+      .map(part => this.capitalizeFirstLetter(part.trim()));
+
+    switch (parts.length) {
+      case 4: // Đầy đủ: street, ward, district, province
+        return {
+          street: parts[0],
+          ward: parts[1],
+          district: parts[2],
+          province: parts[3]
+        };
+      case 3: // Thiếu street: ward, district, province
+        return {
+          ward: parts[0],
+          district: parts[1],
+          province: parts[2]
+        };
+      case 2: // Chỉ có district, province
+        return {
+          district: parts[0],
+          province: parts[1]
+        };
+      case 1: // Chỉ có province
+        return {
+          province: parts[0]
+        };
+      default:
+        return {
+          street: this.capitalizeFirstLetter(addressStr) // Chuẩn hóa cả trường hợp mặc định
+        };
+    }
+  }
+
+  // Cập nhật hàm format ngày tháng
+  private formatDateForTK1(dateStr: string): string {
+    try {
+      if (!dateStr) return '';
+      
+      // Kiểm tra nếu đã đúng định dạng dd/MM/yyyy
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          return dateStr; // Giữ nguyên nếu đã đúng định dạng
+        }
+      }
+
+      // Xử lý các định dạng khác
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return dateStr; // Trả về nguyên gốc nếu không parse được
+      }
+
+      // Format về dd/MM/yyyy
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateStr; // Trả về nguyên gốc nếu có lỗi
+    }
+  }
+
+  // Thêm hàm chuẩn hóa chữ hoa đầu câu
+  private capitalizeFirstLetter(str: string): string {
+    if (!str) return '';
+    // Tách chuỗi thành các từ
+    const words = str.toLowerCase().split(' ');
+    // Viết hoa chữ cái đầu của mỗi từ
+    return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+
+  // Thêm phương thức copy thông tin
+  copyThongTin(cccd: CCCDResult): void {
+    if (!cccd) return;
+
+    // Format thông tin theo yêu cầu, bỏ mã số BH ở đầu
+    const thongTin = [
+      cccd.name || '', // Họ và tên
+      cccd.sex || '', // Giới tính
+      cccd.dob || '', // Ngày tháng năm sinh
+      cccd.address || '', // Địa chỉ
+      cccd.id || '', // CCCD
+      '' // Số điện thoại
+    ].join('\t');
+
+    // Copy vào clipboard
+    navigator.clipboard.writeText(thongTin).then(() => {
+      this.message.success('Đã sao chép thông tin');
+    }).catch(err => {
+      console.error('Lỗi khi sao chép:', err);
+      this.message.error('Có lỗi xảy ra khi sao chép thông tin');
+    });
+  }
+
+  // Thêm phương thức copy nhiều thông tin
+  copyNhieuThongTin(): void {
+    const selectedCCCDs = this.danhSachCCCD.filter(cccd => cccd.checked && cccd.status === 'success');
+    if (selectedCCCDs.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một CCCD để sao chép thông tin');
+      return;
+    }
+    
+    // Format dữ liệu, bỏ mã số BH ở đầu
+    const rows = selectedCCCDs.map(cccd => [
+      cccd.name || '', // Họ và tên
+      cccd.sex || '', // Giới tính
+      cccd.dob || '', // Ngày tháng năm sinh
+      cccd.address || '', // Địa chỉ
+      cccd.id || '', // CCCD
+      '' // Số điện thoại
+    ]);
+
+    // Chỉ join các rows
+    const allData = rows.map(row => row.join('\t')).join('\n');
+
+    // Copy vào clipboard
+    navigator.clipboard.writeText(allData).then(() => {
+      this.message.success(`Đã sao chép thông tin của ${selectedCCCDs.length} người`);
+    }).catch(err => {
+      console.error('Lỗi khi sao chép:', err);
+      this.message.error('Có lỗi xảy ra khi sao chép thông tin');
+    });
   }
 } 
