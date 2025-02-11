@@ -3,38 +3,31 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export interface User {
+export interface NguoiDung {
   id: number;
-  username: string;
-  ho_ten?: string;
-  email?: string;
-  so_dien_thoai?: string;
-  role?: string;
-  department_code?: string;
-  unit?: string;
-  unit_id?: number;
-  status: string;
-  province?: string;
-  district?: string;
-  commune?: string;
-  hamlet?: string;
-  address?: string;
-  last_login_at?: Date;
-  last_login_ip?: string;
-  last_login_location?: string;
-  first_login: boolean;
-  password_changed: boolean;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at?: Date;
-  is_deleted: boolean;
+  user_name: string;
+  ho_ten: string;
+  mang_luoi: string;
+  don_vi_cong_tac: string;
+  chuc_danh: string;
+  email: string;
+  so_dien_thoai: string;
+  is_super_admin: boolean;
+  cap: string;
+  type_mang_luoi: number;
+  user_id: number;
+  status: number;
+  client_id: string;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = `${environment.apiUrl}/users`;
+  private apiUrl = `${environment.apiUrl}/nguoi-dung`;
 
   constructor(private http: HttpClient) { }
 
@@ -42,31 +35,31 @@ export class UserService {
     return this.http.get<{ip: string}>('https://api.ipify.org/?format=json');
   }
 
-  getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
+  getNguoiDungs(): Observable<NguoiDung[]> {
+    return this.http.get<NguoiDung[]>(this.apiUrl);
   }
 
-  getUser(id: number): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/${id}`);
+  getNguoiDung(id: number): Observable<NguoiDung> {
+    return this.http.get<NguoiDung>(`${this.apiUrl}/${id}`);
   }
 
-  createUser(user: Partial<User>): Observable<User> {
-    return this.http.post<User>(this.apiUrl, user);
+  createNguoiDung(nguoiDung: Partial<NguoiDung>): Observable<NguoiDung> {
+    return this.http.post<NguoiDung>(this.apiUrl, nguoiDung);
   }
 
-  updateUser(id: number, user: Partial<User>): Observable<User> {
-    return this.http.put<User>(`${this.apiUrl}/${id}`, user);
+  updateNguoiDung(id: number, nguoiDung: Partial<NguoiDung>): Observable<NguoiDung> {
+    return this.http.put<NguoiDung>(`${this.apiUrl}/${id}`, nguoiDung);
   }
 
-  deleteUser(id: number): Observable<void> {
+  deleteNguoiDung(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  toggleUserStatus(id: number, status: string): Observable<User> {
-    return this.http.patch<User>(`${this.apiUrl}/${id}/status`, { status });
+  toggleStatus(id: number): Observable<NguoiDung> {
+    return this.http.patch<NguoiDung>(`${this.apiUrl}/${id}/toggle-status`, {});
   }
 
-  resetPassword(id: number): Observable<{ password: string }> {
-    return this.http.post<{ password: string }>(`${this.apiUrl}/${id}/reset-password`, {});
+  resetPassword(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/reset-password`, {});
   }
 } 

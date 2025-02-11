@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Models;
 using System.ComponentModel.DataAnnotations.Schema;
+using WebApp.Server.Models;
 
 namespace WebApp.API.Data
 {
@@ -22,6 +23,7 @@ namespace WebApp.API.Data
         public DbSet<DanhMucCSKCB> DanhMucCSKCBs { get; set; }
         public DbSet<DonVi> DonVis { get; set; }
         public DbSet<HoaDonThanhToan> HoaDonThanhToans { get; set; }
+        public DbSet<NguoiDung> NguoiDungs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -184,6 +186,26 @@ namespace WebApp.API.Data
                     .WithMany()
                     .HasForeignKey(h => h.dot_ke_khai_id)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<NguoiDung>(entity =>
+            {
+                entity.ToTable("nguoi_dung");
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.UserName).IsUnique();
+                entity.Property(e => e.UserName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.HoTen).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.MangLuoi).HasMaxLength(20);
+                entity.Property(e => e.DonViCongTac).HasMaxLength(200);
+                entity.Property(e => e.ChucDanh).HasMaxLength(100);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.Property(e => e.SoDienThoai).HasMaxLength(20);
+                entity.Property(e => e.Cap).HasMaxLength(10);
+                entity.Property(e => e.ClientId).HasMaxLength(100);
+                entity.Property(e => e.Status).HasDefaultValue(1);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
         }
     }
