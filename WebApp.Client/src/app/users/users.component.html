@@ -67,15 +67,15 @@
         <td [nzChecked]="setOfCheckedId.has(nguoiDung.id)"
             (nzCheckedChange)="onItemChecked(nguoiDung.id, $event)"></td>
         <td>{{ nguoiDung.id }}</td>
-        <td>{{ nguoiDung.user_name }}</td>
-        <td>{{ nguoiDung.ho_ten }}</td>
-        <td>{{ nguoiDung.mang_luoi }}</td>
-        <td>{{ nguoiDung.don_vi_cong_tac }}</td>
-        <td>{{ nguoiDung.chuc_danh }}</td>
+        <td>{{ nguoiDung.userName }}</td>
+        <td>{{ nguoiDung.hoTen }}</td>
+        <td>{{ nguoiDung.mangLuoi }}</td>
+        <td>{{ nguoiDung.donViCongTac }}</td>
+        <td>{{ nguoiDung.chucDanh }}</td>
         <td>{{ nguoiDung.email }}</td>
-        <td>{{ nguoiDung.so_dien_thoai }}</td>
+        <td>{{ nguoiDung.soDienThoai }}</td>
         <td>{{ nguoiDung.cap }}</td>
-        <td>{{ nguoiDung.type_mang_luoi }}</td>
+        <td>{{ nguoiDung.typeMangLuoi }}</td>
         <td>
           <nz-tag [nzColor]="nguoiDung.status === 1 ? 'success' : 'error'">
             {{ nguoiDung.status === 1 ? 'Hoạt động' : 'Không hoạt động' }}
@@ -122,9 +122,8 @@
               <nz-form-control nzErrorTip="Vui lòng nhập tên đăng nhập!">
                 <nz-input-group [nzPrefix]="userIcon">
                   <input nz-input 
-                         formControlName="user_name" 
-                         placeholder="Nhập tên đăng nhập"
-                         [disabled]="!!editingNguoiDung"/>
+                         formControlName="userName" 
+                         placeholder="Nhập tên đăng nhập"/>
                 </nz-input-group>
                 <ng-template #userIcon>
                   <span nz-icon nzType="user"></span>
@@ -137,7 +136,7 @@
             <nz-form-item>
               <nz-form-label nzRequired>Họ và tên</nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng nhập họ và tên!">
-                <input nz-input formControlName="ho_ten" placeholder="Nhập họ và tên" />
+                <input nz-input formControlName="hoTen" placeholder="Nhập họ và tên" />
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -146,7 +145,7 @@
             <nz-form-item>
               <nz-form-label>Mạng lưới</nz-form-label>
               <nz-form-control>
-                <input nz-input formControlName="mang_luoi" placeholder="Nhập mạng lưới" />
+                <input nz-input formControlName="mangLuoi" placeholder="Nhập mạng lưới" />
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -155,7 +154,17 @@
             <nz-form-item>
               <nz-form-label>Đơn vị công tác</nz-form-label>
               <nz-form-control>
-                <input nz-input formControlName="don_vi_cong_tac" placeholder="Nhập đơn vị công tác" />
+                <ng-container *ngIf="showDaiLySelect; else normalInput">
+                  <nz-select formControlName="donViCongTac" style="width: 100%" nzPlaceHolder="Chọn đại lý">
+                    <nz-option *ngFor="let daiLy of daiLys" 
+                              [nzValue]="daiLy.ma" 
+                              [nzLabel]="daiLy.ten">
+                    </nz-option>
+                  </nz-select>
+                </ng-container>
+                <ng-template #normalInput>
+                  <input nz-input formControlName="donViCongTac" placeholder="Nhập đơn vị công tác" />
+                </ng-template>
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -164,7 +173,7 @@
             <nz-form-item>
               <nz-form-label>Chức danh</nz-form-label>
               <nz-form-control>
-                <input nz-input formControlName="chuc_danh" placeholder="Nhập chức danh" />
+                <input nz-input formControlName="chucDanh" placeholder="Nhập chức danh" />
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -188,7 +197,7 @@
               <nz-form-label>Số điện thoại</nz-form-label>
               <nz-form-control>
                 <nz-input-group [nzPrefix]="phoneIcon">
-                  <input nz-input formControlName="so_dien_thoai" placeholder="Nhập số điện thoại" />
+                  <input nz-input formControlName="soDienThoai" placeholder="Nhập số điện thoại" />
                 </nz-input-group>
                 <ng-template #phoneIcon>
                   <span nz-icon nzType="phone"></span>
@@ -210,7 +219,7 @@
             <nz-form-item>
               <nz-form-label>Loại mạng lưới</nz-form-label>
               <nz-form-control>
-                <nz-input-number formControlName="type_mang_luoi" [nzMin]="0" style="width: 100%"></nz-input-number>
+                <nz-input-number formControlName="typeMangLuoi" [nzMin]="0" style="width: 100%"></nz-input-number>
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -244,7 +253,7 @@
             <nz-form-item>
               <nz-form-label>Super Admin</nz-form-label>
               <nz-form-control>
-                <nz-switch formControlName="is_super_admin"></nz-switch>
+                <nz-switch formControlName="isSuperAdmin"></nz-switch>
               </nz-form-control>
             </nz-form-item>
           </div>

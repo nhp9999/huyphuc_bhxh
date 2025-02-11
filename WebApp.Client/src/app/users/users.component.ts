@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons-angular/icons';
 import { forkJoin } from 'rxjs';
 import { LocationService, Province, District, Commune } from '../services/location.service';
+import { DaiLy } from '../services/user.service';
 
 @Component({
   selector: 'app-users',
@@ -74,6 +75,8 @@ export class UsersComponent implements OnInit {
   checked = false;
   indeterminate = false;
   setOfCheckedId = new Set<number>();
+  daiLys: DaiLy[] = [];
+  showDaiLySelect = false;
 
   roleOptions = [
     { label: 'Super Admin', value: 'super_admin' },
@@ -94,22 +97,31 @@ export class UsersComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.initForm();
+    this.loadDaiLys();
   }
 
   initForm(): void {
     this.userForm = this.fb.group({
-      user_name: ['', [Validators.required, Validators.minLength(3)]],
-      ho_ten: ['', [Validators.required]],
-      mang_luoi: [''],
-      don_vi_cong_tac: [''],
-      chuc_danh: [''],
+      userName: [{ value: '', disabled: false }, [Validators.required, Validators.minLength(3)]],
+      hoTen: ['', [Validators.required]],
+      mangLuoi: [''],
+      donViCongTac: [''],
+      chucDanh: [''],
       email: ['', [Validators.email]],
-      so_dien_thoai: [''],
-      is_super_admin: [false],
+      soDienThoai: [''],
+      isSuperAdmin: [false],
       cap: [''],
-      type_mang_luoi: [null],
+      typeMangLuoi: [null],
       status: [1],
       roles: [[]]
+    });
+
+    // Theo dõi sự thay đổi của roles để hiển thị select đại lý
+    this.userForm.get('roles')?.valueChanges.subscribe(roles => {
+      this.showDaiLySelect = roles?.includes('nhan_vien_thu');
+      if (!this.showDaiLySelect) {
+        this.userForm.patchValue({ donViCongTac: '' });
+      }
     });
   }
 
@@ -121,6 +133,7 @@ export class UsersComponent implements OnInit {
     this.isLoading = true;
     this.userService.getNguoiDungs().subscribe({
       next: (nguoiDungs) => {
+        console.log('Data from API:', nguoiDungs);
         this.nguoiDungs = nguoiDungs;
         this.applyFilters();
         this.refreshCheckedStatus();
@@ -137,8 +150,8 @@ export class UsersComponent implements OnInit {
   applyFilters(): void {
     this.filteredNguoiDungs = this.nguoiDungs.filter(nguoiDung => {
       const matchSearch = !this.searchValue || 
-        nguoiDung.user_name.toLowerCase().includes(this.searchValue.toLowerCase()) ||
-        nguoiDung.ho_ten.toLowerCase().includes(this.searchValue.toLowerCase());
+        nguoiDung.userName.toLowerCase().includes(this.searchValue.toLowerCase()) ||
+        nguoiDung.hoTen.toLowerCase().includes(this.searchValue.toLowerCase());
       
       const matchRole = !this.selectedRole || nguoiDung.roles.includes(this.selectedRole);
       const matchStatus = this.selectedStatus === null || nguoiDung.status === this.selectedStatus;
@@ -161,23 +174,37 @@ export class UsersComponent implements OnInit {
 
   showAddModal(): void {
     this.editingNguoiDung = null;
-    this.userForm.reset({ status: 1, is_super_admin: false });
+    
+    // Enable userName control khi thêm mới
+    const userNameControl = this.userForm.get('userName');
+    if (userNameControl) {
+      userNameControl.enable();
+    }
+    
+    this.userForm.reset({ status: 1, isSuperAdmin: false });
     this.isModalVisible = true;
   }
 
   showEditModal(nguoiDung: NguoiDung): void {
     this.editingNguoiDung = nguoiDung;
+    
+    // Disable userName control khi đang edit
+    const userNameControl = this.userForm.get('userName');
+    if (userNameControl) {
+      userNameControl.disable();
+    }
+
     this.userForm.patchValue({
-      user_name: nguoiDung.user_name,
-      ho_ten: nguoiDung.ho_ten,
-      mang_luoi: nguoiDung.mang_luoi,
-      don_vi_cong_tac: nguoiDung.don_vi_cong_tac,
-      chuc_danh: nguoiDung.chuc_danh,
+      userName: nguoiDung.userName,
+      hoTen: nguoiDung.hoTen,
+      mangLuoi: nguoiDung.mangLuoi,
+      donViCongTac: nguoiDung.donViCongTac,
+      chucDanh: nguoiDung.chucDanh,
       email: nguoiDung.email,
-      so_dien_thoai: nguoiDung.so_dien_thoai,
-      is_super_admin: nguoiDung.is_super_admin,
+      soDienThoai: nguoiDung.soDienThoai,
+      isSuperAdmin: nguoiDung.isSuperAdmin,
       cap: nguoiDung.cap,
-      type_mang_luoi: nguoiDung.type_mang_luoi,
+      typeMangLuoi: nguoiDung.typeMangLuoi,
       status: nguoiDung.status,
       roles: nguoiDung.roles
     });
@@ -233,7 +260,7 @@ export class UsersComponent implements OnInit {
   deleteNguoiDung(nguoiDung: NguoiDung): void {
     this.modal.confirm({
       nzTitle: 'Xác nhận xóa',
-      nzContent: `Bạn có chắc chắn muốn xóa người dùng ${nguoiDung.ho_ten}?`,
+      nzContent: `Bạn có chắc chắn muốn xóa người dùng ${nguoiDung.hoTen}?`,
       nzOkText: 'Xóa',
       nzOkType: 'primary',
       nzOkDanger: true,
@@ -271,7 +298,7 @@ export class UsersComponent implements OnInit {
   resetPassword(nguoiDung: NguoiDung): void {
     this.modal.confirm({
       nzTitle: 'Xác nhận đặt lại mật khẩu',
-      nzContent: `Bạn có chắc chắn muốn đặt lại mật khẩu cho người dùng ${nguoiDung.ho_ten}?`,
+      nzContent: `Bạn có chắc chắn muốn đặt lại mật khẩu cho người dùng ${nguoiDung.hoTen}?`,
       nzOkText: 'Đồng ý',
       nzOkType: 'primary',
       nzOnOk: () => {
@@ -380,5 +407,17 @@ export class UsersComponent implements OnInit {
     
     const diffInYears = Math.floor(diffInMonths / 12);
     return `${diffInYears} năm trước`;
+  }
+
+  loadDaiLys(): void {
+    this.userService.getDaiLys().subscribe({
+      next: (daiLys) => {
+        this.daiLys = daiLys;
+      },
+      error: (error) => {
+        this.message.error('Không thể tải danh sách đại lý');
+        console.error('Error loading dai ly:', error);
+      }
+    });
   }
 }

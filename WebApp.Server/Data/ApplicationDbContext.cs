@@ -24,6 +24,7 @@ namespace WebApp.API.Data
         public DbSet<DonVi> DonVis { get; set; }
         public DbSet<HoaDonThanhToan> HoaDonThanhToans { get; set; }
         public DbSet<NguoiDung> NguoiDungs { get; set; }
+        public DbSet<DaiLy> DaiLys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -206,6 +207,23 @@ namespace WebApp.API.Data
                 entity.Property(e => e.Status).HasDefaultValue(1);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            modelBuilder.Entity<DaiLy>(entity =>
+            {
+                entity.ToTable("dai_ly");
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.Ma).IsUnique();
+                entity.Property(e => e.Ma).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Ten).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.DiaChi).HasMaxLength(500);
+                entity.Property(e => e.SoDienThoai).HasMaxLength(15);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.Property(e => e.NguoiDaiDien).HasMaxLength(100);
+                entity.Property(e => e.TrangThai).HasDefaultValue(true);
+                entity.Property(e => e.NgayTao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.NguoiTao).HasMaxLength(50);
             });
         }
     }

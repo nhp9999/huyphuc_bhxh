@@ -5,22 +5,35 @@ import { environment } from '../../environments/environment';
 
 export interface NguoiDung {
   id: number;
-  user_name: string;
-  ho_ten: string;
-  mang_luoi: string;
-  don_vi_cong_tac: string;
-  chuc_danh: string;
+  userName: string;
+  hoTen: string;
+  mangLuoi: string;
+  donViCongTac: string;
+  chucDanh: string;
   email: string;
-  so_dien_thoai: string;
-  is_super_admin: boolean;
+  soDienThoai: string;
+  isSuperAdmin: boolean;
   cap: string;
-  type_mang_luoi: number;
-  user_id: number;
+  typeMangLuoi: number;
+  userId: number;
   status: number;
-  client_id: string;
+  clientId: string;
   roles: string[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DaiLy {
+  id: number;
+  ma: string;
+  ten: string;
+  diaChi: string;
+  soDienThoai?: string;
+  email?: string;
+  nguoiDaiDien?: string;
+  trangThai: boolean;
+  ngayTao: string;
+  nguoiTao: string;
 }
 
 @Injectable({
@@ -61,5 +74,9 @@ export class UserService {
 
   resetPassword(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/reset-password`, {});
+  }
+
+  getDaiLys(): Observable<DaiLy[]> {
+    return this.http.get<DaiLy[]>(`${environment.apiUrl}/dai-ly`);
   }
 } 
