@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -549,10 +549,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         // Khôi phục trạng thái urgent từ localStorage
         const urgentItems = JSON.parse(localStorage.getItem('urgentItems') || '{}');
         
-        this.keKhaiBHYTs = data.map(item => ({
-          ...item,
-          is_urgent: urgentItems[item.id!] || false // Sử dụng giá trị từ localStorage hoặc false
-        }));
+        // Sắp xếp dữ liệu theo id giảm dần (mới nhất lên đầu)
+        this.keKhaiBHYTs = data
+          .map(item => ({
+            ...item,
+            is_urgent: urgentItems[item.id!] || false
+          }))
+          .sort((a, b) => (b.id || 0) - (a.id || 0)); // Sắp xếp theo id giảm dần
+          
         this.tinhThongKe();
         this.loading = false;
       },
@@ -933,10 +937,21 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   onAllChecked(checked: boolean): void {
-    this.danhSachCCCD
-      .filter(cccd => cccd.status === 'success')
-      .forEach(item => item.checked = checked);
-    this.refreshCheckStatus();
+    // Reset mảng selectedIds
+    this.selectedIds = [];
+    
+    // Nếu checked là true thì thêm tất cả id vào mảng selectedIds
+    if (checked) {
+      this.keKhaiBHYTs.forEach(item => {
+        if (item.id) {
+          this.selectedIds.push(item.id);
+        }
+      });
+    }
+    
+    // Cập nhật trạng thái
+    this.isAllChecked = checked;
+    this.isIndeterminate = false;
   }
 
   onCCCDChecked(cccd: CCCDResult, checked: boolean): void {
@@ -2733,5 +2748,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       console.error('Lỗi khi sao chép:', err);
       this.message.error('Có lỗi xảy ra khi sao chép thông tin');
     });
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    // Kiểm tra nếu là Ctrl + S
+    if (event.ctrlKey && event.key === 's') {
+      event.preventDefault(); // Ngăn chặn hành vi mặc định của trình duyệt
+      if (this.form.valid) {
+        this.handleOk();
+      } else {
+        this.message.warning('Vui lòng điền đầy đủ thông tin bắt buộc');
+      }
+    }
   }
 } 

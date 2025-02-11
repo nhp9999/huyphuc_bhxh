@@ -190,6 +190,14 @@ export class DotKeKhaiComponent implements OnInit {
     }
   }
 
+  private sortDotKeKhais(data: any[]): any[] {
+    return data.sort((a, b) => {
+      const dateA = a.ngay_tao ? new Date(a.ngay_tao).getTime() : 0;
+      const dateB = b.ngay_tao ? new Date(b.ngay_tao).getTime() : 0;
+      return dateB - dateA; // Sắp xếp giảm dần (mới nhất lên trên)
+    });
+  }
+
   ngOnInit(): void {
     this.loadData();
     this.loadDonVis();
@@ -208,7 +216,7 @@ export class DotKeKhaiComponent implements OnInit {
 
     // Subscribe to dotKeKhais stream
     this.dotKeKhaiService.dotKeKhais$.subscribe(data => {
-      this.dotKeKhais = data;
+      this.dotKeKhais = this.sortDotKeKhais(data);
       this.filterData();
     });
   }
@@ -238,7 +246,7 @@ export class DotKeKhaiComponent implements OnInit {
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
         console.log('Danh sách đợt kê khai:', data); // Log để debug
-        this.dotKeKhais = data;
+        this.dotKeKhais = this.sortDotKeKhais(data);
         this.filterData();
         this.loading = false;
       },
@@ -274,6 +282,12 @@ export class DotKeKhaiComponent implements OnInit {
     if (selectedTrangThai) {
       filtered = filtered.filter(item => item.trang_thai === selectedTrangThai);
     }
+
+    // Đảm bảo tong_so_tien luôn là số
+    filtered = filtered.map(item => ({
+      ...item,
+      tong_so_tien: item.tong_so_tien || 0
+    }));
 
     this.filteredDotKeKhais = filtered;
   }
@@ -585,7 +599,11 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   getTotalAmount(): number {
-    return this.filteredDotKeKhais.reduce((total, dot) => total + (dot.tong_so_tien || 0), 0);
+    if (!this.filteredDotKeKhais) return 0;
+    return this.filteredDotKeKhais.reduce((total, dot) => {
+      const amount = dot.tong_so_tien || 0;
+      return total + amount;
+    }, 0);
   }
 
   showThanhToanModal(data: DotKeKhai): void {
