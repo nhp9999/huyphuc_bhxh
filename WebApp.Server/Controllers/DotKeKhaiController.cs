@@ -399,6 +399,48 @@ namespace WebApp.API.Controllers
             }
         }
 
+        [HttpPatch("{id}/gui")]
+        public async Task<IActionResult> GuiDotKeKhai(int id)
+        {
+            try
+            {
+                // Kiểm tra đợt kê khai tồn tại
+                var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                if (dotKeKhai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đợt kê khai" });
+                }
+
+                // Kiểm tra trạng thái hiện tại
+                if (dotKeKhai.trang_thai != "chua_gui")
+                {
+                    return BadRequest(new { message = "Đợt kê khai không ở trạng thái chưa gửi" });
+                }
+
+                // Cập nhật trạng thái đợt kê khai sang chờ thanh toán
+                dotKeKhai.trang_thai = "cho_thanh_toan";
+                
+                // Cập nhật trạng thái các kê khai BHYT trong đợt
+                var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                    .Where(k => k.dot_ke_khai_id == id)
+                    .ToListAsync();
+
+                foreach (var keKhai in keKhaiBHYTs)
+                {
+                    keKhai.trang_thai = "cho_thanh_toan";
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Gửi đợt kê khai thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error sending dot ke khai {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi gửi đợt kê khai", error = ex.Message });
+            }
+        }
+
         public class UpdateTrangThaiDto
         {
             public string trang_thai { get; set; }

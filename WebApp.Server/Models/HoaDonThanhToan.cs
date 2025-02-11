@@ -15,7 +15,7 @@ namespace WebApp.API.Models
         public int dot_ke_khai_id { get; set; }
 
         [Column("ngay_thanh_toan")]
-        public DateTime ngay_thanh_toan { get; set; }
+        public DateTime ngay_thanh_toan { get; set; } = DateTime.UtcNow;
 
         [Column("so_tien")]
         public decimal so_tien { get; set; }
@@ -40,7 +40,7 @@ namespace WebApp.API.Models
         public string nguoi_tao { get; set; }
 
         [Column("ngay_tao")]
-        public DateTime ngay_tao { get; set; }
+        public DateTime ngay_tao { get; set; } = DateTime.UtcNow;
 
         [Column("ghi_chu")]
         public string? ghi_chu { get; set; } = string.Empty;
@@ -54,5 +54,17 @@ namespace WebApp.API.Models
         // Navigation property
         [ForeignKey("dot_ke_khai_id")]
         public virtual DotKeKhai? DotKeKhai { get; set; }
+
+        public HoaDonThanhToan()
+        {
+            noi_dung_thanh_toan = string.Empty;
+            url_bill = string.Empty;
+            public_id = string.Empty;
+            trang_thai = "cho_duyet";
+            nguoi_tao = string.Empty;
+            ghi_chu = string.Empty;
+            ngay_tao = DateTime.UtcNow;
+            ngay_thanh_toan = DateTime.UtcNow;
+        }
     }
 } 

@@ -209,7 +209,15 @@ export class UploadBillModalComponent implements OnInit {
           // Cập nhật trạng thái sang đang xử lý
           this.dotKeKhaiService.updateTrangThai(this.dotKeKhaiId, 'dang_xu_ly').subscribe({
             next: () => {
-              this.message.success(`${info.file.name} đã được upload thành công`);
+              this.message.success('Xác nhận thanh toán thành công');
+              // Đóng modal hiện tại
+              this.modal.close({
+                code: '00',
+                data: {
+                  billUrl: response.secure_url,
+                  publicId: response.public_id
+                }
+              });
             },
             error: (error) => {
               console.error('Lỗi khi cập nhật trạng thái:', error);
@@ -280,6 +288,7 @@ export class UploadBillModalComponent implements OnInit {
         if (confirmResponse.code === '00' && confirmResponse.data.status === 'success') {
           this.message.success('Xác nhận thanh toán thành công');
           this.ngZone.run(() => {
+            // Đóng modal hiện tại
             this.modal.close({
               code: '00',
               data: {

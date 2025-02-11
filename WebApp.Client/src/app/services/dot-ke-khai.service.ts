@@ -168,4 +168,16 @@ export class DotKeKhaiService {
         })
       );
   }
+
+  guiDotKeKhai(id: number): Observable<any> {
+    // Cập nhật trạng thái đợt kê khai và các kê khai BHYT sang chờ thanh toán
+    return this.http.patch(`${this.apiUrl}/${id}/gui`, {}).pipe(
+      tap(() => {
+        // Cập nhật lại danh sách đợt kê khai
+        this.getDotKeKhais().subscribe(data => {
+          this.dotKeKhaisSubject.next(data);
+        });
+      })
+    );
+  }
 } 

@@ -52,6 +52,7 @@ namespace WebApp.API.Controllers
                     .Where(k => k.dot_ke_khai_id == request.dot_ke_khai_id)
                     .SumAsync(k => k.so_tien_can_dong);
 
+                // Tạo hóa đơn mới
                 var hoaDon = new HoaDonThanhToan
                 {
                     dot_ke_khai_id = request.dot_ke_khai_id,
@@ -61,16 +62,16 @@ namespace WebApp.API.Controllers
                     nguoi_tao = request.nguoi_tao,
                     ghi_chu = request.ghi_chu,
                     so_tien = tongSoTien,
-                    ngay_tao = DateTime.UtcNow,
-                    ngay_thanh_toan = DateTime.UtcNow,
                     trang_thai = "cho_duyet"
                 };
 
                 _context.HoaDonThanhToans.Add(hoaDon);
 
-                // Cập nhật url_bill cho đợt kê khai
-                dotKeKhai.url_bill = request.url_bill;
-                _context.DotKeKhais.Update(dotKeKhai);
+                // Chỉ cập nhật url_bill của đợt kê khai
+                await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE dot_ke_khai SET url_bill = {0} WHERE id = {1}",
+                    request.url_bill, request.dot_ke_khai_id
+                );
 
                 await _context.SaveChangesAsync();
 

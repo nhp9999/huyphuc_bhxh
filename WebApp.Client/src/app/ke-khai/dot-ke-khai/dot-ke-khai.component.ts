@@ -28,7 +28,8 @@ import {
   ArrowUpOutline,
   ArrowDownOutline,
   DollarOutline,
-  ExportOutline
+  ExportOutline,
+  SendOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -155,7 +156,8 @@ export class DotKeKhaiComponent implements OnInit {
       ArrowUpOutline,
       ArrowDownOutline,
       DollarOutline,
-      ExportOutline
+      ExportOutline,
+      SendOutline
     );
 
     const currentDate = new Date();
@@ -607,10 +609,14 @@ export class DotKeKhaiComponent implements OnInit {
       nzClassName: 'thanh-toan-modal'
     });
 
-    // Subscribe để nhận kết quả từ modal nếu cần
+    // Subscribe để nhận kết quả từ modal
     modalRef.afterClose.subscribe(result => {
       if (result) {
-        // Xử lý sau khi modal đóng nếu cần
+        // Đóng modal xem hóa đơn nếu đang mở
+        if (this.isViewBillModalVisible) {
+          this.handleViewBillModalCancel();
+        }
+        // Tải lại dữ liệu
         this.loadData();
       }
     });
@@ -898,5 +904,28 @@ export class DotKeKhaiComponent implements OnInit {
   handleViewBillModalCancel(): void {
     this.isViewBillModalVisible = false;
     this.selectedBillUrl = '';
+  }
+
+  guiDotKeKhai(data: DotKeKhai): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận gửi',
+      nzContent: 'Bạn có chắc chắn muốn gửi đợt kê khai này?',
+      nzOkText: 'Gửi',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        this.loading = true;
+        this.dotKeKhaiService.guiDotKeKhai(data.id!).subscribe({
+          next: () => {
+            this.message.success('Gửi đợt kê khai thành công');
+            this.loading = false;
+          },
+          error: (error) => {
+            console.error('Lỗi khi gửi đợt kê khai:', error);
+            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+            this.loading = false;
+          }
+        });
+      }
+    });
   }
 } 

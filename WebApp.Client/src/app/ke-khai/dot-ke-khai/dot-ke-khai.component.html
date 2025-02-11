@@ -101,6 +101,7 @@
           <th>Tổng số thẻ</th>
           <th>Tổng số tiền</th>
           <th>Trạng thái</th>
+          <th>Ghi chú</th>
           <th>Hóa đơn</th>
           <th>Thao tác</th>
         </tr>
@@ -119,6 +120,7 @@
               {{ getTagText(data.trang_thai) }}
             </nz-tag>
           </td>
+          <td>{{ data.ghi_chu }}</td>
           <td>
             <ng-container *ngIf="data.url_bill">
               <button nz-button nzType="link" (click)="$event.stopPropagation(); showViewBillModal(data.url_bill)">
@@ -130,7 +132,7 @@
                     nz-button nzType="link" 
                     (click)="$event.stopPropagation(); showThanhToanModal(data)">
               <i nz-icon nzType="upload"></i>
-              Upload bill
+              Thanh toán
             </button>
           </td>
           <td>
@@ -143,11 +145,13 @@
             <button nz-button nzType="link" (click)="$event.stopPropagation(); exportData(data)">
               <i nz-icon nzType="export"></i>
             </button>
-            <button *ngIf="data.trang_thai === 'cho_thanh_toan'" 
+            <button *ngIf="data.trang_thai === 'chua_gui'" 
                     nz-button 
-                    nzType="link"
-                    (click)="$event.stopPropagation(); showThanhToanModal(data)">
-              <i nz-icon nzType="dollar" nzTheme="outline"></i>
+                    nzType="link" 
+                    nzType="primary"
+                    nz-tooltip="Gửi đợt kê khai"
+                    (click)="$event.stopPropagation(); guiDotKeKhai(data)">
+              <i nz-icon nzType="send"></i>
             </button>
           </td>
         </tr>

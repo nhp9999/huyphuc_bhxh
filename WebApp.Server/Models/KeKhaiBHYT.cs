@@ -145,6 +145,14 @@ namespace WebApp.API.Models
         [Column("is_urgent")]
         public bool is_urgent { get; set; }
 
+        /// <summary>
+        /// Trạng thái kê khai
+        /// </summary>
+        [Column("trang_thai")]
+        [Required]
+        [StringLength(50)]
+        public string trang_thai { get; set; } = "chua_gui";
+
         // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
         public KeKhaiBHYT()
         {

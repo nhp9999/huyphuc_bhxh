@@ -116,6 +116,7 @@ namespace WebApp.API.Models
             nguoi_tao = string.Empty;
             ghi_chu = string.Empty;
             KeKhaiBHYTs = new List<KeKhaiBHYT>();
+            ngay_tao = DateTime.UtcNow;
         }
     }
 } 
