@@ -1593,12 +1593,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       if (!data?.hoTen) missingFields.push('Họ tên');
       if (!data?.ngaySinh) missingFields.push('Ngày sinh');
       if (!data?.cmnd) missingFields.push('CCCD');
-      if (!data?.gioiTinh) missingFields.push('Giới tính');
       if (!data?.maTinhNkq) missingFields.push('Tỉnh nơi khám bệnh');
       if (!data?.maHuyenNkq) missingFields.push('Huyện nơi khám bệnh');
       if (!data?.maXaNkq) missingFields.push('Xã nơi khám bệnh');
 
-      // Nếu có trường bị thiếu, trả về thông báo chi tiết
+      // Nếu có trường bị thiếu (trừ giới tính), trả về thông báo chi tiết
       if (missingFields.length > 0) {
         return {
           success: false,
@@ -1632,8 +1631,62 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         };
       }
 
-      // Chuyển đổi giới tính sang kiểu GioiTinh
-      const gioiTinh: GioiTinh = data.gioiTinh === 1 ? 'Nam' : 'Nữ';
+      // Xử lý và kiểm tra giới tính
+      let gioiTinh: GioiTinh;
+      
+      // Log để debug
+      console.log('Dữ liệu giới tính từ API:', {
+        gioiTinh: data.gioiTinh,
+        typeOf: typeof data.gioiTinh,
+        sex: data.sex
+      });
+
+      try {
+        if (data.gioiTinh === null || data.gioiTinh === undefined) {
+          // Thử lấy từ trường sex nếu có
+          if (data.sex) {
+            const sexNormalized = data.sex.toString().toLowerCase().trim();
+            if (['nam', 'male', '1', 'm'].includes(sexNormalized)) {
+              gioiTinh = 'Nam';
+            } else if (['nu', 'nữ', 'female', '2', '0', 'f'].includes(sexNormalized)) {
+              gioiTinh = 'Nữ';
+            } else {
+              throw new Error('Không thể xác định giới tính từ trường sex');
+            }
+          } else {
+            throw new Error('Thiếu thông tin giới tính');
+          }
+        } else if (typeof data.gioiTinh === 'number') {
+          if ([0, 2].includes(data.gioiTinh)) {
+            gioiTinh = 'Nữ';
+          } else if (data.gioiTinh === 1) {
+            gioiTinh = 'Nam';
+          } else {
+            throw new Error(`Giá trị giới tính không hợp lệ: ${data.gioiTinh}`);
+          }
+        } else if (typeof data.gioiTinh === 'string') {
+          const gioiTinhNormalized = data.gioiTinh.toLowerCase().trim();
+          if (['nam', 'male', '1', 'm', 'true'].includes(gioiTinhNormalized)) {
+            gioiTinh = 'Nam';
+          } else if (['nu', 'nữ', 'female', '2', '0', 'f', 'false'].includes(gioiTinhNormalized)) {
+            gioiTinh = 'Nữ';
+          } else {
+            throw new Error(`Giá trị giới tính không hợp lệ: ${data.gioiTinh}`);
+          }
+        } else if (typeof data.gioiTinh === 'boolean') {
+          gioiTinh = data.gioiTinh ? 'Nam' : 'Nữ';
+        } else {
+          throw new Error(`Không thể xử lý kiểu dữ liệu giới tính: ${typeof data.gioiTinh}`);
+        }
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message || 'Lỗi xử lý giới tính'
+        };
+      }
+
+      // Log kết quả xử lý giới tính
+      console.log('Giới tính sau khi xử lý:', gioiTinh);
 
       // Xử lý địa chỉ
       let diaChiNKQ = '';

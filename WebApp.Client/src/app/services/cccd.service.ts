@@ -8,7 +8,7 @@ import { throwError } from 'rxjs';
   providedIn: 'root'
 })
 export class CCCDService {
-  private apiKey = 'uirFFYOFABU0nptBPTCvk4Ddseh2LF92';
+  private apiKey = 'i1jDD6mEKVOeLkZU2fM3x4IO9gTyjJAK';
   private apiUrl = 'https://api.fpt.ai/vision/idr/vnm';
 
   constructor(private http: HttpClient) { }
