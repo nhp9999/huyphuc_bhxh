@@ -989,6 +989,7 @@ COMMENT ON COLUMN public.dot_ke_khai.nguoi_tao IS 'Người tạo đợt kê kha
 COMMENT ON COLUMN public.dot_ke_khai.trang_thai IS 'Trạng thái đợt kê khai:
 - chua_gui: Chưa gửi
 - da_gui: Đã gửi
+- dang_xu_ly: Đang xử lý
 - cho_thanh_toan: Chờ thanh toán
 - hoan_thanh: Hoàn thành
 - tu_choi: Từ chối';

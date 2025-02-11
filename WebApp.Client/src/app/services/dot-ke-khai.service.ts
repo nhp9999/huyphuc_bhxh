@@ -59,6 +59,7 @@ export interface DotKeKhai {
   tong_so_tien?: number;
   tong_so_the?: number;
   ma_ho_so?: string;
+  url_bill?: string;
   KeKhaiBHYTs?: any[];
   DonVi?: {
     id: number;
@@ -154,5 +155,17 @@ export class DotKeKhaiService {
 
   getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId: number): Observable<KeKhaiBHYT[]> {
     return this.http.get<KeKhaiBHYT[]>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`);
+  }
+
+  updateTrangThai(id: number, trangThai: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}/trang-thai`, { trang_thai: trangThai })
+      .pipe(
+        tap(() => {
+          // Cập nhật lại danh sách đợt kê khai
+          this.getDotKeKhais().subscribe(data => {
+            this.dotKeKhaisSubject.next(data);
+          });
+        })
+      );
   }
 } 

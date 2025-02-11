@@ -35,25 +35,30 @@ namespace WebApp.API.Controllers
             {
                 var dotKeKhais = await _context.DotKeKhais
                     .Include(d => d.DonVi)
-                    .Select(d => new DotKeKhai
+                    .Select(d => new
                     {
-                        id = d.id,
-                        ten_dot = d.ten_dot,
-                        so_dot = d.so_dot,
-                        thang = d.thang,
-                        nam = d.nam,
-                        dich_vu = d.dich_vu,
-                        ghi_chu = d.ghi_chu,
-                        trang_thai = d.trang_thai,
-                        nguoi_tao = d.nguoi_tao,
-                        don_vi_id = d.don_vi_id,
-                        ngay_tao = d.ngay_tao,
+                        d.id,
+                        d.ten_dot,
+                        d.so_dot,
+                        d.thang,
+                        d.nam,
+                        d.dich_vu,
+                        d.ghi_chu,
+                        d.trang_thai,
+                        d.nguoi_tao,
+                        d.don_vi_id,
+                        d.ngay_tao,
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
                             .Sum(k => k.so_tien_can_dong),
                         tong_so_the = _context.KeKhaiBHYTs
-                            .Count(k => k.dot_ke_khai_id == d.id)
+                            .Count(k => k.dot_ke_khai_id == d.id),
+                        url_bill = _context.HoaDonThanhToans
+                            .Where(h => h.dot_ke_khai_id == d.id && h.deleted_at == null)
+                            .OrderByDescending(h => h.ngay_tao)
+                            .Select(h => h.url_bill)
+                            .FirstOrDefault()
                     })
                     .ToListAsync();
 
@@ -73,27 +78,33 @@ namespace WebApp.API.Controllers
             {
                 var dotKeKhai = await _context.DotKeKhais
                     .Include(d => d.DonVi)
-                    .Select(d => new DotKeKhai
+                    .Where(d => d.id == id)
+                    .Select(d => new
                     {
-                        id = d.id,
-                        ten_dot = d.ten_dot,
-                        so_dot = d.so_dot,
-                        thang = d.thang,
-                        nam = d.nam,
-                        dich_vu = d.dich_vu,
-                        ghi_chu = d.ghi_chu,
-                        trang_thai = d.trang_thai,
-                        nguoi_tao = d.nguoi_tao,
-                        don_vi_id = d.don_vi_id,
-                        ngay_tao = d.ngay_tao,
+                        d.id,
+                        d.ten_dot,
+                        d.so_dot,
+                        d.thang,
+                        d.nam,
+                        d.dich_vu,
+                        d.ghi_chu,
+                        d.trang_thai,
+                        d.nguoi_tao,
+                        d.don_vi_id,
+                        d.ngay_tao,
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
                             .Sum(k => k.so_tien_can_dong),
                         tong_so_the = _context.KeKhaiBHYTs
-                            .Count(k => k.dot_ke_khai_id == d.id)
+                            .Count(k => k.dot_ke_khai_id == d.id),
+                        url_bill = _context.HoaDonThanhToans
+                            .Where(h => h.dot_ke_khai_id == d.id && h.deleted_at == null)
+                            .OrderByDescending(h => h.ngay_tao)
+                            .Select(h => h.url_bill)
+                            .FirstOrDefault()
                     })
-                    .FirstOrDefaultAsync(d => d.id == id);
+                    .FirstOrDefaultAsync();
 
                 if (dotKeKhai == null)
                 {
@@ -363,6 +374,34 @@ namespace WebApp.API.Controllers
                 _logger.LogError($"Stack trace: {ex.StackTrace}");
                 return StatusCode(500, new { message = "Lỗi khi lấy danh sách kê khai BHYT", error = ex.Message });
             }
+        }
+
+        [HttpPatch("{id}/trang-thai")]
+        public async Task<IActionResult> UpdateTrangThai(int id, [FromBody] UpdateTrangThaiDto dto)
+        {
+            try
+            {
+                var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                if (dotKeKhai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đợt kê khai" });
+                }
+
+                dotKeKhai.trang_thai = dto.trang_thai;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Cập nhật trạng thái thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating dot ke khai status: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi cập nhật trạng thái đợt kê khai", error = ex.Message });
+            }
+        }
+
+        public class UpdateTrangThaiDto
+        {
+            public string trang_thai { get; set; }
         }
 
         private bool DotKeKhaiExists(int id)

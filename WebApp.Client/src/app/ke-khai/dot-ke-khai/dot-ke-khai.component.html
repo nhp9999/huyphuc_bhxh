@@ -89,73 +89,66 @@
     <nz-table
       #basicTable
       [nzData]="filteredDotKeKhais"
-      [nzLoading]="loading"
-      [nzShowSizeChanger]="true"
-      [nzShowPagination]="true">
+      [nzScroll]="{ x: '1200px' }"
+      [nzLoading]="loading">
       <thead>
         <tr>
-          <th>
-            <label nz-checkbox
-              [(ngModel)]="isAllChecked"
-              [nzIndeterminate]="selectedIds.length > 0 && selectedIds.length < dotKeKhais.length"
-              (ngModelChange)="onAllChecked($event)">
-            </label>
-          </th>
+          <th [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
+          <th>STT</th>
           <th>Tên đợt</th>
-          <th>Dịch vụ</th>
           <th>Đơn vị</th>
+          <th>Dịch vụ</th>
           <th>Tổng số thẻ</th>
           <th>Tổng số tiền</th>
           <th>Trạng thái</th>
-          <th>Ghi chú</th>
+          <th>Hóa đơn</th>
           <th>Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let data of basicTable.data" 
-            (click)="onRowClick(data)"
-            [ngClass]="{'clickable-row': data.dich_vu === 'BHYT'}"
-            style="cursor: pointer;">
-          <td (click)="$event.stopPropagation()">
-            <label nz-checkbox
-              [ngModel]="getCheckedStatus(data)"
-              (ngModelChange)="onItemChecked($event, data)">
-            </label>
-          </td>
+        <tr *ngFor="let data of basicTable.data; let i = index" (click)="onRowClick(data)">
+          <td [nzChecked]="getCheckedStatus(data)" (nzCheckedChange)="onItemChecked($event, data)"></td>
+          <td>{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
-          <td>
-            <nz-tag [nzColor]="'blue'">
-              {{ data.dich_vu === 'BHXH TN' ? 'BHXH TN' : 
-                 data.dich_vu === 'BHYT' ? 'BHYT' : '' }}
-            </nz-tag>
-          </td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
-          <td>{{ data.tong_so_the != null ? data.tong_so_the : '0' }}</td>
-          <td>{{ data.tong_so_tien != null ? (data.tong_so_tien | number:'1.0-0') + ' đ' : '0 đ' }}</td>
+          <td>{{ data.dich_vu }}</td>
+          <td>{{ data.tong_so_the || 0 }}</td>
+          <td>{{ data.tong_so_tien | number:'1.0-0' }} đ</td>
           <td>
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">
               {{ getTagText(data.trang_thai) }}
             </nz-tag>
           </td>
-          <td>{{ data.ghi_chu }}</td>
-          <td (click)="$event.stopPropagation()">
-            <a nz-button nzType="link" (click)="showModal(data)">
+          <td>
+            <ng-container *ngIf="data.url_bill">
+              <button nz-button nzType="link" (click)="$event.stopPropagation(); showViewBillModal(data.url_bill)">
+                <img [src]="data.url_bill" style="max-width: 50px; max-height: 50px; cursor: pointer;" 
+                     nz-tooltip="Xem hóa đơn" />
+              </button>
+            </ng-container>
+            <button *ngIf="!data.url_bill && data.trang_thai === 'cho_thanh_toan'" 
+                    nz-button nzType="link" 
+                    (click)="$event.stopPropagation(); showThanhToanModal(data)">
+              <i nz-icon nzType="upload"></i>
+              Upload bill
+            </button>
+          </td>
+          <td>
+            <button nz-button nzType="link" (click)="$event.stopPropagation(); showModal(data)">
               <i nz-icon nzType="edit"></i>
-            </a>
-            <a nz-button nzType="link" nzDanger (click)="delete(data.id!)">
+            </button>
+            <button nz-button nzType="link" nzDanger (click)="$event.stopPropagation(); delete(data.id)">
               <i nz-icon nzType="delete"></i>
-            </a>
-            <a *ngIf="data.trang_thai === 'cho_thanh_toan'" 
-               nz-button 
-               nzType="link"
-               (click)="showThanhToanModal(data)">
-              <i nz-icon nzType="dollar" nzTheme="outline"></i>
-            </a>
-            <a nz-button 
-               nzType="link" 
-               (click)="exportData(data)">
+            </button>
+            <button nz-button nzType="link" (click)="$event.stopPropagation(); exportData(data)">
               <i nz-icon nzType="export"></i>
-            </a>
+            </button>
+            <button *ngIf="data.trang_thai === 'cho_thanh_toan'" 
+                    nz-button 
+                    nzType="link"
+                    (click)="$event.stopPropagation(); showThanhToanModal(data)">
+              <i nz-icon nzType="dollar" nzTheme="outline"></i>
+            </button>
           </td>
         </tr>
       </tbody>
@@ -196,6 +189,21 @@
           </nz-form-control>
         </nz-form-item>
       </form>
+    </ng-container>
+  </nz-modal>
+
+  <!-- Modal xem hóa đơn -->
+  <nz-modal
+    [(nzVisible)]="isViewBillModalVisible"
+    [nzTitle]="'Xem hóa đơn'"
+    [nzFooter]="null"
+    (nzOnCancel)="handleViewBillModalCancel()"
+    [nzWidth]="800"
+    [nzStyle]="{ top: '20px' }">
+    <ng-container *nzModalContent>
+      <div class="bill-image-container">
+        <img [src]="selectedBillUrl" style="width: 100%; height: auto;" />
+      </div>
     </ng-container>
   </nz-modal>
 </div>
@@ -255,5 +263,17 @@
 :host ::ng-deep .ant-select-selection-placeholder,
 :host ::ng-deep .ant-input::placeholder {
   font-size: 14px;
+}
+
+.bill-image-container {
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  text-align: center;
+}
+
+.bill-image-container img {
+  max-width: 100%;
+  height: auto;
 }
 </style> 

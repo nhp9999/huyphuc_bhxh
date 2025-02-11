@@ -101,6 +101,9 @@ namespace WebApp.API.Models
         [Column("tong_so_the")]
         public int? tong_so_the { get; set; }
 
+        [Column("url_bill")]
+        public string? url_bill { get; set; }
+
         // Navigation property cho KeKhaiBHYT
         [JsonIgnore]
         public virtual ICollection<KeKhaiBHYT> KeKhaiBHYTs { get; set; }

@@ -21,6 +21,7 @@ namespace WebApp.API.Data
         public DbSet<ThongTinThe> ThongTinThes { get; set; }
         public DbSet<DanhMucCSKCB> DanhMucCSKCBs { get; set; }
         public DbSet<DonVi> DonVis { get; set; }
+        public DbSet<HoaDonThanhToan> HoaDonThanhToans { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -167,6 +168,22 @@ namespace WebApp.API.Data
                 entity.Property(e => e.Type).HasColumnName("type");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            });
+
+            modelBuilder.Entity<HoaDonThanhToan>(entity =>
+            {
+                entity.ToTable("hoa_don_thanh_toan");
+                entity.HasKey(e => e.id);
+
+                entity.Property(e => e.ghi_chu).IsRequired(false);
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.ngay_thanh_toan).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.trang_thai).HasDefaultValue("cho_duyet");
+
+                entity.HasOne(h => h.DotKeKhai)
+                    .WithMany()
+                    .HasForeignKey(h => h.dot_ke_khai_id)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

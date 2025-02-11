@@ -9,6 +9,8 @@ import { UploadOutline } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { CloudinaryService } from '../../../services/cloudinary.service';
 import { VietQRService } from '../../../services/viet-qr.service';
+import { DotKeKhaiService } from '../../../services/dot-ke-khai.service';
+import { HoaDonThanhToanService } from '../../../services/hoa-don-thanh-toan.service';
 import { Observable, Observer, Subscription, finalize, catchError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -95,6 +97,7 @@ export class UploadBillModalComponent implements OnInit {
   fileList: NzUploadFile[] = [];
   isUploading = false;
   hasFile = false;
+  currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   constructor(
     private modal: NzModalRef,
@@ -102,6 +105,8 @@ export class UploadBillModalComponent implements OnInit {
     private iconService: NzIconService,
     private cloudinaryService: CloudinaryService,
     private vietQRService: VietQRService,
+    private dotKeKhaiService: DotKeKhaiService,
+    private hoaDonService: HoaDonThanhToanService,
     private ngZone: NgZone
   ) {
     this.iconService.addIcon(UploadOutline);
@@ -185,7 +190,38 @@ export class UploadBillModalComponent implements OnInit {
     if (info.file.status === 'done') {
       this.isUploading = false;
       this.hasFile = true;
-      this.message.success(`${info.file.name} đã được upload thành công`);
+      
+      const response = info.file.response;
+      
+      // Tạo hóa đơn thanh toán
+      const hoaDon = {
+        dot_ke_khai_id: this.dotKeKhaiId,
+        so_tien: 0, // Số tiền sẽ được cập nhật sau
+        noi_dung_thanh_toan: 'Upload bill thanh toán',
+        url_bill: response.secure_url,
+        public_id: response.public_id,
+        trang_thai: 'cho_duyet',
+        nguoi_tao: this.currentUser.username || ''
+      };
+
+      this.hoaDonService.create(hoaDon).subscribe({
+        next: () => {
+          // Cập nhật trạng thái sang đang xử lý
+          this.dotKeKhaiService.updateTrangThai(this.dotKeKhaiId, 'dang_xu_ly').subscribe({
+            next: () => {
+              this.message.success(`${info.file.name} đã được upload thành công`);
+            },
+            error: (error) => {
+              console.error('Lỗi khi cập nhật trạng thái:', error);
+              this.message.error('Có lỗi xảy ra khi cập nhật trạng thái đợt kê khai');
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Lỗi khi lưu hóa đơn:', error);
+          this.message.error('Có lỗi xảy ra khi lưu thông tin hóa đơn');
+        }
+      });
     } else if (info.file.status === 'error') {
       this.isUploading = false;
       this.message.error(`${info.file.name} không thể upload.`);
@@ -253,7 +289,7 @@ export class UploadBillModalComponent implements OnInit {
             });
           });
         } else {
-          this.message.error(confirmResponse.desc || 'Xác nhận thanh toán thất bại');
+          this.message.error('Xác nhận thanh toán thất bại');
         }
       },
       error: (error) => {

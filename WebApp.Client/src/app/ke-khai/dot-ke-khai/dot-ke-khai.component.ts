@@ -40,6 +40,7 @@ import { combineLatest } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.component';
 import * as XLSX from 'xlsx';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
 interface KeKhaiBHYT {
   ho_ten: string;
@@ -94,7 +95,8 @@ interface KeKhaiBHYT {
     NzTabsModule,
     NzBadgeModule,
     NzStatisticModule,
-    NzCardModule
+    NzCardModule,
+    NzToolTipModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './dot-ke-khai.component.html',
@@ -110,15 +112,22 @@ export class DotKeKhaiComponent implements OnInit {
   selectedIds: number[] = [];
   originalDotKeKhais: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
   isAllChecked = false;
+  isIndeterminate = false;
   selectedTabIndex = 0;
   filteredDotKeKhais: DotKeKhai[] = [];
   donVis: any[] = [];
   checkedSet = new Set<number>();
 
+  // Thêm các thuộc tính cho modal xem hóa đơn
+  isViewBillModalVisible = false;
+  selectedBillUrl: string = '';
+
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
     '', // Tất cả
     'chua_gui',
+    'da_gui',
+    'dang_xu_ly',
     'cho_thanh_toan',
     'hoan_thanh',
     'tu_choi'
@@ -449,7 +458,9 @@ export class DotKeKhaiComponent implements OnInit {
     }
   }
 
-  delete(id: number): void {
+  delete(id: number | undefined): void {
+    if (!id) return;
+    
     this.modal.confirm({
       nzTitle: 'Xác nhận xóa',
       nzContent: 'Bạn có chắc chắn muốn xóa đợt kê khai này?',
@@ -483,6 +494,7 @@ export class DotKeKhaiComponent implements OnInit {
   updateSelectedIds(): void {
     this.selectedIds = Array.from(this.checkedSet);
     this.isAllChecked = this.selectedIds.length === this.filteredDotKeKhais.length;
+    this.isIndeterminate = this.selectedIds.length > 0 && this.selectedIds.length < this.filteredDotKeKhais.length;
   }
 
   onAllChecked(checked: boolean): void {
@@ -537,7 +549,8 @@ export class DotKeKhaiComponent implements OnInit {
     const colors: Record<string, string> = {
       'chua_gui': 'default',
       'da_gui': 'processing',
-      'cho_thanh_toan': 'warning',
+      'dang_xu_ly': 'cyan',
+      'cho_thanh_toan': 'warning', 
       'hoan_thanh': 'success',
       'tu_choi': 'error'
     };
@@ -548,8 +561,9 @@ export class DotKeKhaiComponent implements OnInit {
     const texts: Record<string, string> = {
       'chua_gui': 'Chưa gửi',
       'da_gui': 'Đã gửi',
+      'dang_xu_ly': 'Đang xử lý',
       'cho_thanh_toan': 'Chờ thanh toán',
-      'hoan_thanh': 'Hoàn thành',
+      'hoan_thanh': 'Hoàn thành', 
       'tu_choi': 'Từ chối'
     };
     return texts[trangThai] || trangThai;
@@ -874,5 +888,15 @@ export class DotKeKhaiComponent implements OnInit {
   // Thêm hàm chuyển đổi giới tính
   getGioiTinhValue(gioiTinh: string): string {
     return gioiTinh?.toLowerCase() === 'nam' ? '1' : '0';
+  }
+
+  showViewBillModal(url: string): void {
+    this.selectedBillUrl = url;
+    this.isViewBillModalVisible = true;
+  }
+
+  handleViewBillModalCancel(): void {
+    this.isViewBillModalVisible = false;
+    this.selectedBillUrl = '';
   }
 } 
