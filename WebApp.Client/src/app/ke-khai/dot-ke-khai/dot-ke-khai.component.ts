@@ -275,14 +275,25 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   loadDaiLys(): void {
-    this.userService.getDaiLys().subscribe({
-      next: (data) => {
-        this.daiLys = data;
-      },
-      error: () => {
-        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
-      }
-    });
+    // Kiểm tra nếu có mã đại lý trong thông tin user
+    if (this.currentUser.donViCongTac) {
+      this.userService.getDaiLys().subscribe({
+        next: (data) => {
+          // Lọc chỉ lấy đại lý của tài khoản hiện tại
+          this.daiLys = data.filter(daiLy => daiLy.ma === this.currentUser.donViCongTac);
+          
+          // Nếu có đại lý, tự động set vào form
+          if (this.daiLys.length > 0) {
+            this.form.patchValue({
+              dai_ly_id: this.daiLys[0].id
+            });
+          }
+        },
+        error: () => {
+          this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+        }
+      });
+    }
   }
 
   onTabChange(index: number): void {
@@ -348,6 +359,9 @@ export class DotKeKhaiComponent implements OnInit {
         ma_ho_so: '',
         dai_ly_id: null
       });
+      
+      // Load đại lý của tài khoản hiện tại
+      this.loadDaiLys();
     }
     this.isVisible = true;
   }

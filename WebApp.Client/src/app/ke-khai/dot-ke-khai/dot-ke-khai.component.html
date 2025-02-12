@@ -195,7 +195,8 @@
               formControlName="dai_ly_id" 
               nzPlaceHolder="Chọn đại lý"
               nzShowSearch
-              [nzLoading]="loading">
+              [nzLoading]="loading"
+              [nzDisabled]="!isEdit && daiLys.length === 1">
               <nz-option
                 *ngFor="let daiLy of daiLys"
                 [nzValue]="daiLy.id"
