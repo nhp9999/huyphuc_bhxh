@@ -3,8 +3,12 @@ using WebApp.API.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Thêm cấu hình JSON serialization cho Npgsql
+NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

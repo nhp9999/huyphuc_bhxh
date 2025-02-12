@@ -36,9 +36,6 @@ namespace WebApp.Server.Controllers
         [JsonPropertyName("isSuperAdmin")]
         public bool IsSuperAdmin { get; set; }
 
-        [JsonPropertyName("cap")]
-        public string? Cap { get; set; }
-
         [JsonPropertyName("typeMangLuoi")]
         public int? TypeMangLuoi { get; set; }
 
@@ -116,20 +113,16 @@ namespace WebApp.Server.Controllers
             var nguoiDung = new NguoiDung
             {
                 UserName = dto.UserName,
+                Password = hashedPassword,
                 HoTen = dto.HoTen,
-                Password = hashedPassword, // Thêm mật khẩu đã mã hóa
-                MangLuoi = dto.MangLuoi?.Trim(),
-                DonViCongTac = dto.DonViCongTac?.Trim(),
-                ChucDanh = dto.ChucDanh?.Trim(),
-                Email = dto.Email?.Trim(),
-                SoDienThoai = dto.SoDienThoai?.Trim(),
+                Email = dto.Email,
+                SoDienThoai = dto.SoDienThoai,
+                DonViCongTac = dto.DonViCongTac,
+                ChucDanh = dto.ChucDanh,
                 IsSuperAdmin = dto.IsSuperAdmin,
-                Cap = dto.Cap?.Trim(),
                 TypeMangLuoi = dto.TypeMangLuoi,
                 Status = 1,
-                Roles = dto.Roles?.Length > 0 ? dto.Roles : new[] { "user" },
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                Roles = dto.Roles
             };
 
             try
@@ -181,13 +174,11 @@ namespace WebApp.Server.Controllers
 
             nguoiDung.UserName = dto.UserName;
             nguoiDung.HoTen = dto.HoTen;
-            nguoiDung.MangLuoi = dto.MangLuoi?.Trim();
-            nguoiDung.DonViCongTac = dto.DonViCongTac?.Trim();
-            nguoiDung.ChucDanh = dto.ChucDanh?.Trim();
-            nguoiDung.Email = dto.Email?.Trim();
-            nguoiDung.SoDienThoai = dto.SoDienThoai?.Trim();
+            nguoiDung.DonViCongTac = dto.DonViCongTac;
+            nguoiDung.ChucDanh = dto.ChucDanh;
+            nguoiDung.Email = dto.Email;
+            nguoiDung.SoDienThoai = dto.SoDienThoai;
             nguoiDung.IsSuperAdmin = dto.IsSuperAdmin;
-            nguoiDung.Cap = dto.Cap?.Trim();
             nguoiDung.TypeMangLuoi = dto.TypeMangLuoi;
             nguoiDung.Roles = dto.Roles;
             nguoiDung.UpdatedAt = DateTime.UtcNow;

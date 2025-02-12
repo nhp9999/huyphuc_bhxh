@@ -25,10 +25,6 @@ namespace WebApp.Server.Models
         [StringLength(100)]
         public string Password { get; set; } = string.Empty;
 
-        [Column("mang_luoi")]
-        [StringLength(20)]
-        public string? MangLuoi { get; set; }
-
         [Column("don_vi_cong_tac")]
         [StringLength(200)]
         public string? DonViCongTac { get; set; }
@@ -48,10 +44,6 @@ namespace WebApp.Server.Models
 
         [Column("is_super_admin")]
         public bool IsSuperAdmin { get; set; }
-
-        [Column("cap")]
-        [StringLength(10)]
-        public string? Cap { get; set; }
 
         [Column("type_mang_luoi")]
         public int? TypeMangLuoi { get; set; }

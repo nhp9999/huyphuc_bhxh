@@ -34,6 +34,7 @@ export interface CreateDotKeKhai {
   nguoi_tao: string;
   don_vi_id: number;
   ma_ho_so?: string;
+  dai_ly_id: number;
   KeKhaiBHYTs?: any[];
 }
 
@@ -60,6 +61,7 @@ export interface DotKeKhai {
   tong_so_the?: number;
   ma_ho_so?: string;
   url_bill?: string;
+  dai_ly_id: number;
   KeKhaiBHYTs?: any[];
   DonVi?: {
     id: number;

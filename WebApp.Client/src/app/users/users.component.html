@@ -51,13 +51,10 @@
         <th nzWidth="60px">ID</th>
         <th nzWidth="120px">Tên đăng nhập</th>
         <th nzWidth="150px">Họ và tên</th>
-        <th nzWidth="150px">Mạng lưới</th>
         <th nzWidth="200px">Đơn vị công tác</th>
         <th nzWidth="150px">Chức danh</th>
         <th nzWidth="200px">Email</th>
         <th nzWidth="120px">Số điện thoại</th>
-        <th nzWidth="100px">Cấp</th>
-        <th nzWidth="120px">Loại mạng lưới</th>
         <th nzWidth="120px">Trạng thái</th>
         <th nzWidth="150px" nzRight="0px" nzFixed="right">Thao tác</th>
       </tr>
@@ -69,13 +66,10 @@
         <td>{{ nguoiDung.id }}</td>
         <td>{{ nguoiDung.userName }}</td>
         <td>{{ nguoiDung.hoTen }}</td>
-        <td>{{ nguoiDung.mangLuoi }}</td>
         <td>{{ getDonViCongTacDisplay(nguoiDung.donViCongTac) }}</td>
         <td>{{ nguoiDung.chucDanh }}</td>
         <td>{{ nguoiDung.email }}</td>
         <td>{{ nguoiDung.soDienThoai }}</td>
-        <td>{{ nguoiDung.cap }}</td>
-        <td>{{ nguoiDung.typeMangLuoi }}</td>
         <td>
           <nz-tag [nzColor]="nguoiDung.status === 1 ? 'success' : 'error'">
             {{ nguoiDung.status === 1 ? 'Hoạt động' : 'Không hoạt động' }}
@@ -143,15 +137,6 @@
 
           <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
-              <nz-form-label>Mạng lưới</nz-form-label>
-              <nz-form-control>
-                <input nz-input formControlName="mangLuoi" placeholder="Nhập mạng lưới" />
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-            <nz-form-item>
               <nz-form-label>Đơn vị công tác</nz-form-label>
               <nz-form-control>
                 <ng-container *ngIf="showDaiLySelect; else normalInput">
@@ -213,27 +198,10 @@
 
           <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
-              <nz-form-label>Cấp</nz-form-label>
-              <nz-form-control>
-                <input nz-input formControlName="cap" placeholder="Nhập cấp" />
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-            <nz-form-item>
-              <nz-form-label>Loại mạng lưới</nz-form-label>
-              <nz-form-control>
-                <nz-input-number formControlName="typeMangLuoi" [nzMin]="0" style="width: 100%"></nz-input-number>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-            <nz-form-item>
               <nz-form-label>Super Admin</nz-form-label>
               <nz-form-control>
-                <nz-switch formControlName="isSuperAdmin"></nz-switch>
+                <nz-switch formControlName="isSuperAdmin" *ngIf="isSuperAdmin"></nz-switch>
+                <span *ngIf="!isSuperAdmin">Không có quyền</span>
               </nz-form-control>
             </nz-form-item>
           </div>

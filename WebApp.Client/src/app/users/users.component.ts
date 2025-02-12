@@ -35,6 +35,7 @@ import {
 import { forkJoin } from 'rxjs';
 import { LocationService, Province, District, Commune } from '../services/location.service';
 import { DaiLy } from '../services/user.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-users',
@@ -78,6 +79,7 @@ export class UsersComponent implements OnInit {
   daiLys: DaiLy[] = [];
   showDaiLySelect = false;
   daiLyMap = new Map<string, string>();
+  isSuperAdmin = false;
 
   chucDanhOptions = [
     { value: 'super_admin', label: 'Super Admin' },
@@ -104,25 +106,27 @@ export class UsersComponent implements OnInit {
     private userService: UserService,
     private message: NzMessageService,
     private modal: NzModalService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private authService: AuthService
   ) {
     this.initForm();
     this.loadDaiLys();
     // Khởi tạo map chức danh
     this.chucDanhMap = new Map(this.chucDanhOptions.map(opt => [opt.value, opt.label]));
+    // Kiểm tra người dùng hiện tại có phải là Super Admin không
+    const currentUser = this.authService.getCurrentUser();
+    this.isSuperAdmin = currentUser?.isSuperAdmin || currentUser?.roles?.includes('super_admin');
   }
 
   initForm(): void {
     this.userForm = this.fb.group({
       userName: [{ value: '', disabled: false }, [Validators.required, Validators.minLength(3)]],
       hoTen: ['', [Validators.required]],
-      mangLuoi: [''],
       donViCongTac: [''],
       chucDanh: [''],
       email: ['', [Validators.email]],
       soDienThoai: [''],
       isSuperAdmin: [false],
-      cap: [''],
       typeMangLuoi: [null],
       status: [1],
       roles: [[]]
@@ -145,8 +149,14 @@ export class UsersComponent implements OnInit {
     this.isLoading = true;
     this.userService.getNguoiDungs().subscribe({
       next: (nguoiDungs) => {
-        console.log('Data from API:', nguoiDungs);
-        this.nguoiDungs = nguoiDungs;
+        // Lọc danh sách người dùng dựa trên quyền
+        if (!this.isSuperAdmin) {
+          this.nguoiDungs = nguoiDungs.filter(user => 
+            !user.isSuperAdmin && !user.roles?.includes('super_admin')
+          );
+        } else {
+          this.nguoiDungs = nguoiDungs;
+        }
         this.applyFilters();
         this.refreshCheckedStatus();
         this.isLoading = false;
@@ -194,6 +204,19 @@ export class UsersComponent implements OnInit {
     }
     
     this.userForm.reset({ status: 1, isSuperAdmin: false });
+
+    // Chỉ hiện option Super Admin nếu người dùng hiện tại là Super Admin
+    this.chucDanhOptions = this.isSuperAdmin ? [
+      { value: 'super_admin', label: 'Super Admin' },
+      { value: 'admin', label: 'Admin' },
+      { value: 'nhan_vien_thu', label: 'Nhân viên thu' },
+      { value: 'user', label: 'User' }
+    ] : [
+      { value: 'admin', label: 'Admin' },
+      { value: 'nhan_vien_thu', label: 'Nhân viên thu' },
+      { value: 'user', label: 'User' }
+    ];
+
     this.isModalVisible = true;
   }
 
@@ -212,13 +235,11 @@ export class UsersComponent implements OnInit {
     this.userForm.patchValue({
       userName: nguoiDung.userName,
       hoTen: nguoiDung.hoTen,
-      mangLuoi: nguoiDung.mangLuoi,
       donViCongTac: nguoiDung.donViCongTac,
       chucDanh: chucDanh,
       email: nguoiDung.email,
       soDienThoai: nguoiDung.soDienThoai,
       isSuperAdmin: nguoiDung.isSuperAdmin,
-      cap: nguoiDung.cap,
       typeMangLuoi: nguoiDung.typeMangLuoi,
       status: nguoiDung.status,
       roles: nguoiDung.roles

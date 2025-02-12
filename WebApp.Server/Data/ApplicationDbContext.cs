@@ -197,12 +197,11 @@ namespace WebApp.API.Data
                 entity.HasIndex(e => e.UserName).IsUnique();
                 entity.Property(e => e.UserName).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.HoTen).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.MangLuoi).HasMaxLength(20);
                 entity.Property(e => e.DonViCongTac).HasMaxLength(200);
                 entity.Property(e => e.ChucDanh).HasMaxLength(100);
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.Property(e => e.SoDienThoai).HasMaxLength(20);
-                entity.Property(e => e.Cap).HasMaxLength(10);
+                entity.Property(e => e.Roles).HasColumnType("text[]");
                 entity.Property(e => e.ClientId).HasMaxLength(100);
                 entity.Property(e => e.Status).HasDefaultValue(1);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");

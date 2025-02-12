@@ -16,6 +16,7 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { RouterModule, Router } from '@angular/router';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { UserService, DaiLy } from '../../services/user.service';
 import { 
   SaveOutline,
   PlusOutline,
@@ -117,6 +118,7 @@ export class DotKeKhaiComponent implements OnInit {
   selectedTabIndex = 0;
   filteredDotKeKhais: DotKeKhai[] = [];
   donVis: any[] = [];
+  daiLys: DaiLy[] = [];
   checkedSet = new Set<number>();
 
   // Thêm các thuộc tính cho modal xem hóa đơn
@@ -141,7 +143,8 @@ export class DotKeKhaiComponent implements OnInit {
     private fb: FormBuilder,
     private router: Router,
     private iconService: NzIconService,
-    private donViService: DonViService
+    private donViService: DonViService,
+    private userService: UserService
   ) {
     // Đăng ký các icons
     this.iconService.addIcon(
@@ -172,6 +175,7 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
       don_vi_id: [null, [Validators.required]],
       ma_ho_so: [''],
+      dai_ly_id: [null, [Validators.required]]
     });
 
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
@@ -201,6 +205,7 @@ export class DotKeKhaiComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
     this.loadDonVis();
+    this.loadDaiLys();
     this.updateTenDot();
     
     // Combine các valueChanges
@@ -269,6 +274,17 @@ export class DotKeKhaiComponent implements OnInit {
     });
   }
 
+  loadDaiLys(): void {
+    this.userService.getDaiLys().subscribe({
+      next: (data) => {
+        this.daiLys = data;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+      }
+    });
+  }
+
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
     this.filterData();
@@ -307,20 +323,30 @@ export class DotKeKhaiComponent implements OnInit {
     this.isEdit = !!data;
     if (data) {
       this.form.patchValue({
-        ...data
+        id: data.id,
+        ten_dot: data.ten_dot,
+        so_dot: data.so_dot,
+        thang: data.thang,
+        nam: data.nam,
+        ghi_chu: data.ghi_chu,
+        trang_thai: data.trang_thai,
+        nguoi_tao: data.nguoi_tao,
+        don_vi_id: data.don_vi_id,
+        ma_ho_so: data.ma_ho_so,
+        dai_ly_id: data.dai_ly_id
       });
     } else {
-      const currentDate = new Date();
-      this.form.patchValue({
-        id: null,
+      this.form.reset({
         ten_dot: '',
-        thang: currentDate.getMonth() + 1,
-        nam: currentDate.getFullYear(),
+        so_dot: 1,
+        thang: new Date().getMonth() + 1,
+        nam: new Date().getFullYear(),
         ghi_chu: '',
         trang_thai: 'chua_gui',
         nguoi_tao: this.currentUser.username || '',
         don_vi_id: null,
         ma_ho_so: '',
+        dai_ly_id: null
       });
     }
     this.isVisible = true;
@@ -347,120 +373,56 @@ export class DotKeKhaiComponent implements OnInit {
 
   handleOk(): void {
     if (this.form.valid) {
-      this.loading = true;
       const formValue = this.form.getRawValue();
-      const selectedDonVi = this.donVis.find(d => d.id === formValue.don_vi_id);
-      if (!selectedDonVi) {
-        this.message.error('Không tìm thấy thông tin đơn vị');
-        this.loading = false;
-        return;
-      }
-      
-      const createData: CreateDotKeKhai = {
-        ten_dot: formValue.ten_dot,
-        so_dot: Number(formValue.so_dot),
-        thang: Number(formValue.thang),
-        nam: Number(formValue.nam),
-        dich_vu: selectedDonVi.is_bhyt ? 'BHYT' : 'BHXH TN',
-        ghi_chu: formValue.ghi_chu || '',
-        trang_thai: formValue.trang_thai || 'chua_gui',
-        nguoi_tao: this.currentUser.username || '',
-        don_vi_id: Number(formValue.don_vi_id),
-        ma_ho_so: formValue.ma_ho_so || '',
-        KeKhaiBHYTs: []
-      };
-
-      // Log dữ liệu trước khi gửi
-      console.log('Data to be sent:', createData);
-
-      if (!createData.don_vi_id || !createData.nguoi_tao) {
-        this.message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
-        this.loading = false;
-        return;
-      }
-
       if (this.isEdit) {
         const updateData: UpdateDotKeKhai = {
           id: formValue.id,
           ten_dot: formValue.ten_dot,
-          so_dot: Number(formValue.so_dot),
-          thang: Number(formValue.thang),
-          nam: Number(formValue.nam),
-          dich_vu: selectedDonVi.is_bhyt ? 'BHYT' : 'BHXH TN',
-          ghi_chu: formValue.ghi_chu || '',
-          trang_thai: formValue.trang_thai || 'chua_gui',
-          nguoi_tao: formValue.nguoi_tao || this.currentUser.username || '',
-          don_vi_id: Number(formValue.don_vi_id),
-          ma_ho_so: formValue.ma_ho_so || '',
-          KeKhaiBHYTs: []
+          so_dot: formValue.so_dot,
+          thang: formValue.thang,
+          nam: formValue.nam,
+          ghi_chu: formValue.ghi_chu,
+          trang_thai: formValue.trang_thai,
+          nguoi_tao: formValue.nguoi_tao,
+          don_vi_id: formValue.don_vi_id,
+          ma_ho_so: formValue.ma_ho_so,
+          dai_ly_id: formValue.dai_ly_id
         };
-        
-        this.dotKeKhaiService.updateDotKeKhai(updateData.id, updateData).subscribe({
+
+        this.dotKeKhaiService.updateDotKeKhai(formValue.id, updateData).subscribe({
           next: () => {
-            this.message.success('Cập nhật thành công');
-            this.handleCancel();
-            this.loading = false;
+            this.message.success('Cập nhật đợt kê khai thành công');
+            this.isVisible = false;
+            this.loadData();
           },
           error: (error) => {
             console.error('Lỗi khi cập nhật:', error);
-            if (error.error?.errors) {
-              const errorMessages = Object.values(error.error.errors).flat();
-              errorMessages.forEach((message: unknown) => {
-                if (typeof message === 'string') {
-                  this.message.error(message);
-                }
-              });
-            } else {
-              this.message.error('Có lỗi xảy ra khi cập nhật');
-            }
-            this.loading = false;
-          },
-          complete: () => {
-            this.loading = false;
+            this.message.error('Có lỗi xảy ra khi cập nhật đợt kê khai');
           }
         });
       } else {
+        const createData: CreateDotKeKhai = {
+          ten_dot: formValue.ten_dot,
+          so_dot: formValue.so_dot,
+          thang: formValue.thang,
+          nam: formValue.nam,
+          ghi_chu: formValue.ghi_chu,
+          trang_thai: formValue.trang_thai,
+          nguoi_tao: formValue.nguoi_tao,
+          don_vi_id: formValue.don_vi_id,
+          ma_ho_so: formValue.ma_ho_so,
+          dai_ly_id: formValue.dai_ly_id
+        };
+
         this.dotKeKhaiService.createDotKeKhai(createData).subscribe({
           next: (response) => {
-            this.message.success('Thêm mới thành công');
-            this.handleCancel();
-            this.loading = false;
-            
-            if (createData.dich_vu === 'BHYT' && response && response.id) {
-              this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhyt']);
-            }
+            this.message.success('Thêm mới đợt kê khai thành công');
+            this.isVisible = false;
+            this.loadData();
           },
           error: (error) => {
             console.error('Lỗi khi thêm mới:', error);
-            if (error.error?.errors) {
-              let errorMessages: string[] = [];
-              // Xử lý trường hợp errors là array
-              if (Array.isArray(error.error.errors)) {
-                errorMessages = error.error.errors;
-              } 
-              // Xử lý trường hợp errors là object
-              else {
-                Object.keys(error.error.errors).forEach(key => {
-                  const messages = error.error.errors[key];
-                  if (Array.isArray(messages)) {
-                    errorMessages.push(...messages);
-                  } else if (typeof messages === 'string') {
-                    errorMessages.push(messages);
-                  }
-                });
-              }
-
-              errorMessages.forEach((message: unknown) => {
-                if (typeof message === 'string') {
-                  this.message.error(message);
-                }
-              });
-            } else if (error.error?.message) {
-              this.message.error(error.error.message);
-            } else {
-              this.message.error('Có lỗi xảy ra khi thêm mới');
-            }
-            this.loading = false;
+            this.message.error('Có lỗi xảy ra khi thêm mới đợt kê khai');
           }
         });
       }
@@ -468,7 +430,6 @@ export class DotKeKhaiComponent implements OnInit {
       Object.values(this.form.controls).forEach(control => {
         if (control.invalid) {
           control.markAsTouched();
-          control.updateValueAndValidity({ onlySelf: true });
         }
       });
     }
@@ -596,6 +557,11 @@ export class DotKeKhaiComponent implements OnInit {
   getDonViName(donViId: number): string {
     const donVi = this.donVis.find(d => d.id === donViId);
     return donVi ? donVi.tenDonVi : '';
+  }
+
+  getDaiLyName(daiLyId: number): string {
+    const daiLy = this.daiLys.find(d => d.id === daiLyId);
+    return daiLy ? daiLy.ten : '';
   }
 
   getTotalAmount(): number {

@@ -97,6 +97,7 @@
           <th>STT</th>
           <th>Tên đợt</th>
           <th>Đơn vị</th>
+          <th>Đại lý</th>
           <th>Dịch vụ</th>
           <th>Tổng số thẻ</th>
           <th>Tổng số tiền</th>
@@ -112,6 +113,7 @@
           <td>{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
+          <td>{{ getDaiLyName(data.dai_ly_id) }}</td>
           <td>{{ data.dich_vu }}</td>
           <td>{{ data.tong_so_the || 0 }}</td>
           <td>{{ data.tong_so_tien | number:'1.0-0' }} đ</td>
@@ -181,6 +183,23 @@
                 *ngFor="let donVi of donVis"
                 [nzValue]="donVi.id"
                 [nzLabel]="donVi.tenDonVi + (donVi.IsBHYT ? ' (BHYT)' : '')">
+              </nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="5" nzRequired>Đại lý</nz-form-label>
+          <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đại lý">
+            <nz-select 
+              formControlName="dai_ly_id" 
+              nzPlaceHolder="Chọn đại lý"
+              nzShowSearch
+              [nzLoading]="loading">
+              <nz-option
+                *ngFor="let daiLy of daiLys"
+                [nzValue]="daiLy.id"
+                [nzLabel]="daiLy.ten">
               </nz-option>
             </nz-select>
           </nz-form-control>
