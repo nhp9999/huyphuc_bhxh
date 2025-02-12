@@ -20,6 +20,11 @@ namespace WebApp.Server.Models
         [StringLength(100)]
         public string HoTen { get; set; } = string.Empty;
 
+        [Column("password")]
+        [Required]
+        [StringLength(100)]
+        public string Password { get; set; } = string.Empty;
+
         [Column("mang_luoi")]
         [StringLength(20)]
         public string? MangLuoi { get; set; }

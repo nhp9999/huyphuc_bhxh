@@ -4,45 +4,49 @@ using WebApp.API.Data;
 using WebApp.Server.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using BCrypt.Net;
 
 namespace WebApp.Server.Controllers
 {
     public class NguoiDungDTO
     {
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
-        [JsonPropertyName("user_name")]
+        [JsonPropertyName("userName")]
         public string UserName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Họ tên không được để trống")]
-        [JsonPropertyName("ho_ten")]
+        [JsonPropertyName("hoTen")]
         public string HoTen { get; set; } = string.Empty;
 
-        [JsonPropertyName("mang_luoi")]
+        [JsonPropertyName("mangLuoi")]
         public string? MangLuoi { get; set; }
 
-        [JsonPropertyName("don_vi_cong_tac")]
+        [JsonPropertyName("donViCongTac")]
         public string? DonViCongTac { get; set; }
 
-        [JsonPropertyName("chuc_danh")]
+        [JsonPropertyName("chucDanh")]
         public string? ChucDanh { get; set; }
 
         [JsonPropertyName("email")]
         public string? Email { get; set; }
 
-        [JsonPropertyName("so_dien_thoai")]
+        [JsonPropertyName("soDienThoai")]
         public string? SoDienThoai { get; set; }
 
-        [JsonPropertyName("is_super_admin")]
+        [JsonPropertyName("isSuperAdmin")]
         public bool IsSuperAdmin { get; set; }
 
         [JsonPropertyName("cap")]
         public string? Cap { get; set; }
 
-        [JsonPropertyName("type_mang_luoi")]
+        [JsonPropertyName("typeMangLuoi")]
         public int? TypeMangLuoi { get; set; }
 
         [JsonPropertyName("roles")]
         public string[]? Roles { get; set; }
+
+        [JsonPropertyName("password")]
+        public string? Password { get; set; }
     }
 
     [Route("api/nguoi-dung")]
@@ -81,35 +85,64 @@ namespace WebApp.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<NguoiDung>> CreateNguoiDung(NguoiDungDTO dto)
         {
+            // Kiểm tra dữ liệu đầu vào
+            if (string.IsNullOrWhiteSpace(dto.UserName))
+            {
+                ModelState.AddModelError("UserName", "Tên đăng nhập không được để trống");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.HoTen))
+            {
+                ModelState.AddModelError("HoTen", "Họ tên không được để trống");
+                return BadRequest(ModelState);
+            }
+
             // Kiểm tra trùng UserName
-            if (await _context.NguoiDungs.AnyAsync(x => x.UserName == dto.UserName))
+            if (await _context.NguoiDungs.AnyAsync(x => x.UserName.ToLower() == dto.UserName.ToLower()))
             {
                 ModelState.AddModelError("UserName", "Tên đăng nhập đã tồn tại");
                 return BadRequest(ModelState);
             }
 
+            // Chuẩn hóa dữ liệu
+            dto.UserName = dto.UserName.Trim();
+            dto.HoTen = dto.HoTen.Trim();
+
+            // Tạo mật khẩu mặc định và mã hóa
+            string defaultPassword = "123456";
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
+
             var nguoiDung = new NguoiDung
             {
                 UserName = dto.UserName,
                 HoTen = dto.HoTen,
-                MangLuoi = dto.MangLuoi,
-                DonViCongTac = dto.DonViCongTac,
-                ChucDanh = dto.ChucDanh,
-                Email = dto.Email,
-                SoDienThoai = dto.SoDienThoai,
+                Password = hashedPassword, // Thêm mật khẩu đã mã hóa
+                MangLuoi = dto.MangLuoi?.Trim(),
+                DonViCongTac = dto.DonViCongTac?.Trim(),
+                ChucDanh = dto.ChucDanh?.Trim(),
+                Email = dto.Email?.Trim(),
+                SoDienThoai = dto.SoDienThoai?.Trim(),
                 IsSuperAdmin = dto.IsSuperAdmin,
-                Cap = dto.Cap,
+                Cap = dto.Cap?.Trim(),
                 TypeMangLuoi = dto.TypeMangLuoi,
                 Status = 1,
-                Roles = dto.Roles ?? new[] { "user" },
+                Roles = dto.Roles?.Length > 0 ? dto.Roles : new[] { "user" },
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.NguoiDungs.Add(nguoiDung);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetNguoiDung), new { id = nguoiDung.Id }, nguoiDung);
+            try
+            {
+                _context.NguoiDungs.Add(nguoiDung);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetNguoiDung), new { id = nguoiDung.Id }, nguoiDung);
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Có lỗi xảy ra khi tạo người dùng");
+                return BadRequest(ModelState);
+            }
         }
 
         // PUT: api/nguoi-dung/5
@@ -122,22 +155,39 @@ namespace WebApp.Server.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra dữ liệu đầu vào
+            if (string.IsNullOrWhiteSpace(dto.UserName))
+            {
+                ModelState.AddModelError("UserName", "Tên đăng nhập không được để trống");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.HoTen))
+            {
+                ModelState.AddModelError("HoTen", "Họ tên không được để trống");
+                return BadRequest(ModelState);
+            }
+
             // Kiểm tra trùng UserName (trừ chính nó)
-            if (await _context.NguoiDungs.AnyAsync(x => x.UserName == dto.UserName && x.Id != id))
+            if (await _context.NguoiDungs.AnyAsync(x => x.UserName.ToLower() == dto.UserName.ToLower() && x.Id != id))
             {
                 ModelState.AddModelError("UserName", "Tên đăng nhập đã tồn tại");
                 return BadRequest(ModelState);
             }
 
+            // Chuẩn hóa dữ liệu
+            dto.UserName = dto.UserName.Trim();
+            dto.HoTen = dto.HoTen.Trim();
+
             nguoiDung.UserName = dto.UserName;
             nguoiDung.HoTen = dto.HoTen;
-            nguoiDung.MangLuoi = dto.MangLuoi;
-            nguoiDung.DonViCongTac = dto.DonViCongTac;
-            nguoiDung.ChucDanh = dto.ChucDanh;
-            nguoiDung.Email = dto.Email;
-            nguoiDung.SoDienThoai = dto.SoDienThoai;
+            nguoiDung.MangLuoi = dto.MangLuoi?.Trim();
+            nguoiDung.DonViCongTac = dto.DonViCongTac?.Trim();
+            nguoiDung.ChucDanh = dto.ChucDanh?.Trim();
+            nguoiDung.Email = dto.Email?.Trim();
+            nguoiDung.SoDienThoai = dto.SoDienThoai?.Trim();
             nguoiDung.IsSuperAdmin = dto.IsSuperAdmin;
-            nguoiDung.Cap = dto.Cap;
+            nguoiDung.Cap = dto.Cap?.Trim();
             nguoiDung.TypeMangLuoi = dto.TypeMangLuoi;
             nguoiDung.Roles = dto.Roles;
             nguoiDung.UpdatedAt = DateTime.UtcNow;
@@ -145,6 +195,7 @@ namespace WebApp.Server.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+                return Ok(nguoiDung);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -154,11 +205,10 @@ namespace WebApp.Server.Controllers
                 }
                 else
                 {
-                    throw;
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật người dùng");
+                    return BadRequest(ModelState);
                 }
             }
-
-            return NoContent();
         }
 
         // DELETE: api/nguoi-dung/5
