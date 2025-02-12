@@ -136,6 +136,10 @@ export class DotKeKhaiComponent implements OnInit {
     'tu_choi'
   ];
 
+  // Thêm các thuộc tính
+  isCreateDaiLyVisible = false;
+  daiLyForm!: FormGroup;
+
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
     private message: NzMessageService,
@@ -181,6 +185,62 @@ export class DotKeKhaiComponent implements OnInit {
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('thang')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('nam')?.valueChanges.subscribe(() => this.updateTenDot());
+
+    // Khởi tạo form đại lý ngay trong constructor
+    this.initDaiLyForm();
+  }
+
+  initDaiLyForm(): void {
+    this.daiLyForm = this.fb.group({
+      ma: ['', [Validators.required]],
+      ten: ['', [Validators.required]],
+      diaChi: [''],
+      soDienThoai: [''],
+      email: ['', [Validators.email]],
+      nguoiDaiDien: [''],
+      trangThai: [true],
+      nguoiTao: [this.currentUser.username]
+    });
+  }
+
+  showCreateDaiLyModal(): void {
+    this.isCreateDaiLyVisible = true;
+    this.initDaiLyForm();
+  }
+
+  handleCreateDaiLyCancel(): void {
+    this.isCreateDaiLyVisible = false;
+    this.daiLyForm.reset();
+  }
+
+  handleCreateDaiLyOk(): void {
+    if (this.daiLyForm.valid) {
+      const daiLyData = this.daiLyForm.value;
+      this.userService.createDaiLy(daiLyData).subscribe({
+        next: (response) => {
+          this.message.success('Thêm mới đại lý thành công');
+          this.isCreateDaiLyVisible = false;
+          this.loadDaiLys(); // Tải lại danh sách đại lý
+          // Tự động chọn đại lý vừa tạo
+          this.form.patchValue({
+            dai_ly_id: response.id
+          });
+        },
+        error: (error) => {
+          if (error.error?.message) {
+            this.message.error(error.error.message);
+          } else {
+            this.message.error('Có lỗi xảy ra khi tạo đại lý');
+          }
+        }
+      });
+    } else {
+      Object.values(this.daiLyForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+        }
+      });
+    }
   }
 
   updateTenDot(): void {

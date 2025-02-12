@@ -191,18 +191,24 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="5" nzRequired>Đại lý</nz-form-label>
           <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đại lý">
-            <nz-select 
-              formControlName="dai_ly_id" 
-              nzPlaceHolder="Chọn đại lý"
-              nzShowSearch
-              [nzLoading]="loading"
-              [nzDisabled]="!isEdit && daiLys.length === 1">
-              <nz-option
-                *ngFor="let daiLy of daiLys"
-                [nzValue]="daiLy.id"
-                [nzLabel]="daiLy.ten">
-              </nz-option>
-            </nz-select>
+            <div style="display: flex; gap: 8px;">
+              <nz-select 
+                formControlName="dai_ly_id" 
+                nzPlaceHolder="Chọn đại lý"
+                nzShowSearch
+                [nzLoading]="loading"
+                [nzDisabled]="!isEdit && daiLys.length === 1"
+                style="flex: 1;">
+                <nz-option
+                  *ngFor="let daiLy of daiLys"
+                  [nzValue]="daiLy.id"
+                  [nzLabel]="daiLy.ten">
+                </nz-option>
+              </nz-select>
+              <button nz-button nzType="default" (click)="showCreateDaiLyModal()">
+                <i nz-icon nzType="plus"></i>
+              </button>
+            </div>
           </nz-form-control>
         </nz-form-item>
 
@@ -228,6 +234,62 @@
       <div class="bill-image-container">
         <img [src]="selectedBillUrl" style="width: 100%; height: auto;" />
       </div>
+    </ng-container>
+  </nz-modal>
+
+  <!-- Thêm modal tạo đại lý -->
+  <nz-modal
+    [(nzVisible)]="isCreateDaiLyVisible"
+    [nzTitle]="'Thêm mới đại lý'"
+    [nzOkText]="'Thêm mới'"
+    [nzCancelText]="'Hủy'"
+    (nzOnCancel)="handleCreateDaiLyCancel()"
+    (nzOnOk)="handleCreateDaiLyOk()"
+    [nzWidth]="500">
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="daiLyForm" class="compact-form">
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6" nzRequired>Mã đại lý</nz-form-label>
+          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã đại lý">
+            <input nz-input formControlName="ma" placeholder="Nhập mã đại lý" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6" nzRequired>Tên đại lý</nz-form-label>
+          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên đại lý">
+            <input nz-input formControlName="ten" placeholder="Nhập tên đại lý" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Địa chỉ</nz-form-label>
+          <nz-form-control [nzSpan]="18">
+            <input nz-input formControlName="diaChi" placeholder="Nhập địa chỉ" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Số điện thoại</nz-form-label>
+          <nz-form-control [nzSpan]="18">
+            <input nz-input formControlName="soDienThoai" placeholder="Nhập số điện thoại" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Email</nz-form-label>
+          <nz-form-control [nzSpan]="18">
+            <input nz-input formControlName="email" placeholder="Nhập email" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="6">Người đại diện</nz-form-label>
+          <nz-form-control [nzSpan]="18">
+            <input nz-input formControlName="nguoiDaiDien" placeholder="Nhập người đại diện" />
+          </nz-form-control>
+        </nz-form-item>
+      </form>
     </ng-container>
   </nz-modal>
 </div>

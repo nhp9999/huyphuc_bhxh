@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using WebApp.API.Models;
 
 namespace WebApp.API.Models
 {

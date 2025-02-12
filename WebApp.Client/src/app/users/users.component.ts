@@ -36,6 +36,7 @@ import { forkJoin } from 'rxjs';
 import { LocationService, Province, District, Commune } from '../services/location.service';
 import { DaiLy } from '../services/user.service';
 import { AuthService } from '../services/auth.service';
+import { DonViService, DonVi } from '../services/don-vi.service';
 
 @Component({
   selector: 'app-users',
@@ -80,6 +81,15 @@ export class UsersComponent implements OnInit {
   showDaiLySelect = false;
   daiLyMap = new Map<string, string>();
   isSuperAdmin = false;
+  isCreateDaiLyVisible = false;
+  isEditDaiLy = false;
+  daiLyForm!: FormGroup;
+  selectedDaiLyId?: number;
+  donVis: DonVi[] = [];
+  isCreateDonViVisible = false;
+  isEditDonVi = false;
+  donViForm!: FormGroup;
+  selectedDonViId?: number;
 
   chucDanhOptions = [
     { value: 'super_admin', label: 'Super Admin' },
@@ -107,13 +117,14 @@ export class UsersComponent implements OnInit {
     private message: NzMessageService,
     private modal: NzModalService,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private donViService: DonViService
   ) {
     this.initForm();
     this.loadDaiLys();
-    // Khởi tạo map chức danh
+    this.initDaiLyForm();
+    this.initDonViForm();
     this.chucDanhMap = new Map(this.chucDanhOptions.map(opt => [opt.value, opt.label]));
-    // Kiểm tra người dùng hiện tại có phải là Super Admin không
     const currentUser = this.authService.getCurrentUser();
     this.isSuperAdmin = currentUser?.isSuperAdmin || currentUser?.roles?.includes('super_admin');
   }
@@ -132,7 +143,6 @@ export class UsersComponent implements OnInit {
       roles: [[]]
     });
 
-    // Theo dõi sự thay đổi của chức danh để hiển thị select đại lý
     this.userForm.get('chucDanh')?.valueChanges.subscribe(chucDanh => {
       this.showDaiLySelect = chucDanh === 'nhan_vien_thu';
       if (!this.showDaiLySelect) {
@@ -143,13 +153,13 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadNguoiDungs();
+    this.loadDonVis();
   }
 
   loadNguoiDungs(): void {
     this.isLoading = true;
     this.userService.getNguoiDungs().subscribe({
       next: (nguoiDungs) => {
-        // Lọc danh sách người dùng dựa trên quyền
         if (!this.isSuperAdmin) {
           this.nguoiDungs = nguoiDungs.filter(user => 
             !user.isSuperAdmin && !user.roles?.includes('super_admin')
@@ -197,7 +207,6 @@ export class UsersComponent implements OnInit {
   showAddModal(): void {
     this.editingNguoiDung = null;
     
-    // Enable userName control khi thêm mới
     const userNameControl = this.userForm.get('userName');
     if (userNameControl) {
       userNameControl.enable();
@@ -205,7 +214,6 @@ export class UsersComponent implements OnInit {
     
     this.userForm.reset({ status: 1, isSuperAdmin: false });
 
-    // Chỉ hiện option Super Admin nếu người dùng hiện tại là Super Admin
     this.chucDanhOptions = this.isSuperAdmin ? [
       { value: 'super_admin', label: 'Super Admin' },
       { value: 'admin', label: 'Admin' },
@@ -223,13 +231,11 @@ export class UsersComponent implements OnInit {
   showEditModal(nguoiDung: NguoiDung): void {
     this.editingNguoiDung = nguoiDung;
     
-    // Disable userName control khi đang edit
     const userNameControl = this.userForm.get('userName');
     if (userNameControl) {
       userNameControl.disable();
     }
 
-    // Nếu người dùng có roles, lấy role đầu tiên làm chức danh
     const chucDanh = nguoiDung.roles && nguoiDung.roles.length > 0 ? nguoiDung.roles[0] : '';
 
     this.userForm.patchValue({
@@ -257,7 +263,6 @@ export class UsersComponent implements OnInit {
       this.isLoading = true;
       const formData = {...this.userForm.getRawValue()};
 
-      // Lấy chức danh làm role
       formData.roles = [formData.chucDanh];
 
       if (this.editingNguoiDung) {
@@ -462,15 +467,15 @@ export class UsersComponent implements OnInit {
   }
 
   loadDaiLys(): void {
+    this.isLoading = true;
     this.userService.getDaiLys().subscribe({
-      next: (daiLys) => {
-        this.daiLys = daiLys;
-        // Tạo map để lưu trữ mã và tên đại lý
-        this.daiLyMap = new Map(daiLys.map(daiLy => [daiLy.ma, daiLy.ten]));
+      next: (data) => {
+        this.daiLys = data;
+        this.isLoading = false;
       },
-      error: (error) => {
-        this.message.error('Không thể tải danh sách đại lý');
-        console.error('Error loading dai ly:', error);
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+        this.isLoading = false;
       }
     });
   }
@@ -478,5 +483,245 @@ export class UsersComponent implements OnInit {
   getDonViCongTacDisplay(maDaiLy: string | undefined): string {
     if (!maDaiLy) return '';
     return this.daiLyMap.get(maDaiLy) || maDaiLy;
+  }
+
+  initDaiLyForm(): void {
+    this.daiLyForm = this.fb.group({
+      ma: ['', [Validators.required]],
+      ten: ['', [Validators.required]],
+      diaChi: [''],
+      soDienThoai: [''],
+      email: ['', [Validators.email]],
+      nguoiDaiDien: [''],
+      trangThai: [true],
+      nguoiTao: [this.authService.getCurrentUser().username]
+    });
+  }
+
+  showCreateDaiLyModal(): void {
+    this.isEditDaiLy = false;
+    this.selectedDaiLyId = undefined;
+    this.isCreateDaiLyVisible = true;
+    this.initDaiLyForm();
+  }
+
+  editDaiLy(daiLy: DaiLy): void {
+    this.isEditDaiLy = true;
+    this.selectedDaiLyId = daiLy.id;
+    this.daiLyForm.patchValue({
+      ma: daiLy.ma,
+      ten: daiLy.ten,
+      diaChi: daiLy.diaChi,
+      soDienThoai: daiLy.soDienThoai,
+      email: daiLy.email,
+      nguoiDaiDien: daiLy.nguoiDaiDien,
+      trangThai: daiLy.trangThai
+    });
+    this.isCreateDaiLyVisible = true;
+  }
+
+  handleCreateDaiLyCancel(): void {
+    this.isCreateDaiLyVisible = false;
+    this.daiLyForm.reset();
+  }
+
+  handleCreateDaiLyOk(): void {
+    if (this.daiLyForm.valid) {
+      const daiLyData = this.daiLyForm.value;
+      
+      if (this.isEditDaiLy && this.selectedDaiLyId) {
+        this.userService.updateDaiLy(this.selectedDaiLyId, daiLyData).subscribe({
+          next: () => {
+            this.message.success('Cập nhật đại lý thành công');
+            this.isCreateDaiLyVisible = false;
+            this.loadDaiLys();
+          },
+          error: (error) => {
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi cập nhật đại lý');
+          }
+        });
+      } else {
+        this.userService.createDaiLy(daiLyData).subscribe({
+          next: () => {
+            this.message.success('Thêm mới đại lý thành công');
+            this.isCreateDaiLyVisible = false;
+            this.loadDaiLys();
+          },
+          error: (error) => {
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi tạo đại lý');
+          }
+        });
+      }
+    } else {
+      Object.values(this.daiLyForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+        }
+      });
+    }
+  }
+
+  deleteDaiLy(daiLy: DaiLy): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận xóa',
+      nzContent: `Bạn có chắc chắn muốn xóa đại lý "${daiLy.ten}"?`,
+      nzOkText: 'Xóa',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: () => {
+        this.userService.deleteDaiLy(daiLy.id).subscribe({
+          next: () => {
+            this.message.success('Xóa đại lý thành công');
+            this.loadDaiLys();
+          },
+          error: () => this.message.error('Có lỗi xảy ra khi xóa đại lý')
+        });
+      }
+    });
+  }
+
+  onDaiLyStatusChange(daiLy: DaiLy): void {
+    daiLy.loading = true;
+    this.userService.updateDaiLy(daiLy.id, { trangThai: daiLy.trangThai }).subscribe({
+      next: () => {
+        this.message.success('Cập nhật trạng thái thành công');
+        daiLy.loading = false;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+        daiLy.trangThai = !daiLy.trangThai;
+        daiLy.loading = false;
+      }
+    });
+  }
+
+  initDonViForm(): void {
+    this.donViForm = this.fb.group({
+      maCoQuanBHXH: ['', [Validators.required]],
+      maSoBHXH: ['', [Validators.required]],
+      tenDonVi: ['', [Validators.required]],
+      isBHXHTN: [false],
+      isBHYT: [false],
+      type: [null, [Validators.required]]
+    });
+  }
+
+  loadDonVis(): void {
+    this.isLoading = true;
+    this.donViService.getDonVis().subscribe({
+      next: (data) => {
+        this.donVis = data;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  showCreateDonViModal(): void {
+    this.isEditDonVi = false;
+    this.selectedDonViId = undefined;
+    this.isCreateDonViVisible = true;
+    this.initDonViForm();
+  }
+
+  editDonVi(donVi: DonVi): void {
+    this.isEditDonVi = true;
+    this.selectedDonViId = donVi.id;
+    this.donViForm.patchValue({
+      maCoQuanBHXH: donVi.maCoQuanBHXH,
+      maSoBHXH: donVi.maSoBHXH,
+      tenDonVi: donVi.tenDonVi,
+      isBHXHTN: donVi.isBHXHTN,
+      isBHYT: donVi.isBHYT,
+      type: donVi.type
+    });
+    this.isCreateDonViVisible = true;
+  }
+
+  handleCreateDonViCancel(): void {
+    this.isCreateDonViVisible = false;
+    this.donViForm.reset();
+  }
+
+  handleCreateDonViOk(): void {
+    if (this.donViForm.valid) {
+      const donViData = this.donViForm.value;
+      
+      if (this.isEditDonVi && this.selectedDonViId) {
+        this.donViService.updateDonVi(this.selectedDonViId, donViData).subscribe({
+          next: () => {
+            this.message.success('Cập nhật đơn vị thành công');
+            this.isCreateDonViVisible = false;
+            this.loadDonVis();
+          },
+          error: (error) => {
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi cập nhật đơn vị');
+          }
+        });
+      } else {
+        this.donViService.createDonVi(donViData).subscribe({
+          next: () => {
+            this.message.success('Thêm mới đơn vị thành công');
+            this.isCreateDonViVisible = false;
+            this.loadDonVis();
+          },
+          error: (error) => {
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi tạo đơn vị');
+          }
+        });
+      }
+    } else {
+      Object.values(this.donViForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+        }
+      });
+    }
+  }
+
+  deleteDonVi(donVi: DonVi): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận xóa',
+      nzContent: `Bạn có chắc chắn muốn xóa đơn vị "${donVi.tenDonVi}"?`,
+      nzOkText: 'Xóa',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: () => {
+        this.donViService.deleteDonVi(donVi.id).subscribe({
+          next: () => {
+            this.message.success('Xóa đơn vị thành công');
+            this.loadDonVis();
+          },
+          error: () => this.message.error('Có lỗi xảy ra khi xóa đơn vị')
+        });
+      }
+    });
+  }
+
+  getLoaiDonVi(type: number): string {
+    const loaiDonViMap: Record<number, string> = {
+      1: 'Loại 1',
+      2: 'Loại 2',
+      3: 'Loại 3'
+    };
+    return loaiDonViMap[type] || 'Không xác định';
+  }
+
+  onDonViStatusChange(donVi: DonVi): void {
+    donVi.loading = true;
+    this.donViService.updateDonVi(donVi.id, { trangThai: donVi.trangThai }).subscribe({
+      next: () => {
+        this.message.success('Cập nhật trạng thái thành công');
+        donVi.loading = false;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+        donVi.trangThai = !donVi.trangThai;
+        donVi.loading = false;
+      }
+    });
   }
 }

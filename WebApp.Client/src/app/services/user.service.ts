@@ -34,6 +34,7 @@ export interface DaiLy {
   trangThai: boolean;
   ngayTao: string;
   nguoiTao: string;
+  loading?: boolean;
 }
 
 @Injectable({
@@ -78,5 +79,17 @@ export class UserService {
 
   getDaiLys(): Observable<DaiLy[]> {
     return this.http.get<DaiLy[]>(`${environment.apiUrl}/dai-ly`);
+  }
+
+  createDaiLy(daiLy: Partial<DaiLy>): Observable<DaiLy> {
+    return this.http.post<DaiLy>(`${environment.apiUrl}/dai-ly`, daiLy);
+  }
+
+  updateDaiLy(id: number, daiLy: Partial<DaiLy>): Observable<DaiLy> {
+    return this.http.put<DaiLy>(`${environment.apiUrl}/dai-ly/${id}`, daiLy);
+  }
+
+  deleteDaiLy(id: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/dai-ly/${id}`);
   }
 } 

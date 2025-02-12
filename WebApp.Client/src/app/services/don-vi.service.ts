@@ -14,13 +14,16 @@ export interface DonVi {
   type: number;
   createdAt: string;
   updatedAt: string;
+  loading?: boolean;
+  isActive?: boolean;
+  trangThai?: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class DonViService {
-  private apiUrl = `${environment.apiUrl}/DonVi`;
+  private apiUrl = `${environment.apiUrl}/don-vi`;
 
   constructor(private http: HttpClient) { }
 
@@ -28,7 +31,19 @@ export class DonViService {
     return this.http.get<DonVi[]>(this.apiUrl);
   }
 
-  getDonViById(id: number): Observable<DonVi> {
+  getDonVi(id: number): Observable<DonVi> {
     return this.http.get<DonVi>(`${this.apiUrl}/${id}`);
+  }
+
+  createDonVi(donVi: Partial<DonVi>): Observable<DonVi> {
+    return this.http.post<DonVi>(this.apiUrl, donVi);
+  }
+
+  updateDonVi(id: number, donVi: Partial<DonVi>): Observable<DonVi> {
+    return this.http.put<DonVi>(`${this.apiUrl}/${id}`, donVi);
+  }
+
+  deleteDonVi(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 } 

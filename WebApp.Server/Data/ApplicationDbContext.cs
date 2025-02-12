@@ -161,16 +161,13 @@ namespace WebApp.API.Data
             {
                 entity.ToTable("don_vi");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.MaCoQuanBHXH).HasColumnName("ma_co_quan_bhxh").HasMaxLength(10);
-                entity.Property(e => e.MaSoBHXH).HasColumnName("ma_so_bhxh").HasMaxLength(10);
-                entity.Property(e => e.TenDonVi).HasColumnName("ten_don_vi").HasMaxLength(255);
-                entity.Property(e => e.IsBHXHTN).HasColumnName("is_bhxhtn");
-                entity.Property(e => e.IsBHYT).HasColumnName("is_bhyt");
-                entity.Property(e => e.DmKhoiKcbId).HasColumnName("dm_khoi_kcb_id");
-                entity.Property(e => e.Type).HasColumnName("type");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+                entity.Property(e => e.MaCoQuanBHXH).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.MaSoBHXH).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.TenDonVi).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.TrangThai).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             modelBuilder.Entity<HoaDonThanhToan>(entity =>
