@@ -77,6 +77,16 @@ export class UsersComponent implements OnInit {
   setOfCheckedId = new Set<number>();
   daiLys: DaiLy[] = [];
   showDaiLySelect = false;
+  daiLyMap = new Map<string, string>();
+
+  chucDanhOptions = [
+    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'nhan_vien_thu', label: 'Nhân viên thu' },
+    { value: 'user', label: 'User' }
+  ];
+
+  chucDanhMap = new Map<string, string>();
 
   roleOptions = [
     { label: 'Super Admin', value: 'super_admin' },
@@ -98,6 +108,8 @@ export class UsersComponent implements OnInit {
   ) {
     this.initForm();
     this.loadDaiLys();
+    // Khởi tạo map chức danh
+    this.chucDanhMap = new Map(this.chucDanhOptions.map(opt => [opt.value, opt.label]));
   }
 
   initForm(): void {
@@ -116,9 +128,9 @@ export class UsersComponent implements OnInit {
       roles: [[]]
     });
 
-    // Theo dõi sự thay đổi của roles để hiển thị select đại lý
-    this.userForm.get('roles')?.valueChanges.subscribe(roles => {
-      this.showDaiLySelect = roles?.includes('nhan_vien_thu');
+    // Theo dõi sự thay đổi của chức danh để hiển thị select đại lý
+    this.userForm.get('chucDanh')?.valueChanges.subscribe(chucDanh => {
+      this.showDaiLySelect = chucDanh === 'nhan_vien_thu';
       if (!this.showDaiLySelect) {
         this.userForm.patchValue({ donViCongTac: '' });
       }
@@ -194,12 +206,15 @@ export class UsersComponent implements OnInit {
       userNameControl.disable();
     }
 
+    // Nếu người dùng có roles, lấy role đầu tiên làm chức danh
+    const chucDanh = nguoiDung.roles && nguoiDung.roles.length > 0 ? nguoiDung.roles[0] : '';
+
     this.userForm.patchValue({
       userName: nguoiDung.userName,
       hoTen: nguoiDung.hoTen,
       mangLuoi: nguoiDung.mangLuoi,
       donViCongTac: nguoiDung.donViCongTac,
-      chucDanh: nguoiDung.chucDanh,
+      chucDanh: chucDanh,
       email: nguoiDung.email,
       soDienThoai: nguoiDung.soDienThoai,
       isSuperAdmin: nguoiDung.isSuperAdmin,
@@ -219,7 +234,10 @@ export class UsersComponent implements OnInit {
   handleOk(): void {
     if (this.userForm.valid) {
       this.isLoading = true;
-      const formData = this.userForm.value;
+      const formData = {...this.userForm.getRawValue()};
+
+      // Lấy chức danh làm role
+      formData.roles = [formData.chucDanh];
 
       if (this.editingNguoiDung) {
         this.userService.updateNguoiDung(this.editingNguoiDung.id, formData).subscribe({
@@ -227,23 +245,36 @@ export class UsersComponent implements OnInit {
             this.message.success('Cập nhật người dùng thành công');
             this.isModalVisible = false;
             this.loadNguoiDungs();
+            this.isLoading = false;
           },
           error: (error) => {
-            this.message.error('Lỗi khi cập nhật người dùng');
             console.error('Error updating user:', error);
+            this.message.error(error.error?.message || 'Lỗi khi cập nhật người dùng');
             this.isLoading = false;
           }
         });
       } else {
+        console.log('Creating new user with data:', formData);
         this.userService.createNguoiDung(formData).subscribe({
-          next: () => {
+          next: (response) => {
+            console.log('Create user response:', response);
             this.message.success('Thêm người dùng thành công');
             this.isModalVisible = false;
             this.loadNguoiDungs();
+            this.isLoading = false;
           },
           error: (error) => {
-            this.message.error('Lỗi khi thêm người dùng');
             console.error('Error creating user:', error);
+            if (error.error?.errors) {
+              Object.keys(error.error.errors).forEach(key => {
+                this.message.error(error.error.errors[key][0]);
+              });
+            } else {
+              this.message.error(error.error?.message || 'Lỗi khi thêm người dùng');
+            }
+            this.isLoading = false;
+          },
+          complete: () => {
             this.isLoading = false;
           }
         });
@@ -413,11 +444,18 @@ export class UsersComponent implements OnInit {
     this.userService.getDaiLys().subscribe({
       next: (daiLys) => {
         this.daiLys = daiLys;
+        // Tạo map để lưu trữ mã và tên đại lý
+        this.daiLyMap = new Map(daiLys.map(daiLy => [daiLy.ma, daiLy.ten]));
       },
       error: (error) => {
         this.message.error('Không thể tải danh sách đại lý');
         console.error('Error loading dai ly:', error);
       }
     });
+  }
+
+  getDonViCongTacDisplay(maDaiLy: string | undefined): string {
+    if (!maDaiLy) return '';
+    return this.daiLyMap.get(maDaiLy) || maDaiLy;
   }
 }

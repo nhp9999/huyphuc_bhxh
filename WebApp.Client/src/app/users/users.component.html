@@ -70,7 +70,7 @@
         <td>{{ nguoiDung.userName }}</td>
         <td>{{ nguoiDung.hoTen }}</td>
         <td>{{ nguoiDung.mangLuoi }}</td>
-        <td>{{ nguoiDung.donViCongTac }}</td>
+        <td>{{ getDonViCongTacDisplay(nguoiDung.donViCongTac) }}</td>
         <td>{{ nguoiDung.chucDanh }}</td>
         <td>{{ nguoiDung.email }}</td>
         <td>{{ nguoiDung.soDienThoai }}</td>
@@ -173,7 +173,12 @@
             <nz-form-item>
               <nz-form-label>Chức danh</nz-form-label>
               <nz-form-control>
-                <input nz-input formControlName="chucDanh" placeholder="Nhập chức danh" />
+                <nz-select formControlName="chucDanh" style="width: 100%" nzPlaceHolder="Chọn chức danh">
+                  <nz-option *ngFor="let opt of chucDanhOptions" 
+                            [nzValue]="opt.value" 
+                            [nzLabel]="opt.label">
+                  </nz-option>
+                </nz-select>
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -226,34 +231,21 @@
 
           <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
             <nz-form-item>
+              <nz-form-label>Super Admin</nz-form-label>
+              <nz-form-control>
+                <nz-switch formControlName="isSuperAdmin"></nz-switch>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+            <nz-form-item>
               <nz-form-label>Trạng thái</nz-form-label>
               <nz-form-control>
                 <nz-select formControlName="status" style="width: 100%">
                   <nz-option [nzValue]="1" nzLabel="Hoạt động"></nz-option>
                   <nz-option [nzValue]="0" nzLabel="Không hoạt động"></nz-option>
                 </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-            <nz-form-item>
-              <nz-form-label>Vai trò</nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="roles" nzMode="multiple" style="width: 100%">
-                  <nz-option *ngFor="let role of roleOptions" 
-                            [nzValue]="role.value" 
-                            [nzLabel]="role.label"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-
-          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-            <nz-form-item>
-              <nz-form-label>Super Admin</nz-form-label>
-              <nz-form-control>
-                <nz-switch formControlName="isSuperAdmin"></nz-switch>
               </nz-form-control>
             </nz-form-item>
           </div>

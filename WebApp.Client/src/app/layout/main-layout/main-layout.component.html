@@ -16,43 +16,37 @@
       </a>
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <li nz-menu-item nzMatchRouter>
+      <li nz-menu-item nzMatchRouter routerLink="/dashboard">
         <span nz-icon nzType="dashboard"></span>
         <span>Trang chủ</span>
-        <a [routerLink]="['/dashboard']"></a>
       </li>
       <li nz-submenu nzTitle="Quản lý" nzIcon="appstore">
         <ul>
-          <li nz-menu-item nzMatchRouter>
+          <li nz-menu-item nzMatchRouter routerLink="/dot-ke-khai">
             <span nz-icon nzType="profile"></span>
             <span>Đợt kê khai</span>
-            <a [routerLink]="['/dot-ke-khai']"></a>
           </li>
-          <li nz-menu-item nzMatchRouter *ngIf="isAdmin">
+          <li nz-menu-item nzMatchRouter routerLink="/users" *ngIf="isAdmin">
             <span nz-icon nzType="user"></span>
             <span>Người dùng</span>
-            <a [routerLink]="['/users']"></a>
           </li>
         </ul>
       </li>
       <li nz-submenu nzTitle="Báo cáo" nzIcon="bar-chart">
         <ul>
-          <li nz-menu-item nzMatchRouter>
+          <li nz-menu-item nzMatchRouter routerLink="/reports/monthly">
             <span nz-icon nzType="file-text"></span>
             <span>Báo cáo tháng</span>
-            <a [routerLink]="['/reports/monthly']"></a>
           </li>
-          <li nz-menu-item nzMatchRouter>
+          <li nz-menu-item nzMatchRouter routerLink="/reports/statistics">
             <span nz-icon nzType="fund"></span>
             <span>Thống kê</span>
-            <a [routerLink]="['/reports/statistics']"></a>
           </li>
         </ul>
       </li>
-      <li nz-menu-item nzMatchRouter>
+      <li nz-menu-item nzMatchRouter routerLink="/settings">
         <span nz-icon nzType="setting"></span>
         <span>Cài đặt</span>
-        <a [routerLink]="['/settings']"></a>
       </li>
       <li nz-menu-item (click)="logout()" class="logout-item">
         <span nz-icon nzType="logout"></span>
@@ -74,8 +68,8 @@
           </span>
           <nz-divider nzType="vertical"></nz-divider>
           <a class="header-item" nz-dropdown [nzDropdownMenu]="userMenu">
-            <nz-avatar [nzSrc]="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + currentUser.username" [nzSize]="32"></nz-avatar>
-            <span class="username">{{ currentUser.ho_ten || currentUser.username }}</span>
+            <nz-avatar [nzSrc]="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + currentUser?.username" [nzSize]="32"></nz-avatar>
+            <span class="username">{{ currentUser?.hoTen || currentUser?.username }}</span>
           </a>
           <nz-dropdown-menu #userMenu="nzDropdownMenu">
             <ul nz-menu>

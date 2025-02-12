@@ -33,20 +33,25 @@ import { AuthService } from '../../services/auth.service';
 export class MainLayoutComponent implements OnInit {
   isCollapsed = false;
   isAdmin: boolean = false;
-  currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  currentUser: any;
 
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.currentUser = this.authService.getCurrentUser();
+  }
 
   ngOnInit() {
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState !== null) {
       this.isCollapsed = savedState === 'true';
     }
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    this.isAdmin = currentUser.role === 'admin';
+
+    // Kiểm tra quyền admin
+    this.isAdmin = this.currentUser?.roles?.some((role: string) => 
+      ['admin', 'super_admin'].includes(role)
+    ) || this.currentUser?.isSuperAdmin;
   }
 
   toggleCollapsed(): void {

@@ -30,33 +30,41 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
   }
 
   setSession(authResult: any): void {
     if (!authResult) return;
 
-    // Tạo object user với token
-    const user = {
-      ...authResult.user,
-      accessToken: authResult.token 
-    };
+    // Lưu token riêng
+    localStorage.setItem('token', authResult.token);
 
-    // Lưu vào localStorage
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    // Lưu thông tin user (không bao gồm token)
+    localStorage.setItem('user', JSON.stringify(authResult.user));
 
-    console.log('Saved user to localStorage:', user);
+    console.log('Saved auth data:', {
+      token: authResult.token,
+      user: authResult.user
+    });
   }
 
   isLoggedIn(): boolean {
-    const user = localStorage.getItem('currentUser');
-    if (!user) return false;
-    
+    const token = localStorage.getItem('token');
+    return !!token;
+  }
+
+  getCurrentUser(): any {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
     try {
-      const userData = JSON.parse(user);
-      return !!userData.accessToken;
+      return JSON.parse(userStr);
     } catch {
-      return false;
+      return null;
     }
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
   }
 } 
