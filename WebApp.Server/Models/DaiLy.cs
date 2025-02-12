@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace WebApp.Server.Models
 {
@@ -45,5 +46,7 @@ namespace WebApp.Server.Models
         [Column("nguoi_tao")]
         [StringLength(50)]
         public string NguoiTao { get; set; }
+
+        public virtual ICollection<DonVi> DonVis { get; set; } = new List<DonVi>();
     }
 } 

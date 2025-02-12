@@ -43,6 +43,22 @@ namespace WebApp.API.Controllers
             return daiLy;
         }
 
+        // GET: api/dai-ly/5/don-vis
+        [HttpGet("{id}/don-vis")]
+        public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVisByDaiLy(int id)
+        {
+            var daiLy = await _context.DaiLys.FindAsync(id);
+            if (daiLy == null)
+            {
+                return NotFound();
+            }
+
+            return await _context.DonVis
+                .Where(d => d.DaiLyId == id)
+                .OrderBy(d => d.TenDonVi)
+                .ToListAsync();
+        }
+
         // POST: api/dai-ly
         [HttpPost]
         public async Task<ActionResult<DaiLy>> PostDaiLy(DaiLy daiLy)

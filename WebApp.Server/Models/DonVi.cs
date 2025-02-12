@@ -46,5 +46,11 @@ namespace WebApp.API.Models
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("dai_ly_id")]
+        public int? DaiLyId { get; set; }
+
+        [ForeignKey("DaiLyId")]
+        public virtual DaiLy? DaiLy { get; set; }
     }
 }

@@ -22,6 +22,7 @@ namespace WebApp.API.Controllers
             public int? DmKhoiKcbId { get; set; }
             public int Type { get; set; }
             public bool TrangThai { get; set; }
+            public int? DaiLyId { get; set; }
         }
 
         public DonViController(ApplicationDbContext context, ILogger<DonViController> logger)
@@ -33,7 +34,10 @@ namespace WebApp.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVis()
         {
-            return await _context.DonVis.OrderBy(x => x.TenDonVi).ToListAsync();
+            return await _context.DonVis
+                .Include(d => d.DaiLy)
+                .OrderBy(x => x.TenDonVi)
+                .ToListAsync();
         }
 
         [HttpGet("{id}")]
@@ -61,7 +65,8 @@ namespace WebApp.API.Controllers
                 IsBHYT = donViDto.IsBHYT,
                 DmKhoiKcbId = donViDto.DmKhoiKcbId,
                 Type = donViDto.Type,
-                TrangThai = donViDto.TrangThai
+                TrangThai = donViDto.TrangThai,
+                DaiLyId = donViDto.DaiLyId
             };
 
             _context.DonVis.Add(donVi);
@@ -87,6 +92,7 @@ namespace WebApp.API.Controllers
             donVi.DmKhoiKcbId = donViDto.DmKhoiKcbId;
             donVi.Type = donViDto.Type;
             donVi.TrangThai = donViDto.TrangThai;
+            donVi.DaiLyId = donViDto.DaiLyId;
             donVi.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
