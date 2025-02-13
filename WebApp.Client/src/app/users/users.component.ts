@@ -602,7 +602,8 @@ export class UsersComponent implements OnInit {
       tenDonVi: ['', [Validators.required]],
       isBHXHTN: [false],
       isBHYT: [false],
-      type: [null, [Validators.required]]
+      type: [null, [Validators.required]],
+      daiLyId: [null, [Validators.required]]
     });
   }
 
@@ -636,7 +637,8 @@ export class UsersComponent implements OnInit {
       tenDonVi: donVi.tenDonVi,
       isBHXHTN: donVi.isBHXHTN,
       isBHYT: donVi.isBHYT,
-      type: donVi.type
+      type: donVi.type,
+      daiLyId: donVi.daiLyId
     });
     this.isCreateDonViVisible = true;
   }

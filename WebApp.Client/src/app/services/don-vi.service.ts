@@ -12,11 +12,13 @@ export interface DonVi {
   isBHYT: boolean;
   dmKhoiKcbId?: number;
   type: number;
+  trangThai: boolean;
   createdAt: string;
   updatedAt: string;
+  daiLyId: number;
+  daiLy?: any;
   loading?: boolean;
   isActive?: boolean;
-  trangThai?: boolean;
 }
 
 @Injectable({

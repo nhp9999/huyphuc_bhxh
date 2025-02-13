@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WebApp.Server.Models;
 
 namespace WebApp.API.Models
 {
@@ -48,7 +49,8 @@ namespace WebApp.API.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         [Column("dai_ly_id")]
-        public int? DaiLyId { get; set; }
+        [Required]
+        public int DaiLyId { get; set; }
 
         [ForeignKey("DaiLyId")]
         public virtual DaiLy? DaiLy { get; set; }

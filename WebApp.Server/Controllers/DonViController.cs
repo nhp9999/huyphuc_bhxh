@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.API.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApp.API.Controllers
 {
@@ -14,15 +15,23 @@ namespace WebApp.API.Controllers
 
         public class DonViDTO
         {
-            public string MaCoQuanBHXH { get; set; }
-            public string MaSoBHXH { get; set; }
-            public string TenDonVi { get; set; }
+            [Required]
+            public string MaCoQuanBHXH { get; set; } = string.Empty;
+            
+            [Required]
+            public string MaSoBHXH { get; set; } = string.Empty;
+            
+            [Required]
+            public string TenDonVi { get; set; } = string.Empty;
+            
             public bool IsBHXHTN { get; set; }
             public bool IsBHYT { get; set; }
             public int? DmKhoiKcbId { get; set; }
             public int Type { get; set; }
             public bool TrangThai { get; set; }
-            public int? DaiLyId { get; set; }
+            
+            [Required]
+            public int DaiLyId { get; set; }
         }
 
         public DonViController(ApplicationDbContext context, ILogger<DonViController> logger)
@@ -34,10 +43,38 @@ namespace WebApp.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVis()
         {
-            return await _context.DonVis
+            var donVis = await _context.DonVis
                 .Include(d => d.DaiLy)
                 .OrderBy(x => x.TenDonVi)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.MaCoQuanBHXH,
+                    d.MaSoBHXH,
+                    d.TenDonVi,
+                    d.IsBHXHTN,
+                    d.IsBHYT,
+                    d.DmKhoiKcbId,
+                    d.Type,
+                    d.TrangThai,
+                    d.CreatedAt,
+                    d.UpdatedAt,
+                    d.DaiLyId,
+                    DaiLy = new
+                    {
+                        d.DaiLy.Id,
+                        d.DaiLy.Ma,
+                        d.DaiLy.Ten,
+                        d.DaiLy.DiaChi,
+                        d.DaiLy.SoDienThoai,
+                        d.DaiLy.Email,
+                        d.DaiLy.NguoiDaiDien,
+                        d.DaiLy.TrangThai
+                    }
+                })
                 .ToListAsync();
+
+            return Ok(donVis);
         }
 
         [HttpGet("{id}")]

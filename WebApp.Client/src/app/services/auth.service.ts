@@ -5,7 +5,11 @@ import { environment } from '../../environments/environment';
 
 interface LoginResponse {
   token: string;
-  user: any;
+  user: {
+    id: number;
+    username: string;
+    // ... các thông tin user khác
+  }
 }
 
 interface LoginRequest {
@@ -37,15 +41,19 @@ export class AuthService {
   setSession(authResult: any): void {
     if (!authResult) return;
 
-    // Lưu token riêng
+    // Lưu token vào localStorage
     localStorage.setItem('token', authResult.token);
-
-    // Lưu thông tin user (không bao gồm token)
-    localStorage.setItem('user', JSON.stringify(authResult.user));
+    
+    // Lưu thông tin user riêng
+    const userData = {
+      ...authResult.user,
+      token: authResult.token // Thêm token vào object user
+    };
+    localStorage.setItem('user', JSON.stringify(userData));
 
     console.log('Saved auth data:', {
       token: authResult.token,
-      user: authResult.user
+      user: userData
     });
   }
 

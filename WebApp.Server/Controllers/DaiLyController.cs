@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.Server.Models;
+using WebApp.API.Models;
 
 namespace WebApp.API.Controllers
 {

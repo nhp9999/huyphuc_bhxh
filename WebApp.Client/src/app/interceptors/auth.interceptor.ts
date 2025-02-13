@@ -10,15 +10,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Xử lý token cho tất cả các request khác
   try {
-    const currentUser = localStorage.getItem('currentUser');
+    const user = localStorage.getItem('user');
 
-    if (currentUser) {
-      const user = JSON.parse(currentUser);
+    if (user) {
+      const userData = JSON.parse(user);
       
-      if (user && user.accessToken) {
+      if (userData && userData.token) {
+        console.log('Token being sent:', userData.token);
         req = req.clone({
           setHeaders: {
-            Authorization: `Bearer ${user.accessToken}`
+            Authorization: `Bearer ${userData.token}`
           }
         });
       }
@@ -30,7 +31,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        // Có thể thêm logic refresh token hoặc logout ở đây
+        console.log('401 error occurred:', error);
+        // Clear localStorage và chuyển về trang login
+        localStorage.clear();
+        window.location.href = '/login';
       }
       return throwError(() => error);
     })

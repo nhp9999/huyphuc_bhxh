@@ -60,6 +60,10 @@ export class LoginComponent {
             if (this.rememberMe) {
               localStorage.setItem('remember_username', this.loginData.username);
             }
+            localStorage.setItem('user', JSON.stringify({
+              ...response.user,
+              token: response.token
+            }));
             this.authService.setSession(response);
             this.isLoading = false;
             this.router.navigate(['/dashboard']);
@@ -81,6 +85,10 @@ export class LoginComponent {
             if (this.rememberMe) {
               localStorage.setItem('remember_username', this.loginData.username);
             }
+            localStorage.setItem('user', JSON.stringify({
+              ...response.user,
+              token: response.token
+            }));
             this.authService.setSession(response);
             this.isLoading = false;
             this.router.navigate(['/dashboard']);
