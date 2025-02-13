@@ -5,12 +5,14 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using WebApp.API.Models;
+using WebApp.Server.Models;
 
 namespace WebApp.API.Models
 {
     /// <summary>
     /// Model quản lý đợt kê khai
     /// </summary>
+    [Table("dot_ke_khai")]
     public class DotKeKhai
     {
         /// <summary>
@@ -108,6 +110,13 @@ namespace WebApp.API.Models
         // Navigation property cho KeKhaiBHYT
         [JsonIgnore]
         public virtual ICollection<KeKhaiBHYT> KeKhaiBHYTs { get; set; }
+
+        [Column("dai_ly_id")]
+        [Required]
+        public int dai_ly_id { get; set; }
+
+        [ForeignKey("dai_ly_id")]
+        public virtual DaiLy? DaiLy { get; set; }
 
         public DotKeKhai()
         {

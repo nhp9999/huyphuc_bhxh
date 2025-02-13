@@ -9,6 +9,7 @@ using WebApp.API.Data;
 using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApp.API.Controllers
 {
@@ -120,57 +121,62 @@ namespace WebApp.API.Controllers
             }
         }
 
+        public class DotKeKhaiDTO
+        {
+            [Required]
+            public int so_dot { get; set; }
+
+            [Required]
+            public int thang { get; set; }
+
+            [Required]
+            public int nam { get; set; }
+
+            [Required]
+            public int don_vi_id { get; set; }
+
+            [Required]
+            public int dai_ly_id { get; set; }
+
+            public string? ghi_chu { get; set; }
+        }
+
         [HttpPost]
-        public async Task<ActionResult<DotKeKhai>> CreateDotKeKhai(DotKeKhai dotKeKhai)
+        public async Task<ActionResult<DotKeKhai>> CreateDotKeKhai(DotKeKhaiDTO dotKeKhaiDto)
         {
             try
             {
-                // Log dữ liệu nhận được
-                var requestData = JsonSerializer.Serialize(dotKeKhai, new JsonSerializerOptions 
-                { 
-                    WriteIndented = true 
-                });
-                _logger.LogInformation($"Received data:\n{requestData}");
+                // Kiểm tra đại lý tồn tại
+                var daiLy = await _context.DaiLys.FindAsync(dotKeKhaiDto.dai_ly_id);
+                if (daiLy == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy đại lý" });
+                }
 
-                // Kiểm tra đơn vị tồn tại trước khi validate
-                var donVi = await _context.DonVis.FindAsync(dotKeKhai.don_vi_id);
+                // Kiểm tra đơn vị tồn tại
+                var donVi = await _context.DonVis.FindAsync(dotKeKhaiDto.don_vi_id);
                 if (donVi == null)
                 {
-                    ModelState.AddModelError("don_vi_id", "Không tìm thấy đơn vị");
-                    return BadRequest(new { errors = new[] { "Không tìm thấy đơn vị" } });
+                    return BadRequest(new { message = "Không tìm thấy đơn vị" });
                 }
 
-                // Tự động xác định dịch vụ từ đơn vị
-                dotKeKhai.dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN";
-
-                // Gán DonVi vào dotKeKhai
-                dotKeKhai.DonVi = null; // Tránh lỗi circular reference
-
-                // Kiểm tra dữ liệu đầu vào
-                if (!ModelState.IsValid)
+                var dotKeKhai = new DotKeKhai
                 {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-                    _logger.LogWarning($"Validation errors:\n{string.Join("\n", errors)}");
-                    return BadRequest(new { errors = errors });
-                }
+                    so_dot = dotKeKhaiDto.so_dot,
+                    thang = dotKeKhaiDto.thang,
+                    nam = dotKeKhaiDto.nam,
+                    don_vi_id = dotKeKhaiDto.don_vi_id,
+                    dai_ly_id = dotKeKhaiDto.dai_ly_id,
+                    dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN",
+                    ghi_chu = dotKeKhaiDto.ghi_chu,
+                    trang_thai = "chua_gui",
+                    nguoi_tao = User.Identity?.Name ?? "system",
+                    ngay_tao = DateTime.UtcNow
+                };
 
                 // Tự động tạo tên đợt
                 dotKeKhai.GenerateTenDot();
-                if (string.IsNullOrEmpty(dotKeKhai.ten_dot))
-                {
-                    return BadRequest(new { message = "Không thể tạo tên đợt do dữ liệu không hợp lệ" });
-                }
 
-                // Sử dụng giá trị nguoi_tao từ request
-                if (string.IsNullOrEmpty(dotKeKhai.nguoi_tao))
-                {
-                    return BadRequest(new { message = "Người tạo không được để trống" });
-                }
-                dotKeKhai.ngay_tao = DateTime.UtcNow;
-                
                 _context.DotKeKhais.Add(dotKeKhai);
                 await _context.SaveChangesAsync();
 

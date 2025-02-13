@@ -99,25 +99,27 @@ namespace WebApp.API.Data
             modelBuilder.Entity<DotKeKhai>(entity =>
             {
                 entity.ToTable("dot_ke_khai");
+                
+                entity.HasKey(e => e.id);
 
-                entity.Property(e => e.id).HasColumnName("id");
-                entity.Property(e => e.ten_dot).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.so_dot).IsRequired();
-                entity.Property(e => e.thang).IsRequired();
-                entity.Property(e => e.nam).IsRequired();
-                entity.Property(e => e.dich_vu).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.ghi_chu).HasMaxLength(500);
-                entity.Property(e => e.trang_thai).HasDefaultValue("chua_gui");
-                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.don_vi_id).HasColumnName("don_vi_id");
+                // Cấu hình quan hệ với DaiLy
+                entity.HasOne(d => d.DaiLy)
+                    .WithMany()
+                    .HasForeignKey(d => d.dai_ly_id)
+                    .OnDelete(DeleteBehavior.Restrict);
 
+                // Cấu hình quan hệ với DonVi  
                 entity.HasOne(d => d.DonVi)
                     .WithMany()
                     .HasForeignKey(d => d.don_vi_id)
-                    .HasConstraintName("FK_DotKeKhai_DonVi")
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired(false);
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Các cấu hình khác
+                entity.Property(e => e.ten_dot).HasMaxLength(200);
+                entity.Property(e => e.dich_vu).HasMaxLength(10);
+                entity.Property(e => e.ghi_chu).HasMaxLength(500);
+                entity.Property(e => e.trang_thai).HasDefaultValue("chua_gui");
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             modelBuilder.Entity<KeKhaiBHYT>(entity =>
