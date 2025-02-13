@@ -569,12 +569,22 @@ export class UsersComponent implements OnInit {
       nzOkType: 'primary',
       nzOkDanger: true,
       nzOnOk: () => {
+        this.isLoading = true;
         this.userService.deleteDaiLy(daiLy.id).subscribe({
-          next: () => {
+          next: (response) => {
             this.message.success('Xóa đại lý thành công');
             this.loadDaiLys();
+            this.isLoading = false;
           },
-          error: () => this.message.error('Có lỗi xảy ra khi xóa đại lý')
+          error: (error) => {
+            this.isLoading = false;
+            if (error.status === 400) {
+              this.message.error(error.error.message || 'Không thể xóa đại lý này');
+            } else {
+              this.message.error('Có lỗi xảy ra khi xóa đại lý');
+            }
+            console.error('Lỗi khi xóa đại lý:', error);
+          }
         });
       }
     });

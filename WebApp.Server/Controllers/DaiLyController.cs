@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.Server.Models;
 using WebApp.API.Models;
+using Microsoft.Extensions.Logging;
 
 namespace WebApp.API.Controllers
 {
@@ -15,10 +16,12 @@ namespace WebApp.API.Controllers
     public class DaiLyController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<DaiLyController> _logger;
 
-        public DaiLyController(ApplicationDbContext context)
+        public DaiLyController(ApplicationDbContext context, ILogger<DaiLyController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/dai-ly
@@ -104,16 +107,39 @@ namespace WebApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDaiLy(int id)
         {
-            var daiLy = await _context.DaiLys.FindAsync(id);
-            if (daiLy == null)
+            try 
             {
-                return NotFound();
+                var daiLy = await _context.DaiLys
+                    .Include(d => d.DonVis) // Include đơn vị liên quan
+                    .FirstOrDefaultAsync(d => d.Id == id);
+                
+                if (daiLy == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy đại lý có ID: {id}" });
+                }
+
+                // Kiểm tra xem đại lý có đơn vị nào không
+                if (daiLy.DonVis != null && daiLy.DonVis.Any())
+                {
+                    return BadRequest(new { 
+                        message = "Không thể xóa đại lý này vì đang có đơn vị liên kết",
+                        donViCount = daiLy.DonVis.Count
+                    });
+                }
+
+                _context.DaiLys.Remove(daiLy);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Xóa đại lý thành công" });
             }
-
-            _context.DaiLys.Remove(daiLy);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting dai ly: {ex.Message}");
+                return StatusCode(500, new { 
+                    message = "Có lỗi xảy ra khi xóa đại lý",
+                    error = ex.Message 
+                });
+            }
         }
 
         private bool DaiLyExists(int id)

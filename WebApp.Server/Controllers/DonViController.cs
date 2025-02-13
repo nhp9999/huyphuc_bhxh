@@ -151,5 +151,42 @@ namespace WebApp.API.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("by-dai-ly/{daiLyId}")]
+        public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVisByDaiLy(int daiLyId)
+        {
+            try
+            {
+                var donVis = await _context.DonVis
+                    .Where(d => d.DaiLyId == daiLyId && d.TrangThai)
+                    .OrderBy(d => d.TenDonVi)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.MaCoQuanBHXH,
+                        d.MaSoBHXH, 
+                        d.TenDonVi,
+                        d.IsBHXHTN,
+                        d.IsBHYT,
+                        d.DmKhoiKcbId,
+                        d.Type,
+                        d.TrangThai,
+                        d.DaiLyId
+                    })
+                    .ToListAsync();
+
+                if (!donVis.Any())
+                {
+                    return Ok(new List<DonVi>()); // Trả về mảng rỗng nếu không có dữ liệu
+                }
+
+                return Ok(donVis);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting don vi list by dai ly: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách đơn vị", error = ex.Message });
+            }
+        }
     }
 } 

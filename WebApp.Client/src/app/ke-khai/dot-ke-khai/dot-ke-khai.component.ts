@@ -264,7 +264,6 @@ export class DotKeKhaiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
-    this.loadDonVis();
     this.loadDaiLys();
     this.updateTenDot();
     
@@ -283,6 +282,13 @@ export class DotKeKhaiComponent implements OnInit {
     this.dotKeKhaiService.dotKeKhais$.subscribe(data => {
       this.dotKeKhais = this.sortDotKeKhais(data);
       this.filterData();
+    });
+
+    // Subscribe để theo dõi thay đổi của dai_ly_id
+    this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
+      // Reset don_vi_id khi thay đổi đại lý
+      this.form.patchValue({ don_vi_id: null }, { emitEvent: false });
+      this.loadDonVisByDaiLy(daiLyId);
     });
   }
 
@@ -319,17 +325,6 @@ export class DotKeKhaiComponent implements OnInit {
         console.error('Lỗi khi tải dữ liệu:', error);
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
         this.loading = false;
-      }
-    });
-  }
-
-  loadDonVis(): void {
-    this.donViService.getDonVis().subscribe({
-      next: (data) => {
-        this.donVis = data;
-      },
-      error: () => {
-        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
       }
     });
   }
@@ -985,5 +980,35 @@ export class DotKeKhaiComponent implements OnInit {
         });
       }
     });
+  }
+
+  // Thêm hàm loadDonVisByDaiLy
+  loadDonVisByDaiLy(daiLyId: number): void {
+    if (!daiLyId) {
+      this.donVis = [];
+      return;
+    }
+    
+    this.loading = true;
+    this.donViService.getDonVisByDaiLy(daiLyId).subscribe({
+      next: (data) => {
+        this.donVis = data;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải danh sách đơn vị:', error);
+        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
+        this.loading = false;
+      }
+    });
+  }
+
+  // Sửa lại hàm loadDonVis
+  loadDonVis(): void {
+    // Nếu có đại lý được chọn, load đơn vị theo đại lý đó
+    const daiLyId = this.form.get('dai_ly_id')?.value;
+    if (daiLyId) {
+      this.loadDonVisByDaiLy(daiLyId);
+    }
   }
 } 
