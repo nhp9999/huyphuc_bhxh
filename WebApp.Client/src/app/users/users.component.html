@@ -375,7 +375,6 @@
             <th>Tên đơn vị</th>
             <th>BHXH TN</th>
             <th>BHYT</th>
-            <th>Loại</th>
             <th>Trạng thái</th>
             <th>Thao tác</th>
           </tr>
@@ -396,7 +395,6 @@
                 {{ data.isBHYT ? 'Có' : 'Không' }}
               </nz-tag>
             </td>
-            <td>{{ getLoaiDonVi(data.type) }}</td>
             <td>
               <nz-switch
                 [(ngModel)]="data.trangThai"
@@ -458,17 +456,6 @@
               <nz-form-label [nzSpan]="6">BHYT</nz-form-label>
               <nz-form-control [nzSpan]="18">
                 <nz-switch formControlName="isBHYT"></nz-switch>
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Loại đơn vị</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn loại đơn vị">
-                <nz-select formControlName="type" nzPlaceHolder="Chọn loại đơn vị">
-                  <nz-option [nzValue]="1" nzLabel="Loại 1"></nz-option>
-                  <nz-option [nzValue]="2" nzLabel="Loại 2"></nz-option>
-                  <nz-option [nzValue]="3" nzLabel="Loại 3"></nz-option>
-                </nz-select>
               </nz-form-control>
             </nz-form-item>
 

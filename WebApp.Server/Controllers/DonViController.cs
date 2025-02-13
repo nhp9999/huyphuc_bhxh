@@ -27,7 +27,6 @@ namespace WebApp.API.Controllers
             public bool IsBHXHTN { get; set; }
             public bool IsBHYT { get; set; }
             public int? DmKhoiKcbId { get; set; }
-            public int Type { get; set; }
             public bool TrangThai { get; set; }
             
             [Required]
@@ -101,7 +100,6 @@ namespace WebApp.API.Controllers
                 IsBHXHTN = donViDto.IsBHXHTN,
                 IsBHYT = donViDto.IsBHYT,
                 DmKhoiKcbId = donViDto.DmKhoiKcbId,
-                Type = donViDto.Type,
                 TrangThai = donViDto.TrangThai,
                 DaiLyId = donViDto.DaiLyId
             };
@@ -113,28 +111,51 @@ namespace WebApp.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateDonVi(int id, DonViDTO donViDto)
+        public async Task<IActionResult> UpdateDonVi(int id, [FromBody] DonViDTO donViDto)
         {
-            var donVi = await _context.DonVis.FindAsync(id);
-            if (donVi == null)
+            try
             {
-                return NotFound();
+                var donVi = await _context.DonVis.FindAsync(id);
+                if (donVi == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy đơn vị có ID: {id}" });
+                }
+
+                // Cập nhật các trường
+                donVi.MaCoQuanBHXH = donViDto.MaCoQuanBHXH;
+                donVi.MaSoBHXH = donViDto.MaSoBHXH;
+                donVi.TenDonVi = donViDto.TenDonVi;
+                donVi.IsBHXHTN = donViDto.IsBHXHTN;
+                donVi.IsBHYT = donViDto.IsBHYT;
+                donVi.DmKhoiKcbId = donViDto.DmKhoiKcbId;
+                donVi.TrangThai = donViDto.TrangThai;
+                donVi.DaiLyId = donViDto.DaiLyId;
+                donVi.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { 
+                    message = "Cập nhật đơn vị thành công",
+                    data = new {
+                        donVi.Id,
+                        donVi.MaCoQuanBHXH,
+                        donVi.MaSoBHXH,
+                        donVi.TenDonVi,
+                        donVi.IsBHXHTN,
+                        donVi.IsBHYT,
+                        donVi.DmKhoiKcbId,
+                        donVi.TrangThai,
+                        donVi.DaiLyId,
+                        donVi.CreatedAt,
+                        donVi.UpdatedAt
+                    }
+                });
             }
-
-            donVi.MaCoQuanBHXH = donViDto.MaCoQuanBHXH;
-            donVi.MaSoBHXH = donViDto.MaSoBHXH;
-            donVi.TenDonVi = donViDto.TenDonVi;
-            donVi.IsBHXHTN = donViDto.IsBHXHTN;
-            donVi.IsBHYT = donViDto.IsBHYT;
-            donVi.DmKhoiKcbId = donViDto.DmKhoiKcbId;
-            donVi.Type = donViDto.Type;
-            donVi.TrangThai = donViDto.TrangThai;
-            donVi.DaiLyId = donViDto.DaiLyId;
-            donVi.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating don vi: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi cập nhật đơn vị", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]

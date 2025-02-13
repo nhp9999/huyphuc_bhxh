@@ -612,7 +612,6 @@ export class UsersComponent implements OnInit {
       tenDonVi: ['', [Validators.required]],
       isBHXHTN: [false],
       isBHYT: [false],
-      type: [null, [Validators.required]],
       daiLyId: [null, [Validators.required]]
     });
   }
@@ -647,7 +646,6 @@ export class UsersComponent implements OnInit {
       tenDonVi: donVi.tenDonVi,
       isBHXHTN: donVi.isBHXHTN,
       isBHYT: donVi.isBHYT,
-      type: donVi.type,
       daiLyId: donVi.daiLyId
     });
     this.isCreateDonViVisible = true;
@@ -713,24 +711,26 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  getLoaiDonVi(type: number): string {
-    const loaiDonViMap: Record<number, string> = {
-      1: 'Loại 1',
-      2: 'Loại 2',
-      3: 'Loại 3'
-    };
-    return loaiDonViMap[type] || 'Không xác định';
-  }
-
   onDonViStatusChange(donVi: DonVi): void {
     donVi.loading = true;
-    this.donViService.updateDonVi(donVi.id, { trangThai: donVi.trangThai }).subscribe({
+    const updateData = {
+      maCoQuanBHXH: donVi.maCoQuanBHXH,
+      maSoBHXH: donVi.maSoBHXH,
+      tenDonVi: donVi.tenDonVi,
+      isBHXHTN: donVi.isBHXHTN,
+      isBHYT: donVi.isBHYT,
+      dmKhoiKcbId: donVi.dmKhoiKcbId,
+      trangThai: donVi.trangThai,
+      daiLyId: donVi.daiLyId
+    };
+
+    this.donViService.updateDonVi(donVi.id, updateData).subscribe({
       next: () => {
         this.message.success('Cập nhật trạng thái thành công');
         donVi.loading = false;
       },
-      error: () => {
-        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+      error: (error) => {
+        this.message.error(error.error?.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
         donVi.trangThai = !donVi.trangThai;
         donVi.loading = false;
       }
