@@ -62,7 +62,7 @@ import { UploadBillModalComponent } from '../upload-bill-modal/upload-bill-modal
             </div>
             <div class="info-group">
               <div class="info-label">Nội dung:</div>
-              <div class="info-value">{{ dotKeKhai.ten_dot }}</div>
+              <div class="info-value">{{ getTransferContent() }}</div>
             </div>
           </div>
         </div>
@@ -96,6 +96,7 @@ export class ThanhToanModalComponent implements OnInit {
   isConfirming = false;
   qrDataUrl: string = '';
   environment = environment;
+  currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   constructor(
     private modal: NzModalRef,
@@ -118,6 +119,12 @@ export class ThanhToanModalComponent implements OnInit {
       return;
     }
 
+    if (!this.dotKeKhai.DonVi?.maSoBHXH) {
+      this.message.error('Không có thông tin mã số BHXH của đơn vị');
+      this.modal.close();
+      return;
+    }
+
     this.generateQRCode();
   }
 
@@ -133,7 +140,7 @@ export class ThanhToanModalComponent implements OnInit {
       accountName: environment.vietQR.accountName,
       acqId: environment.vietQR.acqId,
       amount: this.dotKeKhai.tong_so_tien,
-      addInfo: this.dotKeKhai.ten_dot,
+      addInfo: this.getTransferContent(),
       format: 'base64',
       template: 'compact'
     };
@@ -196,5 +203,14 @@ export class ThanhToanModalComponent implements OnInit {
         this.modal.close(true);
       }
     });
+  }
+
+  getTransferContent(): string {
+    if (!this.dotKeKhai.DonVi?.maSoBHXH) {
+      return 'Chưa có mã số BHXH của đơn vị';
+    }
+    const maBHXH = this.dotKeKhai.DonVi.maSoBHXH;
+    const username = this.currentUser.username || '';
+    return `BHXH 103 00 ${maBHXH} 08907 DONG BHXH CTY HUY PHUC ${username}`;
   }
 } 

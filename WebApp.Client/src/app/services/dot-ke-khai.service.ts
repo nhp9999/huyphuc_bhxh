@@ -82,7 +82,7 @@ export class DotKeKhaiService {
   constructor(private http: HttpClient) { }
 
   getDotKeKhais(): Observable<DotKeKhai[]> {
-    return this.http.get<DotKeKhai[]>(`${this.apiUrl}?includeTongSoTien=true&includeTongSoThe=true`).pipe(
+    return this.http.get<DotKeKhai[]>(`${this.apiUrl}?includeTongSoTien=true&includeTongSoThe=true&includeDonVi=true`).pipe(
       tap(data => {
         console.log('Response from API:', {
           total: data.length,
@@ -90,7 +90,8 @@ export class DotKeKhaiService {
             id: d.id,
             ten_dot: d.ten_dot,
             tong_so_tien: d.tong_so_tien,
-            tong_so_the: d.tong_so_the
+            tong_so_the: d.tong_so_the,
+            don_vi: d.DonVi
           }))
         });
         this.dotKeKhaisSubject.next(data);
@@ -99,7 +100,7 @@ export class DotKeKhaiService {
   }
 
   getDotKeKhai(id: number): Observable<DotKeKhai> {
-    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}?includeTongSoTien=true&includeTongSoThe=true`);
+    return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}?includeTongSoTien=true&includeTongSoThe=true&includeDonVi=true`);
   }
 
   createDotKeKhai(dotKeKhai: CreateDotKeKhai): Observable<DotKeKhai> {

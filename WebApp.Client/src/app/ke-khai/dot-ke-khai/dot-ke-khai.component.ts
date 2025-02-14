@@ -136,10 +136,6 @@ export class DotKeKhaiComponent implements OnInit {
     'tu_choi'
   ];
 
-  // Thêm các thuộc tính
-  isCreateDaiLyVisible = false;
-  daiLyForm!: FormGroup;
-
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
     private message: NzMessageService,
@@ -185,62 +181,6 @@ export class DotKeKhaiComponent implements OnInit {
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('thang')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('nam')?.valueChanges.subscribe(() => this.updateTenDot());
-
-    // Khởi tạo form đại lý ngay trong constructor
-    this.initDaiLyForm();
-  }
-
-  initDaiLyForm(): void {
-    this.daiLyForm = this.fb.group({
-      ma: ['', [Validators.required]],
-      ten: ['', [Validators.required]],
-      diaChi: [''],
-      soDienThoai: [''],
-      email: ['', [Validators.email]],
-      nguoiDaiDien: [''],
-      trangThai: [true],
-      nguoiTao: [this.currentUser.username]
-    });
-  }
-
-  showCreateDaiLyModal(): void {
-    this.isCreateDaiLyVisible = true;
-    this.initDaiLyForm();
-  }
-
-  handleCreateDaiLyCancel(): void {
-    this.isCreateDaiLyVisible = false;
-    this.daiLyForm.reset();
-  }
-
-  handleCreateDaiLyOk(): void {
-    if (this.daiLyForm.valid) {
-      const daiLyData = this.daiLyForm.value;
-      this.userService.createDaiLy(daiLyData).subscribe({
-        next: (response) => {
-          this.message.success('Thêm mới đại lý thành công');
-          this.isCreateDaiLyVisible = false;
-          this.loadDaiLys(); // Tải lại danh sách đại lý
-          // Tự động chọn đại lý vừa tạo
-          this.form.patchValue({
-            dai_ly_id: response.id
-          });
-        },
-        error: (error) => {
-          if (error.error?.message) {
-            this.message.error(error.error.message);
-          } else {
-            this.message.error('Có lỗi xảy ra khi tạo đại lý');
-          }
-        }
-      });
-    } else {
-      Object.values(this.daiLyForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-        }
-      });
-    }
   }
 
   updateTenDot(): void {
@@ -267,14 +207,17 @@ export class DotKeKhaiComponent implements OnInit {
     this.loadDaiLys();
     this.updateTenDot();
     
-    // Combine các valueChanges
-    combineLatest([
-      this.form.get('don_vi_id')!.valueChanges,
-      this.form.get('thang')!.valueChanges,
-      this.form.get('nam')!.valueChanges
-    ]).pipe(
-      debounceTime(300) // Đợi 300ms sau thay đổi cuối
-    ).subscribe(() => {
+    // Theo dõi thay đổi của don_vi_id
+    this.form.get('don_vi_id')?.valueChanges.subscribe(() => {
+      this.updateSoDot();
+    });
+
+    // Theo dõi thay đổi của thang và nam
+    this.form.get('thang')?.valueChanges.subscribe(() => {
+      this.updateSoDot();
+    });
+
+    this.form.get('nam')?.valueChanges.subscribe(() => {
       this.updateSoDot();
     });
 
@@ -298,16 +241,23 @@ export class DotKeKhaiComponent implements OnInit {
     const nam = this.form.get('nam')?.value;
 
     if (donViId && thang && nam) {
-      this.dotKeKhaiService.getNextSoDot(donViId, thang, nam).subscribe({
-        next: (nextSoDot) => {
-          this.form.patchValue({ so_dot: nextSoDot }, { emitEvent: false });
-          this.updateTenDot();
-        },
-        error: (error) => {
-          console.error('Lỗi khi lấy số đợt:', error);
-          this.message.error('Lỗi khi lấy số đợt tiếp theo');
-        }
-      });
+      // Tìm số đợt lớn nhất cho đơn vị trong tháng/năm
+      const existingDots = this.dotKeKhais.filter(dot => 
+        dot.don_vi_id === donViId &&
+        dot.thang === thang &&
+        dot.nam === nam
+      );
+
+      let nextSoDot = 1;
+      if (existingDots.length > 0) {
+        const maxSoDot = Math.max(...existingDots.map(dot => dot.so_dot));
+        nextSoDot = maxSoDot + 1;
+      }
+
+      this.form.patchValue({ 
+        so_dot: nextSoDot,
+        ten_dot: `Đợt ${nextSoDot} Tháng ${thang} năm ${nam}`
+      }, { emitEvent: false });
     }
   }
 
@@ -317,6 +267,14 @@ export class DotKeKhaiComponent implements OnInit {
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
         console.log('Danh sách đợt kê khai:', data); // Log để debug
+        // Kiểm tra thông tin đơn vị
+        data.forEach(dot => {
+          if (!dot.DonVi) {
+            console.warn(`Đợt kê khai ${dot.ten_dot} không có thông tin đơn vị`);
+          } else if (!dot.DonVi.maSoBHXH) {
+            console.warn(`Đơn vị của đợt kê khai ${dot.ten_dot} chưa có mã số BHXH`);
+          }
+        });
         this.dotKeKhais = this.sortDotKeKhais(data);
         this.filterData();
         this.loading = false;
@@ -330,6 +288,17 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   loadDaiLys(): void {
+    // Kiểm tra nếu đã có dữ liệu đại lý thì không cần load lại
+    if (this.daiLys.length > 0) {
+      // Nếu có đại lý, tự động set vào form
+      if (this.daiLys.length === 1) {
+        this.form.patchValue({
+          dai_ly_id: this.daiLys[0].id
+        });
+      }
+      return;
+    }
+
     // Kiểm tra nếu có mã đại lý trong thông tin user
     if (this.currentUser.donViCongTac) {
       this.userService.getDaiLys().subscribe({
@@ -338,7 +307,7 @@ export class DotKeKhaiComponent implements OnInit {
           this.daiLys = data.filter(daiLy => daiLy.ma === this.currentUser.donViCongTac);
           
           // Nếu có đại lý, tự động set vào form
-          if (this.daiLys.length > 0) {
+          if (this.daiLys.length === 1) {
             this.form.patchValue({
               dai_ly_id: this.daiLys[0].id
             });
@@ -400,7 +369,7 @@ export class DotKeKhaiComponent implements OnInit {
         don_vi_id: data.don_vi_id,
         ma_ho_so: data.ma_ho_so,
         dai_ly_id: data.dai_ly_id
-      });
+      }, { emitEvent: false });
     } else {
       this.form.reset({
         ten_dot: '',
@@ -412,13 +381,16 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: this.currentUser.username || '',
         don_vi_id: null,
         ma_ho_so: '',
-        dai_ly_id: null
-      });
-      
-      // Load đại lý của tài khoản hiện tại
-      this.loadDaiLys();
+        dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
+      }, { emitEvent: false });
     }
     this.isVisible = true;
+
+    // Nếu có đại lý được chọn, load danh sách đơn vị
+    const daiLyId = this.form.get('dai_ly_id')?.value;
+    if (daiLyId) {
+      this.loadDonVisByDaiLy(daiLyId);
+    }
   }
 
   handleCancel(): void {
@@ -426,6 +398,9 @@ export class DotKeKhaiComponent implements OnInit {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const nextSoDot = this.getNextSoDot(currentYear);
+    
+    // Tạm thời lưu lại giá trị đại lý hiện tại
+    const currentDaiLyId = this.form.get('dai_ly_id')?.value;
     
     this.form.reset({ 
       so_dot: nextSoDot,
@@ -436,69 +411,101 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
       ma_ho_so: '',
-    });
+      // Giữ nguyên giá trị đại lý nếu chỉ có 1 đại lý
+      dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
+    }, { emitEvent: false }); // Thêm { emitEvent: false } để tránh trigger valueChanges
+
     this.updateTenDot();
   }
 
   handleOk(): void {
     if (this.form.valid) {
       const formValue = this.form.getRawValue();
-      if (this.isEdit) {
-        const updateData: UpdateDotKeKhai = {
-          id: formValue.id,
-          ten_dot: formValue.ten_dot,
-          so_dot: formValue.so_dot,
-          thang: formValue.thang,
-          nam: formValue.nam,
-          ghi_chu: formValue.ghi_chu,
-          trang_thai: formValue.trang_thai,
-          nguoi_tao: formValue.nguoi_tao,
-          don_vi_id: formValue.don_vi_id,
-          ma_ho_so: formValue.ma_ho_so,
-          dai_ly_id: formValue.dai_ly_id
-        };
+      
+      // Kiểm tra đơn vị trước khi tạo/cập nhật
+      const donViId = formValue.don_vi_id;
+      const donVi = this.donVis.find(d => d.id === donViId);
+      
+      if (!donVi) {
+        this.message.warning('Vui lòng chọn đơn vị');
+        return;
+      }
 
-        this.dotKeKhaiService.updateDotKeKhai(formValue.id, updateData).subscribe({
-          next: () => {
-            this.message.success('Cập nhật đợt kê khai thành công');
-            this.isVisible = false;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Lỗi khi cập nhật:', error);
-            this.message.error('Có lỗi xảy ra khi cập nhật đợt kê khai');
-          }
+      if (!donVi.maSoBHXH) {
+        this.modal.confirm({
+          nzTitle: 'Cảnh báo',
+          nzContent: 'Đơn vị chưa có mã số BHXH. Bạn có muốn tiếp tục?',
+          nzOkText: 'Tiếp tục',
+          nzCancelText: 'Hủy',
+          nzOnOk: () => this.submitForm(formValue)
         });
       } else {
-        const createData: CreateDotKeKhai = {
-          ten_dot: formValue.ten_dot,
-          so_dot: formValue.so_dot,
-          thang: formValue.thang,
-          nam: formValue.nam,
-          ghi_chu: formValue.ghi_chu,
-          trang_thai: formValue.trang_thai,
-          nguoi_tao: formValue.nguoi_tao,
-          don_vi_id: formValue.don_vi_id,
-          ma_ho_so: formValue.ma_ho_so,
-          dai_ly_id: formValue.dai_ly_id
-        };
-
-        this.dotKeKhaiService.createDotKeKhai(createData).subscribe({
-          next: (response) => {
-            this.message.success('Thêm mới đợt kê khai thành công');
-            this.isVisible = false;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Lỗi khi thêm mới:', error);
-            this.message.error('Có lỗi xảy ra khi thêm mới đợt kê khai');
-          }
-        });
+        this.submitForm(formValue);
       }
     } else {
       Object.values(this.form.controls).forEach(control => {
         if (control.invalid) {
           control.markAsTouched();
+        }
+      });
+    }
+  }
+
+  private submitForm(formValue: any): void {
+    if (this.isEdit) {
+      const updateData: UpdateDotKeKhai = {
+        id: formValue.id,
+        ten_dot: formValue.ten_dot,
+        so_dot: formValue.so_dot,
+        thang: formValue.thang,
+        nam: formValue.nam,
+        ghi_chu: formValue.ghi_chu,
+        trang_thai: formValue.trang_thai,
+        nguoi_tao: formValue.nguoi_tao,
+        don_vi_id: formValue.don_vi_id,
+        ma_ho_so: formValue.ma_ho_so,
+        dai_ly_id: formValue.dai_ly_id
+      };
+
+      this.dotKeKhaiService.updateDotKeKhai(formValue.id, updateData).subscribe({
+        next: () => {
+          this.message.success('Cập nhật đợt kê khai thành công');
+          this.isVisible = false;
+          this.loadData();
+        },
+        error: (error) => {
+          console.error('Lỗi khi cập nhật:', error);
+          this.message.error('Có lỗi xảy ra khi cập nhật đợt kê khai');
+        }
+      });
+    } else {
+      const createData: CreateDotKeKhai = {
+        ten_dot: formValue.ten_dot,
+        so_dot: formValue.so_dot,
+        thang: formValue.thang,
+        nam: formValue.nam,
+        ghi_chu: formValue.ghi_chu,
+        trang_thai: formValue.trang_thai,
+        nguoi_tao: formValue.nguoi_tao,
+        don_vi_id: formValue.don_vi_id,
+        ma_ho_so: formValue.ma_ho_so,
+        dai_ly_id: formValue.dai_ly_id
+      };
+
+      this.dotKeKhaiService.createDotKeKhai(createData).subscribe({
+        next: (response) => {
+          this.message.success('Thêm mới đợt kê khai thành công');
+          this.isVisible = false;
+          this.loadData();
+        },
+        error: (error) => {
+          if (error.status === 400 && error.error?.message?.includes('unique constraint')) {
+            // Nếu bị trùng, tự động tăng số đợt và thử lại
+            this.updateSoDot();
+            this.message.warning('Đã tự động tăng số đợt do trùng lặp');
+          } else {
+            this.message.error('Có lỗi xảy ra khi thêm mới đợt kê khai');
+          }
         }
       });
     }
@@ -648,29 +655,64 @@ export class DotKeKhaiComponent implements OnInit {
       return;
     }
 
-    // Mở modal thanh toán
-    const modalRef = this.modal.create({
-      nzTitle: 'QR Thanh toán',
-      nzContent: ThanhToanModalComponent,
-      nzWidth: 800,
-      nzData: {
-        dotKeKhai: data
-      },
-      nzFooter: null,
-      nzClosable: true,
-      nzMaskClosable: false,
-      nzClassName: 'thanh-toan-modal'
-    });
+    // Kiểm tra và load thông tin đơn vị nếu cần
+    if (!this.donVis.length) {
+      this.loadDonVisByDaiLy(data.dai_ly_id);
+    }
 
-    // Subscribe để nhận kết quả từ modal
-    modalRef.afterClose.subscribe(result => {
-      if (result) {
-        // Đóng modal xem hóa đơn nếu đang mở
-        if (this.isViewBillModalVisible) {
-          this.handleViewBillModalCancel();
+    // Lấy thông tin đợt kê khai với đầy đủ thông tin đơn vị
+    this.loading = true;
+    this.dotKeKhaiService.getDotKeKhai(data.id!).subscribe({
+      next: (dotKeKhai) => {
+        this.loading = false;
+        
+        // Kiểm tra thông tin đơn vị từ cache trước
+        const donVi = this.donVis.find(d => d.id === dotKeKhai.don_vi_id);
+        if (!donVi) {
+          // Nếu không có trong cache, load lại danh sách đơn vị
+          this.loadDonVisByDaiLy(dotKeKhai.dai_ly_id);
+          this.message.warning('Đang tải lại thông tin đơn vị, vui lòng thử lại sau');
+          return;
         }
-        // Tải lại dữ liệu
-        this.loadData();
+
+        if (!donVi.maSoBHXH) {
+          this.message.warning('Đơn vị chưa có mã số BHXH');
+          return;
+        }
+
+        // Mở modal thanh toán
+        const modalRef = this.modal.create({
+          nzTitle: 'QR Thanh toán',
+          nzContent: ThanhToanModalComponent,
+          nzWidth: 800,
+          nzData: {
+            dotKeKhai: {
+              ...dotKeKhai,
+              DonVi: donVi // Gán thông tin đơn vị từ cache
+            }
+          },
+          nzFooter: null,
+          nzClosable: true,
+          nzMaskClosable: false,
+          nzClassName: 'thanh-toan-modal'
+        });
+
+        // Subscribe để nhận kết quả từ modal
+        modalRef.afterClose.subscribe(result => {
+          if (result) {
+            // Đóng modal xem hóa đơn nếu đang mở
+            if (this.isViewBillModalVisible) {
+              this.handleViewBillModalCancel();
+            }
+            // Tải lại dữ liệu
+            this.loadData();
+          }
+        });
+      },
+      error: (error) => {
+        this.loading = false;
+        console.error('Lỗi khi lấy thông tin đợt kê khai:', error);
+        this.message.error('Có lỗi xảy ra khi lấy thông tin đợt kê khai');
       }
     });
   }
@@ -992,7 +1034,26 @@ export class DotKeKhaiComponent implements OnInit {
     this.loading = true;
     this.donViService.getDonVisByDaiLy(daiLyId).subscribe({
       next: (data) => {
+        // Kiểm tra và log cảnh báo cho các đơn vị không có mã số BHXH
+        data.forEach(donVi => {
+          if (!donVi.maSoBHXH) {
+            console.warn(`Đơn vị ${donVi.tenDonVi} chưa có mã số BHXH`);
+          }
+        });
+        
         this.donVis = data;
+        
+        // Nếu đang trong modal thanh toán, kiểm tra lại đơn vị
+        const currentDotKeKhai = this.dotKeKhais.find(d => d.id === this.form.get('id')?.value);
+        if (currentDotKeKhai) {
+          const donVi = data.find(d => d.id === currentDotKeKhai.don_vi_id);
+          if (!donVi) {
+            this.message.warning('Không tìm thấy thông tin đơn vị');
+          } else if (!donVi.maSoBHXH) {
+            this.message.warning('Đơn vị chưa có mã số BHXH');
+          }
+        }
+        
         this.loading = false;
       },
       error: (error) => {

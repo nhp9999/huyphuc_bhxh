@@ -93,37 +93,35 @@
       [nzLoading]="loading">
       <thead>
         <tr>
-          <th [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
-          <th>STT</th>
-          <th>Tên đợt</th>
-          <th>Đơn vị</th>
-          <th>Đại lý</th>
-          <th>Dịch vụ</th>
-          <th>Tổng số thẻ</th>
-          <th>Tổng số tiền</th>
-          <th>Trạng thái</th>
-          <th>Ghi chú</th>
-          <th>Hóa đơn</th>
-          <th>Thao tác</th>
+          <th [nzWidth]="'50px'" [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
+          <th [nzWidth]="'60px'" nzAlign="center">STT</th>
+          <th [nzWidth]="'180px'">Tên đợt</th>
+          <th [nzWidth]="'200px'">Đơn vị</th>
+          <th [nzWidth]="'80px'" nzAlign="center">Dịch vụ</th>
+          <th [nzWidth]="'100px'" nzAlign="right">Tổng số thẻ</th>
+          <th [nzWidth]="'120px'" nzAlign="right">Tổng số tiền</th>
+          <th [nzWidth]="'100px'" nzAlign="center">Trạng thái</th>
+          <th [nzWidth]="'120px'">Ghi chú</th>
+          <th [nzWidth]="'120px'" nzAlign="center">Hóa đơn</th>
+          <th [nzWidth]="'160px'" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let data of basicTable.data; let i = index" (click)="onRowClick(data)">
           <td [nzChecked]="getCheckedStatus(data)" (nzCheckedChange)="onItemChecked($event, data)"></td>
-          <td>{{ i + 1 }}</td>
+          <td nzAlign="center">{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
-          <td>{{ getDaiLyName(data.dai_ly_id) }}</td>
-          <td>{{ data.dich_vu }}</td>
-          <td>{{ data.tong_so_the || 0 }}</td>
-          <td>{{ data.tong_so_tien | number:'1.0-0' }} đ</td>
-          <td>
+          <td nzAlign="center">{{ data.dich_vu }}</td>
+          <td nzAlign="right">{{ data.tong_so_the || 0 }}</td>
+          <td nzAlign="right">{{ data.tong_so_tien | number:'1.0-0' }} đ</td>
+          <td nzAlign="center">
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">
               {{ getTagText(data.trang_thai) }}
             </nz-tag>
           </td>
           <td>{{ data.ghi_chu }}</td>
-          <td>
+          <td nzAlign="center">
             <ng-container *ngIf="data.url_bill">
               <button nz-button nzType="link" (click)="$event.stopPropagation(); showViewBillModal(data.url_bill)">
                 <img [src]="data.url_bill" style="max-width: 50px; max-height: 50px; cursor: pointer;" 
@@ -137,24 +135,31 @@
               Thanh toán
             </button>
           </td>
-          <td>
-            <button nz-button nzType="link" (click)="$event.stopPropagation(); showModal(data)">
-              <i nz-icon nzType="edit"></i>
-            </button>
-            <button nz-button nzType="link" nzDanger (click)="$event.stopPropagation(); delete(data.id)">
-              <i nz-icon nzType="delete"></i>
-            </button>
-            <button nz-button nzType="link" (click)="$event.stopPropagation(); exportData(data)">
-              <i nz-icon nzType="export"></i>
-            </button>
-            <button *ngIf="data.trang_thai === 'chua_gui'" 
-                    nz-button 
-                    nzType="link" 
-                    nzType="primary"
-                    nz-tooltip="Gửi đợt kê khai"
-                    (click)="$event.stopPropagation(); guiDotKeKhai(data)">
-              <i nz-icon nzType="send"></i>
-            </button>
+          <td nzAlign="center">
+            <nz-button-group>
+              <button 
+                nz-button 
+                nzType="default"
+                nz-tooltip="Sửa"
+                (click)="$event.stopPropagation(); showModal(data)">
+                <i nz-icon nzType="edit"></i>
+              </button>
+              <button 
+                nz-button 
+                nzType="default"
+                nz-tooltip="Xuất Excel"
+                (click)="$event.stopPropagation(); exportData(data)">
+                <i nz-icon nzType="export"></i>
+              </button>
+              <button 
+                *ngIf="data.trang_thai === 'chua_gui'" 
+                nz-button
+                nzType="primary"
+                nz-tooltip="Gửi đợt kê khai"
+                (click)="$event.stopPropagation(); guiDotKeKhai(data)">
+                <i nz-icon nzType="send"></i>
+              </button>
+            </nz-button-group>
           </td>
         </tr>
       </tbody>
@@ -191,24 +196,19 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="5" nzRequired>Đại lý</nz-form-label>
           <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đại lý">
-            <div style="display: flex; gap: 8px;">
-              <nz-select 
-                formControlName="dai_ly_id" 
-                nzPlaceHolder="Chọn đại lý"
-                nzShowSearch
-                [nzLoading]="loading"
-                [nzDisabled]="!isEdit && daiLys.length === 1"
-                style="flex: 1;">
-                <nz-option
-                  *ngFor="let daiLy of daiLys"
-                  [nzValue]="daiLy.id"
-                  [nzLabel]="daiLy.ten">
-                </nz-option>
-              </nz-select>
-              <button nz-button nzType="default" (click)="showCreateDaiLyModal()">
-                <i nz-icon nzType="plus"></i>
-              </button>
-            </div>
+            <nz-select 
+              formControlName="dai_ly_id" 
+              nzPlaceHolder="Chọn đại lý"
+              nzShowSearch
+              [nzLoading]="loading"
+              [nzDisabled]="!isEdit && daiLys.length === 1"
+              style="width: 100%;">
+              <nz-option
+                *ngFor="let daiLy of daiLys"
+                [nzValue]="daiLy.id"
+                [nzLabel]="daiLy.ten">
+              </nz-option>
+            </nz-select>
           </nz-form-control>
         </nz-form-item>
 
@@ -234,62 +234,6 @@
       <div class="bill-image-container">
         <img [src]="selectedBillUrl" style="width: 100%; height: auto;" />
       </div>
-    </ng-container>
-  </nz-modal>
-
-  <!-- Thêm modal tạo đại lý -->
-  <nz-modal
-    [(nzVisible)]="isCreateDaiLyVisible"
-    [nzTitle]="'Thêm mới đại lý'"
-    [nzOkText]="'Thêm mới'"
-    [nzCancelText]="'Hủy'"
-    (nzOnCancel)="handleCreateDaiLyCancel()"
-    (nzOnOk)="handleCreateDaiLyOk()"
-    [nzWidth]="500">
-    <ng-container *nzModalContent>
-      <form nz-form [formGroup]="daiLyForm" class="compact-form">
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Mã đại lý</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã đại lý">
-            <input nz-input formControlName="ma" placeholder="Nhập mã đại lý" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6" nzRequired>Tên đại lý</nz-form-label>
-          <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên đại lý">
-            <input nz-input formControlName="ten" placeholder="Nhập tên đại lý" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6">Địa chỉ</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <input nz-input formControlName="diaChi" placeholder="Nhập địa chỉ" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6">Số điện thoại</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <input nz-input formControlName="soDienThoai" placeholder="Nhập số điện thoại" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6">Email</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <input nz-input formControlName="email" placeholder="Nhập email" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label [nzSpan]="6">Người đại diện</nz-form-label>
-          <nz-form-control [nzSpan]="18">
-            <input nz-input formControlName="nguoiDaiDien" placeholder="Nhập người đại diện" />
-          </nz-form-control>
-        </nz-form-item>
-      </form>
     </ng-container>
   </nz-modal>
 </div>
@@ -361,5 +305,100 @@
 .bill-image-container img {
   max-width: 100%;
   height: auto;
+}
+
+:host ::ng-deep {
+  .ant-table-thead > tr > th {
+    background-color: #f0f2f5;
+    font-weight: 600;
+    padding: 12px 8px;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+
+  .ant-table-tbody > tr:hover {
+    cursor: pointer;
+  }
+
+  .ant-tag {
+    margin: 0;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .ant-table-tbody > tr > td:nth-child(9) {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ant-btn-group {
+    display: flex;
+    gap: 4px;
+  }
+
+  .ant-btn-group > .ant-btn {
+    border-radius: 4px !important;
+    padding: 0 8px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  .ant-btn-group > .ant-btn:not(:first-child):not(:last-child) {
+    margin: 0;
+  }
+
+  .ant-btn-group > .ant-btn:hover {
+    z-index: 2;
+  }
+
+  .ant-btn-group > .ant-btn > .anticon {
+    font-size: 16px;
+  }
+
+  /* Style cho cột hóa đơn */
+  .ant-table-tbody > tr > td:nth-child(10) {
+    padding: 8px 4px;
+    min-width: 120px;
+
+    img {
+      max-width: 40px;
+      max-height: 40px;
+      object-fit: contain;
+    }
+
+    .ant-btn {
+      padding: 0 8px;
+      height: 32px;
+    }
+  }
+
+  /* Style cho cột thao tác */
+  .ant-table-tbody > tr > td:nth-child(11) {
+    padding: 8px 4px;
+    min-width: 160px;
+  }
+
+  /* Style cho button group trong cột thao tác */
+  .ant-btn-group {
+    display: inline-flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    
+    .ant-btn {
+      min-width: 32px;
+      padding: 0 8px;
+      height: 32px;
+      line-height: 30px;
+    }
+  }
+
+  /* Đảm bảo table scroll ngang khi cần thiết */
+  .ant-table-content {
+    overflow-x: auto;
+  }
 }
 </style> 
