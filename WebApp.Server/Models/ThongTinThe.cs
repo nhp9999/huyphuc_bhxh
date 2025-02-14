@@ -31,7 +31,7 @@ namespace WebApp.API.Models
         public string so_dien_thoai { get; set; }
 
         [StringLength(10)]
-        public string ma_tinh_ks { get; set; }
+        public string? ma_tinh_ks { get; set; }
 
         [StringLength(20)]
         public string ma_hgd { get; set; }

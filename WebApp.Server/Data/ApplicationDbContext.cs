@@ -151,6 +151,9 @@ namespace WebApp.API.Data
 
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                
+                // Cấu hình cho ma_tinh_ks không bắt buộc
+                entity.Property(e => e.ma_tinh_ks).IsRequired(false);
             });
 
             modelBuilder.Entity<DanhMucCSKCB>(entity =>

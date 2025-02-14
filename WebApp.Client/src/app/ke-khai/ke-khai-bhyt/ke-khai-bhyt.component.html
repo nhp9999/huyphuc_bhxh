@@ -18,7 +18,11 @@
       <button nz-button nzType="default" (click)="showSearchMultipleModal()">
         <i nz-icon nzType="search"></i>Tìm nhiều mã số
       </button>
-      <button nz-button nzType="primary" (click)="handleOk()">
+      <button 
+        nz-button 
+        nzType="primary" 
+        (click)="onSave()"
+        [nzLoading]="loadingSave">
         <i nz-icon nzType="save"></i>Lưu
       </button>
       <button *ngIf="isEdit" nz-button (click)="handleCancel()">
@@ -95,7 +99,8 @@
                 nzFormat="dd/MM/yyyy"
                 [nzPlaceHolder]="'Chọn ngày'"
                 [nzPopupStyle]="{ 'font-family': 'Arial' }"
-                nzAllowClear>
+                nzAllowClear
+                (paste)="handleNgaySinhPaste($event)">
               </nz-date-picker>
             </nz-form-control>
           </nz-form-item>
@@ -233,7 +238,7 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Tỉnh NKQ</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn tỉnh">
-              <nz-select formControlName="tinh_nkq" nzPlaceHolder="Chọn tỉnh" nzShowSearch>
+              <nz-select formControlName="tinh_nkq" nzPlaceHolder="Chọn tỉnh" nzShowSearch (ngModelChange)="loadDanhMucHuyenByMaTinh($event)">
                 <nz-option 
                   *ngFor="let tinh of danhMucTinhs" 
                   [nzValue]="tinh.ma"
@@ -248,7 +253,7 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Huyện NKQ</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn huyện">
-              <nz-select formControlName="huyen_nkq" nzPlaceHolder="Chọn huyện" nzShowSearch>
+              <nz-select formControlName="huyen_nkq" nzPlaceHolder="Chọn huyện" nzShowSearch (ngModelChange)="loadDanhMucXaByMaHuyen($event)">
                 <nz-option 
                   *ngFor="let huyen of danhMucHuyens" 
                   [nzValue]="huyen.ma"
@@ -302,11 +307,21 @@
           </nz-form-item>
         </div>
 
-        <!-- Huyện KS -->
-        <div nz-col [nzSpan]="4" style="display: none;">
+        <!-- Số thẻ BHYT -->
+        <div nz-col [nzSpan]="4" [style.display]="'none'">
           <nz-form-item>
-            <nz-form-label [nzSpan]="24" nzRequired>Huyện KS</nz-form-label>
-            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn huyện KS">
+            <nz-form-label [nzSpan]="24">Số thẻ BHYT</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <input nz-input formControlName="so_the_bhyt" placeholder="Nhập số thẻ BHYT" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <!-- Huyện KS -->
+        <div nz-col [nzSpan]="4" [style.display]="'none'">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Huyện KS</nz-form-label>
+            <nz-form-control [nzSpan]="24">
               <nz-select formControlName="ma_huyen_ks" nzPlaceHolder="Chọn huyện KS" nzShowSearch>
                 <nz-option 
                   *ngFor="let huyen of danhMucHuyenKS" 
@@ -319,10 +334,10 @@
         </div>
 
         <!-- Xã KS -->
-        <div nz-col [nzSpan]="4" style="display: none;">
+        <div nz-col [nzSpan]="4" [style.display]="'none'">
           <nz-form-item>
-            <nz-form-label [nzSpan]="24" nzRequired>Xã KS</nz-form-label>
-            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn xã KS">
+            <nz-form-label [nzSpan]="24">Xã KS</nz-form-label>
+            <nz-form-control [nzSpan]="24">
               <nz-select formControlName="ma_xa_ks" nzPlaceHolder="Chọn xã KS" nzShowSearch>
                 <nz-option 
                   *ngFor="let xa of danhMucXaKS" 
@@ -362,14 +377,9 @@
     [nzShowPagination]="true">
     <thead>
       <tr>
-        <th style="width: 40px;">
-          <label nz-checkbox
-            [(ngModel)]="isAllChecked"
-            [nzIndeterminate]="selectedIds.length > 0 && selectedIds.length < keKhaiBHYTs.length"
-            (ngModelChange)="onAllChecked($event)">
-          </label>
-        </th>
-        <th>Mã số BHXH</th>
+        <th [nzWidth]="'40px'" [(nzChecked)]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
+        <th [nzWidth]="'60px'">STT</th>
+        <th [nzWidth]="'120px'">Mã số BHXH</th>
         <th>CCCD</th>
         <th>Họ tên</th>
         <th>Ngày sinh</th>
@@ -388,16 +398,26 @@
     </thead>
     <tbody>
       <tr *ngFor="let data of basicTable.data; let i = index" (click)="showEditForm(data)">
+        <td [nzChecked]="data.id ? selectedIds.includes(data.id) : false" (nzCheckedChange)="data.id && onKeKhaiChecked(data.id, $event)"></td>
+        <td>{{ i + 1 }}</td>
         <td>
-          <label nz-checkbox 
-            [ngModel]="selectedIds.includes(data.id!)" 
-            (ngModelChange)="onKeKhaiChecked(data.id!, $event)">
-          </label>
-        </td>
-        <td>
-          <a [class.urgent]="data.is_urgent" (click)="toggleUrgent(data.id!, $event)">
+          <a 
+            [class.urgent]="data.is_urgent"
+            (click)="$event.stopPropagation(); data.id && toggleUrgent(data.id, $event)"
+            nz-tooltip
+            [nzTooltipTitle]="data.is_urgent ? 'Bỏ đánh dấu gấp' : 'Đánh dấu gấp'"
+          >
             {{ data.thongTinThe.ma_so_bhxh }}
           </a>
+          <button 
+            nz-button 
+            nzType="link" 
+            nzSize="small"
+            nz-tooltip 
+            nzTooltipTitle="Sao chép mã số BHXH"
+            (click)="$event.stopPropagation(); copyMaSoBHXH(data.thongTinThe.ma_so_bhxh)">
+            <i nz-icon nzType="copy" nzTheme="outline"></i>
+          </button>
         </td>
         <td>{{ data.thongTinThe.cccd }}</td>
         <td>{{ data.thongTinThe.ho_ten }}</td>

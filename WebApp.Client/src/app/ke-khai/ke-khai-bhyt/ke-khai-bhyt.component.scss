@@ -607,8 +607,31 @@ nz-tag {
 .urgent {
   color: #ff4d4f !important;
   font-weight: 500;
+  cursor: pointer;
   
   &:hover {
     opacity: 0.85;
+    text-decoration: underline;
   }
+}
+
+.urgent-icon {
+  color: #ff4d4f !important;
+}
+
+// Thêm animation cho trạng thái gấp
+@keyframes urgent-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.urgent {
+  animation: urgent-pulse 2s infinite;
 } 
