@@ -864,7 +864,7 @@ export class DotKeKhaiComponent implements OnInit {
           item.cccd || '', // Cột AH hiển thị CCCD
           item.ma_hgd || '', // Cột AI hiển thị mã hộ gia đình
           '', // Cột AJ trống
-          item.quoc_tich || '', // Cột AK hiển thị quốc tịch
+          item.quoc_tich || 'VN', // Cột AK hiển thị quốc tịch, mặc định là VN
           '', // Cột AL trống
           '', // Cột AM trống
           '', // Cột AN trống

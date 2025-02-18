@@ -140,7 +140,8 @@ export class UsersComponent implements OnInit {
       isSuperAdmin: [false],
       typeMangLuoi: [null],
       status: [1],
-      roles: [[]]
+      roles: [[]],
+      maNhanVien: ['']
     });
 
     this.userForm.get('chucDanh')?.valueChanges.subscribe(chucDanh => {
@@ -248,7 +249,7 @@ export class UsersComponent implements OnInit {
       isSuperAdmin: nguoiDung.isSuperAdmin,
       typeMangLuoi: nguoiDung.typeMangLuoi,
       status: nguoiDung.status,
-      roles: nguoiDung.roles
+      maNhanVien: nguoiDung.maNhanVien
     });
     this.isModalVisible = true;
   }

@@ -12,6 +12,7 @@ import { environment } from '../../../../environments/environment';
 import { DownloadOutline, CheckCircleOutline } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { UploadBillModalComponent } from '../upload-bill-modal/upload-bill-modal.component';
+import { UserService, NguoiDung } from '../../../services/user.service';
 
 @Component({
   selector: 'app-thanh-toan-modal',
@@ -97,13 +98,15 @@ export class ThanhToanModalComponent implements OnInit {
   qrDataUrl: string = '';
   environment = environment;
   currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  nguoiDungInfo?: NguoiDung;
 
   constructor(
     private modal: NzModalRef,
     private modalService: NzModalService,
     private vietQRService: VietQRService,
     private message: NzMessageService,
-    private iconService: NzIconService
+    private iconService: NzIconService,
+    private userService: UserService
   ) {
     this.iconService.addIcon(DownloadOutline, CheckCircleOutline);
   }
@@ -125,7 +128,17 @@ export class ThanhToanModalComponent implements OnInit {
       return;
     }
 
-    this.generateQRCode();
+    this.userService.getCurrentUserInfo().subscribe({
+      next: (nguoiDung) => {
+        this.nguoiDungInfo = nguoiDung;
+        this.generateQRCode();
+      },
+      error: (error) => {
+        console.error('Lỗi khi lấy thông tin người dùng:', error);
+        this.message.error('Không thể lấy thông tin người dùng');
+        this.modal.close();
+      }
+    });
   }
 
   generateQRCode(): void {
@@ -210,7 +223,7 @@ export class ThanhToanModalComponent implements OnInit {
       return 'Chưa có mã số BHXH của đơn vị';
     }
     const maBHXH = this.dotKeKhai.DonVi.maSoBHXH;
-    const username = this.currentUser.username || '';
-    return `BHXH 103 00 ${maBHXH} 08907 DONG BHXH CTY HUY PHUC ${username}`;
+    const maNhanVien = this.nguoiDungInfo?.maNhanVien || '';
+    return `BHXH 103 00 ${maBHXH} 08907 DONG BHXH CTY HUY PHUC ${maNhanVien}`;
   }
 } 

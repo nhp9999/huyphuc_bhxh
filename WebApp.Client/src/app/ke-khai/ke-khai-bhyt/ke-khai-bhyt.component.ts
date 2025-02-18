@@ -216,7 +216,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     daoHan: 0,
     tangMoi: 0,
     dungDong: 0,
-    tongSoTien: 0
+    tongSoTien: 0,
+    tongSoThe: 0
   };
 
   isSearchResultVisible = false;
@@ -237,6 +238,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Thêm biến để theo dõi trạng thái loading khi lưu
   loadingSave = false;
+
+  // Thêm các thuộc tính cho modal nhập nhanh
+  isQuickInputVisible = false;
+  isProcessing = false;
+  quickInputText = '';
 
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -2023,7 +2029,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       daoHan: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dao_han').length,
       tangMoi: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'tang_moi').length,
       dungDong: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dung_dong').length,
-      tongSoTien: this.keKhaiBHYTs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0)
+      tongSoTien: this.keKhaiBHYTs.reduce((sum, item) => sum + (item.so_tien_can_dong || 0), 0),
+      tongSoThe: this.keKhaiBHYTs.length
     };
   }
 
@@ -2881,5 +2888,123 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     document.execCommand('copy');
     document.body.removeChild(el);
     this.message.success('Đã sao chép mã số BHXH: ' + maSoBHXH);
+  }
+
+  copyNhieuMaSoBHXH(): void {
+    const selectedKeKhai = this.keKhaiBHYTs.filter(item => this.selectedIds.includes(item.id || 0));
+    if (selectedKeKhai.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một mã số BHXH để sao chép');
+      return;
+    }
+
+    const maSoBHXHList = selectedKeKhai.map(item => item.thongTinThe.ma_so_bhxh).join('\n');
+    const el = document.createElement('textarea');
+    el.value = maSoBHXHList;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    this.message.success(`Đã sao chép ${selectedKeKhai.length} mã số BHXH`);
+  }
+
+  // Thêm phương thức nhận diện thông tin từ chuỗi
+  parseInfoFromString(input: string): any {
+    const parts = input.split('\t').map(part => part.trim());
+    if (parts.length >= 7) {
+      const [maSoBHXH, hoTen, gioiTinh, ngaySinh, diaChi, soCCCD, soDienThoai] = parts;
+      
+      // Kiểm tra và chuẩn hóa dữ liệu
+      if (!maSoBHXH || !hoTen || !ngaySinh || !soCCCD) {
+        this.message.warning('Thiếu thông tin bắt buộc: Mã số BHXH, Họ tên, Ngày sinh hoặc CCCD');
+        return null;
+      }
+
+      return {
+        maSoBHXH: maSoBHXH,
+        hoTen: this.capitalizeFullName(hoTen),
+        gioiTinh: this.normalizeGender(gioiTinh),
+        ngaySinh: this.parseNgaySinh(ngaySinh),
+        diaChi: diaChi,
+        soCCCD: soCCCD,
+        soDienThoai: soDienThoai
+      };
+    }
+    return null;
+  }
+
+  // Thêm các phương thức hỗ trợ
+  private capitalizeFullName(name: string): string {
+    return name.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  private normalizeGender(gender: string): 'Nam' | 'Nữ' {
+    const normalizedGender = gender.toLowerCase().trim();
+    return normalizedGender === 'nam' || normalizedGender === 'nam' ? 'Nam' : 'Nữ';
+  }
+
+  // Hàm hỗ trợ chuyển đổi ngày sinh sang định dạng yyyy-MM-dd
+  private parseNgaySinh(dateStr: string): string {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    return dateStr;
+  }
+
+  // Thêm phương thức điền thông tin vào form
+  fillFormFromString(input: string): void {
+    const info = this.parseInfoFromString(input);
+    if (info) {
+      // Chuyển đổi ngày sinh sang đối tượng Date
+      const [day, month, year] = info.ngaySinh.split('-').reverse();
+      const ngaySinh = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+      // Chỉ cập nhật các thông tin cơ bản từ dữ liệu đầu vào
+      this.form.patchValue({
+        ma_so_bhxh: info.maSoBHXH,
+        cccd: info.soCCCD,
+        ho_ten: info.hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: info.gioiTinh,
+        so_dien_thoai: info.soDienThoai,
+        dia_chi_nkq: info.diaChi
+      });
+
+      // Hiển thị thông báo thành công
+      this.message.success('Đã điền thông tin tự động vào form');
+    } else {
+      this.message.error('Không thể nhận diện thông tin từ chuỗi dữ liệu');
+    }
+  }
+
+  // Thêm phương thức hiển thị modal
+  showQuickInputModal(): void {
+    this.isQuickInputVisible = true;
+    this.quickInputText = '';
+  }
+
+  // Thêm phương thức đóng modal
+  handleQuickInputCancel(): void {
+    this.isQuickInputVisible = false;
+  }
+
+  // Thêm phương thức xử lý khi nhấn OK
+  async handleQuickInputOk(): Promise<void> {
+    if (!this.quickInputText.trim()) {
+      this.message.warning('Vui lòng nhập thông tin cần xử lý');
+      return;
+    }
+
+    this.isProcessing = true;
+    try {
+      this.fillFormFromString(this.quickInputText);
+      this.isQuickInputVisible = false;
+    } catch (error) {
+      this.message.error('Có lỗi xảy ra khi xử lý thông tin');
+    } finally {
+      this.isProcessing = false;
+    }
   }
 } 

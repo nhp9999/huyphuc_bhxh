@@ -21,6 +21,7 @@ export interface NguoiDung {
   roles: string[];
   createdAt: string;
   updatedAt: string;
+  maNhanVien?: string;
 }
 
 export interface DaiLy {
@@ -75,6 +76,11 @@ export class UserService {
 
   resetPassword(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/reset-password`, {});
+  }
+
+  getCurrentUserInfo(): Observable<NguoiDung> {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    return this.http.get<NguoiDung>(`${this.apiUrl}/${currentUser.id}`);
   }
 
   getDaiLys(): Observable<DaiLy[]> {

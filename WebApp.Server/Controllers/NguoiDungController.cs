@@ -44,6 +44,9 @@ namespace WebApp.Server.Controllers
 
         [JsonPropertyName("password")]
         public string? Password { get; set; }
+
+        [JsonPropertyName("maNhanVien")]
+        public string? MaNhanVien { get; set; }
     }
 
     [Route("api/nguoi-dung")]
@@ -122,7 +125,8 @@ namespace WebApp.Server.Controllers
                 IsSuperAdmin = dto.IsSuperAdmin,
                 TypeMangLuoi = dto.TypeMangLuoi,
                 Status = 1,
-                Roles = dto.Roles
+                Roles = dto.Roles,
+                MaNhanVien = dto.MaNhanVien
             };
 
             try
@@ -182,6 +186,7 @@ namespace WebApp.Server.Controllers
             nguoiDung.TypeMangLuoi = dto.TypeMangLuoi;
             nguoiDung.Roles = dto.Roles;
             nguoiDung.UpdatedAt = DateTime.UtcNow;
+            nguoiDung.MaNhanVien = dto.MaNhanVien;
 
             try
             {

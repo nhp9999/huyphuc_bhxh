@@ -66,5 +66,9 @@ namespace WebApp.Server.Models
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("ma_nhan_vien")]
+        [StringLength(20)]
+        public string? MaNhanVien { get; set; }
     }
 } 

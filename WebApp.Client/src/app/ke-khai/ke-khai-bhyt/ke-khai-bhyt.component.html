@@ -28,6 +28,9 @@
       <button *ngIf="isEdit" nz-button (click)="handleCancel()">
         <i nz-icon nzType="close"></i>Hủy
       </button>
+      <button nz-button nzType="default" (click)="showQuickInputModal()">
+        <i nz-icon nzType="import"></i>Nhập nhanh
+      </button>
     </div>
   </div>
 
@@ -357,8 +360,18 @@
       <button *ngIf="selectedIds.length > 0" nz-button nzType="primary" nzDanger (click)="deleteMultiple()">
         <i nz-icon nzType="delete"></i>Xóa {{ selectedIds.length }} bản ghi đã chọn
       </button>
+      <button 
+        *ngIf="selectedIds.length > 0"
+        nz-button 
+        nzType="default" 
+        (click)="copyNhieuMaSoBHXH()"
+        nz-tooltip="Sao chép mã số BHXH đã chọn">
+        <i nz-icon nzType="copy"></i>Sao chép {{ selectedIds.length }} mã số BHXH
+      </button>
     </div>
     <div class="right-actions">
+      <span>Tổng số thẻ: <strong>{{ thongKe.tongSoThe }}</strong></span>
+      <nz-divider nzType="vertical"></nz-divider>
       <span>Đáo hạn: <strong>{{ thongKe.daoHan }}</strong></span>
       <nz-divider nzType="vertical"></nz-divider>
       <span>Tăng mới: <strong>{{ thongKe.tangMoi }}</strong></span>
@@ -378,10 +391,9 @@
     <thead>
       <tr>
         <th [nzWidth]="'40px'" [(nzChecked)]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
-        <th [nzWidth]="'60px'">STT</th>
         <th [nzWidth]="'120px'">Mã số BHXH</th>
-        <th>CCCD</th>
         <th>Họ tên</th>
+        <th>CCCD</th>
         <th>Ngày sinh</th>
         <th>Giới tính</th>
         <th>Số điện thoại</th>
@@ -399,7 +411,6 @@
     <tbody>
       <tr *ngFor="let data of basicTable.data; let i = index" (click)="showEditForm(data)">
         <td [nzChecked]="data.id ? selectedIds.includes(data.id) : false" (nzCheckedChange)="data.id && onKeKhaiChecked(data.id, $event)"></td>
-        <td>{{ i + 1 }}</td>
         <td>
           <a 
             [class.urgent]="data.is_urgent"
@@ -419,8 +430,8 @@
             <i nz-icon nzType="copy" nzTheme="outline"></i>
           </button>
         </td>
-        <td>{{ data.thongTinThe.cccd }}</td>
         <td>{{ data.thongTinThe.ho_ten }}</td>
+        <td>{{ data.thongTinThe.cccd }}</td>
         <td>{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</td>
         <td>{{ data.thongTinThe.gioi_tinh }}</td>
         <td>{{ data.thongTinThe.so_dien_thoai }}</td>
@@ -762,4 +773,30 @@
       </button>
     </div>
   </ng-template>
+</nz-modal>
+
+<!-- Thêm modal nhập nhanh -->
+<nz-modal
+  [(nzVisible)]="isQuickInputVisible"
+  nzTitle="Nhập nhanh thông tin"
+  (nzOnCancel)="handleQuickInputCancel()"
+  (nzOnOk)="handleQuickInputOk()"
+  [nzOkLoading]="isProcessing"
+>
+  <ng-container *nzModalContent>
+    <form nz-form>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="24">Dán thông tin vào đây</nz-form-label>
+        <nz-form-control [nzSpan]="24">
+          <textarea
+            nz-input
+            [(ngModel)]="quickInputText"
+            name="quickInputText"
+            [nzAutosize]="{ minRows: 4, maxRows: 8 }"
+            placeholder="Ví dụ: 8923419792&#9;NGŨ THANH TÙNG&#9;Nam&#9;13/05/1978&#9;Tân Thuận, Tân Lợi, Tịnh Biên&#9;089078015892&#9;0986119811"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
 </nz-modal> 

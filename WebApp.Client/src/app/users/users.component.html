@@ -57,6 +57,7 @@
             <th nzWidth="150px">Chức danh</th>
             <th nzWidth="200px">Email</th>
             <th nzWidth="120px">Số điện thoại</th>
+            <th nzWidth="120px">Mã nhân viên</th>
             <th nzWidth="120px">Trạng thái</th>
             <th nzWidth="150px" nzRight="0px" nzFixed="right">Thao tác</th>
           </tr>
@@ -72,6 +73,7 @@
             <td>{{ nguoiDung.chucDanh }}</td>
             <td>{{ nguoiDung.email }}</td>
             <td>{{ nguoiDung.soDienThoai }}</td>
+            <td>{{ nguoiDung.maNhanVien }}</td>
             <td>
               <nz-tag [nzColor]="nguoiDung.status === 1 ? 'success' : 'error'">
                 {{ nguoiDung.status === 1 ? 'Hoạt động' : 'Không hoạt động' }}
@@ -230,6 +232,20 @@
                                  [nzLabel]="daiLy.ten">
                       </nz-option>
                     </nz-select>
+                  </nz-form-control>
+                </nz-form-item>
+              </div>
+
+              <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                <nz-form-item>
+                  <nz-form-label>Mã nhân viên</nz-form-label>
+                  <nz-form-control>
+                    <nz-input-group [nzPrefix]="userIcon">
+                      <input nz-input formControlName="maNhanVien" placeholder="Nhập mã nhân viên"/>
+                    </nz-input-group>
+                    <ng-template #userIcon>
+                      <span nz-icon nzType="idcard"></span>
+                    </ng-template>
                   </nz-form-control>
                 </nz-form-item>
               </div>
