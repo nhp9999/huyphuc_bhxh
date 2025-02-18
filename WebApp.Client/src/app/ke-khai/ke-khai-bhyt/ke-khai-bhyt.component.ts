@@ -400,9 +400,6 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           this.form.patchValue({
             han_the_moi_den: hanTheMoiDen
           }, { emitEvent: false });
-        } else {
-          // Nếu chưa có hạn thẻ mới từ, tính lại toàn bộ
-          this.capNhatHanThe();
         }
       }
     });
@@ -475,6 +472,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.danhMucXas = [];
     this.danhMucHuyenKS = [];
     this.danhMucXaKS = [];
+
+    // Lắng nghe sự thay đổi của số tháng đóng
+    this.form.get('so_thang_dong')?.valueChanges.subscribe(soThangDong => {
+      if (soThangDong) {
+        const hanTheMoiTu = this.form.get('han_the_moi_tu')?.value;
+        if (hanTheMoiTu) {
+          const hanTheMoiDen = this.tinhHanTheMoiDen(new Date(hanTheMoiTu), soThangDong);
+          this.form.patchValue({
+            han_the_moi_den: hanTheMoiDen
+          }, { emitEvent: false });
+        }
+      }
+    });
 
     // Log để kiểm tra form sau khi khởi tạo
     console.log('Form after init:', this.form);
@@ -1222,7 +1232,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       so_the_bhyt: data.soTheBHYT || '',
       ngay_bien_lai: data.ngayBienLai ? new Date(data.ngayBienLai) : new Date(),
       so_tien_can_dong: data.soTienCanDong,
+      so_thang_dong: data.soThangDong || null, // Không đặt giá trị mặc định
     });
+
+    // Tính toán phương án đóng dựa trên hạn thẻ cũ
+    const phuongAnDong = this.checkPhuongAnDong(denNgayTheCu);
+    this.form.patchValue({
+      phuong_an_dong: phuongAnDong
+    });
+
+    // Tính hạn thẻ mới từ
+    const ngayBienLai = this.form.get('ngay_bien_lai')?.value;
+    if (ngayBienLai) {
+      const hanTheMoiTu = this.tinhHanTheMoiTu(new Date(ngayBienLai), denNgayTheCu);
+      this.form.patchValue({
+        han_the_moi_tu: hanTheMoiTu
+      });
+    }
 
     // Log để kiểm tra
     console.log('Form data after update:', {
