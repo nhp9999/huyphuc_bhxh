@@ -9,6 +9,20 @@ namespace WebApp.Server.Models
     [Table("dai_ly")]
     public class DaiLy
     {
+        public DaiLy()
+        {
+            Ma = string.Empty;
+            Ten = string.Empty;
+            DiaChi = string.Empty;
+            SoDienThoai = string.Empty;
+            Email = string.Empty;
+            NguoiDaiDien = string.Empty;
+            NguoiTao = string.Empty;
+            NgayTao = DateTime.UtcNow;
+            TrangThai = true;
+            DonVis = new List<DonVi>();
+        }
+
         [Key]
         [Column("id")]
         public int Id { get; set; }
@@ -39,7 +53,7 @@ namespace WebApp.Server.Models
         public string NguoiDaiDien { get; set; }
 
         [Column("trang_thai")]
-        public bool TrangThai { get; set; } = true;
+        public bool TrangThai { get; set; }
 
         [Column("ngay_tao")]
         public DateTime NgayTao { get; set; }
@@ -48,6 +62,6 @@ namespace WebApp.Server.Models
         [StringLength(50)]
         public string NguoiTao { get; set; }
 
-        public virtual ICollection<DonVi> DonVis { get; set; } = new List<DonVi>();
+        public virtual ICollection<DonVi> DonVis { get; set; }
     }
 } 

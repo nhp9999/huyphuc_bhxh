@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.API.Models;
+using WebApp.Server.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace WebApp.API.Controllers
@@ -30,7 +31,7 @@ namespace WebApp.API.Controllers
             public bool TrangThai { get; set; }
             
             [Required]
-            public int DaiLyId { get; set; }
+            public List<int> DaiLyIds { get; set; } = new List<int>();
         }
 
         public DonViController(ApplicationDbContext context, ILogger<DonViController> logger)
@@ -43,7 +44,6 @@ namespace WebApp.API.Controllers
         public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVis()
         {
             var donVis = await _context.DonVis
-                .Include(d => d.DaiLy)
                 .OrderBy(x => x.TenDonVi)
                 .Select(d => new
                 {
@@ -58,18 +58,19 @@ namespace WebApp.API.Controllers
                     d.TrangThai,
                     d.CreatedAt,
                     d.UpdatedAt,
-                    d.DaiLyId,
-                    DaiLy = new
-                    {
-                        d.DaiLy.Id,
-                        d.DaiLy.Ma,
-                        d.DaiLy.Ten,
-                        d.DaiLy.DiaChi,
-                        d.DaiLy.SoDienThoai,
-                        d.DaiLy.Email,
-                        d.DaiLy.NguoiDaiDien,
-                        d.DaiLy.TrangThai
-                    }
+                    DaiLys = _context.DaiLyDonVis
+                        .Where(dd => dd.DonViId == d.Id && dd.TrangThai)
+                        .Select(dd => new
+                        {
+                            dd.DaiLy.Id,
+                            dd.DaiLy.Ma,
+                            dd.DaiLy.Ten,
+                            dd.DaiLy.DiaChi,
+                            dd.DaiLy.SoDienThoai,
+                            dd.DaiLy.Email,
+                            dd.DaiLy.NguoiDaiDien,
+                            dd.DaiLy.TrangThai
+                        }).ToList()
                 })
                 .ToListAsync();
 
@@ -92,27 +93,52 @@ namespace WebApp.API.Controllers
         [HttpPost]
         public async Task<ActionResult<DonVi>> CreateDonVi(DonViDTO donViDto)
         {
-            var donVi = new DonVi
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                MaCoQuanBHXH = donViDto.MaCoQuanBHXH,
-                MaSoBHXH = donViDto.MaSoBHXH,
-                TenDonVi = donViDto.TenDonVi,
-                IsBHXHTN = donViDto.IsBHXHTN,
-                IsBHYT = donViDto.IsBHYT,
-                DmKhoiKcbId = donViDto.DmKhoiKcbId,
-                TrangThai = donViDto.TrangThai,
-                DaiLyId = donViDto.DaiLyId
-            };
+                var donVi = new DonVi
+                {
+                    MaCoQuanBHXH = donViDto.MaCoQuanBHXH,
+                    MaSoBHXH = donViDto.MaSoBHXH,
+                    TenDonVi = donViDto.TenDonVi,
+                    IsBHXHTN = donViDto.IsBHXHTN,
+                    IsBHYT = donViDto.IsBHYT,
+                    DmKhoiKcbId = donViDto.DmKhoiKcbId,
+                    TrangThai = donViDto.TrangThai
+                };
 
-            _context.DonVis.Add(donVi);
-            await _context.SaveChangesAsync();
+                _context.DonVis.Add(donVi);
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetDonVi), new { id = donVi.Id }, donVi);
+                // Thêm quan hệ với các đại lý
+                foreach (var daiLyId in donViDto.DaiLyIds)
+                {
+                    var daiLyDonVi = new DaiLyDonVi
+                    {
+                        DaiLyId = daiLyId,
+                        DonViId = donVi.Id,
+                        TrangThai = true,
+                        NguoiTao = User.Identity?.Name ?? "system"
+                    };
+                    _context.DaiLyDonVis.Add(daiLyDonVi);
+                }
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return CreatedAtAction(nameof(GetDonVi), new { id = donVi.Id }, donVi);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError($"Error creating don vi: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi tạo đơn vị", error = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateDonVi(int id, [FromBody] DonViDTO donViDto)
         {
+            using var transaction = _context.Database.BeginTransaction();
             try
             {
                 var donVi = await _context.DonVis.FindAsync(id);
@@ -121,7 +147,7 @@ namespace WebApp.API.Controllers
                     return NotFound(new { message = $"Không tìm thấy đơn vị có ID: {id}" });
                 }
 
-                // Cập nhật các trường
+                // Cập nhật thông tin đơn vị
                 donVi.MaCoQuanBHXH = donViDto.MaCoQuanBHXH;
                 donVi.MaSoBHXH = donViDto.MaSoBHXH;
                 donVi.TenDonVi = donViDto.TenDonVi;
@@ -129,30 +155,58 @@ namespace WebApp.API.Controllers
                 donVi.IsBHYT = donViDto.IsBHYT;
                 donVi.DmKhoiKcbId = donViDto.DmKhoiKcbId;
                 donVi.TrangThai = donViDto.TrangThai;
-                donVi.DaiLyId = donViDto.DaiLyId;
                 donVi.UpdatedAt = DateTime.UtcNow;
 
+                // Cập nhật quan hệ với đại lý
+                var existingRelations = await _context.DaiLyDonVis
+                    .Where(dd => dd.DonViId == id)
+                    .ToListAsync();
+
+                // Vô hiệu hóa các quan hệ không còn trong danh sách mới
+                foreach (var relation in existingRelations)
+                {
+                    if (!donViDto.DaiLyIds.Contains(relation.DaiLyId))
+                    {
+                        relation.TrangThai = false;
+                    }
+                }
+
+                // Thêm các quan hệ mới
+                foreach (var daiLyId in donViDto.DaiLyIds)
+                {
+                    var existingRelation = existingRelations
+                        .FirstOrDefault(r => r.DaiLyId == daiLyId);
+
+                    if (existingRelation == null)
+                    {
+                        // Tạo quan hệ mới
+                        var daiLyDonVi = new DaiLyDonVi
+                        {
+                            DaiLyId = daiLyId,
+                            DonViId = id,
+                            TrangThai = true,
+                            NguoiTao = User.Identity?.Name ?? "system"
+                        };
+                        _context.DaiLyDonVis.Add(daiLyDonVi);
+                    }
+                    else if (!existingRelation.TrangThai)
+                    {
+                        // Kích hoạt lại quan hệ đã bị vô hiệu hóa
+                        existingRelation.TrangThai = true;
+                    }
+                }
+
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return Ok(new { 
                     message = "Cập nhật đơn vị thành công",
-                    data = new {
-                        donVi.Id,
-                        donVi.MaCoQuanBHXH,
-                        donVi.MaSoBHXH,
-                        donVi.TenDonVi,
-                        donVi.IsBHXHTN,
-                        donVi.IsBHYT,
-                        donVi.DmKhoiKcbId,
-                        donVi.TrangThai,
-                        donVi.DaiLyId,
-                        donVi.CreatedAt,
-                        donVi.UpdatedAt
-                    }
+                    data = donVi
                 });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error updating don vi: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi cập nhật đơn vị", error = ex.Message });
             }
@@ -178,22 +232,21 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var donVis = await _context.DonVis
-                    .Where(d => d.DaiLyId == daiLyId && d.TrangThai)
-                    .OrderBy(d => d.TenDonVi)
-                    .Select(d => new
+                var donVis = await _context.DaiLyDonVis
+                    .Where(dd => dd.DaiLyId == daiLyId && dd.TrangThai)
+                    .Select(dd => new
                     {
-                        d.Id,
-                        d.MaCoQuanBHXH,
-                        d.MaSoBHXH, 
-                        d.TenDonVi,
-                        d.IsBHXHTN,
-                        d.IsBHYT,
-                        d.DmKhoiKcbId,
-                        d.Type,
-                        d.TrangThai,
-                        d.DaiLyId
+                        dd.DonVi.Id,
+                        dd.DonVi.MaCoQuanBHXH,
+                        dd.DonVi.MaSoBHXH, 
+                        dd.DonVi.TenDonVi,
+                        dd.DonVi.IsBHXHTN,
+                        dd.DonVi.IsBHYT,
+                        dd.DonVi.DmKhoiKcbId,
+                        dd.DonVi.Type,
+                        dd.DonVi.TrangThai
                     })
+                    .OrderBy(d => d.TenDonVi)
                     .ToListAsync();
 
                 if (!donVis.Any())

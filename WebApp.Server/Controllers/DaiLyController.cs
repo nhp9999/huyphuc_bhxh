@@ -57,8 +57,10 @@ namespace WebApp.API.Controllers
                 return NotFound();
             }
 
-            return await _context.DonVis
-                .Where(d => d.DaiLyId == id)
+            return await _context.DaiLyDonVis
+                .Where(dd => dd.DaiLyId == id && dd.TrangThai)
+                .Include(dd => dd.DonVi)
+                .Select(dd => dd.DonVi)
                 .OrderBy(d => d.TenDonVi)
                 .ToListAsync();
         }

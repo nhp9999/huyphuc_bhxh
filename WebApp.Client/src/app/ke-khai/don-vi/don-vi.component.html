@@ -1,0 +1,16 @@
+<nz-form-item>
+  <nz-form-label [nzSpan]="6">Đại lý quản lý</nz-form-label>
+  <nz-form-control [nzSpan]="18">
+    <nz-select 
+      [nzMode]="'multiple'"
+      [(ngModel)]="selectedDaiLys"
+      (ngModelChange)="onDaiLysChange($event)"
+      nzPlaceHolder="Chọn đại lý">
+      <nz-option
+        *ngFor="let daiLy of daiLys"
+        [nzValue]="daiLy.id"
+        [nzLabel]="daiLy.ten">
+      </nz-option>
+    </nz-select>
+  </nz-form-control>
+</nz-form-item> 

@@ -25,6 +25,7 @@ namespace WebApp.API.Data
         public DbSet<HoaDonThanhToan> HoaDonThanhToans { get; set; }
         public DbSet<NguoiDung> NguoiDungs { get; set; }
         public DbSet<DaiLy> DaiLys { get; set; }
+        public DbSet<DaiLyDonVi> DaiLyDonVis { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -37,6 +37,7 @@ import { LocationService, Province, District, Commune } from '../services/locati
 import { DaiLy } from '../services/user.service';
 import { AuthService } from '../services/auth.service';
 import { DonViService, DonVi } from '../services/don-vi.service';
+import { DaiLyDonViService } from '../services/dai-ly-don-vi.service';
 
 @Component({
   selector: 'app-users',
@@ -118,7 +119,8 @@ export class UsersComponent implements OnInit {
     private modal: NzModalService,
     private fb: FormBuilder,
     private authService: AuthService,
-    private donViService: DonViService
+    private donViService: DonViService,
+    private daiLyDonViService: DaiLyDonViService
   ) {
     this.initForm();
     this.loadDaiLys();
@@ -613,7 +615,7 @@ export class UsersComponent implements OnInit {
       tenDonVi: ['', [Validators.required]],
       isBHXHTN: [false],
       isBHYT: [false],
-      daiLyId: [null, [Validators.required]]
+      daiLyIds: [[], [Validators.required, Validators.minLength(1)]]
     });
   }
 
@@ -641,15 +643,24 @@ export class UsersComponent implements OnInit {
   editDonVi(donVi: DonVi): void {
     this.isEditDonVi = true;
     this.selectedDonViId = donVi.id;
-    this.donViForm.patchValue({
-      maCoQuanBHXH: donVi.maCoQuanBHXH,
-      maSoBHXH: donVi.maSoBHXH,
-      tenDonVi: donVi.tenDonVi,
-      isBHXHTN: donVi.isBHXHTN,
-      isBHYT: donVi.isBHYT,
-      daiLyId: donVi.daiLyId
+    
+    this.daiLyDonViService.getDaiLysByDonVi(donVi.id).subscribe({
+      next: (daiLys) => {
+        const daiLyIds = daiLys.map(d => d.id);
+        this.donViForm.patchValue({
+          maCoQuanBHXH: donVi.maCoQuanBHXH,
+          maSoBHXH: donVi.maSoBHXH,
+          tenDonVi: donVi.tenDonVi,
+          isBHXHTN: donVi.isBHXHTN,
+          isBHYT: donVi.isBHYT,
+          daiLyIds: daiLyIds
+        });
+        this.isCreateDonViVisible = true;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý của đơn vị');
+      }
     });
-    this.isCreateDonViVisible = true;
   }
 
   handleCreateDonViCancel(): void {

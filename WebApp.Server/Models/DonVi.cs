@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using WebApp.Server.Models;
@@ -8,6 +9,18 @@ namespace WebApp.API.Models
     [Table("don_vi")]
     public class DonVi
     {
+        public DonVi()
+        {
+            MaCoQuanBHXH = string.Empty;
+            MaSoBHXH = string.Empty;
+            TenDonVi = string.Empty;
+            Type = 0;
+            TrangThai = true;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+            DaiLys = new List<DaiLy>();
+        }
+
         [Key]
         [Column("id")]
         public int Id { get; set; }
@@ -40,19 +53,14 @@ namespace WebApp.API.Models
         public int Type { get; set; }
 
         [Column("trang_thai")]
-        public bool TrangThai { get; set; } = true;
+        public bool TrangThai { get; set; }
 
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
         [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; }
 
-        [Column("dai_ly_id")]
-        [Required]
-        public int DaiLyId { get; set; }
-
-        [ForeignKey("DaiLyId")]
-        public virtual DaiLy? DaiLy { get; set; }
+        public virtual ICollection<DaiLy> DaiLys { get; set; }
     }
 }
