@@ -595,6 +595,8 @@ export class DotKeKhaiComponent implements OnInit {
   onRowClick(data: DotKeKhai): void {
     if (data.dich_vu === 'BHYT') {
       this.router.navigate(['/dot-ke-khai', data.id, 'ke-khai-bhyt']);
+    } else if (data.dich_vu === 'BHXH TN') {
+      this.router.navigate(['/dot-ke-khai', data.id, 'ke-khai-bhxh']);
     }
   }
 
@@ -738,249 +740,262 @@ export class DotKeKhaiComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
-    this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(data.id).subscribe({
-      next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
-        console.log('Dữ liệu từ API:', keKhaiBHYTs); // Thêm log để kiểm tra
-        // Chuẩn bị dữ liệu cho sheet danh sách kê khai
-        const keKhaiHeaders = [
-          'STT', // Cột A - Số thứ tự
-          'HoTen', // Cột B - Họ tên người tham gia
-          'MasoBHXH', // Cột C - Mã số BHXH
-          'MaPhongBan', // Cột D - Mã phòng ban (để trống)
-          'Loai', // Cột E - Loại (mặc định là 1)
-          'PA', // Cột F - Phương án đóng (ON/TM/GH)
-          'TyleNSDP', // Cột G - Tỷ lệ NSDP (để trống)
-          'NgayBienLai', // Cột H - Ngày biên lai
-          'SoBienLai', // Cột I - Số biên lai (để trống)
-          'NguoiThamGiaThu', // Cột J - Người thu
-          'Tiendong', // Cột K - Tiền đóng (mặc định 2,340,000)
-          'TienDongThucTe', // Cột L - Tiền đóng thực tế (để trống)
-          'MucHuong', // Cột M - Mức hưởng (mặc định là 4)
-          'TuNgay', // Cột N - Từ ngày (để trống)
-          'NgayChet', // Cột O - Ngày chết (để trống)
-          'HotroKhac', // Cột P - Hỗ trợ khác (để trống)
-          'TenTinhDangSS', // Cột Q - Tên tỉnh đăng ký (để trống)
-          'Matinh_DangSS', // Cột R - Mã tỉnh đăng ký
-          'Tenhuyen_DangSS', // Cột S - Tên huyện đăng ký
-          'Mahuyen_DangSS', // Cột T - Mã huyện đăng ký
-          'TenxaDangSS', // Cột U - Tên xã đăng ký
-          'Maxa_DangSS', // Cột V - Mã xã đăng ký
-          'Diachi_DangSS', // Cột W - Địa chỉ đăng ký
-          'Sothang', // Cột X - Số tháng đóng
-          'Ghichu', // Cột Y - Ghi chú (để trống)
-          'NgaySinh', // Cột Z - Ngày sinh
-          'GioiTinh', // Cột AA - Giới tính
-          'TenTinhBenhVien', // Cột AB - Tên tỉnh bệnh viện (để trống)
-          'MaTinhBenhVien', // Cột AC - Mã tỉnh nơi khám quyết định
-          'TenBenhVien', // Cột AD - Tên bệnh viện (để trống)
-          'MaBenhVien', // Cột AE - Mã bệnh viện
-          'MavungSS', // Cột AF - Mã vùng (để trống)
-          'Tk1_Save', // Cột AG - TK1 Save (để trống)
-          'CMND', // Cột AH - CCCD
-          'Maho_Giadinh', // Cột AI - Mã hộ gia đình
-          '', // Cột AJ - Để trống
-          'QuocTich', // Cột AK - Quốc tịch
-          '', // Cột AL - Để trống
-          '', // Cột AM - Để trống
-          'TenTinhKS', // Cột AN - Tên tỉnh khai sinh (để trống)
-          'MaTinh_KS', // Cột AO - Mã tỉnh khai sinh
-          'TenHuyenKS', // Cột AP - Tên huyện khai sinh (để trống)
-          'MaHuyen_KS', // Cột AQ - Mã huyện khai sinh
-          'TenXaKS', // Cột AR - Tên xã khai sinh (để trống)
-          'MaXa_KS', // Cột AS - Mã xã khai sinh
-          'TenTinhNN', // Cột AT - Tên tỉnh nơi khám (để trống)
-          'Matinh_NN', // Cột AU - Mã tỉnh nơi khám quyết định
-          'TenHuyenNN', // Cột AV - Tên huyện nơi khám (để trống)
-          'Mahuyen_NN', // Cột AW - Mã huyện nơi khám quyết định
-          'TenXaNN', // Cột AX - Tên xã nơi khám (để trống)
-          'Maxa_NN', // Cột AY - Mã xã nơi khám quyết định
-          'Diachi_NN', // Cột AZ - Địa chỉ nơi khám quyết định
-          '', // Cột BA - Để trống
-          '', // Cột BB - Để trống
-          '', // Cột BC - Để trống
-          '', // Cột BD - Để trống
-          '', // Cột BE - Để trống
-          '', // Cột BF - Để trống
-          '', // Cột BG - Để trống
-          '', // Cột BH - Để trống
-          'SoCCCD', // Cột BI - Số CCCD
-          'SoBienLai', // Cột BJ - Số biên lai
-          'NgayBienLai', // Cột BK - Ngày biên lai
-        ];
+    const dotKeKhaiId = data.id; // Lưu id vào biến để TypeScript hiểu là number
 
-        // Thêm 2 dòng trống trước header
-        const emptyRows = [
-          Array(13).fill(''),  // Dòng 1 trống với 13 cột
-          Array(13).fill('')   // Dòng 2 trống với 13 cột
-        ];
-        
-        const keKhaiData = keKhaiBHYTs.map((item, index) => [
-          index + 1, // STT
-          item.ho_ten,
-          item.ma_so_bhxh || '', 
-          '', // Cột D trống
-          '1', // Cột E giá trị mặc định là 1
-          this.getPhuongAnDongText(item.phuong_an_dong || ''),
-          '', // Cột G trống
-          item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }) : '',
-          '', // Cột I trống
-          typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
-          '2340000', // Cột K - Tiendong - giá trị mặc định không có dấu phẩy
-          '0', // Cột L - giá trị mặc định là 0
-          '4', // Cột M giá trị mặc định là 4
-          item.han_the_moi_tu ? new Date(item.han_the_moi_tu).toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }) : '', // Cột N hiển thị Hạn thẻ mới từ
-          '', // Cột O trống
-          '', // Cột P trống
-          '', // Cột Q trống
-          item.ma_tinh_nkq || '', // Cột R - Mã tỉnh
-          '', // Cột S - Tên huyện (trống)
-          item.ma_huyen_nkq || '', // Cột T - Mã huyện
-          '', // Cột U - Tên xã (trống)
-          item.ma_xa_nkq || '', // Cột V - Mã xã
-          item.dia_chi_nkq || '', // Cột W - Địa chỉ
-          item.so_thang_dong?.toString() || '', // Cột X hiển thị số tháng đóng
-          item.is_urgent ? 'Thẻ Gấp' : '', // Cột Y - Ghi "Thẻ Gấp" nếu là thẻ gấp
-          item.ngay_sinh ? new Date(item.ngay_sinh).toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }) : '', // Cột Z hiển thị ngày sinh
-          this.getGioiTinhValue(item.gioi_tinh), // Cột AA hiển thị giới tính
-          '', // Cột AB trống
-          item.ma_tinh_nkq || '', // Cột AC hiển thị mã tỉnh nơi khám quyết định
-          '', // Cột AD trống
-          item.ma_benh_vien || '', // Cột AE hiển thị mã bệnh viện
-          '', // Cột AF trống
-          'x', // Cột AG giá trị mặc định là x
-          item.cccd || '', // Cột AH hiển thị CCCD
-          item.ma_hgd || '', // Cột AI hiển thị mã hộ gia đình
-          '', // Cột AJ trống
-          item.quoc_tich || 'VN', // Cột AK hiển thị quốc tịch, mặc định là VN
-          '', // Cột AL trống
-          '', // Cột AM trống
-          '', // Cột AN trống
-          item.ma_tinh_ks || '', // Cột AO hiển thị mã tỉnh khai sinh
-          '', // Cột AP trống
-          item.ma_huyen_ks || '', // Cột AQ hiển thị mã huyện khai sinh
-          '', // Cột AR trống
-          item.ma_xa_ks || '', // Cột AS hiển thị mã xã khai sinh
-          '', // Cột AT trống
-          item.ma_tinh_nkq || '', // Cột AU hiển thị mã tỉnh nơi khám quyết định
-          '', // Cột AV trống
-          item.ma_huyen_nkq || '', // Cột AW hiển thị mã huyện nơi khám quyết định
-          '', // Cột AX trống
-          item.ma_xa_nkq || '', // Cột AY hiển thị mã xã nơi khám quyết định
-          item.dia_chi_nkq || '', // Cột AZ hiển thị địa chỉ nơi khám quyết định
-          '', // Cột BA trống
-          '', // Cột BB trống
-          '', // Cột BC trống
-          '', // Cột BD trống
-          '', // Cột BE trống
-          '', // Cột BF trống
-          '', // Cột BG trống
-          '', // Cột BH trống
-          item.cccd || '', // Cột BI hiển thị CCCD
-          item.so_bien_lai || '', // Cột BJ hiển thị số biên lai
-          item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }) : '', // Cột BK hiển thị ngày biên lai
-        ]);
+    // Lấy thông tin user từ service
+    this.userService.getCurrentUserInfo().subscribe({
+      next: (user) => {
+        const maNhanVien = user.maNhanVien || '';
+        this.loading = true;
+        this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
+          next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
+            console.log('Dữ liệu từ API:', keKhaiBHYTs);
+            // Chuẩn bị dữ liệu cho sheet danh sách kê khai
+            const keKhaiHeaders = [
+              'STT', // Cột A - Số thứ tự
+              'HoTen', // Cột B - Họ tên người tham gia
+              'MasoBHXH', // Cột C - Mã số BHXH
+              'MaPhongBan', // Cột D - Mã phòng ban (để trống)
+              'Loai', // Cột E - Loại (mặc định là 1)
+              'PA', // Cột F - Phương án đóng (ON/TM/GH)
+              'TyleNSDP', // Cột G - Tỷ lệ NSDP (để trống)
+              'NgayBienLai', // Cột H - Ngày biên lai
+              'SoBienLai', // Cột I - Số biên lai (để trống)
+              'NguoiThamGiaThu', // Cột J - Người thu
+              'Tiendong', // Cột K - Tiền đóng (mặc định 2,340,000)
+              'TienDongThucTe', // Cột L - Tiền đóng thực tế (để trống)
+              'MucHuong', // Cột M - Mức hưởng (mặc định là 4)
+              'TuNgay', // Cột N - Từ ngày (để trống)
+              'NgayChet', // Cột O - Ngày chết (để trống)
+              'HotroKhac', // Cột P - Hỗ trợ khác (để trống)
+              'TenTinhDangSS', // Cột Q - Tên tỉnh đăng ký (để trống)
+              'Matinh_DangSS', // Cột R - Mã tỉnh đăng ký
+              'Tenhuyen_DangSS', // Cột S - Tên huyện đăng ký
+              'Mahuyen_DangSS', // Cột T - Mã huyện đăng ký
+              'TenxaDangSS', // Cột U - Tên xã đăng ký
+              'Maxa_DangSS', // Cột V - Mã xã đăng ký
+              'Diachi_DangSS', // Cột W - Địa chỉ đăng ký
+              'Sothang', // Cột X - Số tháng đóng
+              'Ghichu', // Cột Y - Ghi chú (để trống)
+              'NgaySinh', // Cột Z - Ngày sinh
+              'GioiTinh', // Cột AA - Giới tính
+              'TenTinhBenhVien', // Cột AB - Tên tỉnh bệnh viện (để trống)
+              'MaTinhBenhVien', // Cột AC - Mã tỉnh nơi khám quyết định
+              'TenBenhVien', // Cột AD - Tên bệnh viện (để trống)
+              'MaBenhVien', // Cột AE - Mã bệnh viện
+              'MavungSS', // Cột AF - Mã vùng (để trống)
+              'Tk1_Save', // Cột AG - TK1 Save (để trống)
+              'CMND', // Cột AH - CCCD
+              'Maho_Giadinh', // Cột AI - Mã hộ gia đình
+              '', // Cột AJ - Để trống
+              'QuocTich', // Cột AK - Quốc tịch
+              '', // Cột AL - Để trống
+              '', // Cột AM - Để trống
+              'TenTinhKS', // Cột AN - Tên tỉnh khai sinh (để trống)
+              'MaTinh_KS', // Cột AO - Mã tỉnh khai sinh
+              'TenHuyenKS', // Cột AP - Tên huyện khai sinh (để trống)
+              'MaHuyen_KS', // Cột AQ - Mã huyện khai sinh
+              'TenXaKS', // Cột AR - Tên xã khai sinh (để trống)
+              'MaXa_KS', // Cột AS - Mã xã khai sinh
+              'TenTinhNN', // Cột AT - Tên tỉnh nơi khám (để trống)
+              'Matinh_NN', // Cột AU - Mã tỉnh nơi khám quyết định
+              'TenHuyenNN', // Cột AV - Tên huyện nơi khám (để trống)
+              'Mahuyen_NN', // Cột AW - Mã huyện nơi khám quyết định
+              'TenXaNN', // Cột AX - Tên xã nơi khám (để trống)
+              'Maxa_NN', // Cột AY - Mã xã nơi khám quyết định
+              'Diachi_NN', // Cột AZ - Địa chỉ nơi khám quyết định
+              '', // Cột BA - Để trống
+              '', // Cột BB - Để trống
+              '', // Cột BC - Để trống
+              '', // Cột BD - Để trống
+              '', // Cột BE - Để trống
+              '', // Cột BF - Để trống
+              '', // Cột BG - Để trống
+              '', // Cột BH - Để trống
+              'SoCCCD', // Cột BI - Số CCCD
+              'SoBienLai', // Cột BJ - Số biên lai
+              'NgayBienLai', // Cột BK - Ngày biên lai
+            ];
 
-        // Tạo workbook và thêm sheet danh sách kê khai
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([...emptyRows, keKhaiHeaders, ...keKhaiData]);
-        XLSX.utils.book_append_sheet(wb, ws, 'Dữ Liệu');
+            // Thêm 2 dòng trống trước header
+            const emptyRows = [
+              Array(13).fill(''),  // Dòng 1 trống với 13 cột
+              Array(13).fill('')   // Dòng 2 trống với 13 cột
+            ];
+            
+            const keKhaiData = keKhaiBHYTs.map((item, index) => [
+              index + 1, // STT
+              item.ho_ten,
+              item.ma_so_bhxh || '', 
+              maNhanVien, // Sử dụng mã nhân viên từ API
+              '1', // Cột E giá trị mặc định là 1
+              this.getPhuongAnDongText(item.phuong_an_dong || ''),
+              '', // Cột G trống
+              item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              }) : '',
+              '', // Cột I trống
+              typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
+              '2340000', // Cột K - Tiendong - giá trị mặc định không có dấu phẩy
+              '0', // Cột L - giá trị mặc định là 0
+              '4', // Cột M giá trị mặc định là 4
+              item.han_the_moi_tu ? new Date(item.han_the_moi_tu).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              }) : '', // Cột N hiển thị Hạn thẻ mới từ
+              '', // Cột O trống
+              '', // Cột P trống
+              '', // Cột Q trống
+              item.ma_tinh_nkq || '', // Cột R - Mã tỉnh
+              '', // Cột S - Tên huyện (trống)
+              item.ma_huyen_nkq || '', // Cột T - Mã huyện
+              '', // Cột U - Tên xã (trống)
+              item.ma_xa_nkq || '', // Cột V - Mã xã
+              item.dia_chi_nkq || '', // Cột W - Địa chỉ
+              item.so_thang_dong?.toString() || '', // Cột X hiển thị số tháng đóng
+              item.is_urgent ? 'Thẻ Gấp' : '', // Cột Y - Ghi "Thẻ Gấp" nếu là thẻ gấp
+              item.ngay_sinh ? new Date(item.ngay_sinh).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              }) : '', // Cột Z hiển thị ngày sinh
+              this.getGioiTinhValue(item.gioi_tinh), // Cột AA hiển thị giới tính
+              '', // Cột AB trống
+              item.ma_tinh_nkq || '', // Cột AC hiển thị mã tỉnh nơi khám quyết định
+              '', // Cột AD trống
+              item.ma_benh_vien || '', // Cột AE hiển thị mã bệnh viện
+              '', // Cột AF trống
+              'x', // Cột AG giá trị mặc định là x
+              item.cccd || '', // Cột AH hiển thị CCCD
+              item.ma_hgd || '', // Cột AI hiển thị mã hộ gia đình
+              '', // Cột AJ trống
+              item.quoc_tich || 'VN', // Cột AK hiển thị quốc tịch, mặc định là VN
+              '', // Cột AL trống
+              '', // Cột AM trống
+              '', // Cột AN trống
+              item.ma_tinh_ks || '', // Cột AO hiển thị mã tỉnh khai sinh
+              '', // Cột AP trống
+              item.ma_huyen_ks || '', // Cột AQ hiển thị mã huyện khai sinh
+              '', // Cột AR trống
+              item.ma_xa_ks || '', // Cột AS hiển thị mã xã khai sinh
+              '', // Cột AT trống
+              item.ma_tinh_nkq || '', // Cột AU hiển thị mã tỉnh nơi khám quyết định
+              '', // Cột AV trống
+              item.ma_huyen_nkq || '', // Cột AW hiển thị mã huyện nơi khám quyết định
+              '', // Cột AX trống
+              item.ma_xa_nkq || '', // Cột AY hiển thị mã xã nơi khám quyết định
+              item.dia_chi_nkq || '', // Cột AZ hiển thị địa chỉ nơi khám quyết định
+              '', // Cột BA trống
+              '', // Cột BB trống
+              '', // Cột BC trống
+              '', // Cột BD trống
+              '', // Cột BE trống
+              '', // Cột BF trống
+              '', // Cột BG trống
+              '', // Cột BH trống
+              item.cccd || '', // Cột BI hiển thị CCCD
+              item.so_bien_lai || '', // Cột BJ hiển thị số biên lai
+              item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              }) : '', // Cột BK hiển thị ngày biên lai
+            ]);
 
-        // Tạo style cho sheet
-        ws['!cols'] = [
-          { wch: 8 },  // STT
-          { wch: 30 }, // HoTen  
-          { wch: 15 }, // Mã số BHXH
-          { wch: 10 }, // Cột D trống
-          { wch: 10 }, // Cột E trống
-          { wch: 15 }, // Phương án đóng
-          { wch: 10 }, // Cột G trống 
-          { wch: 15 }, // Ngày biên lai
-          { wch: 10 }, // Cột I trống
-          { wch: 15 }, // Người thứ
-          { wch: 15 }, // Cột K
-          { wch: 10 }, // Cột L trống
-          { wch: 10 }, // Cột M
-          { wch: 10 }, // Cột N trống
-          { wch: 10 }, // Cột O trống
-          { wch: 10 }, // Cột P trống
-          { wch: 10 }, // Cột Q trống
-          { wch: 15 }, // Cột R trống
-          { wch: 10 }, // Cột S trống
-          { wch: 15 }, // Cột T trống
-          { wch: 10 }, // Cột U trống
-          { wch: 50 }, // Cột V Diachi_DangSS
-          { wch: 10 }, // Cột W trống
-          { wch: 15 }, // Cột X Sothang
-          { wch: 10 }, // Cột Y trống
-          { wch: 15 }, // Cột Z NgaySinh
-          { wch: 10 }, // Cột AA GioiTinh
-          { wch: 10 }, // Cột AB trống
-          { wch: 15 }, // Cột AC trống
-          { wch: 10 }, // Cột AD trống
-          { wch: 15 }, // Cột AE trống
-          { wch: 10 }, // Cột AF trống
-          { wch: 10 }, // Cột AG trống
-          { wch: 15 }, // Cột AH trống
-          { wch: 15 }, // Cột AI trống
-          { wch: 15 }, // Cột AK trống
-          { wch: 10 }, // Cột AL trống
-          { wch: 10 }, // Cột AM trống
-          { wch: 10 }, // Cột AN trống
-          { wch: 15 }, // Cột AO trống
-          { wch: 10 }, // Cột AP trống
-          { wch: 15 }, // Cột AQ trống
-          { wch: 10 }, // Cột AR trống
-          { wch: 15 }, // Cột AS trống
-          { wch: 10 }, // Cột AT trống
-          { wch: 15 }, // Cột AU trống
-          { wch: 10 }, // Cột AV trống
-          { wch: 15 }, // Cột AW trống
-          { wch: 10 }, // Cột AX trống
-          { wch: 15 }, // Cột AY trống
-          { wch: 50 }, // Cột AZ DiaChi_DangSS
-          { wch: 10 }, // Cột BA trống
-          { wch: 10 }, // Cột BB trống
-          { wch: 10 }, // Cột BC trống
-          { wch: 10 }, // Cột BD trống
-          { wch: 10 }, // Cột BE trống
-          { wch: 10 }, // Cột BF trống
-          { wch: 10 }, // Cột BG trống
-          { wch: 10 }, // Cột BH trống
-          { wch: 15 }, // Cột BI trống
-          { wch: 15 }, // Cột BJ trống
-          { wch: 15 }, // Cột BK trống
-        ];
+            // Tạo workbook và thêm sheet danh sách kê khai
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([...emptyRows, keKhaiHeaders, ...keKhaiData]);
+            XLSX.utils.book_append_sheet(wb, ws, 'Dữ Liệu');
 
-        // Xuất file Excel
-        XLSX.writeFile(wb, `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.xlsx`);
-        
-        this.message.success('Xuất dữ liệu kê khai BHYT thành công');
-        this.loading = false;
+            // Tạo style cho sheet
+            ws['!cols'] = [
+              { wch: 8 },  // STT
+              { wch: 30 }, // HoTen  
+              { wch: 15 }, // Mã số BHXH
+              { wch: 10 }, // Cột D trống
+              { wch: 10 }, // Cột E trống
+              { wch: 15 }, // Phương án đóng
+              { wch: 10 }, // Cột G trống 
+              { wch: 15 }, // Ngày biên lai
+              { wch: 10 }, // Cột I trống
+              { wch: 15 }, // Người thứ
+              { wch: 15 }, // Cột K
+              { wch: 10 }, // Cột L trống
+              { wch: 10 }, // Cột M
+              { wch: 10 }, // Cột N trống
+              { wch: 10 }, // Cột O trống
+              { wch: 10 }, // Cột P trống
+              { wch: 10 }, // Cột Q trống
+              { wch: 15 }, // Cột R trống
+              { wch: 10 }, // Cột S trống
+              { wch: 15 }, // Cột T trống
+              { wch: 10 }, // Cột U trống
+              { wch: 50 }, // Cột V Diachi_DangSS
+              { wch: 10 }, // Cột W trống
+              { wch: 15 }, // Cột X Sothang
+              { wch: 10 }, // Cột Y trống
+              { wch: 15 }, // Cột Z NgaySinh
+              { wch: 10 }, // Cột AA GioiTinh
+              { wch: 10 }, // Cột AB trống
+              { wch: 15 }, // Cột AC trống
+              { wch: 10 }, // Cột AD trống
+              { wch: 15 }, // Cột AE trống
+              { wch: 10 }, // Cột AF trống
+              { wch: 10 }, // Cột AG trống
+              { wch: 15 }, // Cột AH trống
+              { wch: 15 }, // Cột AI trống
+              { wch: 15 }, // Cột AK trống
+              { wch: 10 }, // Cột AL trống
+              { wch: 10 }, // Cột AM trống
+              { wch: 10 }, // Cột AN trống
+              { wch: 15 }, // Cột AO trống
+              { wch: 10 }, // Cột AP trống
+              { wch: 15 }, // Cột AQ trống
+              { wch: 10 }, // Cột AR trống
+              { wch: 15 }, // Cột AS trống
+              { wch: 10 }, // Cột AT trống
+              { wch: 15 }, // Cột AU trống
+              { wch: 10 }, // Cột AV trống
+              { wch: 15 }, // Cột AW trống
+              { wch: 10 }, // Cột AX trống
+              { wch: 15 }, // Cột AY trống
+              { wch: 50 }, // Cột AZ DiaChi_DangSS
+              { wch: 10 }, // Cột BA trống
+              { wch: 10 }, // Cột BB trống
+              { wch: 10 }, // Cột BC trống
+              { wch: 10 }, // Cột BD trống
+              { wch: 10 }, // Cột BE trống
+              { wch: 10 }, // Cột BF trống
+              { wch: 10 }, // Cột BG trống
+              { wch: 10 }, // Cột BH trống
+              { wch: 15 }, // Cột BI trống
+              { wch: 15 }, // Cột BJ trống
+              { wch: 15 }, // Cột BK trống
+            ];
+
+            // Xuất file Excel
+            XLSX.writeFile(wb, `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.xlsx`);
+            
+            this.message.success('Xuất dữ liệu kê khai BHYT thành công');
+            this.loading = false;
+          },
+          error: (error: any) => {
+            console.error('Lỗi khi lấy dữ liệu kê khai BHYT:', error);
+            if (error.status === 404) {
+              this.message.error(`Không tìm thấy đợt kê khai có ID: ${data.id}`);
+            } else {
+              this.message.error('Có lỗi xảy ra khi xuất dữ liệu kê khai BHYT');
+            }
+            this.loading = false;
+          }
+        });
       },
-      error: (error: any) => {
-        console.error('Lỗi khi lấy dữ liệu kê khai BHYT:', error);
-        if (error.status === 404) {
-          this.message.error(`Không tìm thấy đợt kê khai có ID: ${data.id}`);
-        } else {
-          this.message.error('Có lỗi xảy ra khi xuất dữ liệu kê khai BHYT');
-        }
+      error: (error) => {
+        console.error('Lỗi khi lấy thông tin người dùng:', error);
+        this.message.error('Có lỗi xảy ra khi lấy thông tin người dùng');
         this.loading = false;
       }
     });

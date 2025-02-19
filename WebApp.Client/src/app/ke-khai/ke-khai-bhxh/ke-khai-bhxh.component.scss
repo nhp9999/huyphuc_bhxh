@@ -1,0 +1,65 @@
+.ke-khai-bhxh-container {
+  padding: 24px;
+
+  .form-card {
+    margin-bottom: 24px;
+  }
+
+  .table-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .left-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .amount {
+        color: #1890ff;
+      }
+    }
+  }
+
+  .custom-input-group {
+    display: flex;
+    
+    input {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    button {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+
+  nz-form-label {
+    font-weight: 500;
+  }
+}
+
+::ng-deep {
+  .date-picker-dropdown {
+    position: fixed !important;
+  }
+
+  .ant-picker {
+    width: 100%;
+    &-input {
+      > input {
+        text-align: left;
+      }
+    }
+    &-panel-container {
+      z-index: 1050;
+    }
+  }
+} 

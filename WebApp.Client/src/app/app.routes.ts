@@ -19,6 +19,10 @@ export const routes: Routes = [
       { path: 'dot-ke-khai', loadComponent: () => import('./ke-khai/dot-ke-khai/dot-ke-khai.component').then(m => m.DotKeKhaiComponent) },
       { path: 'dot-ke-khai/:id/ke-khai-bhyt', loadComponent: () => import('./ke-khai/ke-khai-bhyt/ke-khai-bhyt.component').then(m => m.KeKhaiBHYTComponent) },
       { 
+        path: 'dot-ke-khai/:id/ke-khai-bhxh', 
+        loadComponent: () => import('./ke-khai/ke-khai-bhxh/ke-khai-bhxh.component').then(m => m.KeKhaiBHXHComponent) 
+      },
+      { 
         path: 'reports',
         children: [
           { path: 'statistics', component: StatisticsComponent }

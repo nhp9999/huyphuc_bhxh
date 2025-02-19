@@ -147,7 +147,8 @@ namespace WebApp.API.Controllers
                         isSuperAdmin = u.IsSuperAdmin,
                         typeMangLuoi = u.TypeMangLuoi,
                         status = u.Status,
-                        clientId = u.ClientId
+                        clientId = u.ClientId,
+                        maNhanVien = u.MaNhanVien
                     })
                     .FirstOrDefaultAsync();
 
