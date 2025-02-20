@@ -94,7 +94,6 @@
       <thead>
         <tr>
           <th [nzWidth]="'50px'" [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
-          <th [nzWidth]="'60px'" nzAlign="center">STT</th>
           <th [nzWidth]="'180px'">Tên đợt</th>
           <th [nzWidth]="'200px'">Đơn vị</th>
           <th [nzWidth]="'80px'" nzAlign="center">Dịch vụ</th>
@@ -109,7 +108,6 @@
       <tbody>
         <tr *ngFor="let data of basicTable.data; let i = index" (click)="onRowClick(data)">
           <td [nzChecked]="getCheckedStatus(data)" (nzCheckedChange)="onItemChecked($event, data)"></td>
-          <td nzAlign="center">{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
           <td>{{ getDonViName(data.don_vi_id) }}</td>
           <td nzAlign="center">{{ data.dich_vu }}</td>

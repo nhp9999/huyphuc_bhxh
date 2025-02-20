@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.Server.Models;
 using Microsoft.Extensions.Logging;
+using WebApp.API.Models;
 
 namespace WebApp.Server.Controllers
 {
@@ -26,28 +27,35 @@ namespace WebApp.Server.Controllers
             _logger = logger;
         }
 
-        [HttpGet("dai-ly/{daiLyId}")]
-        public async Task<IActionResult> GetDonVisByDaiLy(int daiLyId)
+        [HttpGet("dai-ly/{daiLyId}/don-vis")]
+        public async Task<ActionResult<IEnumerable<DonVi>>> GetDonVisByDaiLy(int daiLyId)
         {
-            var donVis = await _context.DaiLyDonVis
-                .Where(x => x.DaiLyId == daiLyId && x.TrangThai)
-                .Include(x => x.DonVi)
-                .Select(x => new {
-                    x.DonVi.Id,
-                    x.DonVi.MaCoQuanBHXH,
-                    x.DonVi.MaSoBHXH,
-                    x.DonVi.TenDonVi,
-                    x.DonVi.IsBHXHTN,
-                    x.DonVi.IsBHYT,
-                    x.DonVi.DmKhoiKcbId,
-                    x.DonVi.Type,
-                    x.DonVi.TrangThai,
-                    x.DonVi.CreatedAt,
-                    x.DonVi.UpdatedAt
-                })
-                .ToListAsync();
+            try
+            {
+                var donVis = await _context.DaiLyDonVis
+                    .Where(dd => dd.DaiLyId == daiLyId && dd.TrangThai)
+                    .Include(dd => dd.DonVi)
+                    .Select(dd => new {
+                        dd.DonVi.Id,
+                        dd.DonVi.MaCoQuanBHXH,
+                        dd.DonVi.MaSoBHXH,
+                        dd.DonVi.TenDonVi,
+                        dd.DonVi.IsBHXHTN,
+                        dd.DonVi.IsBHYT,
+                        dd.DonVi.DmKhoiKcbId,
+                        dd.DonVi.Type,
+                        dd.DonVi.TrangThai
+                    })
+                    .OrderBy(d => d.TenDonVi)
+                    .ToListAsync();
 
-            return Ok(donVis);
+                return Ok(donVis);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting don vis for dai ly {daiLyId}: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách đơn vị" });
+            }
         }
 
         [HttpGet("don-vi/{donViId}/dai-lys")]

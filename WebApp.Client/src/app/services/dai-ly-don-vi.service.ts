@@ -31,7 +31,7 @@ export class DaiLyDonViService {
   }
 
   getDonVisByDaiLy(daiLyId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/don-vis/${daiLyId}`);
+    return this.http.get<any[]>(`${this.apiUrl}/dai-ly/${daiLyId}/don-vis`);
   }
 
   addDaiLyDonVi(daiLyId: number, donViId: number, nguoiTao: string): Observable<any> {

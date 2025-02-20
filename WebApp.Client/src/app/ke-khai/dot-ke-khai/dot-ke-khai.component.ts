@@ -241,23 +241,22 @@ export class DotKeKhaiComponent implements OnInit {
     const nam = this.form.get('nam')?.value;
 
     if (donViId && thang && nam) {
-      // Tìm số đợt lớn nhất cho đơn vị trong tháng/năm
-      const existingDots = this.dotKeKhais.filter(dot => 
-        dot.don_vi_id === donViId &&
-        dot.thang === thang &&
-        dot.nam === nam
-      );
-
-      let nextSoDot = 1;
-      if (existingDots.length > 0) {
-        const maxSoDot = Math.max(...existingDots.map(dot => dot.so_dot));
-        nextSoDot = maxSoDot + 1;
-      }
-
-      this.form.patchValue({ 
-        so_dot: nextSoDot,
-        ten_dot: `Đợt ${nextSoDot} Tháng ${thang} năm ${nam}`
-      }, { emitEvent: false });
+      this.loading = true;
+      // Gọi API để lấy số đợt tiếp theo
+      this.dotKeKhaiService.getNextSoDot(donViId, thang, nam).subscribe({
+        next: (nextSoDot) => {
+          this.form.patchValue({
+            so_dot: nextSoDot,
+            ten_dot: `Đợt ${nextSoDot} Tháng ${thang} năm ${nam}`
+          }, { emitEvent: false });
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Lỗi khi lấy số đợt:', error);
+          this.message.error('Có lỗi xảy ra khi lấy số đợt');
+          this.loading = false;
+        }
+      });
     }
   }
 
@@ -266,16 +265,21 @@ export class DotKeKhaiComponent implements OnInit {
     // Lấy danh sách đợt kê khai
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
-        console.log('Danh sách đợt kê khai:', data); // Log để debug
+        console.log('Danh sách đợt kê khai:', data);
+        
+        // Lọc theo người tạo
+        const filteredData = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
+        
         // Kiểm tra thông tin đơn vị
-        data.forEach(dot => {
+        filteredData.forEach(dot => {
           if (!dot.DonVi) {
             console.warn(`Đợt kê khai ${dot.ten_dot} không có thông tin đơn vị`);
           } else if (!dot.DonVi.maSoBHXH) {
             console.warn(`Đơn vị của đợt kê khai ${dot.ten_dot} chưa có mã số BHXH`);
           }
         });
-        this.dotKeKhais = this.sortDotKeKhais(data);
+        
+        this.dotKeKhais = this.sortDotKeKhais(filteredData);
         this.filterData();
         this.loading = false;
       },
@@ -500,7 +504,7 @@ export class DotKeKhaiComponent implements OnInit {
         },
         error: (error) => {
           if (error.status === 400 && error.error?.message?.includes('unique constraint')) {
-            // Nếu bị trùng, tự động tăng số đợt và thử lại
+            // Nếu bị trùng, tự động lấy số đợt mới và thử lại
             this.updateSoDot();
             this.message.warning('Đã tự động tăng số đợt do trùng lặp');
           } else {
