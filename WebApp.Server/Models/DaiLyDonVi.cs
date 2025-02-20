@@ -36,9 +36,9 @@ namespace WebApp.Server.Models
         public string NguoiTao { get; set; }
 
         [ForeignKey("DaiLyId")]
-        public virtual DaiLy? DaiLy { get; set; }
+        public virtual DaiLy DaiLy { get; set; }
 
         [ForeignKey("DonViId")]
-        public virtual DonVi? DonVi { get; set; }
+        public virtual DonVi DonVi { get; set; }
     }
 } 

@@ -227,6 +227,20 @@ namespace WebApp.API.Data
                 entity.Property(e => e.NgayTao).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.NguoiTao).HasMaxLength(50);
             });
+
+            // Cấu hình mối quan hệ nhiều-nhiều
+            modelBuilder.Entity<DaiLyDonVi>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<DaiLyDonVi>()
+                .HasOne(x => x.DaiLy)
+                .WithMany()
+                .HasForeignKey(x => x.DaiLyId);
+
+            modelBuilder.Entity<DaiLyDonVi>()
+                .HasOne(x => x.DonVi)
+                .WithMany()
+                .HasForeignKey(x => x.DonViId);
         }
     }
 } 

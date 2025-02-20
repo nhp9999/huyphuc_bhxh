@@ -10,6 +10,8 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthService } from '../../services/auth.service';
+import { ShopOutline } from '@ant-design/icons-angular/icons';
+import { NzIconService } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-main-layout',
@@ -37,9 +39,11 @@ export class MainLayoutComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private iconService: NzIconService
   ) {
     this.currentUser = this.authService.getCurrentUser();
+    this.iconService.addIcon(ShopOutline);
   }
 
   ngOnInit() {

@@ -109,23 +109,37 @@ namespace WebApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDaiLy(int id)
         {
-            try 
+            try
             {
-                var daiLy = await _context.DaiLys
-                    .Include(d => d.DonVis) // Include đơn vị liên quan
-                    .FirstOrDefaultAsync(d => d.Id == id);
-                
+                var daiLy = await _context.DaiLys.FindAsync(id);
                 if (daiLy == null)
                 {
-                    return NotFound(new { message = $"Không tìm thấy đại lý có ID: {id}" });
+                    return NotFound(new { message = "Không tìm thấy đại lý" });
                 }
 
                 // Kiểm tra xem đại lý có đơn vị nào không
-                if (daiLy.DonVis != null && daiLy.DonVis.Any())
+                var daiLyDonViCount = await _context.Set<DaiLyDonVi>()
+                    .Where(x => x.DaiLyId == id && x.TrangThai)
+                    .CountAsync();
+
+                if (daiLyDonViCount > 0)
                 {
                     return BadRequest(new { 
                         message = "Không thể xóa đại lý này vì đang có đơn vị liên kết",
-                        donViCount = daiLy.DonVis.Count
+                        donViCount = daiLyDonViCount
+                    });
+                }
+
+                // Kiểm tra xem đại lý có đợt kê khai nào không
+                var dotKeKhaiCount = await _context.DotKeKhais
+                    .Where(x => x.dai_ly_id == id)
+                    .CountAsync();
+
+                if (dotKeKhaiCount > 0)
+                {
+                    return BadRequest(new {
+                        message = "Không thể xóa đại lý này vì đang có đợt kê khai liên quan",
+                        dotKeKhaiCount = dotKeKhaiCount
                     });
                 }
 

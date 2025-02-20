@@ -26,6 +26,10 @@
             <span nz-icon nzType="profile"></span>
             <span>Đợt kê khai</span>
           </li>
+          <li nz-menu-item nzMatchRouter routerLink="/dai-ly" *ngIf="isAdmin">
+            <span nz-icon nzType="shop"></span>
+            <span>Đại lý</span>
+          </li>
           <li nz-menu-item nzMatchRouter routerLink="/users" *ngIf="isAdmin">
             <span nz-icon nzType="user"></span>
             <span>Người dùng</span>
