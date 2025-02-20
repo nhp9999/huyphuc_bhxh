@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.Server.Models;
+using Microsoft.Extensions.Logging;
 
 namespace WebApp.Server.Controllers
 {
@@ -17,10 +18,12 @@ namespace WebApp.Server.Controllers
     public class DaiLyDonViController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<DaiLyDonViController> _logger;
 
-        public DaiLyDonViController(ApplicationDbContext context)
+        public DaiLyDonViController(ApplicationDbContext context, ILogger<DaiLyDonViController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet("dai-ly/{daiLyId}")]
@@ -47,25 +50,24 @@ namespace WebApp.Server.Controllers
             return Ok(donVis);
         }
 
-        [HttpGet("don-vi/{donViId}")]
-        public async Task<IActionResult> GetDaiLysByDonVi(int donViId)
+        [HttpGet("don-vi/{donViId}/dai-lys")]
+        public async Task<ActionResult<IEnumerable<DaiLy>>> GetDaiLysByDonVi(int donViId)
         {
-            var daiLys = await _context.DaiLyDonVis
-                .Where(x => x.DonViId == donViId && x.TrangThai)
-                .Include(x => x.DaiLy)
-                .Select(x => new {
-                    x.DaiLy.Id,
-                    x.DaiLy.Ma,
-                    x.DaiLy.Ten,
-                    x.DaiLy.DiaChi,
-                    x.DaiLy.SoDienThoai,
-                    x.DaiLy.Email,
-                    x.DaiLy.NguoiDaiDien,
-                    x.DaiLy.TrangThai
-                })
-                .ToListAsync();
+            try
+            {
+                var daiLys = await _context.DaiLyDonVis
+                    .Where(dd => dd.DonViId == donViId && dd.TrangThai)
+                    .Include(dd => dd.DaiLy)
+                    .Select(dd => dd.DaiLy)
+                    .ToListAsync();
 
-            return Ok(daiLys);
+                return Ok(daiLys);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting dai lys for don vi {donViId}: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách đại lý" });
+            }
         }
 
         [HttpPost]

@@ -5,6 +5,15 @@ import { environment } from '../../environments/environment';
 import { DonVi } from './don-vi.service';
 import { DaiLy } from './user.service';
 
+export interface DaiLyDonVi {
+  id?: number;
+  daiLyId: number;
+  donViId: number;
+  trangThai: boolean;
+  nguoiTao: string;
+  ngayTao?: Date;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,12 +22,16 @@ export class DaiLyDonViService {
 
   constructor(private http: HttpClient) { }
 
-  getDonVisByDaiLy(daiLyId: number): Observable<DonVi[]> {
-    return this.http.get<DonVi[]>(`${this.apiUrl}/dai-ly/${daiLyId}`);
+  createDaiLyDonVi(data: DaiLyDonVi): Observable<DaiLyDonVi> {
+    return this.http.post<DaiLyDonVi>(this.apiUrl, data);
   }
 
-  getDaiLysByDonVi(donViId: number): Observable<DaiLy[]> {
-    return this.http.get<DaiLy[]>(`${this.apiUrl}/don-vi/${donViId}`);
+  getDaiLysByDonVi(donViId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/don-vi/${donViId}/dai-lys`);
+  }
+
+  getDonVisByDaiLy(daiLyId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/don-vis/${daiLyId}`);
   }
 
   addDaiLyDonVi(daiLyId: number, donViId: number, nguoiTao: string): Observable<any> {

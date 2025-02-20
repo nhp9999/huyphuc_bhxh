@@ -52,4 +52,8 @@ export class DonViService {
   getDonVisByDaiLy(daiLyId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/by-dai-ly/${daiLyId}`);
   }
+
+  updateStatus(id: number, trangThai: boolean): Observable<DonVi> {
+    return this.http.patch<DonVi>(`${this.apiUrl}/${id}/status`, { trangThai });
+  }
 } 

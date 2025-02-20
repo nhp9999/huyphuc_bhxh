@@ -1,16 +1,133 @@
-<nz-form-item>
-  <nz-form-label [nzSpan]="6">Đại lý quản lý</nz-form-label>
-  <nz-form-control [nzSpan]="18">
-    <nz-select 
-      [nzMode]="'multiple'"
-      [(ngModel)]="selectedDaiLys"
-      (ngModelChange)="onDaiLysChange($event)"
-      nzPlaceHolder="Chọn đại lý">
-      <nz-option
-        *ngFor="let daiLy of daiLys"
-        [nzValue]="daiLy.id"
-        [nzLabel]="daiLy.ten">
-      </nz-option>
-    </nz-select>
-  </nz-form-control>
-</nz-form-item> 
+<div class="page-header">
+  <h1>Quản lý đơn vị</h1>
+  <div class="header-actions">
+    <nz-input-group [nzSuffix]="suffixIconSearch" style="width: 300px; margin-right: 16px;">
+      <input type="text" nz-input placeholder="Tìm kiếm theo mã hoặc tên đơn vị" [(ngModel)]="searchText" (ngModelChange)="onSearch()"/>
+    </nz-input-group>
+    <button nz-button nzType="primary" (click)="showCreateModal()">
+      <span nz-icon nzType="plus"></span>Thêm mới
+    </button>
+  </div>
+</div>
+
+<ng-template #suffixIconSearch>
+  <span nz-icon nzType="search"></span>
+</ng-template>
+
+<nz-table #basicTable [nzData]="donVis" [nzLoading]="loading">
+  <thead>
+    <tr>
+      <th>Mã cơ quan BHXH</th>
+      <th>Mã số BHXH</th>
+      <th>Tên đơn vị</th>
+      <th>Loại hình</th>
+      <th>Trạng thái</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let data of basicTable.data">
+      <td>{{ data.maCoQuanBHXH }}</td>
+      <td>{{ data.maSoBHXH }}</td>
+      <td>{{ data.tenDonVi }}</td>
+      <td>
+        <nz-tag [nzColor]="data.isBHXHTN ? 'blue' : 'green'">
+          {{ data.isBHXHTN ? 'BHXH tự nguyện' : 'BHYT' }}
+        </nz-tag>
+      </td>
+      <td>
+        <nz-switch
+          [(ngModel)]="data.trangThai"
+          [nzLoading]="data.loading"
+          (ngModelChange)="onStatusChange(data)">
+        </nz-switch>
+      </td>
+      <td>
+        <button nz-button nzType="primary" (click)="showEditModal(data)">
+          <span nz-icon nzType="edit"></span>
+        </button>
+        <nz-divider nzType="vertical"></nz-divider>
+        <button 
+          nz-button 
+          nzType="default" 
+          nzDanger
+          nz-popconfirm
+          nzPopconfirmTitle="Bạn có chắc chắn muốn xóa đơn vị này?"
+          (nzOnConfirm)="deleteData(data.id)">
+          <span nz-icon nzType="delete"></span>
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</nz-table>
+
+<nz-modal
+  [(nzVisible)]="isModalVisible"
+  [nzTitle]="modalTitle"
+  (nzOnCancel)="handleCancel()"
+  (nzOnOk)="handleOk()"
+  [nzWidth]="700">
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="donViForm">
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Mã cơ quan BHXH</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã cơ quan BHXH!">
+          <input nz-input formControlName="maCoQuanBHXH" placeholder="Nhập mã cơ quan BHXH"/>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã số BHXH!">
+          <input nz-input formControlName="maSoBHXH" placeholder="Nhập mã số BHXH"/>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Tên đơn vị</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên đơn vị!">
+          <input nz-input formControlName="tenDonVi" placeholder="Nhập tên đơn vị"/>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6">Loại hình</nz-form-label>
+        <nz-form-control [nzSpan]="18">
+          <nz-radio-group formControlName="type">
+            <label nz-radio [nzValue]="1">BHXH tự nguyện</label>
+            <label nz-radio [nzValue]="2">BHYT</label>
+          </nz-radio-group>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- Ẩn các trường này vì sẽ được tự động cập nhật -->
+      <input type="hidden" formControlName="isBHXHTN">
+      <input type="hidden" formControlName="isBHYT">
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6">Đại lý quản lý</nz-form-label>
+        <nz-form-control [nzSpan]="18">
+          <nz-select 
+            [nzMode]="'multiple'"
+            [(ngModel)]="selectedDaiLys"
+            [ngModelOptions]="{standalone: true}"
+            (ngModelChange)="onDaiLysChange($event)"
+            nzPlaceHolder="Chọn đại lý">
+            <nz-option
+              *ngFor="let daiLy of daiLys"
+              [nzValue]="daiLy.id"
+              [nzLabel]="daiLy.ten">
+            </nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6">Trạng thái</nz-form-label>
+        <nz-form-control [nzSpan]="18">
+          <nz-switch formControlName="trangThai"></nz-switch>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal> 

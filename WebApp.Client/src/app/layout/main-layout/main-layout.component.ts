@@ -34,16 +34,16 @@ import { NzIconService } from 'ng-zorro-antd/icon';
 })
 export class MainLayoutComponent implements OnInit {
   isCollapsed = false;
-  isAdmin: boolean = false;
   currentUser: any;
+  isAdmin = false;
 
   constructor(
-    private authService: AuthService,
     private router: Router,
+    private authService: AuthService,
     private iconService: NzIconService
   ) {
-    this.currentUser = this.authService.getCurrentUser();
     this.iconService.addIcon(ShopOutline);
+    this.currentUser = this.authService.getCurrentUser();
   }
 
   ngOnInit() {
@@ -52,7 +52,6 @@ export class MainLayoutComponent implements OnInit {
       this.isCollapsed = savedState === 'true';
     }
 
-    // Kiểm tra quyền admin
     this.isAdmin = this.currentUser?.roles?.some((role: string) => 
       ['admin', 'super_admin'].includes(role)
     ) || this.currentUser?.isSuperAdmin;

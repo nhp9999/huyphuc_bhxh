@@ -34,6 +34,10 @@ export const routes: Routes = [
           { path: 'statistics', component: StatisticsComponent }
         ]
       },
+      { 
+        path: 'don-vi', 
+        loadComponent: () => import('./ke-khai/don-vi/don-vi.component').then(m => m.DonViComponent) 
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   }

@@ -18,17 +18,21 @@
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-menu-item nzMatchRouter routerLink="/dashboard">
         <span nz-icon nzType="dashboard"></span>
-        <span>Trang chủ</span>
+        <span>Dashboard</span>
       </li>
       <li nz-submenu nzTitle="Quản lý" nzIcon="appstore">
         <ul>
+          <li nz-menu-item nzMatchRouter routerLink="/don-vi">
+            <span nz-icon nzType="shop"></span>
+            <span>Quản lý đơn vị</span>
+          </li>
           <li nz-menu-item nzMatchRouter routerLink="/dot-ke-khai">
             <span nz-icon nzType="profile"></span>
             <span>Đợt kê khai</span>
           </li>
           <li nz-menu-item nzMatchRouter routerLink="/dai-ly" *ngIf="isAdmin">
-            <span nz-icon nzType="shop"></span>
-            <span>Đại lý</span>
+            <span nz-icon nzType="team"></span>
+            <span>Quản lý đại lý</span>
           </li>
           <li nz-menu-item nzMatchRouter routerLink="/users" *ngIf="isAdmin">
             <span nz-icon nzType="user"></span>

@@ -215,16 +215,52 @@ namespace WebApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDonVi(int id)
         {
-            var donVi = await _context.DonVis.FindAsync(id);
-            if (donVi == null)
+            try
             {
-                return NotFound();
+                var donVi = await _context.DonVis.FindAsync(id);
+                if (donVi == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đơn vị" });
+                }
+
+                // Kiểm tra xem đơn vị có đợt kê khai nào không
+                var dotKeKhaiCount = await _context.DotKeKhais
+                    .Where(x => x.don_vi_id == id)
+                    .CountAsync();
+
+                if (dotKeKhaiCount > 0)
+                {
+                    return BadRequest(new {
+                        message = "Không thể xóa đơn vị này vì đang có đợt kê khai liên quan",
+                        dotKeKhaiCount = dotKeKhaiCount
+                    });
+                }
+
+                // Xóa các bản ghi liên quan trong bảng dai_ly_don_vi trước
+                var daiLyDonVis = await _context.DaiLyDonVis
+                    .Where(x => x.DonViId == id)
+                    .ToListAsync();
+
+                if (daiLyDonVis.Any())
+                {
+                    _context.DaiLyDonVis.RemoveRange(daiLyDonVis);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Sau đó mới xóa đơn vị
+                _context.DonVis.Remove(donVi);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Xóa đơn vị thành công" });
             }
-
-            _context.DonVis.Remove(donVi);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting don vi: {ex.Message}");
+                return StatusCode(500, new { 
+                    message = "Có lỗi xảy ra khi xóa đơn vị",
+                    error = ex.Message 
+                });
+            }
         }
 
         [HttpGet("by-dai-ly/{daiLyId}")]
@@ -260,6 +296,42 @@ namespace WebApp.API.Controllers
             {
                 _logger.LogError($"Error getting don vi list by dai ly: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi lấy danh sách đơn vị", error = ex.Message });
+            }
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] Dictionary<string, bool> data)
+        {
+            try 
+            {
+                if (!data.ContainsKey("trangThai"))
+                {
+                    return BadRequest(new { message = "Thiếu thông tin trạng thái" });
+                }
+
+                var donVi = await _context.DonVis.FindAsync(id);
+                if (donVi == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đơn vị" });
+                }
+
+                donVi.TrangThai = data["trangThai"];
+                donVi.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { 
+                    message = "Cập nhật trạng thái thành công",
+                    data = donVi
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating don vi status: {ex.Message}");
+                return StatusCode(500, new { 
+                    message = "Lỗi khi cập nhật trạng thái đơn vị",
+                    error = ex.Message 
+                });
             }
         }
     }
