@@ -10,7 +10,13 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { UserService, NguoiDung } from '../../services/user.service';
 // Import other needed modules
+
+interface NguoiThuOption {
+  value: number;
+  label: string;
+}
 
 @Component({
   selector: 'app-quyen-bien-lai',
@@ -32,17 +38,28 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 })
 export class QuyenBienLaiComponent implements OnInit {
   listQuyenBienLai: any[] = [];
-  users: any[] = [];
+  users: NguoiDung[] = [];
   loading = false;
   isVisible = false;
   isOkLoading = false;
   modalTitle = 'Thêm quyển biên lai';
-  form: FormGroup;
+  form!: FormGroup;
+  nguoiThus: NguoiThuOption[] = [];
 
   constructor(
     private fb: FormBuilder,
-    private message: NzMessageService
+    private message: NzMessageService,
+    private userService: UserService
   ) {
+    this.initForm();
+  }
+
+  ngOnInit(): void {
+    this.loadData();
+    this.loadUsers();
+  }
+
+  initForm(): void {
     this.form = this.fb.group({
       id: [null],
       quyen_so: [null, [Validators.required]],
@@ -50,11 +67,6 @@ export class QuyenBienLaiComponent implements OnInit {
       den_so: [null, [Validators.required]],
       nguoi_thu: [null, [Validators.required]]
     });
-  }
-
-  ngOnInit(): void {
-    this.loadData();
-    this.loadUsers();
   }
 
   loadData(): void {
@@ -66,7 +78,18 @@ export class QuyenBienLaiComponent implements OnInit {
   }
 
   loadUsers(): void {
-    // TODO: Call API to get users
+    this.userService.getUsers().subscribe({
+      next: (users: NguoiDung[]) => {
+        this.nguoiThus = users.map((user: NguoiDung) => ({
+          value: user.id,
+          label: user.ho_ten || user.username
+        }));
+      },
+      error: (err: any) => {
+        this.message.error('Lỗi khi tải danh sách người thu');
+        console.error(err);
+      }
+    });
   }
 
   showModal(): void {

@@ -81,8 +81,10 @@
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Người thu</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu!">
-          <nz-select formControlName="nguoi_thu" nzPlaceHolder="Chọn người thu">
-            <nz-option *ngFor="let user of users" [nzValue]="user.id" [nzLabel]="user.ho_ten"></nz-option>
+          <nz-select 
+            formControlName="nguoi_thu" 
+            nzPlaceHolder="Chọn người thu"
+            [nzOptions]="nguoiThus">
           </nz-select>
         </nz-form-control>
       </nz-form-item>

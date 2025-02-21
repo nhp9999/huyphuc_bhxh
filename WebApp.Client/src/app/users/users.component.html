@@ -70,7 +70,12 @@
             <td>{{ nguoiDung.userName }}</td>
             <td>{{ nguoiDung.hoTen }}</td>
             <td>{{ getDonViCongTacDisplay(nguoiDung.donViCongTac) }}</td>
-            <td>{{ nguoiDung.chucDanh }}</td>
+            <td>
+              {{ 
+                nguoiDung.chucDanh || 
+                (nguoiDung.roles && nguoiDung.roles[0] ? chucDanhMap.get(nguoiDung.roles[0]) : '') 
+              }}
+            </td>
             <td>{{ nguoiDung.email }}</td>
             <td>{{ nguoiDung.soDienThoai }}</td>
             <td>{{ nguoiDung.maNhanVien }}</td>

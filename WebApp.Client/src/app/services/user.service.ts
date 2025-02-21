@@ -5,23 +5,21 @@ import { environment } from '../../environments/environment';
 
 export interface NguoiDung {
   id: number;
-  userName: string;
-  hoTen: string;
-  mangLuoi: string;
-  donViCongTac: string;
-  chucDanh: string;
-  email: string;
-  soDienThoai: string;
-  isSuperAdmin: boolean;
-  cap: string;
-  typeMangLuoi: number;
-  userId: number;
-  status: number;
-  clientId: string;
-  roles: string[];
-  createdAt: string;
-  updatedAt: string;
+  username: string;
+  userName?: string;
+  ho_ten?: string;
+  hoTen?: string;
+  email?: string;
+  sdt?: string;
+  soDienThoai?: string;
+  trang_thai: boolean;
+  status?: number;
+  roles?: string[];
   maNhanVien?: string;
+  donViCongTac?: string;
+  isSuperAdmin?: boolean;
+  typeMangLuoi?: number;
+  chucDanh?: string;
 }
 
 export interface DaiLy {
@@ -50,8 +48,12 @@ export class UserService {
     return this.http.get<{ip: string}>('https://api.ipify.org/?format=json');
   }
 
-  getNguoiDungs(): Observable<NguoiDung[]> {
+  getUsers(): Observable<NguoiDung[]> {
     return this.http.get<NguoiDung[]>(this.apiUrl);
+  }
+
+  getNguoiDungs(): Observable<NguoiDung[]> {
+    return this.getUsers();
   }
 
   getNguoiDung(id: number): Observable<NguoiDung> {

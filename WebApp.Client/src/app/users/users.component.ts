@@ -183,13 +183,20 @@ export class UsersComponent implements OnInit {
   }
 
   applyFilters(): void {
+    if (!this.nguoiDungs) return;
+
     this.filteredNguoiDungs = this.nguoiDungs.filter(nguoiDung => {
       const matchSearch = !this.searchValue || 
-        nguoiDung.userName.toLowerCase().includes(this.searchValue.toLowerCase()) ||
-        nguoiDung.hoTen.toLowerCase().includes(this.searchValue.toLowerCase());
-      
-      const matchRole = !this.selectedRole || nguoiDung.roles.includes(this.selectedRole);
-      const matchStatus = this.selectedStatus === null || nguoiDung.status === this.selectedStatus;
+        (nguoiDung.userName?.toLowerCase().includes(this.searchValue.toLowerCase()) || 
+         nguoiDung.hoTen?.toLowerCase().includes(this.searchValue.toLowerCase()) ||
+         nguoiDung.username.toLowerCase().includes(this.searchValue.toLowerCase()) ||
+         nguoiDung.ho_ten?.toLowerCase().includes(this.searchValue.toLowerCase()));
+
+      const matchRole = !this.selectedRole || 
+        (nguoiDung.roles && nguoiDung.roles.includes(this.selectedRole));
+
+      const userStatus = nguoiDung.status ?? (nguoiDung.trang_thai ? 1 : 0);
+      const matchStatus = this.selectedStatus === null || userStatus === this.selectedStatus;
 
       return matchSearch && matchRole && matchStatus;
     });
@@ -320,7 +327,7 @@ export class UsersComponent implements OnInit {
   deleteNguoiDung(nguoiDung: NguoiDung): void {
     this.modal.confirm({
       nzTitle: 'Xác nhận xóa',
-      nzContent: `Bạn có chắc chắn muốn xóa người dùng ${nguoiDung.hoTen}?`,
+      nzContent: `Bạn có chắc chắn muốn xóa người dùng ${nguoiDung.hoTen || nguoiDung.ho_ten || nguoiDung.username}?`,
       nzOkText: 'Xóa',
       nzOkType: 'primary',
       nzOkDanger: true,
@@ -358,7 +365,7 @@ export class UsersComponent implements OnInit {
   resetPassword(nguoiDung: NguoiDung): void {
     this.modal.confirm({
       nzTitle: 'Xác nhận đặt lại mật khẩu',
-      nzContent: `Bạn có chắc chắn muốn đặt lại mật khẩu cho người dùng ${nguoiDung.hoTen}?`,
+      nzContent: `Bạn có chắc chắn muốn đặt lại mật khẩu cho người dùng ${nguoiDung.hoTen || nguoiDung.ho_ten || nguoiDung.username}?`,
       nzOkText: 'Đồng ý',
       nzOkType: 'primary',
       nzOnOk: () => {
@@ -747,5 +754,33 @@ export class UsersComponent implements OnInit {
         donVi.loading = false;
       }
     });
+  }
+
+  prepareFormData(nguoiDung: NguoiDung): any {
+    const chucDanh = nguoiDung.roles && nguoiDung.roles.length > 0 ? nguoiDung.roles[0] : '';
+    
+    return {
+      id: nguoiDung.id,
+      username: nguoiDung.username,
+      userName: nguoiDung.userName || nguoiDung.username,
+      hoTen: nguoiDung.hoTen || nguoiDung.ho_ten,
+      donViCongTac: nguoiDung.donViCongTac || '',
+      email: nguoiDung.email || '',
+      soDienThoai: nguoiDung.soDienThoai || nguoiDung.sdt || '',
+      isSuperAdmin: nguoiDung.isSuperAdmin || false,
+      typeMangLuoi: nguoiDung.typeMangLuoi || 0,
+      status: nguoiDung.status || (nguoiDung.trang_thai ? 1 : 0),
+      maNhanVien: nguoiDung.maNhanVien || ''
+    };
+  }
+
+  getChucDanh(nguoiDung: NguoiDung): string {
+    if (nguoiDung.chucDanh) {
+      return nguoiDung.chucDanh;
+    }
+    if (nguoiDung.roles && nguoiDung.roles[0]) {
+      return this.chucDanhMap.get(nguoiDung.roles[0]) || '';
+    }
+    return '';
   }
 }
