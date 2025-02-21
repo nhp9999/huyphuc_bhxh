@@ -1,74 +1,57 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace WebApp.Server.Models
+namespace WebApp.API.Models
 {
     [Table("nguoi_dung")]
     public class NguoiDung
     {
         [Key]
-        [Column("id")]
-        public int Id { get; set; }
+        public int id { get; set; }
 
-        [Column("user_name")]
         [Required]
         [StringLength(50)]
-        public string UserName { get; set; } = string.Empty;
+        public string user_name { get; set; }
 
-        [Column("ho_ten")]
         [Required]
         [StringLength(100)]
-        public string HoTen { get; set; } = string.Empty;
+        public string ho_ten { get; set; }
 
-        [Column("password")]
-        [Required]
-        [StringLength(100)]
-        public string Password { get; set; } = string.Empty;
-
-        [Column("don_vi_cong_tac")]
         [StringLength(200)]
-        public string? DonViCongTac { get; set; }
+        public string? don_vi_cong_tac { get; set; }
 
-        [Column("chuc_danh")]
         [StringLength(100)]
-        public string? ChucDanh { get; set; }
+        public string? chuc_danh { get; set; }
 
-        [Column("email")]
         [StringLength(100)]
-        [EmailAddress]
-        public string? Email { get; set; }
+        public string? email { get; set; }
 
-        [Column("so_dien_thoai")]
         [StringLength(20)]
-        public string? SoDienThoai { get; set; }
+        public string? so_dien_thoai { get; set; }
 
-        [Column("is_super_admin")]
-        public bool IsSuperAdmin { get; set; }
+        public bool is_super_admin { get; set; } = false;
 
-        [Column("type_mang_luoi")]
-        public int? TypeMangLuoi { get; set; }
+        public int? type_mang_luoi { get; set; }
 
-        [Column("user_id")]
-        public int? UserId { get; set; }
+        public int? user_id { get; set; }
 
-        [Column("status")]
-        public int Status { get; set; } = 1;
+        public int status { get; set; } = 1;
 
-        [Column("client_id")]
         [StringLength(100)]
-        public string? ClientId { get; set; }
+        public string? client_id { get; set; }
 
-        [Column("roles")]
-        public string[]? Roles { get; set; }
+        public string[]? roles { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime created_at { get; set; } = DateTime.UtcNow;
 
-        [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime updated_at { get; set; } = DateTime.UtcNow;
 
-        [Column("ma_nhan_vien")]
+        [Required]
+        [StringLength(100)]
+        public string password { get; set; }
+
         [StringLength(20)]
-        public string? MaNhanVien { get; set; }
+        public string? ma_nhan_vien { get; set; }
     }
 } 

@@ -9,6 +9,7 @@ using WebApp.API.Data;
 using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApp.API.Controllers
 {
@@ -211,6 +212,35 @@ namespace WebApp.API.Controllers
                 keKhaiBHYT.ngay_tao = DateTime.UtcNow;
                 keKhaiBHYT.nguoi_tao = User.Identity?.Name;
 
+                // Lấy số biên lai tiếp theo
+                var nextSoBienLai = await _context.QuyenBienLais
+                    .Where(q => q.nguoi_thu == keKhaiBHYT.nguoi_thu && q.trang_thai == "dang_su_dung")
+                    .OrderBy(q => q.ngay_cap)
+                    .FirstOrDefaultAsync();
+
+                if (nextSoBienLai == null)
+                {
+                    return BadRequest(new { message = "Người thu chưa được cấp quyển biên lai hoặc đã hết số" });
+                }
+
+                if (nextSoBienLai?.so_hien_tai == null)
+                {
+                    return BadRequest(new { message = "Số hiện tại không hợp lệ" });
+                }
+
+                var soHienTai = int.Parse(nextSoBienLai.so_hien_tai);
+                var denSo = int.Parse(nextSoBienLai.den_so);
+
+                if (soHienTai > denSo)
+                {
+                    nextSoBienLai.trang_thai = "da_su_dung";
+                    await _context.SaveChangesAsync();
+                    return BadRequest(new { message = "Quyển biên lai đã hết số" });
+                }
+
+                keKhaiBHYT.so_bien_lai = soHienTai.ToString().PadLeft(nextSoBienLai.so_hien_tai.Length, '0');
+                nextSoBienLai.so_hien_tai = (soHienTai + 1).ToString().PadLeft(nextSoBienLai.so_hien_tai.Length, '0');
+
                 _context.KeKhaiBHYTs.Add(keKhaiBHYT);
                 await _context.SaveChangesAsync();
 
@@ -359,6 +389,7 @@ namespace WebApp.API.Controllers
 
     public class DeleteMultipleDto
     {
-        public int[] ids { get; set; }
+        [Required]
+        public int[] ids { get; set; } = Array.Empty<int>();
     }
 } 

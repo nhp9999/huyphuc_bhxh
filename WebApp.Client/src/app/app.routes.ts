@@ -38,6 +38,30 @@ export const routes: Routes = [
         path: 'don-vi', 
         loadComponent: () => import('./ke-khai/don-vi/don-vi.component').then(m => m.DonViComponent) 
       },
+      {
+        path: 'bien-lai',
+        children: [
+          {
+            path: 'quyen-bien-lai',
+            loadComponent: () => import('./bien-lai/quyen-bien-lai/quyen-bien-lai.component').then(m => m.QuyenBienLaiComponent),
+            canActivate: [AdminGuard]
+          },
+          {
+            path: 'danh-sach',
+            loadComponent: () => import('./bien-lai/danh-sach-bien-lai/danh-sach-bien-lai.component').then(m => m.DanhSachBienLaiComponent)
+          },
+          {
+            path: 'cap-phat',
+            loadComponent: () => import('./bien-lai/cap-phat-bien-lai/cap-phat-bien-lai.component').then(m => m.CapPhatBienLaiComponent),
+            canActivate: [AdminGuard]
+          },
+          {
+            path: 'thong-ke',
+            loadComponent: () => import('./bien-lai/thong-ke-bien-lai/thong-ke-bien-lai.component').then(m => m.ThongKeBienLaiComponent)
+          },
+          { path: '', redirectTo: 'danh-sach', pathMatch: 'full' }
+        ]
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   }

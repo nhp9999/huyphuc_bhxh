@@ -153,6 +153,12 @@ namespace WebApp.API.Models
         [StringLength(50)]
         public string trang_thai { get; set; } = "chua_gui";
 
+        /// <summary>
+        /// Số biên lai
+        /// </summary>
+        [StringLength(20)]
+        public string? so_bien_lai { get; set; }
+
         // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
         public KeKhaiBHYT()
         {
@@ -163,7 +169,9 @@ namespace WebApp.API.Models
             dia_chi_nkq = "";
             benh_vien_kcb = "";
             nguoi_tao = "";
+            trang_thai = "chua_gui";
             ngay_tao = DateTime.Now;
+            ThongTinThe = new ThongTinThe(); // Khởi tạo ThongTinThe
         }
     }
 } 

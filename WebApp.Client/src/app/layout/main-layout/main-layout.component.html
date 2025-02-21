@@ -40,6 +40,26 @@
           </li>
         </ul>
       </li>
+      <li nz-submenu nzTitle="Biên lai" nzIcon="file-text">
+        <ul>
+          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/quyen-bien-lai" *ngIf="isAdmin">
+            <span nz-icon nzType="book"></span>
+            <span>Quyển biên lai</span>
+          </li>
+          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/danh-sach">
+            <span nz-icon nzType="solution"></span>
+            <span>Danh sách biên lai</span>
+          </li>
+          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/cap-phat" *ngIf="isAdmin">
+            <span nz-icon nzType="form"></span>
+            <span>Cấp phát biên lai</span>
+          </li>
+          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/thong-ke">
+            <span nz-icon nzType="bar-chart"></span>
+            <span>Thống kê biên lai</span>
+          </li>
+        </ul>
+      </li>
       <li nz-submenu nzTitle="Báo cáo" nzIcon="bar-chart">
         <ul>
           <li nz-menu-item nzMatchRouter routerLink="/reports/monthly">

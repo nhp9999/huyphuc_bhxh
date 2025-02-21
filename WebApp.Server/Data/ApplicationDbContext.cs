@@ -26,6 +26,7 @@ namespace WebApp.API.Data
         public DbSet<NguoiDung> NguoiDungs { get; set; }
         public DbSet<DaiLy> DaiLys { get; set; }
         public DbSet<DaiLyDonVi> DaiLyDonVis { get; set; }
+        public DbSet<QuyenBienLai> QuyenBienLais { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -195,20 +196,20 @@ namespace WebApp.API.Data
             modelBuilder.Entity<NguoiDung>(entity =>
             {
                 entity.ToTable("nguoi_dung");
-                entity.HasKey(e => e.Id);
+                entity.HasKey(e => e.id);
 
-                entity.HasIndex(e => e.UserName).IsUnique();
-                entity.Property(e => e.UserName).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.HoTen).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.DonViCongTac).HasMaxLength(200);
-                entity.Property(e => e.ChucDanh).HasMaxLength(100);
-                entity.Property(e => e.Email).HasMaxLength(100);
-                entity.Property(e => e.SoDienThoai).HasMaxLength(20);
-                entity.Property(e => e.Roles).HasColumnType("text[]");
-                entity.Property(e => e.ClientId).HasMaxLength(100);
-                entity.Property(e => e.Status).HasDefaultValue(1);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasIndex(e => e.user_name).IsUnique();
+                entity.Property(e => e.user_name).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ho_ten).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.don_vi_cong_tac).HasMaxLength(200);
+                entity.Property(e => e.chuc_danh).HasMaxLength(100);
+                entity.Property(e => e.email).HasMaxLength(100);
+                entity.Property(e => e.so_dien_thoai).HasMaxLength(20);
+                entity.Property(e => e.roles).HasColumnType("text[]");
+                entity.Property(e => e.client_id).HasMaxLength(100);
+                entity.Property(e => e.status).HasDefaultValue(1);
+                entity.Property(e => e.created_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updated_at).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             modelBuilder.Entity<DaiLy>(entity =>
@@ -241,6 +242,24 @@ namespace WebApp.API.Data
                 .HasOne(x => x.DonVi)
                 .WithMany()
                 .HasForeignKey(x => x.DonViId);
+
+            modelBuilder.Entity<QuyenBienLai>(entity =>
+            {
+                entity.ToTable("quyen_bien_lai");
+                entity.HasKey(e => e.id);
+
+                entity.Property(e => e.quyen_so).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.tu_so).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.den_so).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.nguoi_cap).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.trang_thai).HasMaxLength(20);
+                entity.Property(e => e.so_hien_tai).HasMaxLength(20);
+
+                entity.HasOne(e => e.NguoiThu)
+                    .WithMany()
+                    .HasForeignKey(e => e.nguoi_thu)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
         }
     }
 } 

@@ -1,0 +1,91 @@
+<div class="page-header">
+  <div class="header-content">
+    <h2>Quản lý quyển biên lai</h2>
+    <button nz-button nzType="primary" (click)="showModal()">
+      <span nz-icon nzType="plus"></span>Thêm quyển biên lai
+    </button>
+  </div>
+</div>
+
+<div class="page-content">
+  <nz-table #basicTable [nzData]="listQuyenBienLai" [nzLoading]="loading">
+    <thead>
+      <tr>
+        <th>Quyển số</th>
+        <th>Từ số</th>
+        <th>Đến số</th>
+        <th>Số hiện tại</th>
+        <th>Người thu</th>
+        <th>Người cấp</th>
+        <th>Ngày cấp</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of basicTable.data">
+        <td>{{ item.quyen_so }}</td>
+        <td>{{ item.tu_so }}</td>
+        <td>{{ item.den_so }}</td>
+        <td>{{ item.so_hien_tai }}</td>
+        <td>{{ item.nguoi_thu?.ho_ten }}</td>
+        <td>{{ item.nguoi_cap }}</td>
+        <td>{{ item.ngay_cap | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>
+          <nz-tag [nzColor]="getStatusColor(item.trang_thai)">
+            {{ getStatusText(item.trang_thai) }}
+          </nz-tag>
+        </td>
+        <td>
+          <a nz-button nzType="link" (click)="edit(item)" *ngIf="item.trang_thai === 'chua_su_dung'">
+            <span nz-icon nzType="edit"></span>
+          </a>
+          <a nz-button nzType="link" nzDanger (click)="delete(item)" *ngIf="item.trang_thai === 'chua_su_dung'">
+            <span nz-icon nzType="delete"></span>
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</div>
+
+<nz-modal
+  [(nzVisible)]="isVisible"
+  [nzTitle]="modalTitle"
+  (nzOnCancel)="handleCancel()"
+  (nzOnOk)="handleOk()"
+  [nzOkLoading]="isOkLoading">
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form">
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Quyển số</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập quyển số!">
+          <input nz-input formControlName="quyen_so" placeholder="Nhập quyển số" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Từ số</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số bắt đầu!">
+          <input nz-input formControlName="tu_so" placeholder="Nhập số bắt đầu" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Đến số</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số kết thúc!">
+          <input nz-input formControlName="den_so" placeholder="Nhập số kết thúc" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Người thu</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu!">
+          <nz-select formControlName="nguoi_thu" nzPlaceHolder="Chọn người thu">
+            <nz-option *ngFor="let user of users" [nzValue]="user.id" [nzLabel]="user.ho_ten"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal> 

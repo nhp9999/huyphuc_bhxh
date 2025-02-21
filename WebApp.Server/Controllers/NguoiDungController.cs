@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
-using WebApp.Server.Models;
+using WebApp.API.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using BCrypt.Net;
+using Microsoft.Extensions.Logging;
 
 namespace WebApp.Server.Controllers
 {
@@ -54,10 +55,12 @@ namespace WebApp.Server.Controllers
     public class NguoiDungController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<NguoiDungController> _logger;
 
-        public NguoiDungController(ApplicationDbContext context)
+        public NguoiDungController(ApplicationDbContext context, ILogger<NguoiDungController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/nguoi-dung
@@ -99,7 +102,7 @@ namespace WebApp.Server.Controllers
             }
 
             // Kiểm tra trùng UserName
-            if (await _context.NguoiDungs.AnyAsync(x => x.UserName.ToLower() == dto.UserName.ToLower()))
+            if (await _context.NguoiDungs.AnyAsync(x => x.user_name.ToLower() == dto.UserName.ToLower()))
             {
                 ModelState.AddModelError("UserName", "Tên đăng nhập đã tồn tại");
                 return BadRequest(ModelState);
@@ -115,25 +118,25 @@ namespace WebApp.Server.Controllers
 
             var nguoiDung = new NguoiDung
             {
-                UserName = dto.UserName,
-                Password = hashedPassword,
-                HoTen = dto.HoTen,
-                Email = dto.Email,
-                SoDienThoai = dto.SoDienThoai,
-                DonViCongTac = dto.DonViCongTac,
-                ChucDanh = dto.ChucDanh,
-                IsSuperAdmin = dto.IsSuperAdmin,
-                TypeMangLuoi = dto.TypeMangLuoi,
-                Status = 1,
-                Roles = dto.Roles,
-                MaNhanVien = dto.MaNhanVien
+                user_name = dto.UserName,
+                password = hashedPassword,
+                ho_ten = dto.HoTen,
+                email = dto.Email,
+                so_dien_thoai = dto.SoDienThoai,
+                don_vi_cong_tac = dto.DonViCongTac,
+                chuc_danh = dto.ChucDanh,
+                is_super_admin = dto.IsSuperAdmin,
+                type_mang_luoi = dto.TypeMangLuoi,
+                status = 1,
+                roles = dto.Roles,
+                ma_nhan_vien = dto.MaNhanVien
             };
 
             try
             {
                 _context.NguoiDungs.Add(nguoiDung);
                 await _context.SaveChangesAsync();
-                return CreatedAtAction(nameof(GetNguoiDung), new { id = nguoiDung.Id }, nguoiDung);
+                return CreatedAtAction(nameof(GetNguoiDung), new { id = nguoiDung.id }, nguoiDung);
             }
             catch (Exception ex)
             {
@@ -166,7 +169,7 @@ namespace WebApp.Server.Controllers
             }
 
             // Kiểm tra trùng UserName (trừ chính nó)
-            if (await _context.NguoiDungs.AnyAsync(x => x.UserName.ToLower() == dto.UserName.ToLower() && x.Id != id))
+            if (await _context.NguoiDungs.AnyAsync(x => x.user_name.ToLower() == dto.UserName.ToLower() && x.id != id))
             {
                 ModelState.AddModelError("UserName", "Tên đăng nhập đã tồn tại");
                 return BadRequest(ModelState);
@@ -176,17 +179,17 @@ namespace WebApp.Server.Controllers
             dto.UserName = dto.UserName.Trim();
             dto.HoTen = dto.HoTen.Trim();
 
-            nguoiDung.UserName = dto.UserName;
-            nguoiDung.HoTen = dto.HoTen;
-            nguoiDung.DonViCongTac = dto.DonViCongTac;
-            nguoiDung.ChucDanh = dto.ChucDanh;
-            nguoiDung.Email = dto.Email;
-            nguoiDung.SoDienThoai = dto.SoDienThoai;
-            nguoiDung.IsSuperAdmin = dto.IsSuperAdmin;
-            nguoiDung.TypeMangLuoi = dto.TypeMangLuoi;
-            nguoiDung.Roles = dto.Roles;
-            nguoiDung.UpdatedAt = DateTime.UtcNow;
-            nguoiDung.MaNhanVien = dto.MaNhanVien;
+            nguoiDung.user_name = dto.UserName;
+            nguoiDung.ho_ten = dto.HoTen;
+            nguoiDung.don_vi_cong_tac = dto.DonViCongTac;
+            nguoiDung.chuc_danh = dto.ChucDanh;
+            nguoiDung.email = dto.Email;
+            nguoiDung.so_dien_thoai = dto.SoDienThoai;
+            nguoiDung.is_super_admin = dto.IsSuperAdmin;
+            nguoiDung.type_mang_luoi = dto.TypeMangLuoi;
+            nguoiDung.roles = dto.Roles;
+            nguoiDung.updated_at = DateTime.UtcNow;
+            nguoiDung.ma_nhan_vien = dto.MaNhanVien;
 
             try
             {
@@ -233,8 +236,8 @@ namespace WebApp.Server.Controllers
                 return NotFound();
             }
 
-            nguoiDung.Status = nguoiDung.Status == 1 ? 0 : 1;
-            nguoiDung.UpdatedAt = DateTime.UtcNow;
+            nguoiDung.status = nguoiDung.status == 1 ? 0 : 1;
+            nguoiDung.updated_at = DateTime.UtcNow;
 
             try
             {
@@ -271,7 +274,7 @@ namespace WebApp.Server.Controllers
 
         private bool NguoiDungExists(int id)
         {
-            return _context.NguoiDungs.Any(e => e.Id == id);
+            return _context.NguoiDungs.Any(e => e.id == id);
         }
     }
 } 
