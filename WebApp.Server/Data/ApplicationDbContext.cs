@@ -261,7 +261,7 @@ namespace WebApp.API.Data
 
                 entity.HasOne(e => e.NguoiThu)
                     .WithMany()
-                    .HasForeignKey(e => e.nguoi_thu)
+                    .HasForeignKey(e => e.nhan_vien_thu)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }

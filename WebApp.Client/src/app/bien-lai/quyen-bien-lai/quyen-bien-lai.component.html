@@ -47,7 +47,7 @@
         <td>{{ item.tu_so }}</td>
         <td>{{ item.den_so }}</td>
         <td>{{ item.so_hien_tai }}</td>
-        <td>{{ getNguoiThuName(item.nguoi_thu) }}</td>
+        <td>{{ getNguoiThuName(item.nhan_vien_thu) }}</td>
         <td>{{ item.nguoi_cap }}</td>
         <td>{{ item.ngay_cap | date:'dd/MM/yyyy HH:mm' }}</td>
         <td>
@@ -140,9 +140,12 @@
 
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Người thu</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu!">
-          <nz-select formControlName="nguoi_thu" nzPlaceHolder="Chọn người thu">
-            <nz-option *ngFor="let user of nguoiThus" [nzValue]="user.value" [nzLabel]="user.label">
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu">
+          <nz-select formControlName="nhan_vien_thu" nzPlaceHolder="Chọn người thu">
+            <nz-option
+              *ngFor="let user of users"
+              [nzValue]="user.id"
+              [nzLabel]="getDisplayName(user)">
             </nz-option>
           </nz-select>
         </nz-form-control>

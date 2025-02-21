@@ -13,6 +13,14 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { UserService, NguoiDung } from '../../services/user.service';
 import { QuyenBienLaiService, QuyenBienLai } from '../../services/quyen-bien-lai.service';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { AuthService } from '../../services/auth.service';
+import { 
+  HomeOutline,
+  PlusOutline,
+  EditOutline,
+  DeleteOutline
+} from '@ant-design/icons-angular/icons';
+import { IconDefinition } from '@ant-design/icons-angular';
 // Import other needed modules
 
 interface NguoiThuOption {
@@ -26,6 +34,13 @@ interface TokenPayload {
   userName?: string;
   [key: string]: any; // Cho phép các trường động
 }
+
+const icons: IconDefinition[] = [
+  HomeOutline,
+  PlusOutline,
+  EditOutline,
+  DeleteOutline
+];
 
 @Component({
   selector: 'app-quyen-bien-lai',
@@ -67,70 +82,53 @@ export class QuyenBienLaiComponent implements OnInit {
   isVisible = false;
   isOkLoading = false;
   modalTitle = 'Thêm quyển biên lai';
-  form!: FormGroup;
+  form: FormGroup;
   nguoiThus: NguoiThuOption[] = [];
   checked = false;
   indeterminate = false;
   setOfCheckedId = new Set<number>();
+  editingQuyenBienLai: QuyenBienLai | null = null;
 
   constructor(
     private fb: FormBuilder,
     private message: NzMessageService,
     private modal: NzModalService,
     private userService: UserService,
-    private quyenBienLaiService: QuyenBienLaiService
+    private quyenBienLaiService: QuyenBienLaiService,
+    private authService: AuthService
   ) {
-    this.initForm();
-  }
-
-  ngOnInit(): void {
-    this.loadData();
-    this.loadUsers();
-  }
-
-  initForm(): void {
     this.form = this.fb.group({
-      id: [null],
-      quyen_so: ['', [
-        Validators.required,
-        Validators.pattern('^[0-9]{1,5}$')
-      ]],
-      tu_so: ['', [
-        Validators.required,
-        Validators.pattern('^[0-9]{1,7}$')
-      ]],
-      den_so: ['', [
-        Validators.required,
-        Validators.pattern('^[0-9]{1,7}$'),
-        this.validateSoThuTu.bind(this)
-      ]],
-      nguoi_thu: [null, [Validators.required]],
-      trang_thai: ['chua_su_dung', [Validators.required]]
+      quyen_so: ['', [Validators.required]],
+      tu_so: ['', [Validators.required]],
+      den_so: ['', [Validators.required]],
+      nhan_vien_thu: [null, [Validators.required]],
+      trang_thai: ['dang_su_dung']
     });
 
-    // Theo dõi sự thay đổi của tu_so
-    this.form.get('tu_so')?.valueChanges.subscribe((value) => {
+    // Thêm subscription để theo dõi thay đổi của tu_so
+    this.form.get('tu_so')?.valueChanges.subscribe(value => {
       if (value) {
-        // Tự động tính đến số = từ số + 49 (để có tổng 50 số)
         const tuSo = parseInt(value);
-        const denSo = tuSo + 49;
-        
-        // Kiểm tra nếu denSo không vượt quá 7 chữ số
-        if (denSo.toString().length <= 7) {
+        if (!isNaN(tuSo)) {
+          const denSo = (tuSo + 49).toString().padStart(value.length, '0');
           this.form.patchValue({
-            den_so: denSo.toString()
+            den_so: denSo
           }, { emitEvent: false }); // Không trigger valueChanges của den_so
         }
       }
-      // Validate lại den_so
-      this.form.get('den_so')?.updateValueAndValidity();
     });
+  }
+
+  ngOnInit(): void {
+    this.loadUsers();
+    this.loadData();
   }
 
   loadData(): void {
     this.loading = true;
     this.quyenBienLaiService.getQuyenBienLais().subscribe({
       next: (data: QuyenBienLai[]) => {
+        console.log('Loaded quyen bien lai:', data);
         this.listQuyenBienLai = data;
         this.loading = false;
         this.setOfCheckedId.clear();
@@ -147,11 +145,12 @@ export class QuyenBienLaiComponent implements OnInit {
   loadUsers(): void {
     this.userService.getUsers().subscribe({
       next: (users: NguoiDung[]) => {
+        console.log('Loaded users:', users);
         this.users = users;
         this.userMap = new Map(users.map(user => [user.id, user]));
         this.nguoiThus = users.map((user: NguoiDung) => ({
           value: user.id,
-          label: user.ho_ten || user.username
+          label: this.getDisplayName(user)
         }));
       },
       error: (err: any) => {
@@ -163,11 +162,14 @@ export class QuyenBienLaiComponent implements OnInit {
 
   getNguoiThuName(nguoiThuId: number): string {
     const nguoiThu = this.userMap.get(nguoiThuId);
-    return nguoiThu ? (nguoiThu.ho_ten || nguoiThu.username) : '';
+    return nguoiThu ? this.getDisplayName(nguoiThu) : '';
   }
 
   showModal(): void {
-    this.form.reset();
+    this.editingQuyenBienLai = null;
+    this.form.reset({
+      trang_thai: 'dang_su_dung'
+    });
     this.modalTitle = 'Thêm quyển biên lai';
     this.isVisible = true;
   }
@@ -176,65 +178,49 @@ export class QuyenBienLaiComponent implements OnInit {
     if (this.form.valid) {
       this.isOkLoading = true;
       
-      // Lấy token từ localStorage và decode để lấy thông tin người dùng
-      const token = localStorage.getItem('token');
-      let nguoiCap = '';
+      const currentUser = this.authService.getCurrentUser();
       
-      if (token) {
-        try {
-          const tokenPayload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
-          // Ưu tiên lấy họ tên, nếu không có thì lấy username
-          nguoiCap = decodeURIComponent(escape(
-            tokenPayload.hoTen || // Lấy họ tên từ token
-            tokenPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || // Lấy họ tên từ claim
-            tokenPayload.userName || // Lấy username từ token
-            tokenPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] // Lấy username từ claim
-          ));
-        } catch (error) {
-          console.error('Error decoding token:', error);
-          this.message.error('Lỗi khi lấy thông tin người dùng');
-          this.isOkLoading = false;
-          return;
-        }
-      }
-
-      if (!nguoiCap) {
-        this.message.error('Không thể xác định người cấp. Vui lòng đăng nhập lại.');
-        this.isOkLoading = false;
-        return;
-      }
-
-      const formData = {
-        ...this.form.value,
-        nguoi_cap: nguoiCap
+      const formValue = this.form.value;
+      
+      const data = {
+        id: this.editingQuyenBienLai?.id,
+        quyen_so: formValue.quyen_so,
+        tu_so: formValue.tu_so,
+        den_so: formValue.den_so,
+        nhan_vien_thu: Number(formValue.nhan_vien_thu),
+        trang_thai: formValue.trang_thai,
+        so_hien_tai: this.editingQuyenBienLai?.so_hien_tai || formValue.tu_so,
+        nguoi_cap: this.editingQuyenBienLai?.nguoi_cap || currentUser?.user_name || currentUser?.userName || currentUser?.username
       };
 
-      if (formData.id) {
-        this.quyenBienLaiService.updateQuyenBienLai(formData.id, formData).subscribe({
-          next: () => {
+      if (this.editingQuyenBienLai) {
+        // Nếu đang sửa
+        this.quyenBienLaiService.updateQuyenBienLai(this.editingQuyenBienLai.id!, data).subscribe({
+          next: (response) => {
             this.message.success('Cập nhật quyển biên lai thành công');
             this.isVisible = false;
-            this.loadData();
             this.isOkLoading = false;
+            this.editingQuyenBienLai = null;
+            this.loadData();
           },
-          error: (err: any) => {
-            this.message.error('Lỗi khi cập nhật quyển biên lai: ' + (err.error?.message || 'Đã có lỗi xảy ra'));
-            console.error(err);
+          error: (error) => {
+            console.error('Update error:', error);
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi cập nhật');
             this.isOkLoading = false;
           }
         });
       } else {
-        const { id, ...createData } = formData;
-        this.quyenBienLaiService.createQuyenBienLai(createData).subscribe({
-          next: () => {
+        // Nếu đang thêm mới
+        this.quyenBienLaiService.createQuyenBienLai(data).subscribe({
+          next: (response) => {
             this.message.success('Thêm quyển biên lai thành công');
             this.isVisible = false;
-            this.loadData();
             this.isOkLoading = false;
+            this.loadData();
           },
-          error: (err: any) => {
-            this.message.error('Lỗi khi thêm quyển biên lai: ' + (err.error?.errors?.nguoi_cap?.[0] || err.error?.message || 'Đã có lỗi xảy ra'));
-            console.error(err);
+          error: (error) => {
+            console.error('Create error:', error);
+            this.message.error(error.error?.message || 'Có lỗi xảy ra khi thêm mới');
             this.isOkLoading = false;
           }
         });
@@ -251,17 +237,17 @@ export class QuyenBienLaiComponent implements OnInit {
 
   handleCancel(): void {
     this.isVisible = false;
+    this.editingQuyenBienLai = null;
   }
 
   edit(item: QuyenBienLai): void {
     this.modalTitle = 'Sửa quyển biên lai';
-    this.form.reset();
+    this.editingQuyenBienLai = item;
     this.form.patchValue({
-      id: item.id,
       quyen_so: item.quyen_so,
       tu_so: item.tu_so,
       den_so: item.den_so,
-      nguoi_thu: item.nguoi_thu,
+      nhan_vien_thu: item.nhan_vien_thu,
       trang_thai: item.trang_thai
     });
     this.isVisible = true;
@@ -360,7 +346,18 @@ export class QuyenBienLaiComponent implements OnInit {
     if (controlName) {
       const control = this.form.get(controlName);
       if (control) {
-        control.setValue(value, { emitEvent: true }); // Đảm bảo trigger valueChanges
+        control.setValue(value, { emitEvent: true });
+        
+        // Nếu đang nhập tu_so, tự động tính den_so
+        if (controlName === 'tu_so' && value) {
+          const tuSo = parseInt(value);
+          if (!isNaN(tuSo)) {
+            const denSo = (tuSo + 49).toString().padStart(value.length, '0');
+            this.form.patchValue({
+              den_so: denSo
+            }, { emitEvent: false });
+          }
+        }
       }
     }
   }
@@ -379,6 +376,7 @@ export class QuyenBienLaiComponent implements OnInit {
   }
 
   onAllChecked(checked: boolean): void {
+    // Chỉ cho phép chọn những quyển chưa sử dụng
     this.listQuyenBienLai
       .filter(item => item.trang_thai === 'chua_su_dung')
       .forEach(({ id }) => this.updateCheckedSet(id!, checked));
@@ -386,8 +384,29 @@ export class QuyenBienLaiComponent implements OnInit {
   }
 
   refreshCheckedStatus(): void {
+    // Chỉ tính toán trạng thái checked dựa trên những quyển chưa sử dụng
     const listChuaSuDung = this.listQuyenBienLai.filter(item => item.trang_thai === 'chua_su_dung');
+    
+    // Nếu không có quyển nào chưa sử dụng, set checked và indeterminate về false
+    if (listChuaSuDung.length === 0) {
+      this.checked = false;
+      this.indeterminate = false;
+      return;
+    }
+
+    // Kiểm tra xem tất cả các quyển chưa sử dụng có được chọn không
     this.checked = listChuaSuDung.every(({ id }) => this.setOfCheckedId.has(id!));
+    
+    // Kiểm tra xem có ít nhất một quyển được chọn nhưng không phải tất cả
     this.indeterminate = listChuaSuDung.some(({ id }) => this.setOfCheckedId.has(id!)) && !this.checked;
+  }
+
+  getDisplayName(user: NguoiDung): string {
+    return user.ho_ten || 
+           user.hoTen || 
+           user.user_name || 
+           user.userName || 
+           user.username || 
+           'Không có tên';
   }
 } 

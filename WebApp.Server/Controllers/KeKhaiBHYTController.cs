@@ -214,7 +214,7 @@ namespace WebApp.API.Controllers
 
                 // Lấy số biên lai tiếp theo
                 var nextSoBienLai = await _context.QuyenBienLais
-                    .Where(q => q.nguoi_thu == keKhaiBHYT.nguoi_thu && q.trang_thai == "dang_su_dung")
+                    .Where(q => q.nhan_vien_thu == keKhaiBHYT.nguoi_thu && q.trang_thai == "dang_su_dung")
                     .OrderBy(q => q.ngay_cap)
                     .FirstOrDefaultAsync();
 
@@ -236,6 +236,11 @@ namespace WebApp.API.Controllers
                     nextSoBienLai.trang_thai = "da_su_dung";
                     await _context.SaveChangesAsync();
                     return BadRequest(new { message = "Quyển biên lai đã hết số" });
+                }
+
+                if (nextSoBienLai.nhan_vien_thu != keKhaiBHYT.nguoi_thu)
+                {
+                    return BadRequest(new { message = "Người thu không khớp với quyển biên lai" });
                 }
 
                 keKhaiBHYT.so_bien_lai = soHienTai.ToString().PadLeft(nextSoBienLai.so_hien_tai.Length, '0');

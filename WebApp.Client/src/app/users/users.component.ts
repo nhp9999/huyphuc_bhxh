@@ -67,6 +67,7 @@ import { DaiLyDonViService } from '../services/dai-ly-don-vi.service';
 })
 export class UsersComponent implements OnInit {
   nguoiDungs: NguoiDung[] = [];
+  displayData: NguoiDung[] = [];
   filteredNguoiDungs: NguoiDung[] = [];
   isModalVisible = false;
   editingNguoiDung: NguoiDung | null = null;
@@ -91,6 +92,7 @@ export class UsersComponent implements OnInit {
   isEditDonVi = false;
   donViForm!: FormGroup;
   selectedDonViId?: number;
+  filterStatus: number | null = null;
 
   chucDanhOptions = [
     { value: 'super_admin', label: 'Super Admin' },
@@ -170,6 +172,7 @@ export class UsersComponent implements OnInit {
         } else {
           this.nguoiDungs = nguoiDungs;
         }
+        this.displayData = [...this.nguoiDungs];
         this.applyFilters();
         this.refreshCheckedStatus();
         this.isLoading = false;
@@ -185,18 +188,18 @@ export class UsersComponent implements OnInit {
   applyFilters(): void {
     if (!this.nguoiDungs) return;
 
-    this.filteredNguoiDungs = this.nguoiDungs.filter(nguoiDung => {
+    this.displayData = this.nguoiDungs.filter((nguoiDung: NguoiDung) => {
       const matchSearch = !this.searchValue || 
         (nguoiDung.userName?.toLowerCase().includes(this.searchValue.toLowerCase()) || 
          nguoiDung.hoTen?.toLowerCase().includes(this.searchValue.toLowerCase()) ||
-         nguoiDung.username.toLowerCase().includes(this.searchValue.toLowerCase()) ||
+         nguoiDung.username?.toLowerCase().includes(this.searchValue.toLowerCase()) ||
          nguoiDung.ho_ten?.toLowerCase().includes(this.searchValue.toLowerCase()));
 
       const matchRole = !this.selectedRole || 
         (nguoiDung.roles && nguoiDung.roles.includes(this.selectedRole));
 
       const userStatus = nguoiDung.status ?? (nguoiDung.trang_thai ? 1 : 0);
-      const matchStatus = this.selectedStatus === null || userStatus === this.selectedStatus;
+      const matchStatus = this.filterStatus === null || userStatus === this.filterStatus;
 
       return matchSearch && matchRole && matchStatus;
     });
@@ -782,5 +785,41 @@ export class UsersComponent implements OnInit {
       return this.chucDanhMap.get(nguoiDung.roles[0]) || '';
     }
     return '';
+  }
+
+  filterNguoiDungs(): void {
+    this.displayData = this.nguoiDungs.filter((nguoiDung: NguoiDung) => {
+      const searchValue = this.searchValue.toLowerCase();
+      return (
+        (nguoiDung.user_name?.toLowerCase().includes(searchValue)) ||
+        (nguoiDung.userName?.toLowerCase().includes(searchValue)) ||
+        (nguoiDung.username?.toLowerCase().includes(searchValue)) ||
+        (nguoiDung.ho_ten?.toLowerCase().includes(searchValue)) ||
+        (nguoiDung.hoTen?.toLowerCase().includes(searchValue)) ||
+        false
+      );
+    });
+
+    // Sắp xếp theo trạng thái
+    if (this.filterStatus !== null) {
+      this.displayData = this.displayData.filter((nguoiDung: NguoiDung) => {
+        const userStatus = nguoiDung.status ?? (nguoiDung.trang_thai ? 1 : 0);
+        return userStatus === this.filterStatus;
+      });
+    }
+  }
+
+  getUserDisplayName(nguoiDung: NguoiDung): string {
+    return nguoiDung.ho_ten || 
+           nguoiDung.hoTen || 
+           nguoiDung.user_name || 
+           nguoiDung.userName || 
+           nguoiDung.username || 
+           'Không có tên';
+  }
+
+  onFilterStatusChange(status: number | null): void {
+    this.filterStatus = status;
+    this.filterNguoiDungs();
   }
 }

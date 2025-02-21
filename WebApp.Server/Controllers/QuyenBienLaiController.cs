@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using WebApp.API.Data;
 using WebApp.API.Models;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace WebApp.API.Controllers
 {
@@ -11,10 +13,12 @@ namespace WebApp.API.Controllers
     public class QuyenBienLaiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<QuyenBienLaiController> _logger;
 
-        public QuyenBienLaiController(ApplicationDbContext context)
+        public QuyenBienLaiController(ApplicationDbContext context, ILogger<QuyenBienLaiController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -45,17 +49,59 @@ namespace WebApp.API.Controllers
         {
             try 
             {
-                quyenBienLai.ngay_cap = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
-                quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
+                // Log để debug
+                _logger.LogInformation($"Received request to create QuyenBienLai: {JsonSerializer.Serialize(quyenBienLai)}");
 
+                // Validate input
+                if (quyenBienLai == null)
+                {
+                    return BadRequest(new { message = "Dữ liệu không hợp lệ" });
+                }
+
+                // Kiểm tra người thu có tồn tại không
+                var nguoiThu = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(n => n.id == quyenBienLai.nhan_vien_thu);
+
+                if (nguoiThu == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy người thu với ID: {quyenBienLai.nhan_vien_thu}" });
+                }
+
+                // Kiểm tra số quyển và số biên lai
+                if (string.IsNullOrEmpty(quyenBienLai.quyen_so) || 
+                    string.IsNullOrEmpty(quyenBienLai.tu_so) || 
+                    string.IsNullOrEmpty(quyenBienLai.den_so))
+                {
+                    return BadRequest(new { message = "Vui lòng nhập đầy đủ thông tin quyển biên lai" });
+                }
+
+                // Set các giá trị mặc định
+                quyenBienLai.ngay_cap = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
+                quyenBienLai.trang_thai = "chua_su_dung";
+
+                // Thêm vào database
                 _context.QuyenBienLais.Add(quyenBienLai);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetById), new { id = quyenBienLai.id }, quyenBienLai);
+                // Lấy quyển biên lai vừa tạo kèm thông tin người thu
+                var createdQuyenBienLai = await _context.QuyenBienLais
+                    .Include(q => q.NguoiThu)
+                    .FirstOrDefaultAsync(q => q.id == quyenBienLai.id);
+
+                return CreatedAtAction(
+                    nameof(GetById), 
+                    new { id = quyenBienLai.id }, 
+                    new { 
+                        message = "Thêm quyển biên lai thành công",
+                        data = createdQuyenBienLai 
+                    }
+                );
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                _logger.LogError(ex, "Lỗi khi thêm quyển biên lai");
+                return StatusCode(500, new { message = "Lỗi khi thêm quyển biên lai", error = ex.Message });
             }
         }
 
@@ -73,7 +119,7 @@ namespace WebApp.API.Controllers
             existingQuyenBienLai.quyen_so = quyenBienLai.quyen_so;
             existingQuyenBienLai.tu_so = quyenBienLai.tu_so;
             existingQuyenBienLai.den_so = quyenBienLai.den_so;
-            existingQuyenBienLai.nguoi_thu = quyenBienLai.nguoi_thu;
+            existingQuyenBienLai.nhan_vien_thu = quyenBienLai.nhan_vien_thu;
             existingQuyenBienLai.trang_thai = quyenBienLai.trang_thai;
 
             try

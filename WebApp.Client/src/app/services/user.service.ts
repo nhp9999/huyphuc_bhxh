@@ -5,21 +5,27 @@ import { environment } from '../../environments/environment';
 
 export interface NguoiDung {
   id: number;
-  username: string;
+  user_name: string;
+  username?: string;
   userName?: string;
   ho_ten?: string;
   hoTen?: string;
   email?: string;
-  sdt?: string;
+  so_dien_thoai?: string;
   soDienThoai?: string;
-  trang_thai: boolean;
-  status?: number;
-  roles?: string[];
-  maNhanVien?: string;
+  sdt?: string;
+  don_vi_cong_tac?: string;
   donViCongTac?: string;
+  chuc_danh?: string;
+  chucDanh?: string;
+  roles?: string[];
+  status?: number;
+  trang_thai?: boolean;
+  maNhanVien?: string;
   isSuperAdmin?: boolean;
   typeMangLuoi?: number;
-  chucDanh?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface DaiLy {

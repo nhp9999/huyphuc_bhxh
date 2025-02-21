@@ -33,10 +33,10 @@ namespace WebApp.API.Models
         public string den_so { get; set; }
 
         [Required]
-        [Column("nguoi_thu")]
-        public int nguoi_thu { get; set; }
+        [Column("nhan_vien_thu")]
+        public int nhan_vien_thu { get; set; }
 
-        [ForeignKey("nguoi_thu")]
+        [ForeignKey("nhan_vien_thu")]
         public virtual NguoiDung? NguoiThu { get; set; }
 
         public DateTime ngay_cap { get; set; }

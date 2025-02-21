@@ -8,11 +8,12 @@ export interface QuyenBienLai {
   quyen_so: string;
   tu_so: string;
   den_so: string;
-  nguoi_thu: number;
-  ngay_cap?: Date;
-  nguoi_cap?: string;
-  trang_thai: string;
   so_hien_tai?: string;
+  nhan_vien_thu: number;
+  nguoi_cap: string;
+  ngay_cap?: Date;
+  trang_thai: string;
+  NguoiThu?: any;
 }
 
 @Injectable({
