@@ -159,6 +159,11 @@ namespace WebApp.API.Models
         [StringLength(20)]
         public string? so_bien_lai { get; set; }
 
+        public int? quyen_bien_lai_id { get; set; }
+
+        [ForeignKey("quyen_bien_lai_id")]
+        public virtual QuyenBienLai? QuyenBienLai { get; set; }
+
         // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
         public KeKhaiBHYT()
         {

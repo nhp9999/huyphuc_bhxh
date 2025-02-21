@@ -142,6 +142,10 @@ namespace WebApp.API.Data
                     .WithMany()
                     .HasForeignKey(k => k.thong_tin_the_id)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(k => k.QuyenBienLai)
+                    .WithMany()
+                    .HasForeignKey(k => k.quyen_bien_lai_id);
             });
 
             modelBuilder.Entity<ThongTinThe>(entity =>

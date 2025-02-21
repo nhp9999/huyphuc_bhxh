@@ -43,4 +43,17 @@ export class QuyenBienLaiService {
   getNextSoBienLai(nguoiThuId: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/next-so-bien-lai/${nguoiThuId}`);
   }
+
+  capNhatSoBienLai(quyenBienLaiId: number, soBienLai: string): Observable<QuyenBienLai> {
+    return this.http.patch<QuyenBienLai>(`${this.apiUrl}/${quyenBienLaiId}/cap-nhat-so-bien-lai`, {
+      so_hien_tai: soBienLai
+    });
+  }
+
+  kiemTraSoBienLaiHopLe(quyenBienLaiId: number, soBienLai: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/kiem-tra-so-bien-lai`, {
+      quyen_bien_lai_id: quyenBienLaiId,
+      so_bien_lai: soBienLai
+    });
+  }
 } 

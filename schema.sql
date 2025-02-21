@@ -13,4 +13,11 @@ CREATE TABLE public.quyen_bien_lai (
 
 -- Thêm cột số biên lai vào bảng ke_khai_bhyt
 ALTER TABLE public.ke_khai_bhyt 
-ADD COLUMN so_bien_lai VARCHAR(20); 
+ADD COLUMN so_bien_lai VARCHAR(20);
+
+-- Thêm cột quyen_bien_lai_id vào bảng ke_khai_bhyt
+ALTER TABLE public.ke_khai_bhyt 
+ADD COLUMN quyen_bien_lai_id INTEGER,
+ADD CONSTRAINT fk_ke_khai_bhyt_quyen_bien_lai 
+FOREIGN KEY (quyen_bien_lai_id) 
+REFERENCES public.quyen_bien_lai(id); 
