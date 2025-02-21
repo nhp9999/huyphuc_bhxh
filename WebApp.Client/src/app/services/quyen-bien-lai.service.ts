@@ -19,12 +19,24 @@ export interface QuyenBienLai {
   providedIn: 'root'
 })
 export class QuyenBienLaiService {
-  private apiUrl = `${environment.apiUrl}/api/quyenbienLai`;
+  private apiUrl = `${environment.apiUrl}/quyen-bien-lai`;
 
   constructor(private http: HttpClient) { }
 
-  createQuyenBienLai(quyenBienLai: QuyenBienLai): Observable<QuyenBienLai> {
+  getQuyenBienLais(): Observable<QuyenBienLai[]> {
+    return this.http.get<QuyenBienLai[]>(this.apiUrl);
+  }
+
+  createQuyenBienLai(quyenBienLai: Partial<QuyenBienLai>): Observable<QuyenBienLai> {
     return this.http.post<QuyenBienLai>(this.apiUrl, quyenBienLai);
+  }
+
+  updateQuyenBienLai(id: number, quyenBienLai: Partial<QuyenBienLai>): Observable<QuyenBienLai> {
+    return this.http.put<QuyenBienLai>(`${this.apiUrl}/${id}`, quyenBienLai);
+  }
+
+  deleteQuyenBienLai(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   getNextSoBienLai(nguoiThuId: number): Observable<any> {

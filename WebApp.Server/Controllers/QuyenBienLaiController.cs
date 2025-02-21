@@ -7,98 +7,108 @@ using WebApp.API.Models;
 namespace WebApp.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/quyen-bien-lai")]
     public class QuyenBienLaiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<QuyenBienLaiController> _logger;
 
-        public QuyenBienLaiController(ApplicationDbContext context, ILogger<QuyenBienLaiController> logger)
+        public QuyenBienLaiController(ApplicationDbContext context)
         {
             _context = context;
-            _logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var quyenBienLais = await _context.QuyenBienLais
+                .Include(q => q.NguoiThu)
+                .OrderByDescending(q => q.ngay_cap)
+                .ToListAsync();
+            return Ok(quyenBienLais);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var quyenBienLai = await _context.QuyenBienLais
+                .Include(q => q.NguoiThu)
+                .FirstOrDefaultAsync(q => q.id == id);
+
+            if (quyenBienLai == null)
+                return NotFound();
+
+            return Ok(quyenBienLai);
         }
 
         [HttpPost]
-        public async Task<ActionResult<QuyenBienLai>> CreateQuyenBienLai(QuyenBienLai quyenBienLai)
+        public async Task<IActionResult> Create(QuyenBienLai quyenBienLai)
         {
-            try
+            try 
             {
-                quyenBienLai.ngay_cap = DateTime.UtcNow;
-                quyenBienLai.nguoi_cap = User.Identity?.Name ?? "system";
+                quyenBienLai.ngay_cap = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
                 quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
 
                 _context.QuyenBienLais.Add(quyenBienLai);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetQuyenBienLai), new { id = quyenBienLai.id }, quyenBienLai);
+                return CreatedAtAction(nameof(GetById), new { id = quyenBienLai.id }, quyenBienLai);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error creating quyen bien lai: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi tạo quyển biên lai", error = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-        [HttpGet("next-so-bien-lai/{nguoiThuId}")]
-        public async Task<ActionResult<string>> GetNextSoBienLai(int nguoiThuId)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, QuyenBienLai quyenBienLai)
         {
+            if (id != quyenBienLai.id)
+                return BadRequest();
+
+            var existingQuyenBienLai = await _context.QuyenBienLais.FindAsync(id);
+            if (existingQuyenBienLai == null)
+                return NotFound();
+
+            // Cập nhật các trường
+            existingQuyenBienLai.quyen_so = quyenBienLai.quyen_so;
+            existingQuyenBienLai.tu_so = quyenBienLai.tu_so;
+            existingQuyenBienLai.den_so = quyenBienLai.den_so;
+            existingQuyenBienLai.nguoi_thu = quyenBienLai.nguoi_thu;
+            existingQuyenBienLai.trang_thai = quyenBienLai.trang_thai;
+
             try
             {
-                var quyenBienLai = await _context.QuyenBienLais
-                    .Where(q => q.nguoi_thu == nguoiThuId && q.trang_thai == "dang_su_dung")
-                    .OrderBy(q => q.ngay_cap)
-                    .FirstOrDefaultAsync();
-
-                if (quyenBienLai == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy quyển biên lai đang sử dụng" });
-                }
-
-                var soHienTai = int.Parse(quyenBienLai.so_hien_tai);
-                var denSo = int.Parse(quyenBienLai.den_so);
-
-                if (soHienTai > denSo)
-                {
-                    quyenBienLai.trang_thai = "da_su_dung";
-                    await _context.SaveChangesAsync();
-                    return BadRequest(new { message = "Quyển biên lai đã hết số" });
-                }
-
-                var nextSo = (soHienTai + 1).ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
-                quyenBienLai.so_hien_tai = nextSo;
                 await _context.SaveChangesAsync();
-
-                return Ok(new { so_bien_lai = soHienTai.ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0') });
             }
-            catch (Exception ex)
+            catch (DbUpdateConcurrencyException)
             {
-                _logger.LogError($"Error getting next so bien lai: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi lấy số biên lai tiếp theo" });
+                if (!await QuyenBienLaiExists(id))
+                    return NotFound();
+                throw;
             }
+
+            return NoContent();
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<QuyenBienLai>> GetQuyenBienLai(int id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var quyenBienLai = await _context.QuyenBienLais
-                    .Include(q => q.NguoiThu)
-                    .FirstOrDefaultAsync(q => q.id == id);
+            var quyenBienLai = await _context.QuyenBienLais.FindAsync(id);
+            if (quyenBienLai == null)
+                return NotFound();
 
-                if (quyenBienLai == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy quyển biên lai" });
-                }
+            if (quyenBienLai.trang_thai != "chua_su_dung")
+                return BadRequest("Không thể xóa quyển biên lai đã sử dụng");
 
-                return Ok(quyenBienLai);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error getting quyen bien lai {id}: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi lấy thông tin quyển biên lai", error = ex.Message });
-            }
+            _context.QuyenBienLais.Remove(quyenBienLai);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private async Task<bool> QuyenBienLaiExists(int id)
+        {
+            return await _context.QuyenBienLais.AnyAsync(e => e.id == id);
         }
     }
 } 

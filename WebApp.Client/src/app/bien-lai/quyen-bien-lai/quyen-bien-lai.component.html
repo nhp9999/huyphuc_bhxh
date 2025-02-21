@@ -1,9 +1,20 @@
 <div class="page-header">
   <div class="header-content">
-    <h2>Quản lý quyển biên lai</h2>
-    <button nz-button nzType="primary" (click)="showModal()">
-      <span nz-icon nzType="plus"></span>Thêm quyển biên lai
-    </button>
+    <div class="breadcrumb">
+      <nz-breadcrumb>
+        <nz-breadcrumb-item>
+          <span nz-icon nzType="home"></span>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Biên lai</nz-breadcrumb-item>
+        <nz-breadcrumb-item>Quản lý quyển biên lai</nz-breadcrumb-item>
+      </nz-breadcrumb>
+    </div>
+    <div class="actions">
+      <button nz-button nzType="primary" (click)="showModal()">
+        <span nz-icon nzType="plus"></span>
+        Thêm
+      </button>
+    </div>
   </div>
 </div>
 
@@ -11,6 +22,10 @@
   <nz-table #basicTable [nzData]="listQuyenBienLai" [nzLoading]="loading">
     <thead>
       <tr>
+        <th [nzChecked]="checked"
+            [nzIndeterminate]="indeterminate"
+            (nzCheckedChange)="onAllChecked($event)">
+        </th>
         <th>Quyển số</th>
         <th>Từ số</th>
         <th>Đến số</th>
@@ -24,11 +39,15 @@
     </thead>
     <tbody>
       <tr *ngFor="let item of basicTable.data">
+        <td [nzChecked]="setOfCheckedId.has(item.id!)"
+            [nzDisabled]="item.trang_thai !== 'chua_su_dung'"
+            (nzCheckedChange)="onItemChecked(item.id!, $event)">
+        </td>
         <td>{{ item.quyen_so }}</td>
         <td>{{ item.tu_so }}</td>
         <td>{{ item.den_so }}</td>
         <td>{{ item.so_hien_tai }}</td>
-        <td>{{ item.nguoi_thu?.ho_ten }}</td>
+        <td>{{ getNguoiThuName(item.nguoi_thu) }}</td>
         <td>{{ item.nguoi_cap }}</td>
         <td>{{ item.ngay_cap | date:'dd/MM/yyyy HH:mm' }}</td>
         <td>
@@ -37,10 +56,12 @@
           </nz-tag>
         </td>
         <td>
-          <a nz-button nzType="link" (click)="edit(item)" *ngIf="item.trang_thai === 'chua_su_dung'">
+          <a nz-button nzType="link" (click)="edit(item)" 
+             *ngIf="item.trang_thai === 'chua_su_dung' || item.trang_thai === 'dang_su_dung'">
             <span nz-icon nzType="edit"></span>
           </a>
-          <a nz-button nzType="link" nzDanger (click)="delete(item)" *ngIf="item.trang_thai === 'chua_su_dung'">
+          <a nz-button nzType="link" nzDanger (click)="delete(item)" 
+             *ngIf="item.trang_thai === 'chua_su_dung'">
             <span nz-icon nzType="delete"></span>
           </a>
         </td>
@@ -59,32 +80,81 @@
     <form nz-form [formGroup]="form">
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Quyển số</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập quyển số!">
-          <input nz-input formControlName="quyen_so" placeholder="Nhập quyển số" />
+        <nz-form-control [nzSpan]="14" [nzErrorTip]="quyenSoErrorTpl">
+          <input nz-input 
+            formControlName="quyen_so" 
+            placeholder="Nhập quyển số (tối đa 5 số)" 
+            maxlength="5"
+            (input)="onNumberInput($event, 5)" />
         </nz-form-control>
+        <ng-template #quyenSoErrorTpl let-control>
+          <ng-container *ngIf="control.hasError('required')">
+            Vui lòng nhập quyển số!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('pattern')">
+            Quyển số chỉ được nhập số và tối đa 5 chữ số!
+          </ng-container>
+        </ng-template>
       </nz-form-item>
 
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Từ số</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số bắt đầu!">
-          <input nz-input formControlName="tu_so" placeholder="Nhập số bắt đầu" />
+        <nz-form-control [nzSpan]="14" [nzErrorTip]="tuSoErrorTpl">
+          <input nz-input 
+            formControlName="tu_so" 
+            placeholder="Nhập số bắt đầu (tối đa 7 số)" 
+            maxlength="7"
+            (input)="onNumberInput($event, 7)" />
         </nz-form-control>
+        <ng-template #tuSoErrorTpl let-control>
+          <ng-container *ngIf="control.hasError('required')">
+            Vui lòng nhập số bắt đầu!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('pattern')">
+            Số bắt đầu chỉ được nhập số và tối đa 7 chữ số!
+          </ng-container>
+        </ng-template>
       </nz-form-item>
 
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Đến số</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số kết thúc!">
-          <input nz-input formControlName="den_so" placeholder="Nhập số kết thúc" />
+        <nz-form-control [nzSpan]="14" [nzErrorTip]="denSoErrorTpl">
+          <input nz-input 
+            formControlName="den_so" 
+            placeholder="Nhập số kết thúc (tối đa 7 số)" 
+            maxlength="7"
+            (input)="onNumberInput($event, 7)" />
         </nz-form-control>
+        <ng-template #denSoErrorTpl let-control>
+          <ng-container *ngIf="control.hasError('required')">
+            Vui lòng nhập số kết thúc!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('pattern')">
+            Số kết thúc chỉ được nhập số và tối đa 7 chữ số!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('soThuTuKhongHopLe')">
+            Số kết thúc phải lớn hơn số bắt đầu!
+          </ng-container>
+        </ng-template>
       </nz-form-item>
 
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Người thu</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu!">
-          <nz-select 
-            formControlName="nguoi_thu" 
-            nzPlaceHolder="Chọn người thu"
-            [nzOptions]="nguoiThus">
+          <nz-select formControlName="nguoi_thu" nzPlaceHolder="Chọn người thu">
+            <nz-option *ngFor="let user of nguoiThus" [nzValue]="user.value" [nzLabel]="user.label">
+            </nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Trạng thái</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn trạng thái!">
+          <nz-select formControlName="trang_thai" nzPlaceHolder="Chọn trạng thái">
+            <nz-option nzValue="chua_su_dung" nzLabel="Chưa sử dụng"></nz-option>
+            <nz-option nzValue="dang_su_dung" nzLabel="Đang sử dụng"></nz-option>
+            <nz-option nzValue="da_su_dung" nzLabel="Đã sử dụng"></nz-option>
           </nz-select>
         </nz-form-control>
       </nz-form-item>

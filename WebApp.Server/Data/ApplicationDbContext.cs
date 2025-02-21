@@ -254,6 +254,10 @@ namespace WebApp.API.Data
                 entity.Property(e => e.nguoi_cap).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.trang_thai).HasMaxLength(20);
                 entity.Property(e => e.so_hien_tai).HasMaxLength(20);
+                
+                entity.Property(e => e.ngay_cap)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.NguoiThu)
                     .WithMany()
