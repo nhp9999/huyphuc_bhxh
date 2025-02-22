@@ -634,4 +634,23 @@ nz-tag {
 
 .urgent {
   animation: urgent-pulse 2s infinite;
+}
+
+.header-actions {
+  button {
+    i[nzType="key"] {
+      color: #1890ff;
+    }
+  }
+}
+
+.captcha-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
 } 

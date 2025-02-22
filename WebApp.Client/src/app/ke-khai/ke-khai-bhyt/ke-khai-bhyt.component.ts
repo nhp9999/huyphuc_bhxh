@@ -53,6 +53,8 @@ import * as docx from 'docxtemplater';
 import PizZip from 'pizzip';
 import { saveAs } from 'file-saver';
 import Docxtemplater from 'docxtemplater';
+import { AuthService } from '../../services/auth.service';
+import { SSMV2Service } from '../../services/ssmv2.service';
 
 registerLocaleData(vi);
 
@@ -244,6 +246,15 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   isProcessing = false;
   quickInputText = '';
 
+  accessToken: string = '';
+  loadingToken = false;
+
+  isLoginVisible = false;
+  captchaImage = '';
+  captchaCode = '';
+  loginForm: FormGroup;
+  loadingLogin = false;
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -255,7 +266,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     private i18n: NzI18nService,
     private iconService: NzIconService,
     private donViService: DonViService,
-    private cccdService: CCCDService
+    private cccdService: CCCDService,
+    private authService: AuthService,
+    private ssmv2Service: SSMV2Service
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -272,6 +285,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       CopyOutline // Thêm vào danh sách
     );
     this.initForm();
+    
+    // Khởi tạo form trong constructor
+    this.loginForm = this.fb.group({
+      userName: ['884000_xa_tli_phuoclt'], // Tài khoản mặc định
+      password: ['123456d@D'], // Mật khẩu mặc định  
+      text: ['', [
+        Validators.required,
+        Validators.minLength(4),
+        Validators.maxLength(4)
+      ]] // Validate độ dài 4 ký tự
+    });
   }
 
   ngOnInit(): void {
@@ -1049,58 +1073,71 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     if (maSoBHXH && maSoBHXH.length === 10) {
+      // Kiểm tra token trước khi tìm kiếm
+      if (!this.ssmv2Service.getToken()) {
+        // Bỏ dòng hiển thị thông báo
+        // this.message.warning('Vui lòng xác thực lại để lấy token mới');
+        this.getAccessToken(); // Chỉ hiển thị modal xác thực
+        return;
+      }
+
       this.loading = true;
       
-      // Gọi API tra cứu BHYT
       this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
         next: async (response) => {
           if (response.success) {
-            // Xử lý dữ liệu từ API như cũ
             const data = response.data;
             console.log('BHYT search response:', data);
 
-            // Kiểm tra hạn thẻ cũ và xử lý như cũ
-            const denNgayTheCu = this.parseDate(data.denNgayTheCu);
-            if (denNgayTheCu) {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              
-              const timeDiff = denNgayTheCu.getTime() - today.getTime();
-              const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-              
-              if (daysDiff > 30) {
-                return new Promise((resolve) => {
-                  this.modal.warning({
-                    nzTitle: 'Cảnh báo',
-                    nzContent: `Thẻ BHYT hiện tại còn ${daysDiff} ngày sử dụng. Bạn có muốn tiếp tục kê khai không?`,
-                    nzOkText: 'Tiếp tục',
-                    nzCancelText: 'Hủy',
-                    nzOnOk: () => {
-                      resolve(true);
-                    },
-                    nzOnCancel: () => {
-                      this.form.reset();
-                      this.loading = false;
-                      resolve(false);
-                    }
+            // Kiểm tra hạn thẻ cũ
+            if (data.denNgayTheCu) {
+              const denNgayTheCu = this.parseDate(data.denNgayTheCu);
+              if (denNgayTheCu) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const timeDiff = denNgayTheCu.getTime() - today.getTime();
+                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                
+                if (daysDiff > 30) {
+                  return new Promise((resolve) => {
+                    this.modal.warning({
+                      nzTitle: 'Cảnh báo',
+                      nzContent: `Thẻ BHYT hiện tại còn ${daysDiff} ngày sử dụng. Bạn có muốn tiếp tục kê khai không?`,
+                      nzOkText: 'Tiếp tục',
+                      nzCancelText: 'Hủy',
+                      nzOnOk: () => {
+                        resolve(true);
+                      },
+                      nzOnCancel: () => {
+                        this.form.reset();
+                        this.loading = false;
+                        resolve(false);
+                      }
+                    });
+                  }).then((shouldContinue) => {
+                    if (!shouldContinue) return;
+                    this.processSearchResult(data);
                   });
-                }).then((shouldContinue) => {
-                  if (!shouldContinue) return;
-                  this.processSearchResult(data);
-                });
+                }
               }
             }
 
             await this.processSearchResult(data);
           } else {
-            // Nếu API không thành công, tìm trong bảng thong_tin_the
-            this.searchInLocalDatabase(maSoBHXH);
+            this.message.error(response.message || 'Lỗi không xác định');
           }
         },
-        error: (error) => {
-          console.error('Error searching BHYT from API:', error);
-          // Khi có lỗi từ API, tìm trong bảng thong_tin_the
-          this.searchInLocalDatabase(maSoBHXH);
+        error: (err) => {
+          console.error('Search error:', err);
+          if (err.error?.error === 'Lỗi xác thực') {
+            this.ssmv2Service.clearToken();
+            // Bỏ dòng hiển thị thông báo
+            // this.message.warning('Phiên làm việc hết hạn, vui lòng xác thực lại');
+            this.getAccessToken();
+          } else {
+            this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || 'Lỗi không xác định'));
+          }
         },
         complete: () => {
           this.loading = false;
@@ -1111,185 +1148,63 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Thêm phương thức mới để tìm kiếm trong database local
-  private searchInLocalDatabase(maSoBHXH: string): void {
-    this.keKhaiBHYTService.getThongTinTheByMaSoBHXH(maSoBHXH).subscribe({
-      next: async (thongTinThe) => {
-        if (thongTinThe) {
-          console.log('Found in local database:', thongTinThe);
-          
-          // Chuyển đổi dữ liệu từ ThongTinThe sang format phù hợp
-          const localData = {
-            maSoBHXH: thongTinThe.ma_so_bhxh,
-            cmnd: thongTinThe.cccd,
-            hoTen: thongTinThe.ho_ten,
-            ngaySinh: thongTinThe.ngay_sinh,
-            gioiTinh: thongTinThe.gioi_tinh ? 1 : 2, // true = Nam (1), false = Nữ (2)
-            soDienThoai: thongTinThe.so_dien_thoai,
-            maHoGiaDinh: thongTinThe.ma_hgd,
-            maTinhKS: thongTinThe.ma_tinh_ks,
-            maHuyenKS: thongTinThe.ma_huyen_ks,
-            maXaKS: thongTinThe.ma_xa_ks,
-            maTinhNkq: thongTinThe.ma_tinh_nkq,
-            maHuyenNkq: thongTinThe.ma_huyen_nkq,
-            maXaNkq: thongTinThe.ma_xa_nkq,
-            noiNhanHoSo: thongTinThe.noiNhanHoSo || {
-              tinh: '',
-              huyen: '',
-              xa: '',
-              diaChi: thongTinThe.dia_chi_nkq || ''
-            },
-            maBenhVien: thongTinThe.ma_benh_vien,
-            danToc: thongTinThe.ma_dan_toc,
-            quocTich: thongTinThe.quoc_tich,
-            soTheBHYT: thongTinThe.so_the_bhyt
-          };
+  // Thêm lại phương thức processSearchResult
+  private async processSearchResult(data: any): Promise<void> {
+    try {
+      // Xử lý và chuyển đổi ngày tháng
+      const ngaySinh = this.parseDate(data.ngaySinh);
+      const denNgayTheCu = this.parseDate(data.denNgayTheCu);
 
-          await this.processSearchResult(localData, true);
-        } else {
-          this.message.error('Không tìm thấy thông tin BHYT');
-        }
-      },
-      error: (error) => {
-        console.error('Error searching in local database:', error);
-        this.message.error('Có lỗi xảy ra khi tìm kiếm thông tin BHYT');
-      },
-      complete: () => {
-        this.loading = false;
-      }
-    });
-  }
-
-  // Cập nhật hàm processSearchResult để nhận thêm tham số
-  private async processSearchResult(data: any, isFromLocal: boolean = false): Promise<void> {
-    let benhVienKCB = '';
-    if (data.maBenhVien) {
-      if (this.danhMucCSKCBs.length === 0) {
-        await this.loadDanhMucCSKCB();
-      }
-      
-      const benhVien = this.danhMucCSKCBs.find(bv => bv.value === data.maBenhVien);
-      if (benhVien) {
-        benhVienKCB = benhVien.value;
-        console.log('Tìm thấy bệnh viện KCB:', benhVien);
-      }
-    }
-
-    // Xử lý chuyển đổi ngày tháng an toàn
-    const ngaySinh = this.parseDate(data.ngaySinh);
-    const tuNgayTheCu = this.parseDate(data.tuNgayTheCu);
-    const denNgayTheCu = this.parseDate(data.denNgayTheCu);
-
-    // Log để debug
-    console.log('Parsed dates:', {
-      ngaySinh,
-      tuNgayTheCu,
-      denNgayTheCu
-    });
-
-    // Parse địa chỉ từ noiNhanHoSo
-    let diaChiNKQ = '';
-    if (data.noiNhanHoSo) {
-      try {
-        console.log('Raw noiNhanHoSo:', data.noiNhanHoSo);
-        console.log('Type of noiNhanHoSo:', typeof data.noiNhanHoSo);
-
-        if (typeof data.noiNhanHoSo === 'object' && data.noiNhanHoSo !== null) {
-          const noiNhanHoSoObj = data.noiNhanHoSo as NoiNhanHoSo;
-          diaChiNKQ = noiNhanHoSoObj.diaChi || '';
-        } else {
-          diaChiNKQ = data.noiNhanHoSo as string;
-        }
-        
-        console.log('Extracted diaChi:', diaChiNKQ);
-      } catch (e) {
-        console.error('Error handling noiNhanHoSo:', e);
-        diaChiNKQ = data.noiNhanHoSo as string;
-      }
-    }
-
-    // Cập nhật form với dữ liệu từ API
-    this.form.patchValue({
-      ma_so_bhxh: data.maSoBHXH,
-      cccd: data.cmnd,
-      ho_ten: data.hoTen,
-      ngay_sinh: ngaySinh,
-      gioi_tinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
-      so_dien_thoai: data.soDienThoai,
-      ma_hgd: data.maHoGiaDinh || '',
-      ma_tinh_ks: data.maTinhKS,
-      ma_huyen_ks: data.maHuyenKS || '',
-      ma_xa_ks: data.maXaKS || '',
-      tinh_nkq: data.maTinhNkq,
-      huyen_nkq: data.maHuyenNkq,
-      xa_nkq: data.maXaNkq,
-      dia_chi_nkq: diaChiNKQ,
-      benh_vien_kcb: benhVienKCB,
-      ma_benh_vien: data.maBenhVien || '',
-      han_the_cu: denNgayTheCu,
-      ma_dan_toc: data.danToc || '',
-      quoc_tich: data.quocTich || '',
-      so_the_bhyt: data.soTheBHYT || '',
-      ngay_bien_lai: data.ngayBienLai ? new Date(data.ngayBienLai) : new Date(),
-      so_tien_can_dong: data.soTienCanDong,
-      so_thang_dong: data.soThangDong || null, // Không đặt giá trị mặc định
-    });
-
-    // Tính toán phương án đóng dựa trên hạn thẻ cũ
-    const phuongAnDong = this.checkPhuongAnDong(denNgayTheCu);
-    this.form.patchValue({
-      phuong_an_dong: phuongAnDong
-    });
-
-    // Tính hạn thẻ mới từ
-    const ngayBienLai = this.form.get('ngay_bien_lai')?.value;
-    if (ngayBienLai) {
-      const hanTheMoiTu = this.tinhHanTheMoiTu(new Date(ngayBienLai), denNgayTheCu);
+      // Cập nhật form với dữ liệu từ API
       this.form.patchValue({
-        han_the_moi_tu: hanTheMoiTu
+        ma_so_bhxh: data.maSoBHXH,
+        cccd: data.cmnd,
+        ho_ten: data.hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
+        so_dien_thoai: data.soDienThoai,
+        ma_hgd: data.maHoGiaDinh,
+        ma_tinh_ks: data.maTinhKS,
+        ma_huyen_ks: data.maHuyenKS,
+        ma_xa_ks: data.maXaKS,
+        tinh_nkq: data.maTinhNkq,
+        huyen_nkq: data.maHuyenNkq,
+        xa_nkq: data.maXaNkq,
+        dia_chi_nkq: data.noiNhanHoSo,
+        benh_vien_kcb: data.maBenhVien,
+        ma_benh_vien: data.maBenhVien,
+        so_the_bhyt: data.soTheBHYT,
+        han_the_cu: denNgayTheCu
       });
-    }
 
-    // Log để kiểm tra
-    console.log('Form data after update:', {
-      ma_huyen_ks: data.maHuyenKS,
-      ma_xa_ks: data.maXaKS
-    });
+      // Load danh sách huyện và xã tương ứng
+      if (data.maTinhNkq) {
+        await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
+      }
+      if (data.maHuyenNkq) {
+        await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
+      }
 
-    // Load danh mục huyện và xã tương ứng
-    if (data.maTinhNkq) {
-      this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
-    }
-    if (data.maHuyenNkq) {
-      this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
-    }
+      // Tính toán phương án đóng
+      const phuongAnDong = this.checkPhuongAnDong(denNgayTheCu);
+      this.form.patchValue({
+        phuong_an_dong: phuongAnDong
+      });
 
-    // Chỉ hiển thị thông báo nếu dữ liệu không phải từ local
-    if (!isFromLocal) {
+      // Tính hạn thẻ mới từ
+      const ngayBienLai = this.form.get('ngay_bien_lai')?.value;
+      if (ngayBienLai) {
+        const hanTheMoiTu = this.tinhHanTheMoiTu(new Date(ngayBienLai), denNgayTheCu);
+        this.form.patchValue({
+          han_the_moi_tu: hanTheMoiTu
+        });
+      }
+
       this.message.success('Đã tìm thấy thông tin BHYT');
-    } else {
-      this.message.success('Đã tìm thấy thông tin BHYT trong cơ sở dữ liệu');
+    } catch (error) {
+      console.error('Error processing search result:', error);
+      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
     }
-  }
-
-  // Thêm hàm kiểm tra phương án đóng
-  checkPhuongAnDong(hanTheCu: Date | null): string {
-    // Nếu không có hạn thẻ cũ -> tăng mới
-    if (!hanTheCu) return 'tang_moi';
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time về 00:00:00
-    
-    const hanTheCuDate = new Date(hanTheCu);
-    hanTheCuDate.setHours(0, 0, 0, 0);
-
-    // Tính số ngày từ hạn thẻ cũ đến hiện tại
-    const diffTime = today.getTime() - hanTheCuDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    // Nếu hạn thẻ cũ hết hạn KHÔNG QUÁ 90 ngày -> đáo hạn
-    // Ngược lại (quá 90 ngày hoặc không có hạn thẻ cũ) -> tăng mới
-    return diffDays <= 90 ? 'dao_han' : 'tang_moi';
   }
 
   filterOption: NzFilterOptionType = (input: string, option: { nzLabel: string | number | null; nzValue: any }): boolean => {
@@ -3032,5 +2947,135 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  // Thêm phương thức lấy token
+  getAccessToken(): void {
+    this.isLoginVisible = true;
+    this.getCaptcha();
+  }
+
+  getCaptcha(): void {
+    this.ssmv2Service.getCaptcha().subscribe({
+      next: (res) => {
+        console.log('Captcha response:', res); // Log để debug
+        if (res && res.data) {
+          this.captchaImage = res.data.image;
+          this.captchaCode = res.data.code;
+        } else {
+          this.message.error('Không nhận được dữ liệu captcha');
+        }
+      },
+      error: (err) => {
+        console.error('Captcha error:', err); // Log để debug
+        this.message.error('Lỗi khi lấy captcha: ' + err.message);
+      }
+    });
+  }
+
+  handleLogin(): void {
+    if (this.loginForm.get('text')?.valid) {
+      this.loadingLogin = true;
+      
+      const data = {
+        grant_type: 'password',
+        userName: this.loginForm.get('userName')?.value,
+        password: this.loginForm.get('password')?.value,
+        text: this.loginForm.get('text')?.value,
+        code: this.captchaCode,
+        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
+        isWeb: true
+      };
+
+      this.ssmv2Service.authenticate(data).subscribe({
+        next: (response) => {
+          this.loadingLogin = false; // Reset loading khi có response thành công
+          
+          if (response.body?.access_token) {
+            this.message.success('Xác thực thành công');
+            this.isLoginVisible = false;
+            
+            if (this.form.get('ma_so_bhxh')?.value) {
+              this.onSearchBHYT();
+            }
+          } else {
+            this.message.error('Không nhận được token');
+            this.getCaptcha();
+          }
+        },
+        error: (err) => {
+          console.log('Error details:', {
+            error: err.error,
+            status: err.status,
+            message: err.message,
+            fullError: err
+          });
+
+          this.loadingLogin = false;
+          this.loginForm.patchValue({ text: '' });
+
+          if (err.error?.error === 'invalid_captcha') {
+            this.message.error('Mã xác thực sai');
+          } else if (err.error?.error_description?.includes('xác thực')) {
+            this.message.error('Mã xác thực sai');
+          } else if (err.error?.message) {
+            this.message.error(err.error.message);
+          } else {
+            this.message.error('Xác thực thất bại, vui lòng thử lại');
+          }
+
+          setTimeout(() => {
+            this.getCaptcha();
+          }, 100);
+        }
+      });
+    } else {
+      Object.values(this.loginForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+        }
+      });
+    }
+  }
+
+  handleLoginCancel(): void {
+    this.isLoginVisible = false;
+    this.loginForm.reset();
+  }
+
+  // Thêm phương thức checkPhuongAnDong
+  private checkPhuongAnDong(hanTheCu: Date | null): string {
+    // Nếu không có hạn thẻ cũ -> tăng mới
+    if (!hanTheCu) return 'tang_moi';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time về 00:00:00
+    
+    const hanTheCuDate = new Date(hanTheCu);
+    hanTheCuDate.setHours(0, 0, 0, 0);
+
+    // Tính số ngày từ hạn thẻ cũ đến hiện tại
+    const diffTime = today.getTime() - hanTheCuDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Nếu hạn thẻ cũ hết hạn KHÔNG QUÁ 90 ngày -> đáo hạn
+    // Ngược lại (quá 90 ngày hoặc không có hạn thẻ cũ) -> tăng mới
+    return diffDays <= 90 ? 'dao_han' : 'tang_moi';
+  }
+
+  // Thêm phương thức xử lý input captcha
+  onCaptchaInput(event: any): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+    
+    // Chỉ lấy 4 ký tự đầu tiên
+    if (value.length > 4) {
+      value = value.slice(0, 4);
+    }
+    
+    // Chuyển đổi thành chữ hoa và cập nhật vào form
+    this.loginForm.patchValue({
+      text: value.toUpperCase()
+    }, { emitEvent: false });
   }
 } 

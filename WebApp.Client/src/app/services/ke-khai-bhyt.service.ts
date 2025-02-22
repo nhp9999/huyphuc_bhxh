@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { map } from 'rxjs/operators';
+import { SSMV2Service } from './ssmv2.service';
 
 export interface NoiNhanHoSo {
   tinh: string;
@@ -171,8 +172,12 @@ export class KeKhaiBHYTService {
   private danhMucCSKCBUrl = `${environment.apiUrl}/danh-muc-cskcb`;
   private currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   private apiToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiODg0MDAwX3hhX3RsaV9waHVvY2x0IiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoidXNlciIsInN1YiI6IjEwMDkxNyIsInNpZCI6Im5NemstdmRPa2xhcE1oeE9PQ1JrR3NjZGZGME5wTkU2NUVNTU9XcFpXcmsiLCJuYW1lIjoiTMOqIFRo4buLIFBoxrDhu5tjIiwibmlja25hbWUiOiI4ODQwMDBfeGFfdGxpX3BodW9jbHQiLCJjbGllbnRfaWQiOiJaalJpWW1JNVpUZ3RaRGN5T0MwME9EUmtMVGt5T1RZdE1ETmpZbVV6TTJVNFlqYzUiLCJtYW5nTHVvaSI6Ijc2MjU1IiwiZG9uVmlDb25nVGFjIjoixJBp4buDbSB0aHUgeMOjIFTDom4gTOG7o2kiLCJjaHVjRGFuaCI6IkPhu5luZyB0w6FjIHZpw6puIHRodSIsImVtYWlsIjoibmd1eWVudGFuZHVuZzI3MTE4OUBnbWFpbC5jb20iLCJzb0RpZW5UaG9haSI6IiIsImlzU3VwZXJBZG1pbiI6IkZhbHNlIiwiaXNDYXMiOiJGYWxzZSIsIm5iZiI6MTczNzkzODE0NywiZXhwIjoxNzM3OTU2MTQ3LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjQyMDAifQ.bmD-4c3M8BUCQ_ovcJdnwDBCNMGaZ6qcu_A_Z4P39Oc';
+  private baseUrl = 'https://ssmv2.vnpost.vn/connect/tracuu';
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private ssmv2Service: SSMV2Service
+  ) {}
 
   getByDotKeKhai(dotKeKhaiId: number): Observable<KeKhaiBHYT[]> {
     return this.http.get<KeKhaiBHYT[]>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`).pipe(
@@ -247,15 +252,35 @@ export class KeKhaiBHYTService {
     return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}`);
   }
 
-  traCuuThongTinBHYT(maSoBHXH: string): Observable<ThongTinBHYTResponse> {
-    const url = 'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai';
+  traCuuThongTinBHYT(maSoBHXH: string): Observable<any> {
+    const token = this.ssmv2Service.getToken();
+    if (!token) {
+      throw new Error('Chưa có token SSMV2');
+    }
+
+    const headers = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Origin': 'https://ssmv2.vnpost.vn',
+      'Referer': 'https://ssmv2.vnpost.vn/',
+      'Host': 'ssmv2.vnpost.vn'
+    });
+
+    // Tạo body request theo yêu cầu API
     const body = {
       maSoBHXH: maSoBHXH,
       mangLuoiId: 76255,
       ma: 'BI0110G',
       maCoQuanBHXH: '08907'
     };
-    return this.http.post<ThongTinBHYTResponse>(url, body);
+
+    // Sửa lại URL và method thành POST
+    return this.http.post(
+      'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai', 
+      body,
+      { headers }
+    );
   }
 
   // Thêm method để lấy danh sách bệnh viện
