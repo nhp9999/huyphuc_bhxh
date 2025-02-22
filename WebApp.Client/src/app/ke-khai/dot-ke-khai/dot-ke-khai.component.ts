@@ -44,6 +44,18 @@ import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.com
 import * as XLSX from 'xlsx';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
+interface QuyenBienLai {
+  id: number;
+  quyen_so: string;
+  tu_so: string;
+  den_so: string;
+  so_hien_tai?: string;
+  nhan_vien_thu: number;
+  nguoi_cap: string;
+  ngay_cap?: Date;
+  trang_thai: string;
+}
+
 interface KeKhaiBHYT {
   ho_ten: string;
   cccd: string;
@@ -73,6 +85,8 @@ interface KeKhaiBHYT {
   so_bien_lai?: string;
   han_the_moi_tu?: Date;
   is_urgent?: boolean;
+  ma_nhan_vien?: string;
+  QuyenBienLai?: QuyenBienLai;
 }
 
 @Component({
@@ -819,6 +833,7 @@ export class DotKeKhaiComponent implements OnInit {
               'SoCCCD', // Cột BI - Số CCCD
               'SoBienLai', // Cột BJ - Số biên lai
               'NgayBienLai', // Cột BK - Ngày biên lai
+              'MaNhanvienThu', // Cột BL - Mã nhân viên thu
             ];
 
             // Thêm 2 dòng trống trước header
@@ -840,7 +855,10 @@ export class DotKeKhaiComponent implements OnInit {
                 month: '2-digit',
                 year: 'numeric'
               }) : '',
-              '', // Cột I trống
+              item.so_bien_lai ? (item.QuyenBienLai ? 
+                `${item.QuyenBienLai.quyen_so}-${item.so_bien_lai}` : 
+                item.so_bien_lai
+              ) : '',
               typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
               '2340000', // Cột K - Tiendong - giá trị mặc định không có dấu phẩy
               '0', // Cột L - giá trị mặc định là 0
@@ -901,12 +919,16 @@ export class DotKeKhaiComponent implements OnInit {
               '', // Cột BG trống
               '', // Cột BH trống
               item.cccd || '', // Cột BI hiển thị CCCD
-              item.so_bien_lai || '', // Cột BJ hiển thị số biên lai
+              item.so_bien_lai ? (item.QuyenBienLai ? 
+                `${item.QuyenBienLai.quyen_so}-${item.so_bien_lai}` : 
+                item.so_bien_lai
+              ) : '', // Cột BJ - Số biên lai
               item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric'
-              }) : '', // Cột BK hiển thị ngày biên lai
+              }) : '', // Cột BK - Ngày biên lai
+              item.ma_nhan_vien || '', // Cột BL - Mã nhân viên thu từ API
             ]);
 
             // Tạo workbook và thêm sheet danh sách kê khai
@@ -978,6 +1000,7 @@ export class DotKeKhaiComponent implements OnInit {
               { wch: 15 }, // Cột BI trống
               { wch: 15 }, // Cột BJ trống
               { wch: 15 }, // Cột BK trống
+              { wch: 15 }, // Cột BL trống
             ];
 
             // Xuất file Excel

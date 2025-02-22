@@ -316,6 +316,16 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var username = User.Identity?.Name;
+                var nguoiDung = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(n => n.user_name == username);
+
+                if (nguoiDung == null)
+                {
+                    return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 _logger.LogInformation($"Bắt đầu lấy danh sách kê khai BHYT cho đợt {id}");
 
                 // Kiểm tra đợt kê khai có tồn tại không
@@ -340,6 +350,7 @@ namespace WebApp.API.Controllers
                 // Lấy danh sách kê khai BHYT
                 var keKhaiBHYTs = await _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
+                    .Include(k => k.QuyenBienLai)
                     .Where(k => k.dot_ke_khai_id == id)
                     .Select(k => new
                     {
@@ -366,7 +377,12 @@ namespace WebApp.API.Controllers
                         ma_huyen_ks = k.ThongTinThe.ma_huyen_ks,
                         ma_xa_ks = k.ThongTinThe.ma_xa_ks,
                         han_the_moi_tu = k.han_the_moi_tu,
-                        is_urgent = k.is_urgent
+                        is_urgent = k.is_urgent,
+                        so_bien_lai = k.so_bien_lai,
+                        QuyenBienLai = new {
+                            quyen_so = k.QuyenBienLai.quyen_so
+                        },
+                        ma_nhan_vien = nguoiDung.ma_nhan_vien
                     })
                     .ToListAsync();
 
