@@ -163,6 +163,17 @@ export interface BHYTSearchResponse {
   };
 }
 
+interface BienLai {
+  id: number;
+  quyen_so: string;
+  so_bien_lai: string; 
+  ten_nguoi_dong: string;
+  so_tien: number;
+  ghi_chu?: string;
+  trang_thai: string;
+  ngay_tao: Date;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -293,5 +304,22 @@ export class KeKhaiBHYTService {
       `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`, 
       {}
     );
+  }
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class BienLaiService {
+  constructor(private http: HttpClient) {}
+
+  // Tạo biên lai mới
+  createBienLai(data: Partial<BienLai>): Observable<BienLai> {
+    return this.http.post<BienLai>('/api/bien-lai', data);
+  }
+
+  // Lấy thông tin biên lai
+  getBienLai(id: number): Observable<BienLai> {
+    return this.http.get<BienLai>(`/api/bien-lai/${id}`);
   }
 } 

@@ -27,6 +27,7 @@ namespace WebApp.API.Data
         public DbSet<DaiLy> DaiLys { get; set; }
         public DbSet<DaiLyDonVi> DaiLyDonVis { get; set; }
         public DbSet<QuyenBienLai> QuyenBienLais { get; set; }
+        public DbSet<BienLai> BienLais { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -267,6 +268,19 @@ namespace WebApp.API.Data
                     .WithMany()
                     .HasForeignKey(e => e.nhan_vien_thu)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure BienLai
+            modelBuilder.Entity<BienLai>(entity =>
+            {
+                entity.ToTable("bien_lai");
+                
+                entity.HasOne(b => b.KeKhaiBHYT)
+                      .WithMany()
+                      .HasForeignKey(b => b.ke_khai_bhyt_id)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.ghi_chu).IsRequired(false); // Make ghi_chu nullable
             });
         }
     }

@@ -55,6 +55,7 @@ import { saveAs } from 'file-saver';
 import Docxtemplater from 'docxtemplater';
 import { AuthService } from '../../services/auth.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
+import { BienLaiService, BienLai } from '../../services/bien-lai.service';
 
 registerLocaleData(vi);
 
@@ -255,6 +256,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   loginForm: FormGroup;
   loadingLogin = false;
 
+  // Thêm thuộc tính mới
+  isHoGiaDinh = false; // Thêm biến để theo dõi chế độ Hộ gia đình
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -268,7 +272,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     private donViService: DonViService,
     private cccdService: CCCDService,
     private authService: AuthService,
-    private ssmv2Service: SSMV2Service
+    private ssmv2Service: SSMV2Service,
+    private bienLaiService: BienLaiService
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -1174,7 +1179,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         benh_vien_kcb: data.maBenhVien,
         ma_benh_vien: data.maBenhVien,
         so_the_bhyt: data.soTheBHYT,
-        han_the_cu: denNgayTheCu
+        han_the_cu: denNgayTheCu,
+        ma_dan_toc: data.danToc, // Thêm mã dân tộc
+        quoc_tich: data.quocTich, // Thêm quốc tịch
       });
 
       // Load danh sách huyện và xã tương ứng
@@ -1792,7 +1799,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         // Tính toán hạn thẻ mới
         const hanTheMoiTu = this.tinhHanTheMoiTu(ngayBienLai, hanTheCu);
         const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, this.multipleSearchSoThangDong);
-        const soTienCanDong = this.tinhSoTienCanDong(this.multipleSearchNguoiThu, this.multipleSearchSoThangDong);
+        const soTienCanDong = this.tinhSoTienCanDong(data.nguoiThu, this.multipleSearchSoThangDong);
 
         // Log để debug
         console.log('Thông tin ngày tháng:', {
@@ -1809,7 +1816,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           thong_tin_the_id: createdThongTinThe.id,
           dotKeKhai: this.dotKeKhai || undefined,
           thongTinThe: createdThongTinThe,
-          nguoi_thu: this.multipleSearchNguoiThu,
+          nguoi_thu: data.nguoiThu,
           so_thang_dong: this.multipleSearchSoThangDong,
           phuong_an_dong: this.checkPhuongAnDong(hanTheCu),
           han_the_cu: hanTheCu,
@@ -1858,7 +1865,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.multipleSearchNguoiThu) {
+    if (!this.isHoGiaDinh && !this.multipleSearchNguoiThu) {
       this.message.warning('Vui lòng chọn người thứ');
       return;
     }
@@ -1893,7 +1900,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         { nzDuration: 0 }
       ).messageId;
 
-      for (const maSoBHXH of maSoBHXHList) {
+      // Xử lý từng mã số BHXH
+      for (let i = 0; i < maSoBHXHList.length; i++) {
+        const maSoBHXH = maSoBHXHList[i];
         try {
           processedCount++;
 
@@ -1907,18 +1916,40 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
           const response = await this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).toPromise();
           if (response && response.success) {
-            const result = await this.createKeKhaiFromApiData(response.data);
+            let nguoiThu: number;
+            
+            if (this.isHoGiaDinh) {
+              // Trong chế độ Hộ gia đình:
+              // - Nếu index + 1 <= 5: gán người thứ theo index + 1
+              // - Nếu index + 1 > 5: gán người thứ 5 (người thứ 5 trở đi)
+              nguoiThu = (i + 1) <= 5 ? (i + 1) : 5;
+            } else {
+              // Trong chế độ thông thường, sử dụng người thứ được chọn
+              nguoiThu = this.multipleSearchNguoiThu;
+            }
+
+            const result = await this.createKeKhaiFromApiData({
+              ...response.data,
+              nguoiThu: nguoiThu,
+              ma_dan_toc: response.data.danToc,
+              quoc_tich: response.data.quocTich
+            });
+
             if (result.success) {
               successCount++;
               this.searchResults.push({
-                maSoBHXH,
+                maSoBHXH: this.isHoGiaDinh ? 
+                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` : 
+                  maSoBHXH,
                 status: 'success',
                 message: 'Tạo kê khai thành công'
               });
             } else {
               failedCount++;
               this.searchResults.push({
-                maSoBHXH,
+                maSoBHXH: this.isHoGiaDinh ? 
+                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` : 
+                  maSoBHXH,
                 status: 'error',
                 message: result.message || 'Không thể tạo kê khai'
               });
@@ -3077,5 +3108,33 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.loginForm.patchValue({
       text: value.toUpperCase()
     }, { emitEvent: false });
+  }
+
+  // Thêm phương thức mới để xử lý khi thay đổi chế độ
+  onModeChange(isHoGiaDinh: boolean): void {
+    this.isHoGiaDinh = isHoGiaDinh;
+    if (isHoGiaDinh) {
+      this.multipleSearchNguoiThu = null as any;
+    }
+  }
+
+  inBienLai(keKhaiId: number): void {
+    this.bienLaiService.getBienLaiByKeKhai(keKhaiId).subscribe({
+      next: (bienLai: BienLai) => {
+        this.bienLaiService.inBienLai(bienLai.id).subscribe(
+          (response: Blob) => {
+            const blob = new Blob([response], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            window.open(url);
+          },
+          (error: any) => {
+            this.message.error('Lỗi khi in biên lai');
+          }
+        );
+      },
+      error: () => {
+        this.message.error('Không tìm thấy biên lai');
+      }
+    });
   }
 } 

@@ -468,14 +468,22 @@
 <nz-modal
   [(nzVisible)]="isSearchMultipleVisible"
   [nzTitle]="'Tìm kiếm nhiều mã số BHXH'"
+  [nzWidth]="600"
   (nzOnCancel)="handleSearchMultipleCancel()"
   (nzOnOk)="handleSearchMultipleOk()"
   [nzOkText]="'Tìm kiếm'"
   [nzCancelText]="'Hủy'"
   [nzOkLoading]="isSearchingMultiple"
-  [nzWidth]="600"
 >
   <ng-container *nzModalContent>
+    <!-- Thêm radio group để chọn chế độ -->
+    <div style="margin-bottom: 16px;">
+      <nz-radio-group [(ngModel)]="isHoGiaDinh" (ngModelChange)="onModeChange($event)">
+        <label nz-radio [nzValue]="false">Thông thường</label>
+        <label nz-radio [nzValue]="true">Theo Hộ gia đình</label>
+      </nz-radio-group>
+    </div>
+
     <!-- Textarea nhập mã số BHXH -->
     <textarea
       nz-input
@@ -485,8 +493,8 @@
       style="width: 100%; margin-bottom: 16px; resize: none;"
     ></textarea>
 
-    <!-- Người thứ -->
-    <div style="margin-bottom: 16px;">
+    <!-- Người thứ - Ẩn khi chọn chế độ Hộ gia đình -->
+    <div style="margin-bottom: 16px;" *ngIf="!isHoGiaDinh">
       <div style="margin-bottom: 8px;">Người thứ:</div>
       <nz-select 
         [(ngModel)]="multipleSearchNguoiThu"
@@ -518,12 +526,12 @@
 
     <!-- KCB ban đầu -->
     <div style="margin-bottom: 16px;">
-      <div style="margin-bottom: 8px;">KCB ban đầu:</div>
+      <div style="margin-bottom: 8px;">Bệnh viện KCB:</div>
       <nz-select 
         [(ngModel)]="multipleSearchBenhVien"
         [nzShowSearch]="true"
         [nzAllowClear]="true"
-        [nzPlaceHolder]="'Chọn bệnh viện'"
+        [nzPlaceHolder]="'Chọn bệnh viện KCB'"
         style="width: 100%;"
       >
         <nz-option
@@ -537,7 +545,11 @@
     <!-- Ghi chú -->
     <div style="color: rgba(0, 0, 0, 0.45); font-size: 12px;">
       <i nz-icon nzType="info-circle" nzTheme="outline"></i>
-      <span style="margin-left: 8px;">Lưu ý: Mỗi mã số BHXH nhập trên một dòng</span>
+      <span style="margin-left: 8px;">
+        {{ isHoGiaDinh ? 
+          'Chế độ Hộ gia đình: Mã số BHXH đầu tiên sẽ là người thứ 1, mã số thứ hai là người thứ 2, và tiếp tục cho đến người thứ 5. Các mã số từ thứ 6 trở đi sẽ được gán là người thứ 5 trở đi' : 
+          'Lưu ý: Mỗi mã số BHXH nhập trên một dòng' }}
+      </span>
     </div>
   </ng-container>
 </nz-modal>

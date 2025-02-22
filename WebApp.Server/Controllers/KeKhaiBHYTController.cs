@@ -99,6 +99,7 @@ namespace WebApp.API.Controllers
         [HttpPost("{dotKeKhaiId}/ke-khai-bhyt")]
         public async Task<ActionResult<KeKhaiBHYT>> CreateKeKhaiBHYT(int dotKeKhaiId, KeKhaiBHYT keKhaiBHYT)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 _logger.LogInformation($"Received data: {JsonSerializer.Serialize(keKhaiBHYT)}");
@@ -109,7 +110,9 @@ namespace WebApp.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var dotKeKhai = await _context.DotKeKhais.FindAsync(dotKeKhaiId);
+                var dotKeKhai = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
+                    .FirstOrDefaultAsync(d => d.id == dotKeKhaiId);
                 if (dotKeKhai == null)
                 {
                     return NotFound(new { message = "Không tìm thấy đợt kê khai" });
@@ -197,6 +200,11 @@ namespace WebApp.API.Controllers
                     // Nếu chưa tồn tại, tạo mới thông tin thẻ
                     keKhaiBHYT.ThongTinThe.ngay_tao = DateTime.UtcNow;
                     keKhaiBHYT.ThongTinThe.nguoi_tao = User.Identity?.Name;
+                    
+                    // Lấy thông tin từ request
+                    keKhaiBHYT.ThongTinThe.ma_dan_toc = keKhaiBHYT.ThongTinThe.ma_dan_toc;
+                    keKhaiBHYT.ThongTinThe.quoc_tich = keKhaiBHYT.ThongTinThe.quoc_tich;
+
                     _context.ThongTinThes.Add(keKhaiBHYT.ThongTinThe);
                     await _context.SaveChangesAsync(); // Lưu trước để lấy ID
                     keKhaiBHYT.thong_tin_the_id = keKhaiBHYT.ThongTinThe.id;
@@ -272,17 +280,41 @@ namespace WebApp.API.Controllers
                     throw;
                 }
 
+                // 1. Lưu kê khai BHYT
                 _context.KeKhaiBHYTs.Add(keKhaiBHYT);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetKeKhaiBHYT), new { dotKeKhaiId, id = keKhaiBHYT.id }, new {
-                    success = true,
-                    message = "Tạo kê khai BHYT thành công",
-                    data = keKhaiBHYT
-                });
+                // 2. Tạo biên lai
+                var bienLai = new BienLai
+                {
+                    quyen_so = quyenBienLai.quyen_so,
+                    so_bien_lai = keKhaiBHYT.so_bien_lai,
+                    ten_nguoi_dong = keKhaiBHYT.ThongTinThe.ho_ten,
+                    so_tien = keKhaiBHYT.so_tien_can_dong,
+                    ke_khai_bhyt_id = keKhaiBHYT.id,
+                    ma_so_bhxh = keKhaiBHYT.ThongTinThe.ma_so_bhxh,
+                    ma_nhan_vien = nguoiThu.ma_nhan_vien,
+                    ngay_bien_lai = keKhaiBHYT.ngay_bien_lai ?? DateTime.Now,
+                    ma_co_quan_bhxh = keKhaiBHYT.DotKeKhai.DonVi?.MaCoQuanBHXH ?? "",
+                    ma_so_bhxh_don_vi = keKhaiBHYT.DotKeKhai.DonVi?.MaSoBHXH ?? "",
+                    tinh_chat = "bien_lai_goc"
+                };
+
+                _context.BienLais.Add(bienLai);
+                await _context.SaveChangesAsync();
+
+                // Nếu mọi thứ OK thì commit transaction
+                await transaction.CommitAsync();
+
+                return CreatedAtAction(nameof(GetKeKhaiBHYT), 
+                    new { dotKeKhaiId, id = keKhaiBHYT.id }, 
+                    new { success = true, message = "Tạo kê khai BHYT thành công", data = keKhaiBHYT }
+                );
             }
             catch (Exception ex)
             {
+                // Có lỗi thì rollback transaction
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error creating ke khai BHYT: {ex.Message}");
                 return StatusCode(500, new {
                     success = false,
@@ -471,6 +503,44 @@ namespace WebApp.API.Controllers
                 return StatusCode(500, new { message = "Lỗi khi cập nhật số biên lai", error = ex.Message });
             }
         }
+
+        [HttpPost("create-bien-lai")]
+        public async Task<IActionResult> CreateBienLai([FromBody] BienLaiCreateDto dto)
+        {
+            try
+            {
+                // Kiểm tra quyển biên lai
+                var quyenBienLai = await _context.QuyenBienLais
+                    .FirstOrDefaultAsync(q => q.quyen_so == dto.quyen_so);
+
+                if (quyenBienLai == null)
+                {
+                    return BadRequest(new { message = "Quyển biên lai không tồn tại" });
+                }
+
+                // Tạo biên lai mới
+                var bienLai = new BienLai
+                {
+                    quyen_so = dto.quyen_so,
+                    so_bien_lai = dto.so_bien_lai,
+                    ten_nguoi_dong = dto.ten_nguoi_dong,
+                    so_tien = dto.so_tien,
+                    ghi_chu = dto.ghi_chu,
+                    trang_thai = "active",
+                    ngay_tao = DateTime.Now
+                };
+
+                _context.BienLais.Add(bienLai);
+                await _context.SaveChangesAsync();
+
+                return Ok(bienLai);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo biên lai");
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi tạo biên lai" });
+            }
+        }
     }
 
     public class DeleteMultipleDto
@@ -483,5 +553,18 @@ namespace WebApp.API.Controllers
     {
         [Required]
         public string so_bien_lai { get; set; }
+    }
+
+    public class BienLaiCreateDto
+    {
+        [Required]
+        public string quyen_so { get; set; }
+        [Required]
+        public string so_bien_lai { get; set; }
+        [Required]
+        public string ten_nguoi_dong { get; set; }
+        [Required]
+        public decimal so_tien { get; set; }
+        public string ghi_chu { get; set; }
     }
 } 
