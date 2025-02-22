@@ -72,5 +72,11 @@ namespace WebApp.API.Models
         [Required]
         [StringLength(10)]
         public string ma_so_bhxh_don_vi { get; set; } = string.Empty;
+
+        [Required]
+        public bool is_bhyt { get; set; }
+
+        [Required] 
+        public bool is_bhxh { get; set; }
     }
 } 

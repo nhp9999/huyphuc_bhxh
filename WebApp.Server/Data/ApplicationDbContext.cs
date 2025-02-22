@@ -276,11 +276,9 @@ namespace WebApp.API.Data
                 entity.ToTable("bien_lai");
                 
                 entity.HasOne(b => b.KeKhaiBHYT)
-                      .WithMany()
-                      .HasForeignKey(b => b.ke_khai_bhyt_id)
+                      .WithOne(k => k.BienLai)
+                      .HasForeignKey<BienLai>(b => b.ke_khai_bhyt_id)
                       .OnDelete(DeleteBehavior.Cascade);
-
-                entity.Property(e => e.ghi_chu).IsRequired(false); // Make ghi_chu nullable
             });
         }
     }

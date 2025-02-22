@@ -164,6 +164,10 @@ namespace WebApp.API.Models
         [ForeignKey("quyen_bien_lai_id")]
         public virtual QuyenBienLai? QuyenBienLai { get; set; }
 
+        // Navigation property cho BienLai
+        [InverseProperty("KeKhaiBHYT")]
+        public virtual BienLai? BienLai { get; set; }
+
         // Thêm constructor để khởi tạo các giá trị mặc định cho non-nullable properties
         public KeKhaiBHYT()
         {

@@ -297,7 +297,9 @@ namespace WebApp.API.Controllers
                     ngay_bien_lai = keKhaiBHYT.ngay_bien_lai ?? DateTime.Now,
                     ma_co_quan_bhxh = keKhaiBHYT.DotKeKhai.DonVi?.MaCoQuanBHXH ?? "",
                     ma_so_bhxh_don_vi = keKhaiBHYT.DotKeKhai.DonVi?.MaSoBHXH ?? "",
-                    tinh_chat = "bien_lai_goc"
+                    tinh_chat = "bien_lai_goc",
+                    is_bhyt = keKhaiBHYT.DotKeKhai.dich_vu == "BHYT",
+                    is_bhxh = keKhaiBHYT.DotKeKhai.dich_vu == "BHXH TN"
                 };
 
                 _context.BienLais.Add(bienLai);
@@ -375,9 +377,12 @@ namespace WebApp.API.Controllers
         [HttpDelete("{dotKeKhaiId}/ke-khai-bhyt/{id}")]
         public async Task<IActionResult> DeleteKeKhaiBHYT(int dotKeKhaiId, int id)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Lấy thông tin kê khai và quyển biên lai
                 var keKhaiBHYT = await _context.KeKhaiBHYTs
+                    .Include(k => k.QuyenBienLai)
                     .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
                     
                 if (keKhaiBHYT == null)
@@ -385,13 +390,36 @@ namespace WebApp.API.Controllers
                     return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
                 }
 
+                // Lấy biên lai liên quan
+                var bienLai = await _context.BienLais
+                    .FirstOrDefaultAsync(b => b.ke_khai_bhyt_id == keKhaiBHYT.id);
+
+                if (bienLai != null && keKhaiBHYT.QuyenBienLai != null)
+                {
+                    // Xóa biên lai
+                    _context.BienLais.Remove(bienLai);
+                    await _context.SaveChangesAsync();
+
+                    // Reset số hiện tại về số của biên lai bị xóa
+                    keKhaiBHYT.QuyenBienLai.so_hien_tai = keKhaiBHYT.so_bien_lai;
+                    
+                    // Nếu trạng thái là đã sử dụng thì chuyển về đang sử dụng
+                    if (keKhaiBHYT.QuyenBienLai.trang_thai == "da_su_dung")
+                    {
+                        keKhaiBHYT.QuyenBienLai.trang_thai = "dang_su_dung";
+                    }
+                }
+
+                // Xóa kê khai BHYT
                 _context.KeKhaiBHYTs.Remove(keKhaiBHYT);
                 await _context.SaveChangesAsync();
 
+                await transaction.CommitAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error deleting ke khai BHYT {id}: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi xóa kê khai BHYT", error = ex.Message });
             }
@@ -400,19 +428,39 @@ namespace WebApp.API.Controllers
         [HttpPost("{dotKeKhaiId}/ke-khai-bhyt/delete-multiple")]
         public async Task<IActionResult> DeleteMultiple(int dotKeKhaiId, [FromBody] DeleteMultipleDto dto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                    .Include(k => k.BienLai)
                     .Where(k => k.dot_ke_khai_id == dotKeKhaiId && dto.ids.Contains(k.id))
                     .ToListAsync();
+
+                foreach (var keKhai in keKhaiBHYTs)
+                {
+                    var quyenBienLai = await _context.QuyenBienLais
+                        .FirstOrDefaultAsync(q => q.id == keKhai.quyen_bien_lai_id);
+
+                    if (quyenBienLai != null)
+                    {
+                        quyenBienLai.so_hien_tai = keKhai.so_bien_lai;
+                        if (quyenBienLai.trang_thai == "da_su_dung")
+                        {
+                            quyenBienLai.trang_thai = "dang_su_dung";
+                        }
+                        _context.QuyenBienLais.Update(quyenBienLai);
+                    }
+                }
 
                 _context.KeKhaiBHYTs.RemoveRange(keKhaiBHYTs);
                 await _context.SaveChangesAsync();
 
+                await transaction.CommitAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error deleting multiple ke khai BHYT: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi xóa nhiều kê khai BHYT", error = ex.Message });
             }

@@ -5,7 +5,7 @@
 -- Dumped from database version 16.6 (Debian 16.6-1.pgdg120+1)
 -- Dumped by pg_dump version 16.6
 
--- Started on 2025-02-21 17:56:23
+-- Started on 2025-02-22 15:20:51
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -265,7 +265,7 @@ CREATE SEQUENCE public.adjustment_requests_id_seq
 ALTER SEQUENCE public.adjustment_requests_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3798 (class 0 OID 0)
+-- TOC entry 3815 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: adjustment_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -314,7 +314,7 @@ CREATE SEQUENCE public.adjustments_id_seq
 ALTER SEQUENCE public.adjustments_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3799 (class 0 OID 0)
+-- TOC entry 3816 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: adjustments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -335,11 +335,93 @@ CREATE TABLE public.bien_lai (
     so_tien numeric(18,2) NOT NULL,
     ghi_chu character varying(500),
     trang_thai character varying(20) DEFAULT 'active'::character varying NOT NULL,
-    ngay_tao timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    ngay_tao timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    ke_khai_bhyt_id integer NOT NULL,
+    ma_so_bhxh character varying(10) NOT NULL,
+    ma_nhan_vien character varying(50) NOT NULL,
+    ngay_bien_lai timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    tinh_chat text DEFAULT 'bien_lai_goc'::text NOT NULL,
+    ma_co_quan_bhxh character varying(20) DEFAULT ''::character varying NOT NULL,
+    ma_so_bhxh_don_vi character varying(10) NOT NULL,
+    is_bhyt boolean DEFAULT false,
+    is_bhxh boolean DEFAULT false,
+    CONSTRAINT check_tinh_chat CHECK ((tinh_chat = ANY (ARRAY['bien_lai_goc'::text, 'bien_lai_huy_bo'::text])))
 );
 
 
 ALTER TABLE public.bien_lai OWNER TO bhxh_system_user;
+
+--
+-- TOC entry 3817 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.ma_so_bhxh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.ma_so_bhxh IS 'Mã số BHXH của người đóng';
+
+
+--
+-- TOC entry 3818 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.ma_nhan_vien; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.ma_nhan_vien IS 'Mã nhân viên thu tiền';
+
+
+--
+-- TOC entry 3819 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.ngay_bien_lai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.ngay_bien_lai IS 'Ngày phát hành biên lai';
+
+
+--
+-- TOC entry 3820 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.tinh_chat; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.tinh_chat IS 'Tính chất biên lai: Biên lai gốc hoặc Biên lai hủy bỏ';
+
+
+--
+-- TOC entry 3821 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.ma_co_quan_bhxh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.ma_co_quan_bhxh IS 'Mã cơ quan BHXH';
+
+
+--
+-- TOC entry 3822 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.ma_so_bhxh_don_vi; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.ma_so_bhxh_don_vi IS 'Mã số BHXH của đơn vị';
+
+
+--
+-- TOC entry 3823 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.is_bhyt; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.is_bhyt IS 'Đánh dấu biên lai BHYT';
+
+
+--
+-- TOC entry 3824 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: COLUMN bien_lai.is_bhxh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
+--
+
+COMMENT ON COLUMN public.bien_lai.is_bhxh IS 'Đánh dấu biên lai BHXH tự nguyện';
+
 
 --
 -- TOC entry 265 (class 1259 OID 17643)
@@ -374,7 +456,7 @@ CREATE SEQUENCE public.bien_lai_id_seq1
 ALTER SEQUENCE public.bien_lai_id_seq1 OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3800 (class 0 OID 0)
+-- TOC entry 3825 (class 0 OID 0)
 -- Dependencies: 266
 -- Name: bien_lai_id_seq1; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -405,7 +487,7 @@ CREATE TABLE public.dai_ly (
 ALTER TABLE public.dai_ly OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3801 (class 0 OID 0)
+-- TOC entry 3826 (class 0 OID 0)
 -- Dependencies: 246
 -- Name: COLUMN dai_ly.ma_tinh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -447,7 +529,7 @@ CREATE SEQUENCE public.dai_ly_don_vi_id_seq
 ALTER SEQUENCE public.dai_ly_don_vi_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3802 (class 0 OID 0)
+-- TOC entry 3827 (class 0 OID 0)
 -- Dependencies: 263
 -- Name: dai_ly_don_vi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -472,7 +554,7 @@ CREATE SEQUENCE public.dai_ly_id_seq
 ALTER SEQUENCE public.dai_ly_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3803 (class 0 OID 0)
+-- TOC entry 3828 (class 0 OID 0)
 -- Dependencies: 245
 -- Name: dai_ly_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -550,7 +632,7 @@ CREATE SEQUENCE public.declaration_batch_id_seq
 ALTER SEQUENCE public.declaration_batch_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3804 (class 0 OID 0)
+-- TOC entry 3829 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: declaration_batch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -652,7 +734,7 @@ CREATE TABLE public.declarations (
 ALTER TABLE public.declarations OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3805 (class 0 OID 0)
+-- TOC entry 3830 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: TABLE declarations; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -661,7 +743,7 @@ COMMENT ON TABLE public.declarations IS 'Bảng lưu thông tin kê khai BHXH';
 
 
 --
--- TOC entry 3806 (class 0 OID 0)
+-- TOC entry 3831 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.so_cmnd; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -670,7 +752,7 @@ COMMENT ON COLUMN public.declarations.so_cmnd IS 'Số CCCD/CMND của người 
 
 
 --
--- TOC entry 3807 (class 0 OID 0)
+-- TOC entry 3832 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.actual_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -679,7 +761,7 @@ COMMENT ON COLUMN public.declarations.actual_amount IS 'Số tiền thực tế 
 
 
 --
--- TOC entry 3808 (class 0 OID 0)
+-- TOC entry 3833 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.support_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -688,7 +770,7 @@ COMMENT ON COLUMN public.declarations.support_amount IS 'Số tiền hỗ trợ'
 
 
 --
--- TOC entry 3809 (class 0 OID 0)
+-- TOC entry 3834 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.total_amount; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -697,7 +779,7 @@ COMMENT ON COLUMN public.declarations.total_amount IS 'Tổng số tiền (actua
 
 
 --
--- TOC entry 3810 (class 0 OID 0)
+-- TOC entry 3835 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.payment_status; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -706,7 +788,7 @@ COMMENT ON COLUMN public.declarations.payment_status IS 'Trạng thái thanh to�
 
 
 --
--- TOC entry 3811 (class 0 OID 0)
+-- TOC entry 3836 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: COLUMN declarations.deleted_by; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -731,7 +813,7 @@ CREATE SEQUENCE public.declarations_id_seq
 ALTER SEQUENCE public.declarations_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3812 (class 0 OID 0)
+-- TOC entry 3837 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: declarations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -759,7 +841,7 @@ CREATE TABLE public.dich_vu (
 ALTER TABLE public.dich_vu OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3813 (class 0 OID 0)
+-- TOC entry 3838 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: TABLE dich_vu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -768,7 +850,7 @@ COMMENT ON TABLE public.dich_vu IS 'Bảng quản lý các loại dịch vụ';
 
 
 --
--- TOC entry 3814 (class 0 OID 0)
+-- TOC entry 3839 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -777,7 +859,7 @@ COMMENT ON COLUMN public.dich_vu.id IS 'ID dịch vụ';
 
 
 --
--- TOC entry 3815 (class 0 OID 0)
+-- TOC entry 3840 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.ten; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -786,7 +868,7 @@ COMMENT ON COLUMN public.dich_vu.ten IS 'Tên dịch vụ';
 
 
 --
--- TOC entry 3816 (class 0 OID 0)
+-- TOC entry 3841 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.ten_viet_tat; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -795,7 +877,7 @@ COMMENT ON COLUMN public.dich_vu.ten_viet_tat IS 'Tên viết tắt của dịch
 
 
 --
--- TOC entry 3817 (class 0 OID 0)
+-- TOC entry 3842 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.mo_ta; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -804,7 +886,7 @@ COMMENT ON COLUMN public.dich_vu.mo_ta IS 'Mô tả chi tiết về dịch vụ'
 
 
 --
--- TOC entry 3818 (class 0 OID 0)
+-- TOC entry 3843 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.trang_thai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -813,7 +895,7 @@ COMMENT ON COLUMN public.dich_vu.trang_thai IS 'Trạng thái hoạt động c�
 
 
 --
--- TOC entry 3819 (class 0 OID 0)
+-- TOC entry 3844 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.ngay_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -822,7 +904,7 @@ COMMENT ON COLUMN public.dich_vu.ngay_tao IS 'Ngày tạo dịch vụ';
 
 
 --
--- TOC entry 3820 (class 0 OID 0)
+-- TOC entry 3845 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: COLUMN dich_vu.nguoi_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -847,7 +929,7 @@ CREATE SEQUENCE public.dich_vu_id_seq
 ALTER SEQUENCE public.dich_vu_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3821 (class 0 OID 0)
+-- TOC entry 3846 (class 0 OID 0)
 -- Dependencies: 243
 -- Name: dich_vu_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -889,7 +971,7 @@ CREATE SEQUENCE public.dm_cskcb_id_seq
 ALTER SEQUENCE public.dm_cskcb_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3822 (class 0 OID 0)
+-- TOC entry 3847 (class 0 OID 0)
 -- Dependencies: 251
 -- Name: dm_cskcb_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -930,7 +1012,7 @@ CREATE SEQUENCE public.dm_khoi_kcb_id_seq
 ALTER SEQUENCE public.dm_khoi_kcb_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3823 (class 0 OID 0)
+-- TOC entry 3848 (class 0 OID 0)
 -- Dependencies: 253
 -- Name: dm_khoi_kcb_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -977,7 +1059,7 @@ CREATE SEQUENCE public.don_vi_id_seq
 ALTER SEQUENCE public.don_vi_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3824 (class 0 OID 0)
+-- TOC entry 3849 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: don_vi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1015,7 +1097,7 @@ CREATE TABLE public.dot_ke_khai (
 ALTER TABLE public.dot_ke_khai OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3825 (class 0 OID 0)
+-- TOC entry 3850 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: TABLE dot_ke_khai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1024,7 +1106,7 @@ COMMENT ON TABLE public.dot_ke_khai IS 'Bảng lưu trữ thông tin đợt kê 
 
 
 --
--- TOC entry 3826 (class 0 OID 0)
+-- TOC entry 3851 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1033,7 +1115,7 @@ COMMENT ON COLUMN public.dot_ke_khai.id IS 'ID đợt kê khai';
 
 
 --
--- TOC entry 3827 (class 0 OID 0)
+-- TOC entry 3852 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.ten_dot; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1042,7 +1124,7 @@ COMMENT ON COLUMN public.dot_ke_khai.ten_dot IS 'Tên đợt kê khai';
 
 
 --
--- TOC entry 3828 (class 0 OID 0)
+-- TOC entry 3853 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.so_dot; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1051,7 +1133,7 @@ COMMENT ON COLUMN public.dot_ke_khai.so_dot IS 'Số đợt kê khai';
 
 
 --
--- TOC entry 3829 (class 0 OID 0)
+-- TOC entry 3854 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.thang; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1060,7 +1142,7 @@ COMMENT ON COLUMN public.dot_ke_khai.thang IS 'Tháng kê khai (1-12)';
 
 
 --
--- TOC entry 3830 (class 0 OID 0)
+-- TOC entry 3855 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.nam; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1069,7 +1151,7 @@ COMMENT ON COLUMN public.dot_ke_khai.nam IS 'Năm kê khai';
 
 
 --
--- TOC entry 3831 (class 0 OID 0)
+-- TOC entry 3856 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.ghi_chu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1078,7 +1160,7 @@ COMMENT ON COLUMN public.dot_ke_khai.ghi_chu IS 'Ghi chú cho đợt kê khai';
 
 
 --
--- TOC entry 3832 (class 0 OID 0)
+-- TOC entry 3857 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.ngay_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1087,7 +1169,7 @@ COMMENT ON COLUMN public.dot_ke_khai.ngay_tao IS 'Ngày tạo đợt kê khai';
 
 
 --
--- TOC entry 3833 (class 0 OID 0)
+-- TOC entry 3858 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.nguoi_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1096,7 +1178,7 @@ COMMENT ON COLUMN public.dot_ke_khai.nguoi_tao IS 'Người tạo đợt kê kha
 
 
 --
--- TOC entry 3834 (class 0 OID 0)
+-- TOC entry 3859 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.trang_thai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1110,7 +1192,7 @@ COMMENT ON COLUMN public.dot_ke_khai.trang_thai IS 'Trạng thái đợt kê kha
 
 
 --
--- TOC entry 3835 (class 0 OID 0)
+-- TOC entry 3860 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.don_vi_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1119,7 +1201,7 @@ COMMENT ON COLUMN public.dot_ke_khai.don_vi_id IS 'ID đơn vị kê khai';
 
 
 --
--- TOC entry 3836 (class 0 OID 0)
+-- TOC entry 3861 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.url_bill; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1128,7 +1210,7 @@ COMMENT ON COLUMN public.dot_ke_khai.url_bill IS 'URL hóa đơn thanh toán';
 
 
 --
--- TOC entry 3837 (class 0 OID 0)
+-- TOC entry 3862 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN dot_ke_khai.dai_ly_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1153,7 +1235,7 @@ CREATE SEQUENCE public.dot_ke_khai_id_seq
 ALTER SEQUENCE public.dot_ke_khai_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3838 (class 0 OID 0)
+-- TOC entry 3863 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: dot_ke_khai_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1195,7 +1277,7 @@ CREATE SEQUENCE public.ds_huyen_id_seq
 ALTER SEQUENCE public.ds_huyen_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3839 (class 0 OID 0)
+-- TOC entry 3864 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: ds_huyen_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1236,7 +1318,7 @@ CREATE SEQUENCE public.ds_tinh_id_seq
 ALTER SEQUENCE public.ds_tinh_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3840 (class 0 OID 0)
+-- TOC entry 3865 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: ds_tinh_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1278,7 +1360,7 @@ CREATE SEQUENCE public.ds_xa_id_seq
 ALTER SEQUENCE public.ds_xa_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3841 (class 0 OID 0)
+-- TOC entry 3866 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: ds_xa_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1314,7 +1396,7 @@ CREATE TABLE public.hoa_don_thanh_toan (
 ALTER TABLE public.hoa_don_thanh_toan OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3842 (class 0 OID 0)
+-- TOC entry 3867 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: TABLE hoa_don_thanh_toan; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1323,7 +1405,7 @@ COMMENT ON TABLE public.hoa_don_thanh_toan IS 'Bảng lưu thông tin hóa đơn
 
 
 --
--- TOC entry 3843 (class 0 OID 0)
+-- TOC entry 3868 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1332,7 +1414,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.id IS 'ID tự tăng';
 
 
 --
--- TOC entry 3844 (class 0 OID 0)
+-- TOC entry 3869 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.dot_ke_khai_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1341,7 +1423,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.dot_ke_khai_id IS 'ID đợt kê kha
 
 
 --
--- TOC entry 3845 (class 0 OID 0)
+-- TOC entry 3870 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.ngay_thanh_toan; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1350,7 +1432,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.ngay_thanh_toan IS 'Ngày thanh toá
 
 
 --
--- TOC entry 3846 (class 0 OID 0)
+-- TOC entry 3871 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.so_tien; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1359,7 +1441,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.so_tien IS 'Số tiền thanh toán'
 
 
 --
--- TOC entry 3847 (class 0 OID 0)
+-- TOC entry 3872 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.noi_dung_thanh_toan; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1368,7 +1450,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.noi_dung_thanh_toan IS 'Nội dung t
 
 
 --
--- TOC entry 3848 (class 0 OID 0)
+-- TOC entry 3873 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.url_bill; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1377,7 +1459,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.url_bill IS 'URL hóa đơn trên Cl
 
 
 --
--- TOC entry 3849 (class 0 OID 0)
+-- TOC entry 3874 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.public_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1386,7 +1468,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.public_id IS 'Public ID trên Cloudi
 
 
 --
--- TOC entry 3850 (class 0 OID 0)
+-- TOC entry 3875 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.trang_thai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1395,7 +1477,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.trang_thai IS 'Trạng thái: cho_du
 
 
 --
--- TOC entry 3851 (class 0 OID 0)
+-- TOC entry 3876 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.nguoi_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1404,7 +1486,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.nguoi_tao IS 'Người tạo hóa đ
 
 
 --
--- TOC entry 3852 (class 0 OID 0)
+-- TOC entry 3877 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.ngay_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1413,7 +1495,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.ngay_tao IS 'Ngày tạo hóa đơn'
 
 
 --
--- TOC entry 3853 (class 0 OID 0)
+-- TOC entry 3878 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.nguoi_duyet; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1422,7 +1504,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.nguoi_duyet IS 'Người duyệt hó
 
 
 --
--- TOC entry 3854 (class 0 OID 0)
+-- TOC entry 3879 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.ngay_duyet; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1431,7 +1513,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.ngay_duyet IS 'Ngày duyệt hóa đ
 
 
 --
--- TOC entry 3855 (class 0 OID 0)
+-- TOC entry 3880 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.ghi_chu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1440,7 +1522,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.ghi_chu IS 'Ghi chú';
 
 
 --
--- TOC entry 3856 (class 0 OID 0)
+-- TOC entry 3881 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.deleted_at; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1449,7 +1531,7 @@ COMMENT ON COLUMN public.hoa_don_thanh_toan.deleted_at IS 'Thời gian xóa mề
 
 
 --
--- TOC entry 3857 (class 0 OID 0)
+-- TOC entry 3882 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: COLUMN hoa_don_thanh_toan.deleted_by; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1474,7 +1556,7 @@ CREATE SEQUENCE public.hoa_don_thanh_toan_id_seq
 ALTER SEQUENCE public.hoa_don_thanh_toan_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3858 (class 0 OID 0)
+-- TOC entry 3883 (class 0 OID 0)
 -- Dependencies: 257
 -- Name: hoa_don_thanh_toan_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1517,7 +1599,7 @@ CREATE SEQUENCE public.households_id_seq
 ALTER SEQUENCE public.households_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3859 (class 0 OID 0)
+-- TOC entry 3884 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: households_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1551,14 +1633,15 @@ CREATE TABLE public.ke_khai_bhyt (
     so_tien_can_dong numeric(15,2) DEFAULT 0 NOT NULL,
     is_urgent boolean DEFAULT false NOT NULL,
     trang_thai character varying(50) DEFAULT 'chua_gui'::character varying NOT NULL,
-    so_bien_lai character varying(20)
+    so_bien_lai character varying(20),
+    quyen_bien_lai_id integer
 );
 
 
 ALTER TABLE public.ke_khai_bhyt OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3860 (class 0 OID 0)
+-- TOC entry 3885 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: TABLE ke_khai_bhyt; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1567,7 +1650,7 @@ COMMENT ON TABLE public.ke_khai_bhyt IS 'Bảng lưu thông tin kê khai BHYT th
 
 
 --
--- TOC entry 3861 (class 0 OID 0)
+-- TOC entry 3886 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1576,7 +1659,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.id IS 'ID tự tăng';
 
 
 --
--- TOC entry 3862 (class 0 OID 0)
+-- TOC entry 3887 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.dot_ke_khai_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1585,7 +1668,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.dot_ke_khai_id IS 'ID đợt kê khai';
 
 
 --
--- TOC entry 3863 (class 0 OID 0)
+-- TOC entry 3888 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.thong_tin_the_id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1594,7 +1677,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.thong_tin_the_id IS 'ID thông tin thẻ';
 
 
 --
--- TOC entry 3864 (class 0 OID 0)
+-- TOC entry 3889 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.nguoi_thu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1603,7 +1686,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.nguoi_thu IS 'Người thứ';
 
 
 --
--- TOC entry 3865 (class 0 OID 0)
+-- TOC entry 3890 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.so_thang_dong; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1612,7 +1695,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.so_thang_dong IS 'Số tháng đóng';
 
 
 --
--- TOC entry 3866 (class 0 OID 0)
+-- TOC entry 3891 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.phuong_an_dong; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1621,7 +1704,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.phuong_an_dong IS 'Phương án đóng';
 
 
 --
--- TOC entry 3867 (class 0 OID 0)
+-- TOC entry 3892 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.han_the_cu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1630,7 +1713,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.han_the_cu IS 'Hạn thẻ cũ';
 
 
 --
--- TOC entry 3868 (class 0 OID 0)
+-- TOC entry 3893 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.han_the_moi_tu; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1639,7 +1722,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.han_the_moi_tu IS 'Hạn thẻ mới từ 
 
 
 --
--- TOC entry 3869 (class 0 OID 0)
+-- TOC entry 3894 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.han_the_moi_den; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1648,7 +1731,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.han_the_moi_den IS 'Hạn thẻ mới đ�
 
 
 --
--- TOC entry 3870 (class 0 OID 0)
+-- TOC entry 3895 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.tinh_nkq; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1657,7 +1740,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.tinh_nkq IS 'Tỉnh nơi khám chữa bệ
 
 
 --
--- TOC entry 3871 (class 0 OID 0)
+-- TOC entry 3896 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.huyen_nkq; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1666,7 +1749,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.huyen_nkq IS 'Huyện nơi khám chữa b�
 
 
 --
--- TOC entry 3872 (class 0 OID 0)
+-- TOC entry 3897 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.xa_nkq; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1675,7 +1758,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.xa_nkq IS 'Xã nơi khám chữa bệnh';
 
 
 --
--- TOC entry 3873 (class 0 OID 0)
+-- TOC entry 3898 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.dia_chi_nkq; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1684,7 +1767,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.dia_chi_nkq IS 'Địa chỉ nơi khám ch
 
 
 --
--- TOC entry 3874 (class 0 OID 0)
+-- TOC entry 3899 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.benh_vien_kcb; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1693,7 +1776,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.benh_vien_kcb IS 'Bệnh viện khám ch�
 
 
 --
--- TOC entry 3875 (class 0 OID 0)
+-- TOC entry 3900 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.nguoi_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1702,7 +1785,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.nguoi_tao IS 'Người tạo';
 
 
 --
--- TOC entry 3876 (class 0 OID 0)
+-- TOC entry 3901 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.ngay_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1711,7 +1794,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.ngay_tao IS 'Ngày tạo';
 
 
 --
--- TOC entry 3877 (class 0 OID 0)
+-- TOC entry 3902 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.ngay_bien_lai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1720,7 +1803,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.ngay_bien_lai IS 'Ngày biên lai (chỉ l
 
 
 --
--- TOC entry 3878 (class 0 OID 0)
+-- TOC entry 3903 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.so_tien_can_dong; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1729,7 +1812,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.so_tien_can_dong IS 'Số tiền cần đ�
 
 
 --
--- TOC entry 3879 (class 0 OID 0)
+-- TOC entry 3904 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.is_urgent; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1738,7 +1821,7 @@ COMMENT ON COLUMN public.ke_khai_bhyt.is_urgent IS 'Đánh dấu kê khai cần 
 
 
 --
--- TOC entry 3880 (class 0 OID 0)
+-- TOC entry 3905 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: COLUMN ke_khai_bhyt.so_bien_lai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1763,7 +1846,7 @@ CREATE SEQUENCE public.ke_khai_bhyt_id_seq
 ALTER SEQUENCE public.ke_khai_bhyt_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3881 (class 0 OID 0)
+-- TOC entry 3906 (class 0 OID 0)
 -- Dependencies: 249
 -- Name: ke_khai_bhyt_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1800,7 +1883,7 @@ CREATE TABLE public.nguoi_dung (
 ALTER TABLE public.nguoi_dung OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3882 (class 0 OID 0)
+-- TOC entry 3907 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: TABLE nguoi_dung; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1809,7 +1892,7 @@ COMMENT ON TABLE public.nguoi_dung IS 'Bảng lưu thông tin người dùng tro
 
 
 --
--- TOC entry 3883 (class 0 OID 0)
+-- TOC entry 3908 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1818,7 +1901,7 @@ COMMENT ON COLUMN public.nguoi_dung.id IS 'Khóa chính tự tăng';
 
 
 --
--- TOC entry 3884 (class 0 OID 0)
+-- TOC entry 3909 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.user_name; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1827,7 +1910,7 @@ COMMENT ON COLUMN public.nguoi_dung.user_name IS 'Tên đăng nhập của ngư�
 
 
 --
--- TOC entry 3885 (class 0 OID 0)
+-- TOC entry 3910 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.ho_ten; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1836,7 +1919,7 @@ COMMENT ON COLUMN public.nguoi_dung.ho_ten IS 'Họ và tên người dùng';
 
 
 --
--- TOC entry 3886 (class 0 OID 0)
+-- TOC entry 3911 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.don_vi_cong_tac; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1845,7 +1928,7 @@ COMMENT ON COLUMN public.nguoi_dung.don_vi_cong_tac IS 'Đơn vị công tác';
 
 
 --
--- TOC entry 3887 (class 0 OID 0)
+-- TOC entry 3912 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.chuc_danh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1854,7 +1937,7 @@ COMMENT ON COLUMN public.nguoi_dung.chuc_danh IS 'Chức danh';
 
 
 --
--- TOC entry 3888 (class 0 OID 0)
+-- TOC entry 3913 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.email; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1863,7 +1946,7 @@ COMMENT ON COLUMN public.nguoi_dung.email IS 'Địa chỉ email';
 
 
 --
--- TOC entry 3889 (class 0 OID 0)
+-- TOC entry 3914 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.so_dien_thoai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1872,7 +1955,7 @@ COMMENT ON COLUMN public.nguoi_dung.so_dien_thoai IS 'Số điện thoại';
 
 
 --
--- TOC entry 3890 (class 0 OID 0)
+-- TOC entry 3915 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.is_super_admin; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1881,7 +1964,7 @@ COMMENT ON COLUMN public.nguoi_dung.is_super_admin IS 'Quyền super admin';
 
 
 --
--- TOC entry 3891 (class 0 OID 0)
+-- TOC entry 3916 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.type_mang_luoi; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1890,7 +1973,7 @@ COMMENT ON COLUMN public.nguoi_dung.type_mang_luoi IS 'Loại mạng lưới';
 
 
 --
--- TOC entry 3892 (class 0 OID 0)
+-- TOC entry 3917 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.status; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1899,7 +1982,7 @@ COMMENT ON COLUMN public.nguoi_dung.status IS 'Trạng thái người dùng';
 
 
 --
--- TOC entry 3893 (class 0 OID 0)
+-- TOC entry 3918 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.roles; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1908,7 +1991,7 @@ COMMENT ON COLUMN public.nguoi_dung.roles IS 'Mảng các role của người d�
 
 
 --
--- TOC entry 3894 (class 0 OID 0)
+-- TOC entry 3919 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: COLUMN nguoi_dung.ma_nhan_vien; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -1933,7 +2016,7 @@ CREATE SEQUENCE public.nguoi_dung_id_seq
 ALTER SEQUENCE public.nguoi_dung_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3895 (class 0 OID 0)
+-- TOC entry 3920 (class 0 OID 0)
 -- Dependencies: 261
 -- Name: nguoi_dung_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -1979,7 +2062,7 @@ CREATE SEQUENCE public.notifications_id_seq
 ALTER SEQUENCE public.notifications_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3896 (class 0 OID 0)
+-- TOC entry 3921 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2021,7 +2104,7 @@ CREATE SEQUENCE public.payment_bills_id_seq
 ALTER SEQUENCE public.payment_bills_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3897 (class 0 OID 0)
+-- TOC entry 3922 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: payment_bills_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2066,7 +2149,7 @@ CREATE SEQUENCE public.quyen_bien_lai_id_seq
 ALTER SEQUENCE public.quyen_bien_lai_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3898 (class 0 OID 0)
+-- TOC entry 3923 (class 0 OID 0)
 -- Dependencies: 268
 -- Name: quyen_bien_lai_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2112,7 +2195,7 @@ CREATE SEQUENCE public.refresh_tokens_id_seq
 ALTER SEQUENCE public.refresh_tokens_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3899 (class 0 OID 0)
+-- TOC entry 3924 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2154,7 +2237,7 @@ CREATE SEQUENCE public.thanh_toan_id_seq
 ALTER SEQUENCE public.thanh_toan_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3900 (class 0 OID 0)
+-- TOC entry 3925 (class 0 OID 0)
 -- Dependencies: 259
 -- Name: thanh_toan_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2194,7 +2277,7 @@ CREATE TABLE public.thong_tin_the (
 ALTER TABLE public.thong_tin_the OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3901 (class 0 OID 0)
+-- TOC entry 3926 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: TABLE thong_tin_the; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2203,7 +2286,7 @@ COMMENT ON TABLE public.thong_tin_the IS 'Bảng lưu thông tin thẻ BHYT ít 
 
 
 --
--- TOC entry 3902 (class 0 OID 0)
+-- TOC entry 3927 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.id; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2212,7 +2295,7 @@ COMMENT ON COLUMN public.thong_tin_the.id IS 'ID tự tăng';
 
 
 --
--- TOC entry 3903 (class 0 OID 0)
+-- TOC entry 3928 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ma_so_bhxh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2221,7 +2304,7 @@ COMMENT ON COLUMN public.thong_tin_the.ma_so_bhxh IS 'Mã số BHXH';
 
 
 --
--- TOC entry 3904 (class 0 OID 0)
+-- TOC entry 3929 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.cccd; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2230,7 +2313,7 @@ COMMENT ON COLUMN public.thong_tin_the.cccd IS 'Số CCCD';
 
 
 --
--- TOC entry 3905 (class 0 OID 0)
+-- TOC entry 3930 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ho_ten; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2239,7 +2322,7 @@ COMMENT ON COLUMN public.thong_tin_the.ho_ten IS 'Họ và tên';
 
 
 --
--- TOC entry 3906 (class 0 OID 0)
+-- TOC entry 3931 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ngay_sinh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2248,7 +2331,7 @@ COMMENT ON COLUMN public.thong_tin_the.ngay_sinh IS 'Ngày sinh';
 
 
 --
--- TOC entry 3907 (class 0 OID 0)
+-- TOC entry 3932 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.gioi_tinh; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2257,7 +2340,7 @@ COMMENT ON COLUMN public.thong_tin_the.gioi_tinh IS 'Giới tính (true: Nam, fa
 
 
 --
--- TOC entry 3908 (class 0 OID 0)
+-- TOC entry 3933 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.so_dien_thoai; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2266,7 +2349,7 @@ COMMENT ON COLUMN public.thong_tin_the.so_dien_thoai IS 'Số điện thoại';
 
 
 --
--- TOC entry 3909 (class 0 OID 0)
+-- TOC entry 3934 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.nguoi_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2275,7 +2358,7 @@ COMMENT ON COLUMN public.thong_tin_the.nguoi_tao IS 'Người tạo';
 
 
 --
--- TOC entry 3910 (class 0 OID 0)
+-- TOC entry 3935 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ngay_tao; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2284,7 +2367,7 @@ COMMENT ON COLUMN public.thong_tin_the.ngay_tao IS 'Ngày tạo';
 
 
 --
--- TOC entry 3911 (class 0 OID 0)
+-- TOC entry 3936 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ma_hgd; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2293,7 +2376,7 @@ COMMENT ON COLUMN public.thong_tin_the.ma_hgd IS 'Mã hộ gia đình từ BHXH'
 
 
 --
--- TOC entry 3912 (class 0 OID 0)
+-- TOC entry 3937 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.so_the_bhyt; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2302,7 +2385,7 @@ COMMENT ON COLUMN public.thong_tin_the.so_the_bhyt IS 'Số thẻ BHYT';
 
 
 --
--- TOC entry 3913 (class 0 OID 0)
+-- TOC entry 3938 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ma_dan_toc; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2311,7 +2394,7 @@ COMMENT ON COLUMN public.thong_tin_the.ma_dan_toc IS 'Mã dân tộc';
 
 
 --
--- TOC entry 3914 (class 0 OID 0)
+-- TOC entry 3939 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.quoc_tich; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2320,7 +2403,7 @@ COMMENT ON COLUMN public.thong_tin_the.quoc_tich IS 'Quốc tịch';
 
 
 --
--- TOC entry 3915 (class 0 OID 0)
+-- TOC entry 3940 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: COLUMN thong_tin_the.ma_benh_vien; Type: COMMENT; Schema: public; Owner: bhxh_system_user
 --
@@ -2345,7 +2428,7 @@ CREATE SEQUENCE public.thong_tin_the_id_seq
 ALTER SEQUENCE public.thong_tin_the_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3916 (class 0 OID 0)
+-- TOC entry 3941 (class 0 OID 0)
 -- Dependencies: 247
 -- Name: thong_tin_the_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2388,7 +2471,7 @@ CREATE SEQUENCE public.units_id_seq
 ALTER SEQUENCE public.units_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3917 (class 0 OID 0)
+-- TOC entry 3942 (class 0 OID 0)
 -- Dependencies: 220
 -- Name: units_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2450,7 +2533,7 @@ CREATE SEQUENCE public.users_id_seq
 ALTER SEQUENCE public.users_id_seq OWNER TO bhxh_system_user;
 
 --
--- TOC entry 3918 (class 0 OID 0)
+-- TOC entry 3943 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: bhxh_system_user
 --
@@ -2627,7 +2710,7 @@ ALTER TABLE ONLY public.payment_bills ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3453 (class 2604 OID 17705)
+-- TOC entry 3458 (class 2604 OID 17705)
 -- Name: quyen_bien_lai id; Type: DEFAULT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2675,7 +2758,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 3513 (class 2606 OID 16872)
+-- TOC entry 3519 (class 2606 OID 16872)
 -- Name: adjustment_requests adjustment_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2684,7 +2767,7 @@ ALTER TABLE ONLY public.adjustment_requests
 
 
 --
--- TOC entry 3509 (class 2606 OID 16802)
+-- TOC entry 3515 (class 2606 OID 16802)
 -- Name: adjustments adjustments_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2693,7 +2776,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3599 (class 2606 OID 17694)
+-- TOC entry 3605 (class 2606 OID 17694)
 -- Name: bien_lai bien_lai_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2702,7 +2785,7 @@ ALTER TABLE ONLY public.bien_lai
 
 
 --
--- TOC entry 3597 (class 2606 OID 17584)
+-- TOC entry 3603 (class 2606 OID 17584)
 -- Name: dai_ly_don_vi dai_ly_don_vi_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2711,7 +2794,7 @@ ALTER TABLE ONLY public.dai_ly_don_vi
 
 
 --
--- TOC entry 3551 (class 2606 OID 17120)
+-- TOC entry 3557 (class 2606 OID 17120)
 -- Name: dai_ly dai_ly_ma_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2720,7 +2803,7 @@ ALTER TABLE ONLY public.dai_ly
 
 
 --
--- TOC entry 3553 (class 2606 OID 17118)
+-- TOC entry 3559 (class 2606 OID 17118)
 -- Name: dai_ly dai_ly_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2729,7 +2812,7 @@ ALTER TABLE ONLY public.dai_ly
 
 
 --
--- TOC entry 3467 (class 2606 OID 16487)
+-- TOC entry 3473 (class 2606 OID 16487)
 -- Name: declaration_batch declaration_batch_month_year_batch_number_department_code_o_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2738,7 +2821,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3469 (class 2606 OID 16489)
+-- TOC entry 3475 (class 2606 OID 16489)
 -- Name: declaration_batch declaration_batch_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2747,7 +2830,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3471 (class 2606 OID 16491)
+-- TOC entry 3477 (class 2606 OID 16491)
 -- Name: declaration_batch declaration_batch_unique_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2756,7 +2839,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3495 (class 2606 OID 16717)
+-- TOC entry 3501 (class 2606 OID 16717)
 -- Name: declarations declarations_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2765,7 +2848,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3547 (class 2606 OID 17072)
+-- TOC entry 3553 (class 2606 OID 17072)
 -- Name: dich_vu dich_vu_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2774,7 +2857,7 @@ ALTER TABLE ONLY public.dich_vu
 
 
 --
--- TOC entry 3568 (class 2606 OID 17170)
+-- TOC entry 3574 (class 2606 OID 17170)
 -- Name: dm_cskcb dm_cskcb_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2783,7 +2866,7 @@ ALTER TABLE ONLY public.dm_cskcb
 
 
 --
--- TOC entry 3570 (class 2606 OID 17172)
+-- TOC entry 3576 (class 2606 OID 17172)
 -- Name: dm_cskcb dm_cskcb_value_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2792,7 +2875,7 @@ ALTER TABLE ONLY public.dm_cskcb
 
 
 --
--- TOC entry 3574 (class 2606 OID 17256)
+-- TOC entry 3580 (class 2606 OID 17256)
 -- Name: dm_khoi_kcb dm_khoi_kcb_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2801,7 +2884,7 @@ ALTER TABLE ONLY public.dm_khoi_kcb
 
 
 --
--- TOC entry 3576 (class 2606 OID 17267)
+-- TOC entry 3582 (class 2606 OID 17267)
 -- Name: don_vi don_vi_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2810,7 +2893,7 @@ ALTER TABLE ONLY public.don_vi
 
 
 --
--- TOC entry 3538 (class 2606 OID 17046)
+-- TOC entry 3544 (class 2606 OID 17046)
 -- Name: dot_ke_khai dot_ke_khai_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2819,7 +2902,7 @@ ALTER TABLE ONLY public.dot_ke_khai
 
 
 --
--- TOC entry 3528 (class 2606 OID 16992)
+-- TOC entry 3534 (class 2606 OID 16992)
 -- Name: ds_huyen ds_huyen_ma_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2828,7 +2911,7 @@ ALTER TABLE ONLY public.ds_huyen
 
 
 --
--- TOC entry 3530 (class 2606 OID 16990)
+-- TOC entry 3536 (class 2606 OID 16990)
 -- Name: ds_huyen ds_huyen_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2837,7 +2920,7 @@ ALTER TABLE ONLY public.ds_huyen
 
 
 --
--- TOC entry 3523 (class 2606 OID 16982)
+-- TOC entry 3529 (class 2606 OID 16982)
 -- Name: ds_tinh ds_tinh_ma_unique; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2846,7 +2929,7 @@ ALTER TABLE ONLY public.ds_tinh
 
 
 --
--- TOC entry 3525 (class 2606 OID 16969)
+-- TOC entry 3531 (class 2606 OID 16969)
 -- Name: ds_tinh ds_tinh_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2855,7 +2938,7 @@ ALTER TABLE ONLY public.ds_tinh
 
 
 --
--- TOC entry 3533 (class 2606 OID 17009)
+-- TOC entry 3539 (class 2606 OID 17009)
 -- Name: ds_xa ds_xa_ma_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2864,7 +2947,7 @@ ALTER TABLE ONLY public.ds_xa
 
 
 --
--- TOC entry 3535 (class 2606 OID 17007)
+-- TOC entry 3541 (class 2606 OID 17007)
 -- Name: ds_xa ds_xa_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2873,7 +2956,7 @@ ALTER TABLE ONLY public.ds_xa
 
 
 --
--- TOC entry 3580 (class 2606 OID 17311)
+-- TOC entry 3586 (class 2606 OID 17311)
 -- Name: hoa_don_thanh_toan hoa_don_thanh_toan_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2882,7 +2965,7 @@ ALTER TABLE ONLY public.hoa_don_thanh_toan
 
 
 --
--- TOC entry 3503 (class 2606 OID 16754)
+-- TOC entry 3509 (class 2606 OID 16754)
 -- Name: households households_household_code_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2891,7 +2974,7 @@ ALTER TABLE ONLY public.households
 
 
 --
--- TOC entry 3505 (class 2606 OID 16752)
+-- TOC entry 3511 (class 2606 OID 16752)
 -- Name: households households_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2900,7 +2983,7 @@ ALTER TABLE ONLY public.households
 
 
 --
--- TOC entry 3566 (class 2606 OID 17148)
+-- TOC entry 3572 (class 2606 OID 17148)
 -- Name: ke_khai_bhyt ke_khai_bhyt_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2909,7 +2992,7 @@ ALTER TABLE ONLY public.ke_khai_bhyt
 
 
 --
--- TOC entry 3591 (class 2606 OID 17382)
+-- TOC entry 3597 (class 2606 OID 17382)
 -- Name: nguoi_dung nguoi_dung_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2918,7 +3001,7 @@ ALTER TABLE ONLY public.nguoi_dung
 
 
 --
--- TOC entry 3507 (class 2606 OID 16784)
+-- TOC entry 3513 (class 2606 OID 16784)
 -- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2927,7 +3010,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3479 (class 2606 OID 16499)
+-- TOC entry 3485 (class 2606 OID 16499)
 -- Name: payment_bills payment_bills_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2936,7 +3019,7 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3604 (class 2606 OID 17709)
+-- TOC entry 3619 (class 2606 OID 17709)
 -- Name: quyen_bien_lai quyen_bien_lai_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2945,7 +3028,7 @@ ALTER TABLE ONLY public.quyen_bien_lai
 
 
 --
--- TOC entry 3521 (class 2606 OID 16954)
+-- TOC entry 3527 (class 2606 OID 16954)
 -- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2954,7 +3037,7 @@ ALTER TABLE ONLY public.refresh_tokens
 
 
 --
--- TOC entry 3586 (class 2606 OID 17358)
+-- TOC entry 3592 (class 2606 OID 17358)
 -- Name: thanh_toan thanh_toan_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2963,7 +3046,7 @@ ALTER TABLE ONLY public.thanh_toan
 
 
 --
--- TOC entry 3558 (class 2606 OID 17134)
+-- TOC entry 3564 (class 2606 OID 17134)
 -- Name: thong_tin_the thong_tin_the_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2972,7 +3055,7 @@ ALTER TABLE ONLY public.thong_tin_the
 
 
 --
--- TOC entry 3560 (class 2606 OID 17138)
+-- TOC entry 3566 (class 2606 OID 17138)
 -- Name: thong_tin_the uk_cccd; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2981,7 +3064,7 @@ ALTER TABLE ONLY public.thong_tin_the
 
 
 --
--- TOC entry 3549 (class 2606 OID 17102)
+-- TOC entry 3555 (class 2606 OID 17102)
 -- Name: dich_vu uk_dich_vu_ten_viet_tat; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2990,7 +3073,7 @@ ALTER TABLE ONLY public.dich_vu
 
 
 --
--- TOC entry 3593 (class 2606 OID 17386)
+-- TOC entry 3599 (class 2606 OID 17386)
 -- Name: nguoi_dung uk_email; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -2999,7 +3082,7 @@ ALTER TABLE ONLY public.nguoi_dung
 
 
 --
--- TOC entry 3562 (class 2606 OID 17136)
+-- TOC entry 3568 (class 2606 OID 17136)
 -- Name: thong_tin_the uk_ma_so_bhxh; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3008,7 +3091,7 @@ ALTER TABLE ONLY public.thong_tin_the
 
 
 --
--- TOC entry 3595 (class 2606 OID 17384)
+-- TOC entry 3601 (class 2606 OID 17384)
 -- Name: nguoi_dung uk_user_name; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3017,7 +3100,7 @@ ALTER TABLE ONLY public.nguoi_dung
 
 
 --
--- TOC entry 3545 (class 2606 OID 17283)
+-- TOC entry 3551 (class 2606 OID 17283)
 -- Name: dot_ke_khai unique_thang_nam_so_dot_don_vi; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3026,7 +3109,7 @@ ALTER TABLE ONLY public.dot_ke_khai
 
 
 --
--- TOC entry 3483 (class 2606 OID 16501)
+-- TOC entry 3489 (class 2606 OID 16501)
 -- Name: units units_code_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3035,7 +3118,7 @@ ALTER TABLE ONLY public.units
 
 
 --
--- TOC entry 3485 (class 2606 OID 16503)
+-- TOC entry 3491 (class 2606 OID 16503)
 -- Name: units units_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3044,7 +3127,7 @@ ALTER TABLE ONLY public.units
 
 
 --
--- TOC entry 3491 (class 2606 OID 16505)
+-- TOC entry 3497 (class 2606 OID 16505)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3053,7 +3136,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3493 (class 2606 OID 16507)
+-- TOC entry 3499 (class 2606 OID 16507)
 -- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3062,7 +3145,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3514 (class 1259 OID 16884)
+-- TOC entry 3520 (class 1259 OID 16884)
 -- Name: idx_adjustment_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3070,7 +3153,7 @@ CREATE UNIQUE INDEX idx_adjustment_code ON public.adjustment_requests USING btre
 
 
 --
--- TOC entry 3515 (class 1259 OID 16878)
+-- TOC entry 3521 (class 1259 OID 16878)
 -- Name: idx_adjustment_requests_created_by; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3078,7 +3161,7 @@ CREATE INDEX idx_adjustment_requests_created_by ON public.adjustment_requests US
 
 
 --
--- TOC entry 3516 (class 1259 OID 16883)
+-- TOC entry 3522 (class 1259 OID 16883)
 -- Name: idx_adjustment_requests_is_urgent; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3086,7 +3169,7 @@ CREATE INDEX idx_adjustment_requests_is_urgent ON public.adjustment_requests USI
 
 
 --
--- TOC entry 3517 (class 1259 OID 16879)
+-- TOC entry 3523 (class 1259 OID 16879)
 -- Name: idx_adjustment_requests_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3094,7 +3177,7 @@ CREATE INDEX idx_adjustment_requests_status ON public.adjustment_requests USING 
 
 
 --
--- TOC entry 3510 (class 1259 OID 16814)
+-- TOC entry 3516 (class 1259 OID 16814)
 -- Name: idx_adjustments_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3102,7 +3185,7 @@ CREATE INDEX idx_adjustments_status ON public.adjustments USING btree (status);
 
 
 --
--- TOC entry 3511 (class 1259 OID 16813)
+-- TOC entry 3517 (class 1259 OID 16813)
 -- Name: idx_adjustments_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3110,7 +3193,79 @@ CREATE INDEX idx_adjustments_user_id ON public.adjustments USING btree (user_id)
 
 
 --
--- TOC entry 3571 (class 1259 OID 17174)
+-- TOC entry 3606 (class 1259 OID 17770)
+-- Name: idx_bien_lai_is_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_is_bhxh ON public.bien_lai USING btree (is_bhxh);
+
+
+--
+-- TOC entry 3607 (class 1259 OID 17769)
+-- Name: idx_bien_lai_is_bhyt; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_is_bhyt ON public.bien_lai USING btree (is_bhyt);
+
+
+--
+-- TOC entry 3608 (class 1259 OID 17747)
+-- Name: idx_bien_lai_ke_khai_bhyt_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ke_khai_bhyt_id ON public.bien_lai USING btree (ke_khai_bhyt_id);
+
+
+--
+-- TOC entry 3609 (class 1259 OID 17765)
+-- Name: idx_bien_lai_ma_co_quan_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ma_co_quan_bhxh ON public.bien_lai USING btree (ma_co_quan_bhxh);
+
+
+--
+-- TOC entry 3610 (class 1259 OID 17749)
+-- Name: idx_bien_lai_ma_nhan_vien; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ma_nhan_vien ON public.bien_lai USING btree (ma_nhan_vien);
+
+
+--
+-- TOC entry 3611 (class 1259 OID 17748)
+-- Name: idx_bien_lai_ma_so_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ma_so_bhxh ON public.bien_lai USING btree (ma_so_bhxh);
+
+
+--
+-- TOC entry 3612 (class 1259 OID 17766)
+-- Name: idx_bien_lai_ma_so_bhxh_don_vi; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ma_so_bhxh_don_vi ON public.bien_lai USING btree (ma_so_bhxh_don_vi);
+
+
+--
+-- TOC entry 3613 (class 1259 OID 17751)
+-- Name: idx_bien_lai_ngay_bien_lai; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_ngay_bien_lai ON public.bien_lai USING btree (ngay_bien_lai);
+
+
+--
+-- TOC entry 3614 (class 1259 OID 17763)
+-- Name: idx_bien_lai_tinh_chat; Type: INDEX; Schema: public; Owner: bhxh_system_user
+--
+
+CREATE INDEX idx_bien_lai_tinh_chat ON public.bien_lai USING btree (tinh_chat);
+
+
+--
+-- TOC entry 3577 (class 1259 OID 17174)
 -- Name: idx_cskcb_ma; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3118,7 +3273,7 @@ CREATE INDEX idx_cskcb_ma ON public.dm_cskcb USING btree (ma_tinh_kcb);
 
 
 --
--- TOC entry 3572 (class 1259 OID 17173)
+-- TOC entry 3578 (class 1259 OID 17173)
 -- Name: idx_cskcb_value; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3126,7 +3281,7 @@ CREATE INDEX idx_cskcb_value ON public.dm_cskcb USING btree (value);
 
 
 --
--- TOC entry 3554 (class 1259 OID 17606)
+-- TOC entry 3560 (class 1259 OID 17606)
 -- Name: idx_dai_ly_ma_tinh; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3134,7 +3289,7 @@ CREATE INDEX idx_dai_ly_ma_tinh ON public.dai_ly USING btree (ma_tinh);
 
 
 --
--- TOC entry 3472 (class 1259 OID 16603)
+-- TOC entry 3478 (class 1259 OID 16603)
 -- Name: idx_declaration_batch_created_by; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3142,7 +3297,7 @@ CREATE INDEX idx_declaration_batch_created_by ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3473 (class 1259 OID 16508)
+-- TOC entry 3479 (class 1259 OID 16508)
 -- Name: idx_declaration_batch_deleted_at; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3150,7 +3305,7 @@ CREATE INDEX idx_declaration_batch_deleted_at ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3474 (class 1259 OID 16607)
+-- TOC entry 3480 (class 1259 OID 16607)
 -- Name: idx_declaration_batch_department; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3158,7 +3313,7 @@ CREATE INDEX idx_declaration_batch_department ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3475 (class 1259 OID 16605)
+-- TOC entry 3481 (class 1259 OID 16605)
 -- Name: idx_declaration_batch_month_year; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3166,7 +3321,7 @@ CREATE INDEX idx_declaration_batch_month_year ON public.declaration_batch USING 
 
 
 --
--- TOC entry 3476 (class 1259 OID 16606)
+-- TOC entry 3482 (class 1259 OID 16606)
 -- Name: idx_declaration_batch_object_type; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3174,7 +3329,7 @@ CREATE INDEX idx_declaration_batch_object_type ON public.declaration_batch USING
 
 
 --
--- TOC entry 3477 (class 1259 OID 16604)
+-- TOC entry 3483 (class 1259 OID 16604)
 -- Name: idx_declaration_batch_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3182,7 +3337,7 @@ CREATE INDEX idx_declaration_batch_status ON public.declaration_batch USING btre
 
 
 --
--- TOC entry 3496 (class 1259 OID 16719)
+-- TOC entry 3502 (class 1259 OID 16719)
 -- Name: idx_declarations_bhxh_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3190,7 +3345,7 @@ CREATE INDEX idx_declarations_bhxh_code ON public.declarations USING btree (bhxh
 
 
 --
--- TOC entry 3497 (class 1259 OID 16721)
+-- TOC entry 3503 (class 1259 OID 16721)
 -- Name: idx_declarations_created_at; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3198,7 +3353,7 @@ CREATE INDEX idx_declarations_created_at ON public.declarations USING btree (cre
 
 
 --
--- TOC entry 3498 (class 1259 OID 16760)
+-- TOC entry 3504 (class 1259 OID 16760)
 -- Name: idx_declarations_household_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3206,7 +3361,7 @@ CREATE INDEX idx_declarations_household_id ON public.declarations USING btree (h
 
 
 --
--- TOC entry 3499 (class 1259 OID 16890)
+-- TOC entry 3505 (class 1259 OID 16890)
 -- Name: idx_declarations_is_urgent; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3214,7 +3369,7 @@ CREATE INDEX idx_declarations_is_urgent ON public.declarations USING btree (is_u
 
 
 --
--- TOC entry 3500 (class 1259 OID 16720)
+-- TOC entry 3506 (class 1259 OID 16720)
 -- Name: idx_declarations_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3222,7 +3377,7 @@ CREATE INDEX idx_declarations_status ON public.declarations USING btree (status)
 
 
 --
--- TOC entry 3501 (class 1259 OID 16732)
+-- TOC entry 3507 (class 1259 OID 16732)
 -- Name: idx_declarations_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3230,7 +3385,7 @@ CREATE INDEX idx_declarations_user_id ON public.declarations USING btree (user_i
 
 
 --
--- TOC entry 3577 (class 1259 OID 17274)
+-- TOC entry 3583 (class 1259 OID 17274)
 -- Name: idx_don_vi_ma_co_quan_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3238,7 +3393,7 @@ CREATE INDEX idx_don_vi_ma_co_quan_bhxh ON public.don_vi USING btree (ma_co_quan
 
 
 --
--- TOC entry 3578 (class 1259 OID 17273)
+-- TOC entry 3584 (class 1259 OID 17273)
 -- Name: idx_don_vi_ma_so_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3246,7 +3401,7 @@ CREATE INDEX idx_don_vi_ma_so_bhxh ON public.don_vi USING btree (ma_so_bhxh);
 
 
 --
--- TOC entry 3539 (class 1259 OID 17399)
+-- TOC entry 3545 (class 1259 OID 17399)
 -- Name: idx_dot_ke_khai_dai_ly; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3254,7 +3409,7 @@ CREATE INDEX idx_dot_ke_khai_dai_ly ON public.dot_ke_khai USING btree (dai_ly_id
 
 
 --
--- TOC entry 3540 (class 1259 OID 17280)
+-- TOC entry 3546 (class 1259 OID 17280)
 -- Name: idx_dot_ke_khai_don_vi_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3262,7 +3417,7 @@ CREATE INDEX idx_dot_ke_khai_don_vi_id ON public.dot_ke_khai USING btree (don_vi
 
 
 --
--- TOC entry 3541 (class 1259 OID 17048)
+-- TOC entry 3547 (class 1259 OID 17048)
 -- Name: idx_dot_ke_khai_so_dot; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3270,7 +3425,7 @@ CREATE INDEX idx_dot_ke_khai_so_dot ON public.dot_ke_khai USING btree (so_dot);
 
 
 --
--- TOC entry 3542 (class 1259 OID 17047)
+-- TOC entry 3548 (class 1259 OID 17047)
 -- Name: idx_dot_ke_khai_ten_dot; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3278,7 +3433,7 @@ CREATE INDEX idx_dot_ke_khai_ten_dot ON public.dot_ke_khai USING btree (ten_dot)
 
 
 --
--- TOC entry 3543 (class 1259 OID 17049)
+-- TOC entry 3549 (class 1259 OID 17049)
 -- Name: idx_dot_ke_khai_thang_nam; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3286,7 +3441,7 @@ CREATE INDEX idx_dot_ke_khai_thang_nam ON public.dot_ke_khai USING btree (thang,
 
 
 --
--- TOC entry 3531 (class 1259 OID 16998)
+-- TOC entry 3537 (class 1259 OID 16998)
 -- Name: idx_ds_huyen_ma_tinh; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3294,7 +3449,7 @@ CREATE INDEX idx_ds_huyen_ma_tinh ON public.ds_huyen USING btree (ma_tinh);
 
 
 --
--- TOC entry 3526 (class 1259 OID 16970)
+-- TOC entry 3532 (class 1259 OID 16970)
 -- Name: idx_ds_tinh_ma; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3302,7 +3457,7 @@ CREATE INDEX idx_ds_tinh_ma ON public.ds_tinh USING btree (ma);
 
 
 --
--- TOC entry 3536 (class 1259 OID 17015)
+-- TOC entry 3542 (class 1259 OID 17015)
 -- Name: idx_ds_xa_ma_huyen; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3310,7 +3465,7 @@ CREATE INDEX idx_ds_xa_ma_huyen ON public.ds_xa USING btree (ma_huyen);
 
 
 --
--- TOC entry 3581 (class 1259 OID 17322)
+-- TOC entry 3587 (class 1259 OID 17322)
 -- Name: idx_hoa_don_dot_ke_khai_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3318,7 +3473,7 @@ CREATE INDEX idx_hoa_don_dot_ke_khai_id ON public.hoa_don_thanh_toan USING btree
 
 
 --
--- TOC entry 3582 (class 1259 OID 17324)
+-- TOC entry 3588 (class 1259 OID 17324)
 -- Name: idx_hoa_don_ngay_thanh_toan; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3326,7 +3481,7 @@ CREATE INDEX idx_hoa_don_ngay_thanh_toan ON public.hoa_don_thanh_toan USING btre
 
 
 --
--- TOC entry 3583 (class 1259 OID 17325)
+-- TOC entry 3589 (class 1259 OID 17325)
 -- Name: idx_hoa_don_nguoi_tao; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3334,7 +3489,7 @@ CREATE INDEX idx_hoa_don_nguoi_tao ON public.hoa_don_thanh_toan USING btree (ngu
 
 
 --
--- TOC entry 3584 (class 1259 OID 17323)
+-- TOC entry 3590 (class 1259 OID 17323)
 -- Name: idx_hoa_don_trang_thai; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3342,7 +3497,7 @@ CREATE INDEX idx_hoa_don_trang_thai ON public.hoa_don_thanh_toan USING btree (tr
 
 
 --
--- TOC entry 3563 (class 1259 OID 17161)
+-- TOC entry 3569 (class 1259 OID 17161)
 -- Name: idx_ke_khai_bhyt_dot_ke_khai_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3350,7 +3505,7 @@ CREATE INDEX idx_ke_khai_bhyt_dot_ke_khai_id ON public.ke_khai_bhyt USING btree 
 
 
 --
--- TOC entry 3564 (class 1259 OID 17162)
+-- TOC entry 3570 (class 1259 OID 17162)
 -- Name: idx_ke_khai_bhyt_thong_tin_the_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3358,7 +3513,7 @@ CREATE INDEX idx_ke_khai_bhyt_thong_tin_the_id ON public.ke_khai_bhyt USING btre
 
 
 --
--- TOC entry 3587 (class 1259 OID 17388)
+-- TOC entry 3593 (class 1259 OID 17388)
 -- Name: idx_nguoi_dung_email; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3366,7 +3521,7 @@ CREATE INDEX idx_nguoi_dung_email ON public.nguoi_dung USING btree (email);
 
 
 --
--- TOC entry 3588 (class 1259 OID 17392)
+-- TOC entry 3594 (class 1259 OID 17392)
 -- Name: idx_nguoi_dung_password; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3374,7 +3529,7 @@ CREATE INDEX idx_nguoi_dung_password ON public.nguoi_dung USING btree (password)
 
 
 --
--- TOC entry 3589 (class 1259 OID 17387)
+-- TOC entry 3595 (class 1259 OID 17387)
 -- Name: idx_nguoi_dung_user_name; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3382,7 +3537,7 @@ CREATE INDEX idx_nguoi_dung_user_name ON public.nguoi_dung USING btree (user_nam
 
 
 --
--- TOC entry 3601 (class 1259 OID 17720)
+-- TOC entry 3616 (class 1259 OID 17720)
 -- Name: idx_nguoi_thu; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3390,7 +3545,7 @@ CREATE INDEX idx_nguoi_thu ON public.quyen_bien_lai USING btree (nhan_vien_thu);
 
 
 --
--- TOC entry 3518 (class 1259 OID 16960)
+-- TOC entry 3524 (class 1259 OID 16960)
 -- Name: idx_refresh_tokens_token; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3398,7 +3553,7 @@ CREATE INDEX idx_refresh_tokens_token ON public.refresh_tokens USING btree (toke
 
 
 --
--- TOC entry 3519 (class 1259 OID 16961)
+-- TOC entry 3525 (class 1259 OID 16961)
 -- Name: idx_refresh_tokens_user_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3406,7 +3561,7 @@ CREATE INDEX idx_refresh_tokens_user_id ON public.refresh_tokens USING btree (us
 
 
 --
--- TOC entry 3555 (class 1259 OID 17160)
+-- TOC entry 3561 (class 1259 OID 17160)
 -- Name: idx_thong_tin_the_cccd; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3414,7 +3569,7 @@ CREATE INDEX idx_thong_tin_the_cccd ON public.thong_tin_the USING btree (cccd);
 
 
 --
--- TOC entry 3556 (class 1259 OID 17159)
+-- TOC entry 3562 (class 1259 OID 17159)
 -- Name: idx_thong_tin_the_ma_so_bhxh; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3422,7 +3577,7 @@ CREATE INDEX idx_thong_tin_the_ma_so_bhxh ON public.thong_tin_the USING btree (m
 
 
 --
--- TOC entry 3602 (class 1259 OID 17721)
+-- TOC entry 3617 (class 1259 OID 17721)
 -- Name: idx_trang_thai; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3430,7 +3585,7 @@ CREATE INDEX idx_trang_thai ON public.quyen_bien_lai USING btree (trang_thai);
 
 
 --
--- TOC entry 3480 (class 1259 OID 16518)
+-- TOC entry 3486 (class 1259 OID 16518)
 -- Name: idx_units_code; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3438,7 +3593,7 @@ CREATE INDEX idx_units_code ON public.units USING btree (code);
 
 
 --
--- TOC entry 3481 (class 1259 OID 16519)
+-- TOC entry 3487 (class 1259 OID 16519)
 -- Name: idx_units_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3446,7 +3601,7 @@ CREATE INDEX idx_units_status ON public.units USING btree (status);
 
 
 --
--- TOC entry 3486 (class 1259 OID 17126)
+-- TOC entry 3492 (class 1259 OID 17126)
 -- Name: idx_users_dai_ly_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3454,7 +3609,7 @@ CREATE INDEX idx_users_dai_ly_id ON public.users USING btree (dai_ly_id);
 
 
 --
--- TOC entry 3487 (class 1259 OID 16520)
+-- TOC entry 3493 (class 1259 OID 16520)
 -- Name: idx_users_status; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3462,7 +3617,7 @@ CREATE INDEX idx_users_status ON public.users USING btree (status);
 
 
 --
--- TOC entry 3488 (class 1259 OID 16521)
+-- TOC entry 3494 (class 1259 OID 16521)
 -- Name: idx_users_unit_id; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3470,7 +3625,7 @@ CREATE INDEX idx_users_unit_id ON public.users USING btree (unit_id);
 
 
 --
--- TOC entry 3489 (class 1259 OID 16522)
+-- TOC entry 3495 (class 1259 OID 16522)
 -- Name: idx_users_username; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3478,7 +3633,7 @@ CREATE INDEX idx_users_username ON public.users USING btree (username);
 
 
 --
--- TOC entry 3600 (class 1259 OID 17695)
+-- TOC entry 3615 (class 1259 OID 17695)
 -- Name: ix_bien_lai_quyen_so_so_bien_lai; Type: INDEX; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3486,7 +3641,7 @@ CREATE UNIQUE INDEX ix_bien_lai_quyen_so_so_bien_lai ON public.bien_lai USING bt
 
 
 --
--- TOC entry 3646 (class 2620 OID 17293)
+-- TOC entry 3663 (class 2620 OID 17293)
 -- Name: ke_khai_bhyt ke_khai_bhyt_after_changes; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3494,7 +3649,7 @@ CREATE TRIGGER ke_khai_bhyt_after_changes AFTER INSERT OR DELETE OR UPDATE ON pu
 
 
 --
--- TOC entry 3642 (class 2620 OID 16524)
+-- TOC entry 3659 (class 2620 OID 16524)
 -- Name: declaration_batch tr_update_payment_amount_on_support_change; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3502,7 +3657,7 @@ CREATE TRIGGER tr_update_payment_amount_on_support_change AFTER UPDATE OF suppor
 
 
 --
--- TOC entry 3645 (class 2620 OID 16816)
+-- TOC entry 3662 (class 2620 OID 16816)
 -- Name: adjustments trigger_update_adjustments_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3510,7 +3665,7 @@ CREATE TRIGGER trigger_update_adjustments_updated_at BEFORE UPDATE ON public.adj
 
 
 --
--- TOC entry 3648 (class 2620 OID 17327)
+-- TOC entry 3665 (class 2620 OID 17327)
 -- Name: hoa_don_thanh_toan trigger_update_dot_ke_khai_status; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3518,7 +3673,7 @@ CREATE TRIGGER trigger_update_dot_ke_khai_status AFTER UPDATE ON public.hoa_don_
 
 
 --
--- TOC entry 3647 (class 2620 OID 17297)
+-- TOC entry 3664 (class 2620 OID 17297)
 -- Name: ke_khai_bhyt trigger_update_tong_so_the; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3526,7 +3681,7 @@ CREATE TRIGGER trigger_update_tong_so_the AFTER INSERT OR DELETE ON public.ke_kh
 
 
 --
--- TOC entry 3649 (class 2620 OID 17390)
+-- TOC entry 3666 (class 2620 OID 17390)
 -- Name: nguoi_dung update_nguoi_dung_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3534,7 +3689,7 @@ CREATE TRIGGER update_nguoi_dung_updated_at BEFORE UPDATE ON public.nguoi_dung F
 
 
 --
--- TOC entry 3643 (class 2620 OID 16525)
+-- TOC entry 3660 (class 2620 OID 16525)
 -- Name: units update_units_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3542,7 +3697,7 @@ CREATE TRIGGER update_units_updated_at BEFORE UPDATE ON public.units FOR EACH RO
 
 
 --
--- TOC entry 3644 (class 2620 OID 16526)
+-- TOC entry 3661 (class 2620 OID 16526)
 -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3550,7 +3705,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH RO
 
 
 --
--- TOC entry 3624 (class 2606 OID 16873)
+-- TOC entry 3639 (class 2606 OID 16873)
 -- Name: adjustment_requests adjustment_requests_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3559,7 +3714,7 @@ ALTER TABLE ONLY public.adjustment_requests
 
 
 --
--- TOC entry 3622 (class 2606 OID 16808)
+-- TOC entry 3637 (class 2606 OID 16808)
 -- Name: adjustments adjustments_processed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3568,7 +3723,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3623 (class 2606 OID 16803)
+-- TOC entry 3638 (class 2606 OID 16803)
 -- Name: adjustments adjustments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3577,7 +3732,7 @@ ALTER TABLE ONLY public.adjustments
 
 
 --
--- TOC entry 3605 (class 2606 OID 16527)
+-- TOC entry 3620 (class 2606 OID 16527)
 -- Name: declaration_batch declaration_batch_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3586,7 +3741,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3606 (class 2606 OID 16532)
+-- TOC entry 3621 (class 2606 OID 16532)
 -- Name: declaration_batch declaration_batch_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3595,7 +3750,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3607 (class 2606 OID 16537)
+-- TOC entry 3622 (class 2606 OID 16537)
 -- Name: declaration_batch declaration_batch_deleted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3604,7 +3759,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3608 (class 2606 OID 16542)
+-- TOC entry 3623 (class 2606 OID 16542)
 -- Name: declaration_batch declaration_batch_payment_verified_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3613,7 +3768,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3609 (class 2606 OID 16547)
+-- TOC entry 3624 (class 2606 OID 16547)
 -- Name: declaration_batch declaration_batch_rejected_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3622,7 +3777,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3610 (class 2606 OID 16552)
+-- TOC entry 3625 (class 2606 OID 16552)
 -- Name: declaration_batch declaration_batch_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3631,7 +3786,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3611 (class 2606 OID 16557)
+-- TOC entry 3626 (class 2606 OID 16557)
 -- Name: declaration_batch declaration_batch_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3640,7 +3795,7 @@ ALTER TABLE ONLY public.declaration_batch
 
 
 --
--- TOC entry 3616 (class 2606 OID 16913)
+-- TOC entry 3631 (class 2606 OID 16913)
 -- Name: declarations declarations_deleted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3649,7 +3804,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3617 (class 2606 OID 16755)
+-- TOC entry 3632 (class 2606 OID 16755)
 -- Name: declarations declarations_household_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3658,7 +3813,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3634 (class 2606 OID 17268)
+-- TOC entry 3650 (class 2606 OID 17268)
 -- Name: don_vi don_vi_dm_khoi_kcb_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3667,7 +3822,7 @@ ALTER TABLE ONLY public.don_vi
 
 
 --
--- TOC entry 3628 (class 2606 OID 17275)
+-- TOC entry 3643 (class 2606 OID 17275)
 -- Name: dot_ke_khai dot_ke_khai_don_vi_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3676,7 +3831,7 @@ ALTER TABLE ONLY public.dot_ke_khai
 
 
 --
--- TOC entry 3626 (class 2606 OID 16993)
+-- TOC entry 3641 (class 2606 OID 16993)
 -- Name: ds_huyen ds_huyen_ma_tinh_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3685,7 +3840,7 @@ ALTER TABLE ONLY public.ds_huyen
 
 
 --
--- TOC entry 3627 (class 2606 OID 17010)
+-- TOC entry 3642 (class 2606 OID 17010)
 -- Name: ds_xa ds_xa_ma_huyen_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3694,7 +3849,16 @@ ALTER TABLE ONLY public.ds_xa
 
 
 --
--- TOC entry 3639 (class 2606 OID 17585)
+-- TOC entry 3657 (class 2606 OID 17742)
+-- Name: bien_lai fk_bien_lai_ke_khai_bhyt; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.bien_lai
+    ADD CONSTRAINT fk_bien_lai_ke_khai_bhyt FOREIGN KEY (ke_khai_bhyt_id) REFERENCES public.ke_khai_bhyt(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3655 (class 2606 OID 17585)
 -- Name: dai_ly_don_vi fk_dai_ly_don_vi_dai_ly; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3703,7 +3867,7 @@ ALTER TABLE ONLY public.dai_ly_don_vi
 
 
 --
--- TOC entry 3640 (class 2606 OID 17590)
+-- TOC entry 3656 (class 2606 OID 17590)
 -- Name: dai_ly_don_vi fk_dai_ly_don_vi_don_vi; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3712,7 +3876,7 @@ ALTER TABLE ONLY public.dai_ly_don_vi
 
 
 --
--- TOC entry 3631 (class 2606 OID 17601)
+-- TOC entry 3646 (class 2606 OID 17601)
 -- Name: dai_ly fk_dai_ly_tinh; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3721,7 +3885,7 @@ ALTER TABLE ONLY public.dai_ly
 
 
 --
--- TOC entry 3618 (class 2606 OID 16722)
+-- TOC entry 3633 (class 2606 OID 16722)
 -- Name: declarations fk_declarations_batch; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3730,7 +3894,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3619 (class 2606 OID 16727)
+-- TOC entry 3634 (class 2606 OID 16727)
 -- Name: declarations fk_declarations_unit; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3739,7 +3903,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3620 (class 2606 OID 16733)
+-- TOC entry 3635 (class 2606 OID 16733)
 -- Name: declarations fk_declarations_user; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3748,7 +3912,7 @@ ALTER TABLE ONLY public.declarations
 
 
 --
--- TOC entry 3632 (class 2606 OID 17149)
+-- TOC entry 3647 (class 2606 OID 17149)
 -- Name: ke_khai_bhyt fk_dot_ke_khai; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3757,7 +3921,7 @@ ALTER TABLE ONLY public.ke_khai_bhyt
 
 
 --
--- TOC entry 3629 (class 2606 OID 17546)
+-- TOC entry 3644 (class 2606 OID 17546)
 -- Name: dot_ke_khai fk_dot_ke_khai_dai_ly; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3766,7 +3930,7 @@ ALTER TABLE ONLY public.dot_ke_khai
 
 
 --
--- TOC entry 3630 (class 2606 OID 17103)
+-- TOC entry 3645 (class 2606 OID 17103)
 -- Name: dot_ke_khai fk_dot_ke_khai_dich_vu; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3775,7 +3939,7 @@ ALTER TABLE ONLY public.dot_ke_khai
 
 
 --
--- TOC entry 3635 (class 2606 OID 17312)
+-- TOC entry 3651 (class 2606 OID 17312)
 -- Name: hoa_don_thanh_toan fk_hoa_don_dot_ke_khai; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3784,7 +3948,7 @@ ALTER TABLE ONLY public.hoa_don_thanh_toan
 
 
 --
--- TOC entry 3636 (class 2606 OID 17317)
+-- TOC entry 3652 (class 2606 OID 17317)
 -- Name: hoa_don_thanh_toan fk_hoa_don_nguoi_xoa; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3793,7 +3957,16 @@ ALTER TABLE ONLY public.hoa_don_thanh_toan
 
 
 --
--- TOC entry 3641 (class 2606 OID 17732)
+-- TOC entry 3648 (class 2606 OID 17737)
+-- Name: ke_khai_bhyt fk_ke_khai_bhyt_quyen_bien_lai; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
+--
+
+ALTER TABLE ONLY public.ke_khai_bhyt
+    ADD CONSTRAINT fk_ke_khai_bhyt_quyen_bien_lai FOREIGN KEY (quyen_bien_lai_id) REFERENCES public.quyen_bien_lai(id);
+
+
+--
+-- TOC entry 3658 (class 2606 OID 17732)
 -- Name: quyen_bien_lai fk_quyen_bien_lai_nhan_vien_thu; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3802,7 +3975,7 @@ ALTER TABLE ONLY public.quyen_bien_lai
 
 
 --
--- TOC entry 3633 (class 2606 OID 17154)
+-- TOC entry 3649 (class 2606 OID 17154)
 -- Name: ke_khai_bhyt fk_thong_tin_the; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3811,7 +3984,7 @@ ALTER TABLE ONLY public.ke_khai_bhyt
 
 
 --
--- TOC entry 3621 (class 2606 OID 16785)
+-- TOC entry 3636 (class 2606 OID 16785)
 -- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3820,7 +3993,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3612 (class 2606 OID 16587)
+-- TOC entry 3627 (class 2606 OID 16587)
 -- Name: payment_bills payment_bills_batch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3829,7 +4002,7 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3613 (class 2606 OID 16592)
+-- TOC entry 3628 (class 2606 OID 16592)
 -- Name: payment_bills payment_bills_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3838,7 +4011,7 @@ ALTER TABLE ONLY public.payment_bills
 
 
 --
--- TOC entry 3625 (class 2606 OID 16955)
+-- TOC entry 3640 (class 2606 OID 16955)
 -- Name: refresh_tokens refresh_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3847,7 +4020,7 @@ ALTER TABLE ONLY public.refresh_tokens
 
 
 --
--- TOC entry 3637 (class 2606 OID 17359)
+-- TOC entry 3653 (class 2606 OID 17359)
 -- Name: thanh_toan thanh_toan_dot_ke_khai_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3856,7 +4029,7 @@ ALTER TABLE ONLY public.thanh_toan
 
 
 --
--- TOC entry 3638 (class 2606 OID 17364)
+-- TOC entry 3654 (class 2606 OID 17364)
 -- Name: thanh_toan thanh_toan_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3865,7 +4038,7 @@ ALTER TABLE ONLY public.thanh_toan
 
 
 --
--- TOC entry 3614 (class 2606 OID 17121)
+-- TOC entry 3629 (class 2606 OID 17121)
 -- Name: users users_dai_ly_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3874,7 +4047,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3615 (class 2606 OID 16597)
+-- TOC entry 3630 (class 2606 OID 16597)
 -- Name: users users_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: bhxh_system_user
 --
 
@@ -3914,7 +4087,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON FUNCTIONS TO bhxh_system
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TABLES TO bhxh_system_user;
 
 
--- Completed on 2025-02-21 17:56:28
+-- Completed on 2025-02-22 15:20:55
 
 --
 -- PostgreSQL database dump complete
