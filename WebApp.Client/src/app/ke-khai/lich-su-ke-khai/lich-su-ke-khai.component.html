@@ -1,0 +1,128 @@
+<div class="container">
+  <div class="header">
+    <h2>
+      <i nz-icon nzType="history" nzTheme="outline"></i>
+      Lịch sử kê khai BHYT
+    </h2>
+    <div class="button-group">
+      <button nz-button nzType="primary" (click)="search()">
+        <i nz-icon nzType="search"></i>
+        Tìm kiếm
+      </button>
+      <button nz-button (click)="resetForm()">
+        <i nz-icon nzType="reload"></i>
+        Làm mới
+      </button>
+      <button nz-button (click)="exportToExcel()">
+        <i nz-icon nzType="download"></i>
+        Xuất Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Form tìm kiếm -->
+  <div class="search-section">
+    <div class="search-form">
+      <nz-row [nzGutter]="16">
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Mã số BHXH:</nz-form-label>
+            <nz-form-control>
+              <input nz-input placeholder="Nhập mã số BHXH" [(ngModel)]="searchForm.maSoBHXH" name="maSoBHXH">
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>CCCD:</nz-form-label>
+            <nz-form-control>
+              <input nz-input placeholder="Nhập CCCD" [(ngModel)]="searchForm.cccd" name="cccd">
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Họ tên:</nz-form-label>
+            <nz-form-control>
+              <input nz-input placeholder="Nhập họ tên" [(ngModel)]="searchForm.hoTen" name="hoTen">
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Thời gian:</nz-form-label>
+            <nz-form-control>
+              <nz-range-picker
+                [(ngModel)]="searchForm.tuNgay"
+                [nzFormat]="'dd/MM/yyyy'"
+                name="dateRange">
+              </nz-range-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+      </nz-row>
+    </div>
+  </div>
+
+  <!-- Bảng dữ liệu -->
+  <div class="table-container">
+    <nz-table
+      #basicTable
+      [nzData]="keKhaiBHYTs"
+      [nzLoading]="loading"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 30, 40, 50]"
+      [nzShowTotal]="totalTemplate"
+      [nzShowPagination]="true"
+      [nzScroll]="{ x: '1200px' }"
+      class="mt-4">
+      <thead>
+        <tr>
+          <th nzWidth="180px">Đợt kê khai</th>
+          <th nzWidth="120px">Mã số BHXH</th>
+          <th nzWidth="150px">Họ tên</th>
+          <th nzWidth="120px">CCCD</th>
+          <th nzWidth="100px">Ngày sinh</th>
+          <th nzWidth="80px">Giới tính</th>
+          <th nzWidth="80px">Người thứ</th>
+          <th nzWidth="120px">Phương án đóng</th>
+          <th nzWidth="100px">Số tháng</th>
+          <th nzWidth="120px" nzAlign="right">Số tiền đóng</th>
+          <th nzWidth="150px">Ngày tạo</th>
+          <th nzWidth="100px">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of basicTable.data">
+          <td>{{ item.dotKeKhaiInfo }}</td>
+          <td>{{ item.thongTinThe?.ma_so_bhxh }}</td>
+          <td>{{ item.thongTinThe?.ho_ten }}</td>
+          <td>{{ item.thongTinThe?.cccd }}</td>
+          <td>{{ item.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
+          <td>{{ item.thongTinThe?.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' }}</td>
+          <td>{{ item.nguoi_thu }}</td>
+          <td>
+            <nz-tag [nzColor]="'blue'">
+              {{ getPhuongAnDongText(item.phuong_an_dong) }}
+            </nz-tag>
+          </td>
+          <td>{{ item.so_thang_dong }}</td>
+          <td nzAlign="right">{{ item.so_tien_can_dong | number }} đ</td>
+          <td>{{ item.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
+              {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
+            </nz-tag>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <ng-template #totalTemplate let-total>
+      Tổng số {{ total }} bản ghi
+    </ng-template>
+  </div>
+</div> 

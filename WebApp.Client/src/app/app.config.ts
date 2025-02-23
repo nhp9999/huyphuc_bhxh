@@ -9,6 +9,11 @@ import { authInterceptor } from './interceptors/auth.interceptor';
 import { ApiTokenInterceptor } from './interceptors/api-token.interceptor';
 import { DonViService } from './services/don-vi.service';
 import { provideNzIcons } from './icons-provider';
+import { registerLocaleData } from '@angular/common';
+import vi from '@angular/common/locales/vi';
+
+// Đăng ký locale data cho tiếng Việt
+registerLocaleData(vi);
 
 export const appConfig: ApplicationConfig = {
   providers: [

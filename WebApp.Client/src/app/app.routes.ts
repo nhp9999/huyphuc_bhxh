@@ -28,6 +28,10 @@ export const routes: Routes = [
         path: 'dot-ke-khai/:id/ke-khai-bhxh', 
         loadComponent: () => import('./ke-khai/ke-khai-bhxh/ke-khai-bhxh.component').then(m => m.KeKhaiBHXHComponent) 
       },
+      {
+        path: 'lich-su-ke-khai',
+        loadComponent: () => import('./ke-khai/lich-su-ke-khai/lich-su-ke-khai.component').then(m => m.LichSuKeKhaiComponent)
+      },
       { 
         path: 'reports',
         children: [
