@@ -6,6 +6,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using BCrypt.Net;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace WebApp.Server.Controllers
 {
@@ -48,6 +51,9 @@ namespace WebApp.Server.Controllers
 
         [JsonPropertyName("maNhanVien")]
         public string? MaNhanVien { get; set; }
+
+        [JsonPropertyName("status")]
+        public int Status { get; set; }
     }
 
     [Route("api/nguoi-dung")]
@@ -133,13 +139,20 @@ namespace WebApp.Server.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Chuẩn hóa dữ liệu
-            dto.UserName = dto.UserName.Trim();
-            dto.HoTen = dto.HoTen.Trim();
+            // Kiểm tra và mã hóa mật khẩu
+            if (string.IsNullOrWhiteSpace(dto.Password))
+            {
+                ModelState.AddModelError("Password", "Mật khẩu không được để trống");
+                return BadRequest(ModelState);
+            }
 
-            // Tạo mật khẩu mặc định và mã hóa
-            string defaultPassword = "123456";
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
+            if (dto.Password.Length < 6)
+            {
+                ModelState.AddModelError("Password", "Mật khẩu phải có ít nhất 6 ký tự");
+                return BadRequest(ModelState);
+            }
+
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
             var nguoiDung = new NguoiDung
             {
@@ -180,58 +193,40 @@ namespace WebApp.Server.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra dữ liệu đầu vào
-            if (string.IsNullOrWhiteSpace(dto.UserName))
-            {
-                ModelState.AddModelError("UserName", "Tên đăng nhập không được để trống");
-                return BadRequest(ModelState);
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.HoTen))
-            {
-                ModelState.AddModelError("HoTen", "Họ tên không được để trống");
-                return BadRequest(ModelState);
-            }
-
-            // Kiểm tra trùng UserName (trừ chính nó)
-            if (await _context.NguoiDungs.AnyAsync(x => x.user_name.ToLower() == dto.UserName.ToLower() && x.id != id))
-            {
-                ModelState.AddModelError("UserName", "Tên đăng nhập đã tồn tại");
-                return BadRequest(ModelState);
-            }
-
-            // Chuẩn hóa dữ liệu
-            dto.UserName = dto.UserName.Trim();
-            dto.HoTen = dto.HoTen.Trim();
-
-            nguoiDung.user_name = dto.UserName;
-            nguoiDung.ho_ten = dto.HoTen;
-            nguoiDung.don_vi_cong_tac = dto.DonViCongTac;
-            nguoiDung.chuc_danh = dto.ChucDanh;
-            nguoiDung.email = dto.Email;
-            nguoiDung.so_dien_thoai = dto.SoDienThoai;
-            nguoiDung.is_super_admin = dto.IsSuperAdmin;
-            nguoiDung.type_mang_luoi = dto.TypeMangLuoi;
-            nguoiDung.roles = dto.Roles;
-            nguoiDung.updated_at = DateTime.UtcNow;
-            nguoiDung.ma_nhan_vien = dto.MaNhanVien;
-
             try
             {
+                // Log để debug
+                _logger.LogInformation($"Updating user {id} with status: {dto.Status}");
+
+                nguoiDung.user_name = dto.UserName;
+                nguoiDung.ho_ten = dto.HoTen;
+                nguoiDung.don_vi_cong_tac = dto.DonViCongTac;
+                nguoiDung.chuc_danh = dto.ChucDanh;
+                nguoiDung.email = dto.Email;
+                nguoiDung.so_dien_thoai = dto.SoDienThoai;
+                nguoiDung.is_super_admin = dto.IsSuperAdmin;
+                nguoiDung.type_mang_luoi = dto.TypeMangLuoi;
+                nguoiDung.roles = dto.Roles;
+                nguoiDung.status = dto.Status; // Đảm bảo status được cập nhật
+                nguoiDung.ma_nhan_vien = dto.MaNhanVien;
+                nguoiDung.updated_at = DateTime.UtcNow;
+
+                if (!string.IsNullOrEmpty(dto.Password))
+                {
+                    nguoiDung.password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+                }
+
                 await _context.SaveChangesAsync();
+
+                // Log kết quả
+                _logger.LogInformation($"User {id} updated successfully with status: {nguoiDung.status}");
+
                 return Ok(nguoiDung);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!NguoiDungExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật người dùng");
-                    return BadRequest(ModelState);
-                }
+                _logger.LogError($"Error updating user: {ex.Message}");
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật người dùng" });
             }
         }
 
@@ -255,32 +250,66 @@ namespace WebApp.Server.Controllers
         [HttpPatch("{id}/toggle-status")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var nguoiDung = await _context.NguoiDungs.FindAsync(id);
-            if (nguoiDung == null)
-            {
-                return NotFound();
-            }
-
-            nguoiDung.status = nguoiDung.status == 1 ? 0 : 1;
-            nguoiDung.updated_at = DateTime.UtcNow;
-
             try
             {
+                var nguoiDung = await _context.NguoiDungs.FindAsync(id);
+                if (nguoiDung == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy người dùng" });
+                }
+
+                // Log trạng thái trước khi thay đổi
+                _logger.LogInformation($"Toggling status for user {id} from {nguoiDung.status}");
+
+                nguoiDung.status = nguoiDung.status == 1 ? 0 : 1;
+                nguoiDung.updated_at = DateTime.UtcNow;
+
                 await _context.SaveChangesAsync();
+
+                // Log trạng thái sau khi thay đổi
+                _logger.LogInformation($"Status changed to {nguoiDung.status}");
+
+                return Ok(nguoiDung);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!NguoiDungExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                _logger.LogError($"Error toggling status: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi cập nhật trạng thái" });
+            }
+        }
+
+        private string GenerateRandomPassword()
+        {
+            // Định nghĩa các ký tự cho mật khẩu
+            const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+            const string digits = "0123456789";
+            const string special = "@#$%^&*";
+
+            // Tạo chuỗi ngẫu nhiên từ tất cả các loại ký tự
+            var random = new Random();
+            var password = new StringBuilder();
+
+            // Thêm ít nhất 1 ký tự hoa
+            password.Append(upperCase[random.Next(upperCase.Length)]);
+            // Thêm ít nhất 1 ký tự thường  
+            password.Append(lowerCase[random.Next(lowerCase.Length)]);
+            // Thêm ít nhất 1 số
+            password.Append(digits[random.Next(digits.Length)]);
+            // Thêm ít nhất 1 ký tự đặc biệt
+            password.Append(special[random.Next(special.Length)]);
+
+            // Tạo chuỗi chứa tất cả các ký tự có thể
+            var allChars = upperCase + lowerCase + digits + special;
+
+            // Thêm các ký tự ngẫu nhiên cho đủ độ dài mong muốn (8 ký tự)
+            for (int i = 4; i < 8; i++)
+            {
+                password.Append(allChars[random.Next(allChars.Length)]);
             }
 
-            return Ok(nguoiDung);
+            // Trộn ngẫu nhiên các ký tự trong chuỗi mật khẩu
+            return new string(password.ToString().ToCharArray().OrderBy(x => random.Next()).ToArray());
         }
 
         // POST: api/nguoi-dung/5/reset-password
@@ -290,11 +319,30 @@ namespace WebApp.Server.Controllers
             var nguoiDung = await _context.NguoiDungs.FindAsync(id);
             if (nguoiDung == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Không tìm thấy người dùng" });
             }
 
-            // TODO: Implement password reset logic
-            return Ok(new { message = "Mật khẩu đã được đặt lại" });
+            try
+            {
+                // Tạo mật khẩu ngẫu nhiên mới
+                string newPassword = GenerateRandomPassword();
+                string hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                
+                nguoiDung.password = hashedPassword;
+                nguoiDung.updated_at = DateTime.UtcNow;
+                
+                await _context.SaveChangesAsync();
+
+                return Ok(new { 
+                    message = "Đặt lại mật khẩu thành công",
+                    password = newPassword
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Reset password error: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi đặt lại mật khẩu" });
+            }
         }
 
         private bool NguoiDungExists(int id)

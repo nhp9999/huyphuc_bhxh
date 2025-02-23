@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { tap, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 export interface NguoiDung {
   id: number;
@@ -26,6 +28,7 @@ export interface NguoiDung {
   typeMangLuoi?: number;
   created_at?: Date;
   updated_at?: Date;
+  isStatusLoading?: boolean;
 }
 
 export interface DaiLy {
@@ -70,8 +73,16 @@ export class UserService {
     return this.http.post<NguoiDung>(this.apiUrl, nguoiDung);
   }
 
-  updateNguoiDung(id: number, nguoiDung: Partial<NguoiDung>): Observable<NguoiDung> {
-    return this.http.put<NguoiDung>(`${this.apiUrl}/${id}`, nguoiDung);
+  updateNguoiDung(id: number, nguoiDung: any): Observable<any> {
+    console.log(`Updating user ${id}:`, nguoiDung);
+    
+    return this.http.put(`${this.apiUrl}/${id}`, nguoiDung).pipe(
+      tap(response => console.log('Update response:', response)),
+      catchError(error => {
+        console.error('Update error:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteNguoiDung(id: number): Observable<void> {
