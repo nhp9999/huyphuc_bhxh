@@ -1,0 +1,109 @@
+<div class="container">
+  <div class="header">
+    <h2>
+      <i nz-icon nzType="file-text" nzTheme="outline"></i>
+      Bảng kê biên lai
+    </h2>
+    <div class="button-group">
+      <button nz-button nzType="primary" (click)="onSearch()">
+        <i nz-icon nzType="search"></i>
+        Tìm kiếm
+      </button>
+      <button nz-button (click)="resetForm()">
+        <i nz-icon nzType="reload"></i>
+        Làm mới
+      </button>
+      <button nz-button (click)="exportToExcel()">
+        <i nz-icon nzType="download"></i>
+        Xuất Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Form tìm kiếm -->
+  <div class="search-section">
+    <div class="search-form">
+      <nz-row [nzGutter]="16">
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Thời gian:</nz-form-label>
+            <nz-form-control>
+              <nz-range-picker
+                [(ngModel)]="dateRange"
+                (ngModelChange)="onDateRangeChange($event)"
+                [nzFormat]="'dd/MM/yyyy'"
+                name="dateRange"
+                nzPlaceHolder="['Từ ngày', 'Đến ngày']">
+              </nz-range-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Quyển số:</nz-form-label>
+            <nz-form-control>
+              <input nz-input placeholder="Nhập quyển số" [(ngModel)]="searchForm.quyenSo" name="quyenSo">
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
+            <nz-form-label>Mã nhân viên:</nz-form-label>
+            <nz-form-control>
+              <input nz-input placeholder="Nhập mã nhân viên" [(ngModel)]="searchForm.maNhanVien" name="maNhanVien">
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+      </nz-row>
+    </div>
+  </div>
+
+  <!-- Bảng dữ liệu -->
+  <div class="table-container">
+    <nz-table
+      #basicTable
+      [nzData]="bienLais"
+      [nzLoading]="loading"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 30, 40, 50]"
+      [nzShowTotal]="totalTemplate"
+      [nzShowPagination]="true"
+      [nzScroll]="{ x: '1200px' }"
+      class="mt-4">
+      <thead>
+        <tr>
+          <th nzWidth="100px">Quyển số</th>
+          <th nzWidth="100px">Số biên lai</th>
+          <th nzWidth="150px">Người đóng</th>
+          <th nzWidth="100px">Mã số BHXH</th>
+          <th nzWidth="120px" nzAlign="right">Số tiền</th>
+          <th nzWidth="150px">Ngày biên lai</th>
+          <th nzWidth="100px">Mã NV</th>
+          <th nzWidth="100px">Trạng thái</th>
+          <th nzWidth="100px">Tính chất</th>
+          <th nzWidth="200px">Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of basicTable.data">
+          <td>{{ item.quyen_so }}</td>
+          <td>{{ item.so_bien_lai }}</td>
+          <td>{{ item.ten_nguoi_dong }}</td>
+          <td>{{ item.ma_so_bhxh }}</td>
+          <td nzAlign="right">{{ item.so_tien | number }}</td>
+          <td>{{ item.ngay_bien_lai | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ item.ma_nhan_vien }}</td>
+          <td>{{ item.trang_thai }}</td>
+          <td>{{ item.tinh_chat }}</td>
+          <td>{{ item.ghi_chu }}</td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <ng-template #totalTemplate let-total>
+      Tổng số {{ total }} bản ghi
+    </ng-template>
+  </div>
+</div> 

@@ -18,23 +18,33 @@
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-menu-item nzMatchRouter routerLink="/dashboard">
         <span nz-icon nzType="dashboard"></span>
-        <span>Dashboard</span>
+        <span>Trang chủ</span>
       </li>
-      <li nz-submenu nzTitle="Quản lý" nzIcon="appstore">
+      <li nz-submenu nzTitle="Kê khai" nzIcon="form">
+        <ul>
+          <li nz-menu-item nzMatchRouter routerLink="/dot-ke-khai">
+            <span nz-icon nzType="profile"></span>
+            <span>Danh sách kê khai</span>
+          </li>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/lich-su-ke-khai">
+              <span nz-icon nzType="history"></span>
+              <span>Lịch sử kê khai</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+      <li nz-submenu nzTitle="Quản lý" nzIcon="appstore" *ngIf="isAdmin">
         <ul>
           <li nz-menu-item nzMatchRouter routerLink="/don-vi">
             <span nz-icon nzType="shop"></span>
             <span>Đơn vị</span>
           </li>
-          <li nz-menu-item nzMatchRouter routerLink="/dot-ke-khai">
-            <span nz-icon nzType="profile"></span>
-            <span>Đợt kê khai</span>
-          </li>
-          <li nz-menu-item nzMatchRouter routerLink="/dai-ly" *ngIf="isAdmin">
+          <li nz-menu-item nzMatchRouter routerLink="/dai-ly">
             <span nz-icon nzType="team"></span>
             <span>Đại lý</span>
           </li>
-          <li nz-menu-item nzMatchRouter routerLink="/users" *ngIf="isAdmin">
+          <li nz-menu-item nzMatchRouter routerLink="/users">
             <span nz-icon nzType="user"></span>
             <span>Người dùng</span>
           </li>
@@ -42,21 +52,11 @@
       </li>
       <li nz-submenu nzTitle="Biên lai" nzIcon="file-text">
         <ul>
-          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/quyen-bien-lai" *ngIf="isAdmin">
-            <span nz-icon nzType="book" nzTheme="outline"></span>
-            <span>Quyển biên lai</span>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/bien-lai/bang-ke">Bảng kê biên lai</a>
           </li>
-          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/danh-sach">
-            <span nz-icon nzType="solution"></span>
-            <span>Danh sách biên lai</span>
-          </li>
-          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/cap-phat" *ngIf="isAdmin">
-            <span nz-icon nzType="form" nzTheme="outline"></span>
-            <span>Cấp phát biên lai</span>
-          </li>
-          <li nz-menu-item nzMatchRouter routerLink="/bien-lai/thong-ke">
-            <span nz-icon nzType="bar-chart"></span>
-            <span>Thống kê biên lai</span>
+          <li nz-menu-item nzMatchRouter *ngIf="isAdmin">
+            <a routerLink="/bien-lai/quyen-bien-lai">Quyển biên lai</a>
           </li>
         </ul>
       </li>
@@ -75,12 +75,6 @@
       <li nz-menu-item nzMatchRouter routerLink="/settings">
         <span nz-icon nzType="setting"></span>
         <span>Cài đặt</span>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <a routerLink="/lich-su-ke-khai">
-          <i nz-icon nzType="history"></i>
-          <span>Lịch sử kê khai</span>
-        </a>
       </li>
       <li nz-menu-item (click)="logout()" class="logout-item">
         <span nz-icon nzType="logout"></span>

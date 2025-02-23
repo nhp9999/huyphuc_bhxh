@@ -67,7 +67,32 @@ namespace WebApp.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NguoiDung>>> GetNguoiDungs()
         {
-            return await _context.NguoiDungs.ToListAsync();
+            try 
+            {
+                var nguoiDungs = await _context.NguoiDungs
+                    .Select(n => new {
+                        id = n.id,
+                        userName = n.user_name,
+                        hoTen = n.ho_ten,
+                        donViCongTac = n.don_vi_cong_tac,
+                        chucDanh = n.chuc_danh,
+                        email = n.email,
+                        soDienThoai = n.so_dien_thoai,
+                        roles = n.roles,
+                        status = n.status,
+                        maNhanVien = n.ma_nhan_vien,
+                        isSuperAdmin = n.is_super_admin,
+                        typeMangLuoi = n.type_mang_luoi
+                    })
+                    .ToListAsync();
+                    
+                return Ok(nguoiDungs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting users: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách người dùng" });
+            }
         }
 
         // GET: api/nguoi-dung/5

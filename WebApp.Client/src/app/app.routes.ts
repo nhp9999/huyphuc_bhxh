@@ -63,6 +63,10 @@ export const routes: Routes = [
             path: 'thong-ke',
             loadComponent: () => import('./bien-lai/thong-ke-bien-lai/thong-ke-bien-lai.component').then(m => m.ThongKeBienLaiComponent)
           },
+          {
+            path: 'bang-ke',
+            loadComponent: () => import('./bien-lai/bang-ke-bien-lai/bang-ke-bien-lai.component').then(m => m.BangKeBienLaiComponent)
+          },
           { path: '', redirectTo: 'danh-sach', pathMatch: 'full' }
         ]
       },

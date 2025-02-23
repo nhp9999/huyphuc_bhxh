@@ -42,65 +42,50 @@
 
   <nz-tabset>
     <nz-tab nzTitle="Người dùng">
-      <nz-table #basicTable [nzData]="filteredNguoiDungs" [nzLoading]="isLoading" 
-                [nzScroll]="{ x: '1500px' }">
+      <nz-table #basicTable [nzData]="displayData" [nzLoading]="isLoading">
         <thead>
           <tr>
             <th [nzChecked]="checked"
                 [nzIndeterminate]="indeterminate"
-                (nzCheckedChange)="onAllChecked($event)"
-                nzWidth="60px"></th>
-            <th nzWidth="60px">ID</th>
-            <th nzWidth="120px">Tên đăng nhập</th>
-            <th nzWidth="150px">Họ và tên</th>
-            <th nzWidth="200px">Đơn vị công tác</th>
-            <th nzWidth="150px">Chức danh</th>
-            <th nzWidth="200px">Email</th>
-            <th nzWidth="120px">Số điện thoại</th>
-            <th nzWidth="120px">Mã nhân viên</th>
-            <th nzWidth="120px">Trạng thái</th>
-            <th nzWidth="150px" nzRight="0px" nzFixed="right">Thao tác</th>
+                (nzCheckedChange)="onAllChecked($event)"></th>
+            <th>Tên đăng nhập</th>
+            <th>Họ tên</th>
+            <th>Email</th>
+            <th>Số điện thoại</th>
+            <th>Vai trò</th>
+            <th>Đơn vị</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let nguoiDung of basicTable.data">
-            <td [nzChecked]="setOfCheckedId.has(nguoiDung.id)"
-                (nzCheckedChange)="onItemChecked(nguoiDung.id, $event)"></td>
-            <td>{{ nguoiDung.id }}</td>
-            <td>{{ nguoiDung.userName }}</td>
-            <td>{{ nguoiDung.hoTen }}</td>
-            <td>{{ getDonViCongTacDisplay(nguoiDung.donViCongTac) }}</td>
+          <tr *ngFor="let data of basicTable.data">
+            <td [nzChecked]="setOfCheckedId.has(data.id)" 
+                (nzCheckedChange)="onItemChecked(data.id, $event)"></td>
+            <td>{{ data.userName }}</td>
+            <td>{{ data.hoTen }}</td>
+            <td>{{ data.email }}</td>
+            <td>{{ data.soDienThoai }}</td>
             <td>
-              {{ 
-                nguoiDung.chucDanh || 
-                (nguoiDung.roles && nguoiDung.roles[0] ? chucDanhMap.get(nguoiDung.roles[0]) : '') 
-              }}
-            </td>
-            <td>{{ nguoiDung.email }}</td>
-            <td>{{ nguoiDung.soDienThoai }}</td>
-            <td>{{ nguoiDung.maNhanVien }}</td>
-            <td>
-              <nz-tag [nzColor]="nguoiDung.status === 1 ? 'success' : 'error'">
-                {{ nguoiDung.status === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+              <nz-tag *ngFor="let role of data.roles" [nzColor]="'blue'">
+                {{ role | titlecase }}
               </nz-tag>
             </td>
-            <td nzRight="0px" nzFixed="right">
-              <button nz-button nzType="primary" (click)="showEditModal(nguoiDung)" class="action-button">
+            <td>{{ data.donViCongTac }}</td>
+            <td>
+              <nz-tag [nzColor]="data.status === 1 ? 'success' : 'error'">
+                {{ data.status === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+              </nz-tag>
+            </td>
+            <td>
+              <button nz-button nzType="link" (click)="showEditModal(data)">
                 <span nz-icon nzType="edit"></span>
               </button>
-              <button nz-button
-                      [nzType]="nguoiDung.status === 1 ? 'default' : 'primary'"
-                      (click)="toggleStatus(nguoiDung)"
-                      class="action-button"
-                      nz-tooltip
-                      [nzTooltipTitle]="nguoiDung.status === 1 ? 'Khóa tài khoản' : 'Mở khóa tài khoản'">
-                <span nz-icon [nzType]="nguoiDung.status === 1 ? 'lock' : 'unlock'" nzTheme="outline"></span>
-              </button>
-              <button nz-button nzType="default" (click)="resetPassword(nguoiDung)" class="action-button" nz-tooltip nzTooltipTitle="Đặt lại mật khẩu">
-                <span nz-icon nzType="key"></span>
-              </button>
-              <button nz-button nzType="primary" nzDanger (click)="deleteNguoiDung(nguoiDung)" class="action-button" nz-tooltip nzTooltipTitle="Xóa">
+              <button nz-button nzType="link" nzDanger (click)="deleteNguoiDung(data)">
                 <span nz-icon nzType="delete"></span>
+              </button>
+              <button nz-button nzType="link" (click)="resetPassword(data)">
+                <span nz-icon nzType="key"></span>
               </button>
             </td>
           </tr>
@@ -148,17 +133,7 @@
                 <nz-form-item>
                   <nz-form-label>Đơn vị công tác</nz-form-label>
                   <nz-form-control>
-                    <ng-container *ngIf="showDaiLySelect; else normalInput">
-                      <nz-select formControlName="donViCongTac" style="width: 100%" nzPlaceHolder="Chọn đại lý">
-                        <nz-option *ngFor="let daiLy of daiLys" 
-                                  [nzValue]="daiLy.ma" 
-                                  [nzLabel]="daiLy.ten">
-                        </nz-option>
-                      </nz-select>
-                    </ng-container>
-                    <ng-template #normalInput>
-                      <input nz-input formControlName="donViCongTac" placeholder="Nhập đơn vị công tác" />
-                    </ng-template>
+                    <input nz-input formControlName="donViCongTac" placeholder="Nhập đơn vị công tác"/>
                   </nz-form-control>
                 </nz-form-item>
               </div>
@@ -229,24 +204,6 @@
 
               <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
                 <nz-form-item>
-                  <nz-form-label [nzSpan]="6">Đại lý</nz-form-label>
-                  <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn ít nhất một đại lý">
-                    <nz-select 
-                      formControlName="daiLyIds" 
-                      [nzMode]="'multiple'"
-                      nzPlaceHolder="Chọn đại lý">
-                      <nz-option 
-                        *ngFor="let daiLy of daiLys" 
-                        [nzValue]="daiLy.id" 
-                        [nzLabel]="daiLy.ten">
-                      </nz-option>
-                    </nz-select>
-                  </nz-form-control>
-                </nz-form-item>
-              </div>
-
-              <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
-                <nz-form-item>
                   <nz-form-label>Mã nhân viên</nz-form-label>
                   <nz-form-control>
                     <nz-input-group [nzPrefix]="userIcon">
@@ -259,246 +216,6 @@
                 </nz-form-item>
               </div>
             </div>
-          </form>
-        </ng-container>
-      </nz-modal>
-    </nz-tab>
-
-    <nz-tab nzTitle="Đại lý">
-      <div class="table-operations">
-        <button nz-button nzType="primary" (click)="showCreateDaiLyModal()">
-          <i nz-icon nzType="plus"></i>Thêm mới đại lý
-        </button>
-      </div>
-
-      <nz-table
-        #daiLyTable
-        [nzData]="daiLys"
-        [nzLoading]="isLoading"
-        [nzScroll]="{ x: '1000px' }">
-        <thead>
-          <tr>
-            <th>STT</th>
-            <th>Mã đại lý</th>
-            <th>Tên đại lý</th>
-            <th>Địa chỉ</th>
-            <th>Số điện thoại</th>
-            <th>Email</th>
-            <th>Người đại diện</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of daiLyTable.data; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td>{{ data.ma }}</td>
-            <td>{{ data.ten }}</td>
-            <td>{{ data.diaChi }}</td>
-            <td>{{ data.soDienThoai }}</td>
-            <td>{{ data.email }}</td>
-            <td>{{ data.nguoiDaiDien }}</td>
-            <td>
-              <nz-switch
-                [(ngModel)]="data.trangThai"
-                (ngModelChange)="onDaiLyStatusChange(data)"
-                [nzLoading]="data.loading">
-              </nz-switch>
-            </td>
-            <td>
-              <button nz-button nzType="link" (click)="editDaiLy(data)">
-                <i nz-icon nzType="edit"></i>
-              </button>
-              <button nz-button nzType="link" nzDanger (click)="deleteDaiLy(data)">
-                <i nz-icon nzType="delete"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-
-      <nz-modal
-        [(nzVisible)]="isCreateDaiLyVisible"
-        [nzTitle]="isEditDaiLy ? 'Cập nhật đại lý' : 'Thêm mới đại lý'"
-        [nzOkText]="isEditDaiLy ? 'Cập nhật' : 'Thêm mới'"
-        [nzCancelText]="'Hủy'"
-        (nzOnCancel)="handleCreateDaiLyCancel()"
-        (nzOnOk)="handleCreateDaiLyOk()"
-        [nzWidth]="500">
-        <ng-container *nzModalContent>
-          <form nz-form [formGroup]="daiLyForm" class="compact-form">
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Mã đại lý</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã đại lý">
-                <input nz-input formControlName="ma" placeholder="Nhập mã đại lý" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Tên đại lý</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên đại lý">
-                <input nz-input formControlName="ten" placeholder="Nhập tên đại lý" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Địa chỉ</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <input nz-input formControlName="diaChi" placeholder="Nhập địa chỉ" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Số điện thoại</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <input nz-input formControlName="soDienThoai" placeholder="Nhập số điện thoại" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Email</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <input nz-input formControlName="email" placeholder="Nhập email" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Người đại diện</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <input nz-input formControlName="nguoiDaiDien" placeholder="Nhập người đại diện" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Trạng thái</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <nz-switch formControlName="trangThai"></nz-switch>
-              </nz-form-control>
-            </nz-form-item>
-          </form>
-        </ng-container>
-      </nz-modal>
-    </nz-tab>
-
-    <nz-tab nzTitle="Đơn vị">
-      <div class="table-operations">
-        <button nz-button nzType="primary" (click)="showCreateDonViModal()">
-          <i nz-icon nzType="plus"></i>Thêm mới đơn vị
-        </button>
-      </div>
-
-      <nz-table
-        #donViTable
-        [nzData]="donVis"
-        [nzLoading]="isLoading"
-        [nzScroll]="{ x: '1000px' }">
-        <thead>
-          <tr>
-            <th>STT</th>
-            <th>Mã cơ quan BHXH</th>
-            <th>Mã số BHXH</th>
-            <th>Tên đơn vị</th>
-            <th>BHXH TN</th>
-            <th>BHYT</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of donViTable.data; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td>{{ data.maCoQuanBHXH }}</td>
-            <td>{{ data.maSoBHXH }}</td>
-            <td>{{ data.tenDonVi }}</td>
-            <td>
-              <nz-tag [nzColor]="data.isBHXHTN ? 'success' : 'default'">
-                {{ data.isBHXHTN ? 'Có' : 'Không' }}
-              </nz-tag>
-            </td>
-            <td>
-              <nz-tag [nzColor]="data.isBHYT ? 'success' : 'default'">
-                {{ data.isBHYT ? 'Có' : 'Không' }}
-              </nz-tag>
-            </td>
-            <td>
-              <nz-switch
-                [(ngModel)]="data.trangThai"
-                (ngModelChange)="onDonViStatusChange(data)"
-                [nzLoading]="data.loading">
-              </nz-switch>
-            </td>
-            <td>
-              <button nz-button nzType="link" (click)="editDonVi(data)">
-                <i nz-icon nzType="edit"></i>
-              </button>
-              <button nz-button nzType="link" nzDanger (click)="deleteDonVi(data)">
-                <i nz-icon nzType="delete"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-
-      <nz-modal
-        [(nzVisible)]="isCreateDonViVisible"
-        [nzTitle]="isEditDonVi ? 'Cập nhật đơn vị' : 'Thêm mới đơn vị'"
-        [nzOkText]="isEditDonVi ? 'Cập nhật' : 'Thêm mới'"
-        [nzCancelText]="'Hủy'"
-        (nzOnCancel)="handleCreateDonViCancel()"
-        (nzOnOk)="handleCreateDonViOk()"
-        [nzWidth]="500">
-        <ng-container *nzModalContent>
-          <form nz-form [formGroup]="donViForm" class="compact-form">
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Mã cơ quan BHXH</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã cơ quan BHXH">
-                <input nz-input formControlName="maCoQuanBHXH" placeholder="Nhập mã cơ quan BHXH" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập mã số BHXH">
-                <input nz-input formControlName="maSoBHXH" placeholder="Nhập mã số BHXH" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6" nzRequired>Tên đơn vị</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên đơn vị">
-                <input nz-input formControlName="tenDonVi" placeholder="Nhập tên đơn vị" />
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">BHXH TN</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <nz-switch formControlName="isBHXHTN"></nz-switch>
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">BHYT</nz-form-label>
-              <nz-form-control [nzSpan]="18">
-                <nz-switch formControlName="isBHYT"></nz-switch>
-              </nz-form-control>
-            </nz-form-item>
-
-            <nz-form-item>
-              <nz-form-label [nzSpan]="6">Đại lý</nz-form-label>
-              <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn ít nhất một đại lý">
-                <nz-select 
-                  formControlName="daiLyIds" 
-                  [nzMode]="'multiple'"
-                  nzPlaceHolder="Chọn đại lý">
-                  <nz-option 
-                    *ngFor="let daiLy of daiLys" 
-                    [nzValue]="daiLy.id" 
-                    [nzLabel]="daiLy.ten">
-                  </nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
           </form>
         </ng-container>
       </nz-modal>

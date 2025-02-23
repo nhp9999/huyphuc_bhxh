@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -13,6 +13,26 @@ export interface BienLai {
   trang_thai: string;
   ngay_tao: Date;
   ke_khai_bhyt_id: number;
+}
+
+export interface BangKeBienLaiSearchParams {
+  tuNgay?: Date | null;
+  denNgay?: Date | null;
+  quyenSo?: string | null | undefined;
+  maNhanVien?: string | null | undefined;
+}
+
+export interface BangKeBienLai {
+  quyen_so: string;
+  so_bien_lai: string;
+  ten_nguoi_dong: string;
+  ma_so_bhxh: string;
+  so_tien: number;
+  ngay_bien_lai: Date;
+  ma_nhan_vien: string;
+  ghi_chu?: string;
+  trang_thai: string;
+  tinh_chat: string;
 }
 
 @Injectable({
@@ -29,6 +49,47 @@ export class BienLaiService {
 
   inBienLai(bienLaiId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/${bienLaiId}/print`, {
+      responseType: 'blob'
+    });
+  }
+
+  getBangKeBienLai(params?: BangKeBienLaiSearchParams): Observable<BangKeBienLai[]> {
+    let queryParams = new HttpParams();
+    
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const value = params[key as keyof BangKeBienLaiSearchParams];
+        if (value !== null && value !== undefined && value !== '') {
+          if (key === 'tuNgay' || key === 'denNgay') {
+            queryParams = queryParams.append(key, (value as Date).toISOString());
+          } else {
+            queryParams = queryParams.append(key, value.toString());
+          }
+        }
+      });
+    }
+    
+    return this.http.get<BangKeBienLai[]>(`${this.apiUrl}/bang-ke`, { params: queryParams });
+  }
+
+  exportBangKeBienLai(params?: BangKeBienLaiSearchParams): Observable<Blob> {
+    let queryParams = new HttpParams();
+    
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const value = params[key as keyof BangKeBienLaiSearchParams];
+        if (value !== null && value !== undefined && value !== '') {
+          if (key === 'tuNgay' || key === 'denNgay') {
+            queryParams = queryParams.append(key, (value as Date).toISOString());
+          } else {
+            queryParams = queryParams.append(key, value.toString());
+          }
+        }
+      });
+    }
+
+    return this.http.get(`${this.apiUrl}/bang-ke/export`, {
+      params: queryParams,
       responseType: 'blob'
     });
   }
