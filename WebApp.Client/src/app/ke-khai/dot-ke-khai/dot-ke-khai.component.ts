@@ -306,36 +306,30 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   loadDaiLys(): void {
-    // Kiểm tra nếu đã có dữ liệu đại lý thì không cần load lại
-    if (this.daiLys.length > 0) {
-      // Nếu có đại lý, tự động set vào form
-      if (this.daiLys.length === 1) {
-        this.form.patchValue({
-          dai_ly_id: this.daiLys[0].id
-        });
-      }
-      return;
-    }
-
-    // Kiểm tra nếu có mã đại lý trong thông tin user
-    if (this.currentUser.donViCongTac) {
-      this.userService.getDaiLys().subscribe({
-        next: (data) => {
-          // Lọc chỉ lấy đại lý của tài khoản hiện tại
+    this.loading = true;
+    this.userService.getDaiLys().subscribe({
+      next: (data) => {
+        // Nếu user có donViCongTac, lọc theo đại lý của user
+        if (this.currentUser.donViCongTac) {
           this.daiLys = data.filter(daiLy => daiLy.ma === this.currentUser.donViCongTac);
-          
-          // Nếu có đại lý, tự động set vào form
-          if (this.daiLys.length === 1) {
-            this.form.patchValue({
-              dai_ly_id: this.daiLys[0].id
-            });
-          }
-        },
-        error: () => {
-          this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+        } else {
+          // Nếu không có donViCongTac, lấy tất cả đại lý
+          this.daiLys = data;
         }
-      });
-    }
+        
+        // Nếu có đại lý và form chưa có giá trị đại lý, tự động set vào form
+        if (this.daiLys.length === 1 && !this.form.get('dai_ly_id')?.value) {
+          this.form.patchValue({
+            dai_ly_id: this.daiLys[0].id
+          });
+        }
+        this.loading = false;
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+        this.loading = false;
+      }
+    });
   }
 
   onTabChange(index: number): void {
@@ -374,7 +368,14 @@ export class DotKeKhaiComponent implements OnInit {
 
   showModal(data?: DotKeKhai): void {
     this.isEdit = !!data;
+    
+    // Load danh sách đại lý trước
+    this.loadDaiLys();
+    
     if (data) {
+      // Disable các control khi cập nhật
+      this.disableFormControls();
+      
       this.form.patchValue({
         id: data.id,
         ten_dot: data.ten_dot,
@@ -389,6 +390,9 @@ export class DotKeKhaiComponent implements OnInit {
         dai_ly_id: data.dai_ly_id
       }, { emitEvent: false });
     } else {
+      // Enable lại các control khi thêm mới
+      this.enableFormControls();
+      
       this.form.reset({
         ten_dot: '',
         so_dot: 1,
@@ -417,8 +421,8 @@ export class DotKeKhaiComponent implements OnInit {
     const currentYear = currentDate.getFullYear();
     const nextSoDot = this.getNextSoDot(currentYear);
     
-    // Tạm thời lưu lại giá trị đại lý hiện tại
-    const currentDaiLyId = this.form.get('dai_ly_id')?.value;
+    // Enable lại các controls
+    this.enableFormControls();
     
     this.form.reset({ 
       so_dot: nextSoDot,
@@ -429,9 +433,8 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
       ma_ho_so: '',
-      // Giữ nguyên giá trị đại lý nếu chỉ có 1 đại lý
       dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
-    }, { emitEvent: false }); // Thêm { emitEvent: false } để tránh trigger valueChanges
+    }, { emitEvent: false });
 
     this.updateTenDot();
   }
@@ -1113,5 +1116,23 @@ export class DotKeKhaiComponent implements OnInit {
     if (daiLyId) {
       this.loadDonVisByDaiLy(daiLyId);
     }
+  }
+
+  // Thêm hàm để disable form controls
+  private disableFormControls(): void {
+    this.form.get('so_dot')?.disable();
+    this.form.get('thang')?.disable();
+    this.form.get('nam')?.disable();
+    this.form.get('dai_ly_id')?.disable();
+    this.form.get('ten_dot')?.disable();
+  }
+
+  // Thêm hàm để enable form controls
+  private enableFormControls(): void {
+    this.form.get('so_dot')?.enable();
+    this.form.get('thang')?.enable();
+    this.form.get('nam')?.enable();
+    this.form.get('dai_ly_id')?.enable();
+    this.form.get('ten_dot')?.disable(); // ten_dot luôn bị disable
   }
 } 
