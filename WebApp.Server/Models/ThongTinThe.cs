@@ -21,7 +21,8 @@ namespace WebApp.API.Models
         public string ho_ten { get; set; }
 
         [Required]
-        public DateTime ngay_sinh { get; set; }
+        [StringLength(20)]
+        public string ngay_sinh { get; set; }
 
         [Required]
         [StringLength(3)]

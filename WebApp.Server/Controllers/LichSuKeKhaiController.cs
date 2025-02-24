@@ -186,7 +186,7 @@ namespace WebApp.API.Controllers
                         worksheet.Cells[row, 2].Value = item.ThongTinThe.ma_so_bhxh;
                         worksheet.Cells[row, 3].Value = item.ThongTinThe.ho_ten;
                         worksheet.Cells[row, 4].Value = item.ThongTinThe.cccd;
-                        worksheet.Cells[row, 5].Value = item.ThongTinThe.ngay_sinh.ToString("dd/MM/yyyy");
+                        worksheet.Cells[row, 5].Value = item.ThongTinThe.ngay_sinh;
                         worksheet.Cells[row, 6].Value = item.ThongTinThe.gioi_tinh;
                         worksheet.Cells[row, 7].Value = item.nguoi_thu;
                         worksheet.Cells[row, 8].Value = item.phuong_an_dong;

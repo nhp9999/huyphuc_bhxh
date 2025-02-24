@@ -217,12 +217,33 @@ export class KeKhaiBHYTService {
     return this.http.get<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`);
   }
 
+  private formatDate(date: Date): string {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
   create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
-    return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, data);
+    const formattedData = {
+      ...data,
+      thongTinThe: {
+        ...data.thongTinThe,
+        ngay_sinh: this.formatDate(data.thongTinThe.ngay_sinh)
+      }
+    };
+    return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
   }
 
   update(dotKeKhaiId: number, id: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
-    return this.http.put<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`, data);
+    const formattedData = {
+      ...data,
+      thongTinThe: {
+        ...data.thongTinThe,
+        ngay_sinh: this.formatDate(data.thongTinThe.ngay_sinh)
+      }
+    };
+    return this.http.put<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`, formattedData);
   }
 
   delete(dotKeKhaiId: number, id: number): Observable<void> {
