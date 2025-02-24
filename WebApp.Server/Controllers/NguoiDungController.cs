@@ -345,6 +345,32 @@ namespace WebApp.Server.Controllers
             }
         }
 
+        [HttpGet("info/{id}")]
+        public async Task<ActionResult<NguoiDung>> GetUserInfo(int id)
+        {
+            var nguoiDung = await _context.NguoiDungs
+                .Where(u => u.id == id)
+                .Select(u => new {
+                    u.id,
+                    u.user_name,
+                    u.ho_ten,
+                    u.email,
+                    u.ma_nhan_vien,
+                    u.roles,
+                    u.status,
+                    u.is_super_admin,
+                    u.type_mang_luoi
+                })
+                .FirstOrDefaultAsync();
+
+            if (nguoiDung == null)
+            {
+                return NotFound("Không tìm thấy thông tin người dùng");
+            }
+
+            return Ok(nguoiDung);
+        }
+
         private bool NguoiDungExists(int id)
         {
             return _context.NguoiDungs.Any(e => e.id == id);

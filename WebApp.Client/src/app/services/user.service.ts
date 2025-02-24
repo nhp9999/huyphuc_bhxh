@@ -23,6 +23,7 @@ export interface NguoiDung {
   roles?: string[];
   status?: number;
   trang_thai?: boolean;
+  ma_nhan_vien?: string;
   maNhanVien?: string;
   isSuperAdmin?: boolean;
   typeMangLuoi?: number;
@@ -99,7 +100,19 @@ export class UserService {
 
   getCurrentUserInfo(): Observable<NguoiDung> {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return this.http.get<NguoiDung>(`${this.apiUrl}/${currentUser.id}`);
+    if (!currentUser.id) {
+      return throwError(() => new Error('Không tìm thấy thông tin người dùng'));
+    }
+    
+    return this.http.get<NguoiDung>(`${this.apiUrl}/info/${currentUser.id}`).pipe(
+      tap(user => {
+        console.log('Thông tin người dùng từ API:', user);
+      }),
+      catchError(error => {
+        console.error('Lỗi khi lấy thông tin người dùng:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   getDaiLys(): Observable<DaiLy[]> {

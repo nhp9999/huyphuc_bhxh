@@ -223,7 +223,7 @@ export class ThanhToanModalComponent implements OnInit {
       return 'Chưa có mã số BHXH của đơn vị';
     }
     const maBHXH = this.dotKeKhai.DonVi.maSoBHXH;
-    const maNhanVien = this.nguoiDungInfo?.maNhanVien || '';
+    const maNhanVien = this.nguoiDungInfo?.ma_nhan_vien || this.nguoiDungInfo?.maNhanVien || '';
     return `BHXH 103 00 ${maBHXH} 08907 DONG BHXH CTY HUY PHUC ${maNhanVien}`;
   }
 } 

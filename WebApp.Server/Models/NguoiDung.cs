@@ -12,11 +12,11 @@ namespace WebApp.API.Models
 
         [Required]
         [StringLength(50)]
-        public string user_name { get; set; }
+        public string user_name { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string ho_ten { get; set; }
+        public string ho_ten { get; set; } = string.Empty;
 
         [StringLength(200)]
         public string? don_vi_cong_tac { get; set; }
@@ -43,13 +43,13 @@ namespace WebApp.API.Models
 
         public string[]? roles { get; set; }
 
-        public DateTime created_at { get; set; } = DateTime.UtcNow;
+        public DateTime? created_at { get; set; }
 
-        public DateTime updated_at { get; set; } = DateTime.UtcNow;
+        public DateTime? updated_at { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string password { get; set; }
+        public string password { get; set; } = string.Empty;
 
         [StringLength(20)]
         public string? ma_nhan_vien { get; set; }
