@@ -259,6 +259,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm thuộc tính mới
   isHoGiaDinh = false; // Thêm biến để theo dõi chế độ Hộ gia đình
 
+  // Thêm các biến cache để lưu trữ dữ liệu đã tải
+  private tinhCache: Map<string, any[]> = new Map(); // Cache danh sách tỉnh
+  private huyenCache: Map<string, any[]> = new Map(); // Cache danh sách huyện theo mã tỉnh
+  private xaCache: Map<string, any[]> = new Map(); // Cache danh sách xã theo mã huyện
+
+  // Thêm các hằng số để lưu trữ cache
+  private readonly TINH_CACHE_KEY = 'bhyt_tinh_cache';
+  private readonly HUYEN_CACHE_PREFIX = 'bhyt_huyen_cache_';
+  private readonly XA_CACHE_PREFIX = 'bhyt_xa_cache_';
+
+  // Thêm biến theo dõi đã tải dữ liệu hay chưa
+  private dataInitialized = false;
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -308,7 +321,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.dotKeKhaiId = +params['id'];
       this.loadDotKeKhai();
       this.loadData();
-      this.loadDanhMucTinh();
+      
+      // Tải trước tất cả dữ liệu địa chính
+      this.preloadAddressData();
     });
 
     // Load danh mục CSKCB một lần duy nhất ở đây
@@ -447,10 +462,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.form.get('so_thang_dong')?.valueChanges.subscribe(() => {
       this.capNhatSoTienCanDong();
     });
+
+    // Tải danh sách tỉnh khi component được khởi tạo
+    this.loadDanhMucTinh().then(() => {
+      console.log('Đã tải danh sách tỉnh thành công');
+    });
   }
 
   ngOnDestroy(): void {
     localStorage.removeItem('urgentItems');
+    
+    // Không xóa cache địa chính để sử dụng lại cho các lần sau
+    // Chỉ xóa nếu cần thiết, ví dụ khi dữ liệu quá cũ
+    // this.clearAddressCache();
   }
 
   initForm(): void {
@@ -594,38 +618,114 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDanhMucTinh(): void {
-    this.diaChiService.getDanhMucTinh().subscribe({
-      next: (data: DanhMucTinh[]) => {
-        this.danhMucTinhs = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-      },
-      error: (error: any) => {
-        this.message.error('Có lỗi xảy ra khi tải danh sách tỉnh/thành phố');
-      }
+  // Tải danh mục tỉnh với cache
+  loadDanhMucTinh(): Promise<void> {
+    // Nếu đã có dữ liệu trong bộ nhớ, sử dụng luôn
+    if (this.danhMucTinhs?.length > 0) {
+      return Promise.resolve();
+    }
+    
+    // Kiểm tra xem có trong localStorage không
+    const cachedData = this.loadFromLocalStorage(this.TINH_CACHE_KEY);
+    if (cachedData) {
+      this.danhMucTinhs = cachedData;
+      return Promise.resolve();
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      this.diaChiService.getDanhMucTinh().subscribe({
+        next: (tinhs) => {
+          const sortedTinhs = tinhs.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+          this.danhMucTinhs = sortedTinhs;
+          
+          // Lưu vào localStorage
+          this.saveToLocalStorage(this.TINH_CACHE_KEY, sortedTinhs);
+          
+          resolve();
+        },
+        error: (error) => {
+          console.error('Lỗi khi tải danh mục tỉnh:', error);
+          reject(error);
+        }
+      });
     });
   }
 
-  loadDanhMucHuyenByMaTinh(maTinh: string): void {
-    this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
-      next: (data: DanhMucHuyen[]) => {
-        this.danhMucHuyens = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-        console.log('Loaded danh mục huyện:', this.danhMucHuyens); // Log để debug
-      },
-      error: (error: any) => {
-        console.error('Lỗi khi load danh mục huyện:', error);
-        this.message.error('Có lỗi xảy ra khi tải danh sách quận/huyện');
-      }
+  // Tối ưu tải danh mục huyện với cache
+  loadDanhMucHuyenByMaTinh(maTinh: string): Promise<void> {
+    if (!maTinh) return Promise.resolve();
+    
+    // Kiểm tra cache trong bộ nhớ
+    if (this.huyenCache.has(maTinh)) {
+      this.danhMucHuyens = this.huyenCache.get(maTinh) || [];
+      return Promise.resolve();
+    }
+    
+    // Kiểm tra cache trong localStorage
+    const cacheKey = this.HUYEN_CACHE_PREFIX + maTinh;
+    const cachedData = this.loadFromLocalStorage(cacheKey);
+    if (cachedData) {
+      this.danhMucHuyens = cachedData;
+      this.huyenCache.set(maTinh, cachedData);
+      return Promise.resolve();
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
+        next: (huyens) => {
+          const sortedHuyens = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+          this.danhMucHuyens = sortedHuyens;
+          
+          // Lưu vào cache và localStorage
+          this.huyenCache.set(maTinh, sortedHuyens);
+          this.saveToLocalStorage(cacheKey, sortedHuyens);
+          
+          resolve();
+        },
+        error: (error) => {
+          console.error('Lỗi khi tải danh mục huyện:', error);
+          reject(error);
+        }
+      });
     });
   }
 
-  loadDanhMucXaByMaHuyen(maHuyen: string): void {
-    this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
-      next: (data: DanhMucXa[]) => {
-        this.danhMucXas = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-      },
-      error: (error: any) => {
-        this.message.error('Có lỗi xảy ra khi tải danh sách xã/phường');
-      }
+  // Tối ưu tải danh mục xã với cache
+  loadDanhMucXaByMaHuyen(maHuyen: string): Promise<void> {
+    if (!maHuyen) return Promise.resolve();
+    
+    // Kiểm tra cache trong bộ nhớ
+    if (this.xaCache.has(maHuyen)) {
+      this.danhMucXas = this.xaCache.get(maHuyen) || [];
+      return Promise.resolve();
+    }
+    
+    // Kiểm tra cache trong localStorage
+    const cacheKey = this.XA_CACHE_PREFIX + maHuyen;
+    const cachedData = this.loadFromLocalStorage(cacheKey);
+    if (cachedData) {
+      this.danhMucXas = cachedData;
+      this.xaCache.set(maHuyen, cachedData);
+      return Promise.resolve();
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+        next: (xas) => {
+          const sortedXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+          this.danhMucXas = sortedXas;
+          
+          // Lưu vào cache và localStorage
+          this.xaCache.set(maHuyen, sortedXas);
+          this.saveToLocalStorage(cacheKey, sortedXas);
+          
+          resolve();
+        },
+        error: (error) => {
+          console.error('Lỗi khi tải danh mục xã:', error);
+          reject(error);
+        }
+      });
     });
   }
 
@@ -1688,55 +1788,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         diaChiNKQ = 'Chưa có địa chỉ'; // Giá trị mặc định
       }
 
-      // Load danh mục tỉnh nếu chưa có
+      // Tối ưu việc tải dữ liệu địa chỉ
       if (this.danhMucTinhs.length === 0) {
-        await new Promise<void>((resolve) => {
-          this.diaChiService.getDanhMucTinh().subscribe({
-            next: (tinhs) => {
-              this.danhMucTinhs = tinhs.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-              console.log('Loaded danh mục tỉnh:', this.danhMucTinhs);
-              resolve();
-            },
-            error: (error) => {
-              console.error('Lỗi khi load danh mục tỉnh:', error);
-              resolve();
-            }
-          });
-        });
+        await this.loadDanhMucTinh();
       }
 
-      // Load danh mục huyện theo mã tỉnh
       if (data.maTinhNkq) {
-        await new Promise<void>((resolve) => {
-          this.diaChiService.getDanhMucHuyenByMaTinh(data.maTinhNkq).subscribe({
-            next: (huyens) => {
-              this.danhMucHuyens = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-              console.log('Loaded danh mục huyện cho tỉnh', data.maTinhNkq, ':', this.danhMucHuyens);
-              resolve();
-            },
-            error: (error) => {
-              console.error('Lỗi khi load danh mục huyện:', error);
-              resolve();
-            }
-          });
-        });
+        await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
       }
 
-      // Load danh mục xã theo mã huyện
       if (data.maHuyenNkq) {
-        await new Promise<void>((resolve) => {
-          this.diaChiService.getDanhMucXaByMaHuyen(data.maHuyenNkq).subscribe({
-            next: (xas) => {
-              this.danhMucXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-              console.log('Loaded danh mục xã cho huyện', data.maHuyenNkq, ':', this.danhMucXas);
-              resolve();
-            },
-            error: (error) => {
-              console.error('Lỗi khi load danh mục xã:', error);
-              resolve();
-            }
-          });
-        });
+        await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
       }
 
       // Kiểm tra và log thông tin chuyển đổi
@@ -2337,6 +2399,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức cập nhật các trường địa chỉ
   private async updateAddressFields(province: string, district: string, ward: string) {
     try {
+      // Tải danh mục tỉnh nếu chưa có
+      if (this.danhMucTinhs.length === 0) {
+        await this.loadDanhMucTinh();
+      }
+      
       // Tìm mã tỉnh
       const tinh = this.danhMucTinhs.find(t => 
         t.ten.toUpperCase().includes(province.toUpperCase())
@@ -2346,59 +2413,34 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         // Cập nhật mã tỉnh
         this.form.patchValue({ tinh_nkq: tinh.ma });
         
-        // Đợi load danh mục huyện
-        await new Promise<void>((resolve) => {
-          this.diaChiService.getDanhMucHuyenByMaTinh(tinh.ma).subscribe({
-            next: (huyens) => {
-              this.danhMucHuyens = huyens.sort((a, b) => 
-                a.ten.localeCompare(b.ten, 'vi')
-              );
-              
-              // Tìm mã huyện
-              const huyen = this.danhMucHuyens.find(h => 
-                h.ten.toUpperCase().includes(district.toUpperCase())
-              );
-              
-              if (huyen) {
-                // Cập nhật mã huyện
-                this.form.patchValue({ huyen_nkq: huyen.ma });
-                
-                // Load danh mục xã
-                this.diaChiService.getDanhMucXaByMaHuyen(huyen.ma).subscribe({
-                  next: (xas) => {
-                    this.danhMucXas = xas.sort((a, b) => 
-                      a.ten.localeCompare(b.ten, 'vi')
-                    );
-                    
-                    // Tìm mã xã
-                    const xa = this.danhMucXas.find(x => 
-                      x.ten.toUpperCase().includes(ward.toUpperCase())
-                    );
-                    
-                    if (xa) {
-                      // Cập nhật mã xã
-                      this.form.patchValue({ xa_nkq: xa.ma });
-                    }
-                    resolve();
-                  },
-                  error: (error) => {
-                    console.error('Error loading xã:', error);
-                    resolve();
-                  }
-                });
-              } else {
-                resolve();
-              }
-            },
-            error: (error) => {
-              console.error('Error loading huyện:', error);
-              resolve();
-            }
-          });
-        });
+        // Tải danh mục huyện sử dụng phương thức đã tối ưu
+        await this.loadDanhMucHuyenByMaTinh(tinh.ma);
+        
+        // Tìm mã huyện
+        const huyen = this.danhMucHuyens.find(h => 
+          h.ten.toUpperCase().includes(district.toUpperCase())
+        );
+        
+        if (huyen) {
+          // Cập nhật mã huyện
+          this.form.patchValue({ huyen_nkq: huyen.ma });
+          
+          // Tải danh mục xã sử dụng phương thức đã tối ưu
+          await this.loadDanhMucXaByMaHuyen(huyen.ma);
+          
+          // Tìm mã xã
+          const xa = this.danhMucXas.find(x => 
+            x.ten.toUpperCase().includes(ward.toUpperCase())
+          );
+          
+          if (xa) {
+            // Cập nhật mã xã
+            this.form.patchValue({ xa_nkq: xa.ma });
+          }
+        }
       }
     } catch (error) {
-      console.error('Error in updateAddressFields:', error);
+      console.error('Lỗi trong quá trình cập nhật địa chỉ:', error);
     }
   }
 
@@ -3282,5 +3324,90 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     
     // Trả về đối tượng Date
     return date;
+  }
+
+  // Thêm phương thức tải trước dữ liệu địa chính
+  async preloadAddressData(): Promise<void> {
+    if (this.dataInitialized) return;
+    
+    try {
+      console.log('Bắt đầu tải trước dữ liệu địa chính...');
+      
+      // Tải danh sách tỉnh
+      await this.loadDanhMucTinh();
+      
+      // Tải trước danh sách huyện cho các tỉnh phổ biến
+      const commonProvinces = ['01', '79', '48']; // Hà Nội, HCM, Đà Nẵng
+      for (const province of commonProvinces) {
+        await this.loadDanhMucHuyenByMaTinh(province);
+        
+        // Lấy các huyện đã tải
+        const huyens = this.huyenCache.get(province) || [];
+        
+        // Tải trước xã cho một số huyện
+        if (huyens.length > 0) {
+          // Chỉ tải 2 huyện đầu tiên để không tải quá nhiều
+          for (let i = 0; i < Math.min(2, huyens.length); i++) {
+            await this.loadDanhMucXaByMaHuyen(huyens[i].ma);
+          }
+        }
+      }
+      
+      this.dataInitialized = true;
+      console.log('Đã tải xong dữ liệu địa chính!');
+    } catch (error) {
+      console.error('Lỗi khi tải trước dữ liệu địa chính:', error);
+    }
+  }
+
+  // Thêm phương thức xóa cache (tùy chọn)
+  private clearAddressCache(): void {
+    // Xóa cache tỉnh
+    localStorage.removeItem(this.TINH_CACHE_KEY);
+    
+    // Xóa cache huyện
+    this.huyenCache.forEach((_, key) => {
+      localStorage.removeItem(this.HUYEN_CACHE_PREFIX + key);
+    });
+    
+    // Xóa cache xã
+    this.xaCache.forEach((_, key) => {
+      localStorage.removeItem(this.XA_CACHE_PREFIX + key);
+    });
+    
+    // Xóa cache trong bộ nhớ
+    this.huyenCache.clear();
+    this.xaCache.clear();
+  }
+
+  // Thêm phương thức lưu cache vào localStorage
+  private saveToLocalStorage(key: string, data: any[]): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error('Lỗi khi lưu cache vào localStorage:', error);
+    }
+  }
+
+  // Thêm phương thức đọc cache từ localStorage
+  private loadFromLocalStorage(key: string): any[] | null {
+    try {
+      const cachedData = localStorage.getItem(key);
+      return cachedData ? JSON.parse(cachedData) : null;
+    } catch (error) {
+      console.error('Lỗi khi đọc cache từ localStorage:', error);
+      return null;
+    }
+  }
+
+  convertToUpperCase(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const upperCaseValue = input.value.toUpperCase();
+    
+    // Nếu giá trị đã thay đổi sau khi chuyển đổi
+    if (input.value !== upperCaseValue) {
+      input.value = upperCaseValue;
+      this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
+    }
   }
 } 

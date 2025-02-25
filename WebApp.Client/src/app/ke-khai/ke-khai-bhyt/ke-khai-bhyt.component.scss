@@ -649,8 +649,35 @@ nz-tag {
   flex-direction: column;
   gap: 8px;
 
-  img {
-    max-width: 100%;
-    height: auto;
+  .input-with-button {
+    display: flex;
+    position: relative;
+    
+    input {
+      width: 100%;
+      padding-right: 40px;
+    }
+    
+    .refresh-button {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      margin: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      padding: 0 8px;
+      border-radius: 0 2px 2px 0;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      
+      i {
+        font-size: 16px;
+        color: rgba(0, 0, 0, 0.45);
+      }
+    }
   }
 } 

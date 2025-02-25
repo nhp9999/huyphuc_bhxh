@@ -844,11 +844,20 @@
           <div class="captcha-container">
             <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
               style="margin-bottom: 8px; max-width: 100%;" />
-            <input nz-input 
-              formControlName="text" 
-              placeholder="Nhập mã xác nhận"
-              (keyup)="onCaptchaInput($event)"
-              maxlength="4" />
+            <div class="input-with-button">
+              <input nz-input 
+                formControlName="text" 
+                placeholder="Nhập mã xác nhận"
+                (input)="convertToUpperCase($event)"
+                maxlength="4" />
+              <button 
+                nz-button 
+                nzType="default"
+                class="refresh-button"
+                (click)="getCaptcha()">
+                <i nz-icon nzType="reload"></i>
+              </button>
+            </div>
           </div>
         </nz-form-control>
       </nz-form-item>
