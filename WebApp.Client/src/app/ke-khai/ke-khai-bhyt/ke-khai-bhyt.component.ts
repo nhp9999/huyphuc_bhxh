@@ -1701,7 +1701,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         // Thử parse theo định dạng dd/MM/yyyy
         const parts = data.ngaySinh.split('/');
         if (parts.length === 3) {
-          ngaySinh = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          ngaySinh = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
         } else {
           // Nếu không phải dd/MM/yyyy thì thử parse trực tiếp
           ngaySinh = new Date(data.ngaySinh);
@@ -1874,7 +1874,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           const parts = data.denNgayTheCu.split('/');
           if (parts.length === 3) {
             // Nếu ngày ở định dạng dd/MM/yyyy
-            hanTheCu = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            hanTheCu = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
           } else {
             // Thử parse trực tiếp nếu là định dạng ISO
             hanTheCu = new Date(data.denNgayTheCu);
@@ -3292,7 +3292,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     else if (typeof ngaySinhInput === 'string' && /^\d{4}$/.test(ngaySinhInput)) {
       const year = parseInt(ngaySinhInput);
       if (year >= 1900 && year <= new Date().getFullYear()) {
-        date = new Date(year, 0, 1); // Ngày 01/01/năm
+        // Sử dụng UTC để tránh vấn đề múi giờ
+        date = new Date(Date.UTC(year, 0, 1));
       } else {
         date = new Date();
       }
@@ -3300,15 +3301,16 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     // Xử lý trường hợp dd/MM/yyyy
     else if (typeof ngaySinhInput === 'string' && ngaySinhInput.includes('/')) {
       const [day, month, year] = ngaySinhInput.split('/').map(Number);
-      date = new Date(year, month - 1, day);
+      // Sử dụng UTC để tránh vấn đề múi giờ
+      date = new Date(Date.UTC(year, month - 1, day));
       
       // Kiểm tra tính hợp lệ của ngày
       if (
-        !(date.getDate() === day &&
-        date.getMonth() === month - 1 &&
-        date.getFullYear() === year &&
-        date.getFullYear() >= 1900 &&
-        date.getFullYear() <= new Date().getFullYear() &&
+        !(date.getUTCDate() === day &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCFullYear() === year &&
+        date.getUTCFullYear() >= 1900 &&
+        date.getUTCFullYear() <= new Date().getFullYear() &&
         !isNaN(date.getTime()))
       ) {
         date = new Date();
@@ -3316,7 +3318,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
     // Trường hợp đã là đối tượng Date
     else if (ngaySinhInput instanceof Date && !isNaN(ngaySinhInput.getTime())) {
-      date = new Date(ngaySinhInput);
+      // Tạo lại date với UTC để tránh vấn đề múi giờ
+      date = new Date(Date.UTC(
+        ngaySinhInput.getFullYear(),
+        ngaySinhInput.getMonth(),
+        ngaySinhInput.getDate()
+      ));
     }
     else {
       date = new Date();
