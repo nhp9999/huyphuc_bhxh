@@ -341,6 +341,17 @@
           </nz-form-item>
         </div>
       </div>
+
+      <div nz-row [nzGutter]="24" class="form-actions">
+        <div nz-col [nzSpan]="24" class="text-right">
+          <button nz-button nzType="default" class="mr-2" (click)="resetForm()">
+            <span nz-icon nzType="clear" nzTheme="outline"></span>Làm mới
+          </button>
+          <button nz-button nzType="primary" [disabled]="form.invalid" (click)="saveKeKhaiBHXH()">
+            <span nz-icon nzType="save" nzTheme="outline"></span>Lưu thông tin
+          </button>
+        </div>
+      </div>
     </form>
   </nz-card>
 

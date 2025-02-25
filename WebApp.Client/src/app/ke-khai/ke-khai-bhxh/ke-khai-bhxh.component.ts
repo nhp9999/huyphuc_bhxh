@@ -24,7 +24,8 @@ import { vi_VN } from 'ng-zorro-antd/i18n';
 import { en_US, NZ_I18N } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
-import { SearchOutline, IdcardOutline, DeleteOutline, EditOutline } from '@ant-design/icons-angular/icons';
+import { SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline } from '@ant-design/icons-angular/icons';
+import { KeKhaiBHXHService } from '../../services/ke-khai-bhxh.service';
 
 registerLocaleData(vi);
 
@@ -162,9 +163,10 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     private modal: NzModalService,
     private diaChiService: DiaChiService,
     private datePipe: DatePipe,
-    private iconService: NzIconService
+    private iconService: NzIconService,
+    private keKhaiBHXHService: KeKhaiBHXHService
   ) {
-    this.iconService.addIcon(...[SearchOutline, IdcardOutline, DeleteOutline, EditOutline]);
+    this.iconService.addIcon(...[SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline]);
     this.generateMucThuNhap();
   }
 
@@ -254,8 +256,19 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
   loadData(): void {
     this.loading = true;
-    // TODO: Implement loadData from API
-    this.loading = false;
+    this.keKhaiBHXHService.getByDotKeKhaiId(this.dotKeKhaiId).subscribe({
+      next: (data) => {
+        this.keKhaiBHXHs = data;
+        this.thongKe.tongSoThe = data.length;
+        this.thongKe.tongSoTien = data.reduce((total, item) => total + (item.so_tien_phai_dong || 0), 0);
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải dữ liệu kê khai BHXH:', error);
+        this.message.error('Có lỗi xảy ra khi tải dữ liệu kê khai BHXH');
+        this.loading = false;
+      }
+    });
   }
 
   loadDanhMucTinh(): void {
@@ -426,5 +439,111 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         ghi_chu: ''
       });
     }
+  }
+
+  resetForm(): void {
+    this.form.reset({
+      ma_so_bhxh: '',
+      cccd: '',
+      ho_ten: '',
+      ngay_sinh: null,
+      gioi_tinh: null,
+      so_dien_thoai: '',
+      tinh_nkq: null,
+      huyen_nkq: null,
+      xa_nkq: null,
+      dia_chi_nkq: '',
+      muc_thu_nhap: 1500000,
+      ty_le_dong: 22,
+      ty_le_nsnn: 10,
+      loai_nsnn: 'khac',
+      tien_ho_tro: 0,
+      so_tien_phai_dong: 0,
+      phuong_thuc_dong: 1,
+      thang_bat_dau: null,
+      tu_thang: null,
+      phuong_an: 'TM',
+      loai_khai_bao: 1,
+      ngay_bien_lai: new Date(),
+      ghi_chu: ''
+    });
+    
+    // Reset các dropdown phụ thuộc
+    this.danhMucHuyens = [];
+    this.danhMucXas = [];
+  }
+
+  saveKeKhaiBHXH(): void {
+    if (this.form.invalid) {
+      // Đánh dấu tất cả các trường là đã chạm vào để hiển thị lỗi
+      Object.values(this.form.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+          control.updateValueAndValidity();
+        }
+      });
+      this.message.warning('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
+
+    // Hiển thị xác nhận
+    this.modal.confirm({
+      nzTitle: 'Xác nhận lưu thông tin',
+      nzContent: 'Bạn có chắc chắn muốn lưu thông tin kê khai BHXH này?',
+      nzOkText: 'Lưu',
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        this.processKeKhaiBHXH();
+      }
+    });
+  }
+
+  processKeKhaiBHXH(): void {
+    const formValue = this.form.value;
+    const keKhaiBHXH = {
+      dot_ke_khai_id: this.dotKeKhaiId,
+      thong_tin_the: {
+        ma_so_bhxh: formValue.ma_so_bhxh,
+        cccd: formValue.cccd,
+        ho_ten: formValue.ho_ten,
+        ngay_sinh: this.datePipe.transform(formValue.ngay_sinh, 'yyyy-MM-dd'),
+        gioi_tinh: formValue.gioi_tinh,
+        so_dien_thoai: formValue.so_dien_thoai,
+        tinh_nkq: formValue.tinh_nkq,
+        huyen_nkq: formValue.huyen_nkq,
+        xa_nkq: formValue.xa_nkq,
+        dia_chi_nkq: formValue.dia_chi_nkq
+      },
+      muc_thu_nhap: formValue.muc_thu_nhap,
+      ty_le_dong: formValue.ty_le_dong,
+      ty_le_nsnn: formValue.ty_le_nsnn,
+      loai_nsnn: formValue.loai_nsnn,
+      tien_ho_tro: formValue.tien_ho_tro,
+      so_tien_phai_dong: formValue.so_tien_phai_dong,
+      phuong_thuc_dong: formValue.phuong_thuc_dong,
+      thang_bat_dau: this.datePipe.transform(formValue.thang_bat_dau, 'yyyy-MM-dd'),
+      tu_thang: formValue.tu_thang ? this.datePipe.transform(formValue.tu_thang, 'yyyy-MM-dd') : null,
+      phuong_an: formValue.phuong_an,
+      loai_khai_bao: formValue.loai_khai_bao,
+      ngay_bien_lai: this.datePipe.transform(formValue.ngay_bien_lai, 'yyyy-MM-dd'),
+      ghi_chu: formValue.ghi_chu,
+      nguoi_tao: this.currentUser.username || 'unknown',
+      is_urgent: false
+    };
+
+    this.loading = true;
+    this.keKhaiBHXHService.create(keKhaiBHXH).subscribe({
+      next: (response) => {
+        this.message.success('Lưu thông tin kê khai BHXH thành công');
+        this.loading = false;
+        this.resetForm();
+        this.loadData(); // Tải lại danh sách
+      },
+      error: (error) => {
+        console.error('Lỗi khi lưu thông tin kê khai BHXH:', error);
+        this.message.error('Có lỗi xảy ra khi lưu thông tin kê khai BHXH');
+        this.loading = false;
+      }
+    });
   }
 } 

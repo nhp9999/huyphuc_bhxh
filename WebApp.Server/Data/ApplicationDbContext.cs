@@ -28,6 +28,7 @@ namespace WebApp.API.Data
         public DbSet<DaiLyDonVi> DaiLyDonVis { get; set; }
         public DbSet<QuyenBienLai> QuyenBienLais { get; set; }
         public DbSet<BienLai> BienLais { get; set; }
+        public DbSet<KeKhaiBHXH> KeKhaiBHXHs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
