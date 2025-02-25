@@ -104,15 +104,18 @@
         <div nz-col [nzSpan]="4">
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Ngày sinh</nz-form-label>
-            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn ngày sinh">
-              <nz-date-picker 
+            <nz-form-control [nzSpan]="24" [nzErrorTip]="ngaySinhErrorTpl">
+              <input nz-input 
                 formControlName="ngay_sinh" 
-                nzFormat="dd/MM/yyyy"
-                [nzPlaceHolder]="'Chọn ngày'"
-                [nzPopupStyle]="{ 'font-family': 'Arial' }"
-                nzAllowClear
-                (paste)="handleNgaySinhPaste($event)">
-              </nz-date-picker>
+                placeholder="Nhập ngày sinh (dd/MM/yyyy hoặc yyyy)"
+                (blur)="onNgaySinhBlur($event)"
+                (paste)="handleNgaySinhPaste($event)"
+                maxlength="10" />
+              <ng-template #ngaySinhErrorTpl let-control>
+                <ng-container *ngIf="control.hasError('required')">Vui lòng nhập ngày sinh</ng-container>
+                <ng-container *ngIf="control.hasError('pattern')">Ngày sinh không đúng định dạng (dd/MM/yyyy hoặc yyyy)</ng-container>
+                <ng-container *ngIf="control.hasError('invalidDate')">Ngày sinh không hợp lệ</ng-container>
+              </ng-template>
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -706,7 +709,7 @@
                 </td>
                 <td>{{ cccd.id || 'N/A' }}</td>
                 <td>{{ cccd.name || 'N/A' }}</td>
-                <td>{{ cccd.dob || 'N/A' }}</td>
+                <td>{{ cccd.dob | date:'dd/MM/yyyy' }}</td>
                 <td>{{ cccd.sex || 'N/A' }}</td>
                 <td>
                   <ng-container *ngIf="cccd.home_address; else naTemplate">

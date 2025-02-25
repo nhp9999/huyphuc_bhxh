@@ -21,7 +21,7 @@ namespace WebApp.API.Models
         public string ho_ten { get; set; }
 
         [Required]
-        [StringLength(20)]
+        [StringLength(50)]
         public string ngay_sinh { get; set; }
 
         [Required]

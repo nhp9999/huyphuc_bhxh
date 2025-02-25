@@ -224,12 +224,16 @@ export class KeKhaiBHYTService {
     return `${day}/${month}/${year}`;
   }
 
+  private formatDateISO(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
   create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
     const formattedData = {
       ...data,
       thongTinThe: {
         ...data.thongTinThe,
-        ngay_sinh: this.formatDate(data.thongTinThe.ngay_sinh)
+        ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
       }
     };
     return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
@@ -240,7 +244,7 @@ export class KeKhaiBHYTService {
       ...data,
       thongTinThe: {
         ...data.thongTinThe,
-        ngay_sinh: this.formatDate(data.thongTinThe.ngay_sinh)
+        ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
       }
     };
     return this.http.put<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`, formattedData);

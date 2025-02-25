@@ -460,7 +460,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       ma_so_bhxh: ['', [Validators.required, Validators.maxLength(10)]],
       cccd: ['', [Validators.required, Validators.pattern(/^\d{12}$/)]],
       ho_ten: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-      ngay_sinh: [null, Validators.required],
+      ngay_sinh: ['', [
+        Validators.required,
+        Validators.pattern(/^(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})$/) // Cho phép dd/MM/yyyy hoặc yyyy
+      ]],
       gioi_tinh: [null, Validators.required],
       so_dien_thoai: ['', [Validators.pattern(/^(0|84)\d{9,10}$/)]],
       ma_hgd: [null],
@@ -706,6 +709,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       // Gán giá trị so_tien_can_dong vào form
       formValue.so_tien_can_dong = soTienCanDong;
 
+      // Sử dụng hàm formatNgaySinh để chuyển đổi ngày sinh sang chuỗi ISO
+      const ngaySinh = this.formatNgaySinh(formValue.ngay_sinh);
+
+      // Chuyển đổi chuỗi ISO thành đối tượng Date
+      const ngaySinhDate = new Date(ngaySinh);
+
       if (this.isEdit) {
         const keKhaiBHYTId = formValue.id;
         const thongTinTheId = formValue.thong_tin_the_id;
@@ -725,7 +734,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               ma_so_bhxh: formValue.ma_so_bhxh,
               cccd: formValue.cccd,
               ho_ten: formValue.ho_ten,
-              ngay_sinh: formValue.ngay_sinh ? new Date(formValue.ngay_sinh) : new Date(),
+              // Sử dụng ngày sinh đã được xử lý
+              ngay_sinh: ngaySinhDate, // Sử dụng chuỗi ISO
               gioi_tinh: formValue.gioi_tinh,
               so_dien_thoai: formValue.so_dien_thoai || '',
               ma_hgd: formValue.ma_hgd || '',
@@ -821,7 +831,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ma_so_bhxh: formValue.ma_so_bhxh,
           cccd: formValue.cccd,
           ho_ten: formValue.ho_ten,
-          ngay_sinh: formValue.ngay_sinh ? new Date(formValue.ngay_sinh) : new Date(),
+          // Sử dụng ngày sinh đã được xử lý
+          ngay_sinh: ngaySinhDate, // Sử dụng chuỗi ISO
           gioi_tinh: formValue.gioi_tinh,
           so_dien_thoai: formValue.so_dien_thoai || '',
           ma_hgd: formValue.ma_hgd || '',
@@ -1056,21 +1067,39 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private parseDate(dateStr: string | null): Date | null {
     if (!dateStr) return null;
     
-    try {
-      // Kiểm tra nếu là định dạng dd/MM/yyyy
-      if (dateStr.includes('/')) {
-        const [day, month, year] = dateStr.split('/').map(Number);
-        const date = new Date(year, month - 1, day);
-        return isNaN(date.getTime()) ? null : date;
+    // Kiểm tra nếu chỉ là năm
+    if (/^\d{4}$/.test(dateStr)) {
+      const year = parseInt(dateStr);
+      if (year >= 1900 && year <= new Date().getFullYear()) {
+        return new Date(year, 0, 1); // Trả về ngày 1/1 của năm đó
       }
-      
-      // Nếu là định dạng khác
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
-    } catch (e) {
-      console.error('Error parsing date:', dateStr, e);
       return null;
     }
+    
+    // Nếu dateStr là định dạng dd/MM/yyyy
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        const [day, month, year] = parts.map(Number);
+        const date = new Date(year, month - 1, day);
+        
+        // Kiểm tra tính hợp lệ của ngày
+        if (
+          date.getDate() === day &&
+          date.getMonth() === month - 1 &&
+          date.getFullYear() === year &&
+          date.getFullYear() >= 1900 &&
+          date.getFullYear() <= new Date().getFullYear() &&
+          !isNaN(date.getTime())
+        ) {
+          return date;
+        }
+      }
+    }
+    
+    // Thử parse các định dạng khác
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime()) ? date : null;
   }
 
   onSearchBHYT(): void {
@@ -1157,7 +1186,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private async processSearchResult(data: any): Promise<void> {
     try {
       // Xử lý và chuyển đổi ngày tháng
-      const ngaySinh = this.parseDate(data.ngaySinh);
+      const ngaySinh = data.ngaySinh ? this.formatDate(data.ngaySinh) : '';
       const denNgayTheCu = this.parseDate(data.denNgayTheCu);
 
       // Cập nhật form với dữ liệu từ API
@@ -2287,8 +2316,22 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Thêm phương thức hỗ trợ format ngày
   private formatDate(dateStr: string): string {
-    const [day, month, year] = dateStr.split('/');
-    return `${year}-${month}-${day}`; // Chuyển về định dạng YYYY-MM-DD
+    if (!dateStr) return '';
+    
+    // Kiểm tra nếu dateString đã ở định dạng yyyy-MM-dd
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
   }
 
   // Thêm phương thức cập nhật các trường địa chỉ
@@ -2421,11 +2464,20 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Tách phần gán giá trị form ra một phương thức riêng
   private setFormValues(data: KeKhaiBHYT): void {
     if (data.thongTinThe) {
+      // Định dạng lại ngày sinh trước khi gán vào form
+      let formattedNgaySinh = '';
+      if (data.thongTinThe.ngay_sinh) {
+        const d = new Date(data.thongTinThe.ngay_sinh);
+        if (!isNaN(d.getTime())) {
+          formattedNgaySinh = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+        }
+      }
+      
       this.form.patchValue({
         ma_so_bhxh: data.thongTinThe.ma_so_bhxh,
         cccd: data.thongTinThe.cccd,
         ho_ten: data.thongTinThe.ho_ten,
-        ngay_sinh: data.thongTinThe.ngay_sinh,
+        ngay_sinh: formattedNgaySinh, // Sử dụng chuỗi đã định dạng
         gioi_tinh: data.thongTinThe.gioi_tinh,
         so_dien_thoai: data.thongTinThe.so_dien_thoai,
         ma_hgd: data.thongTinThe.ma_hgd,
@@ -2814,7 +2866,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     let pastedText = clipboardData?.getData('text') || '';
     
     // Thử parse các định dạng ngày phổ biến
-    let parsedDate: Date | null = null;
+    let formattedDate = '';
     
     // Thử các định dạng phổ biến
     const formats = [
@@ -2827,13 +2879,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       const match = pastedText.match(format);
       if (match) {
         try {
+          let day, month, year;
           if (format === formats[0]) { // dd/MM/yyyy
-            parsedDate = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+            [, day, month, year] = match;
           } else if (format === formats[1]) { // yyyy-MM-dd
-            parsedDate = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            [, year, month, day] = match;
           } else { // dd-MM-yyyy
-            parsedDate = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+            [, day, month, year] = match;
           }
+          
+          // Chuẩn hóa về định dạng dd/MM/yyyy
+          formattedDate = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
           break;
         } catch (e) {
           console.error('Lỗi parse ngày:', e);
@@ -2842,10 +2898,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
 
     // Nếu parse được ngày hợp lệ
-    if (parsedDate && !isNaN(parsedDate.getTime())) {
-      // Cập nhật giá trị cho form control
+    if (formattedDate) {
+      const input = event.target as HTMLInputElement;
+      input.value = formattedDate;
       this.form.patchValue({
-        ngay_sinh: parsedDate
+        ngay_sinh: formattedDate
       });
     } else {
       this.message.warning('Định dạng ngày không hợp lệ. Vui lòng sử dụng định dạng dd/MM/yyyy');
@@ -3136,5 +3193,94 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         this.message.error('Không tìm thấy biên lai');
       }
     });
+  }
+
+  // Thêm hàm xử lý khi blur khỏi ô ngày sinh
+  onNgaySinhBlur(event: FocusEvent) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    if (!value) return;
+
+    // Kiểm tra nếu chỉ nhập năm
+    if (/^\d{4}$/.test(value)) {
+      const year = parseInt(value);
+      if (year >= 1900 && year <= new Date().getFullYear()) {
+        // Giữ nguyên giá trị năm
+        this.form.patchValue({
+          ngay_sinh: value
+        });
+        return;
+      }
+    }
+
+    // Kiểm tra nếu đã đúng định dạng dd/MM/yyyy
+    if (/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(value)) {
+      const [day, month, year] = value.split('/').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      // Kiểm tra tính hợp lệ của ngày
+      if (
+        date.getDate() === day &&
+        date.getMonth() === month - 1 &&
+        date.getFullYear() === year &&
+        date.getFullYear() >= 1900 &&
+        date.getFullYear() <= new Date().getFullYear()
+      ) {
+        return;
+      }
+    }
+
+    // Nếu không hợp lệ, set lỗi
+    const control = this.form.get('ngay_sinh');
+    if (control) {
+      control.setErrors({ invalidDate: true });
+    }
+  }
+
+  // Thêm hàm mới để xử lý ngày sinh
+  private formatNgaySinh(ngaySinhInput: any): Date {
+    let date: Date;
+    
+    // Nếu không có giá trị, trả về ngày hiện tại
+    if (!ngaySinhInput) {
+      date = new Date();
+    }
+    // Xử lý trường hợp chỉ nhập năm
+    else if (typeof ngaySinhInput === 'string' && /^\d{4}$/.test(ngaySinhInput)) {
+      const year = parseInt(ngaySinhInput);
+      if (year >= 1900 && year <= new Date().getFullYear()) {
+        date = new Date(year, 0, 1); // Ngày 01/01/năm
+      } else {
+        date = new Date();
+      }
+    } 
+    // Xử lý trường hợp dd/MM/yyyy
+    else if (typeof ngaySinhInput === 'string' && ngaySinhInput.includes('/')) {
+      const [day, month, year] = ngaySinhInput.split('/').map(Number);
+      date = new Date(year, month - 1, day);
+      
+      // Kiểm tra tính hợp lệ của ngày
+      if (
+        !(date.getDate() === day &&
+        date.getMonth() === month - 1 &&
+        date.getFullYear() === year &&
+        date.getFullYear() >= 1900 &&
+        date.getFullYear() <= new Date().getFullYear() &&
+        !isNaN(date.getTime()))
+      ) {
+        date = new Date();
+      }
+    }
+    // Trường hợp đã là đối tượng Date
+    else if (ngaySinhInput instanceof Date && !isNaN(ngaySinhInput.getTime())) {
+      date = new Date(ngaySinhInput);
+    }
+    else {
+      date = new Date();
+    }
+    
+    // Trả về đối tượng Date
+    return date;
   }
 } 
