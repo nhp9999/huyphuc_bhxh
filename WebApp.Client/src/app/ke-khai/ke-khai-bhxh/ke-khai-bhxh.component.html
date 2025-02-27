@@ -1,5 +1,13 @@
 <div class="ke-khai-bhxh-container">
-  <nz-card class="form-card">
+  <nz-card class="form-card" [nzExtra]="extraTemplate">
+    <ng-template #extraTemplate>
+      <button nz-button nzType="default" class="mr-2" (click)="resetForm()">
+        <span nz-icon nzType="clear" nzTheme="outline"></span>Làm mới
+      </button>
+      <button nz-button nzType="primary" (click)="saveKeKhaiBHXH()">
+        <span nz-icon nzType="save" nzTheme="outline"></span>Lưu thông tin
+      </button>
+    </ng-template>
     <form nz-form [formGroup]="form">
       <div nz-row [nzGutter]="24">
         <!-- Hàng 1 -->
@@ -44,6 +52,15 @@
             <nz-form-label [nzSpan]="24" nzRequired>Họ tên</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập họ tên">
               <input nz-input formControlName="ho_ten" placeholder="Nhập họ tên" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <div nz-col [nzSpan]="4">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Mã nhân viên</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã nhân viên">
+              <input nz-input formControlName="ma_nhan_vien" placeholder="Mã nhân viên" [readonly]="true" />
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -176,10 +193,10 @@
 
         <div nz-col [nzSpan]="4">
           <nz-form-item>
-            <nz-form-label [nzSpan]="24" nzRequired>Số tiền phải đóng</nz-form-label>
+            <nz-form-label [nzSpan]="24" nzRequired>Số tiền cần đóng</nz-form-label>
             <nz-form-control [nzSpan]="24">
               <nz-input-number
-                formControlName="so_tien_phai_dong"
+                formControlName="so_tien_can_dong"
                 [nzFormatter]="formatCurrency"
                 [nzParser]="parseCurrency"
                 [nzMin]="0"
@@ -260,15 +277,6 @@
           </nz-form-item>
         </div>
 
-        <div nz-col [nzSpan]="4">
-          <nz-form-item>
-            <nz-form-label [nzSpan]="24" nzRequired>Địa chỉ cụ thể</nz-form-label>
-            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập địa chỉ">
-              <input nz-input formControlName="dia_chi_nkq" placeholder="Nhập địa chỉ cụ thể" />
-            </nz-form-control>
-          </nz-form-item>
-        </div>
-
         <!-- Hàng 3 -->
         <div nz-col [nzSpan]="4">
           <nz-form-item>
@@ -291,6 +299,7 @@
             <nz-form-control [nzSpan]="24">
               <input nz-input
                 formControlName="loai_khai_bao"
+                [disabled]="true"
                 style="width: 100%">
             </nz-form-control>
           </nz-form-item>
@@ -341,23 +350,12 @@
           </nz-form-item>
         </div>
       </div>
-
-      <div nz-row [nzGutter]="24" class="form-actions">
-        <div nz-col [nzSpan]="24" class="text-right">
-          <button nz-button nzType="default" class="mr-2" (click)="resetForm()">
-            <span nz-icon nzType="clear" nzTheme="outline"></span>Làm mới
-          </button>
-          <button nz-button nzType="primary" [disabled]="form.invalid" (click)="saveKeKhaiBHXH()">
-            <span nz-icon nzType="save" nzTheme="outline"></span>Lưu thông tin
-          </button>
-        </div>
-      </div>
     </form>
   </nz-card>
 
   <div class="table-actions">
     <div class="left-actions">
-      <button *ngIf="selectedIds.length > 0" nz-button nzType="primary" nzDanger>
+      <button *ngIf="selectedIds.length > 0" nz-button nzType="primary" nzDanger (click)="deleteSelectedRecords()">
         <span nz-icon nzType="delete" nzTheme="outline"></span>Xóa {{ selectedIds.length }} bản ghi đã chọn
       </button>
     </div>
@@ -373,21 +371,30 @@
     [nzData]="keKhaiBHXHs"
     [nzLoading]="loading"
     [nzShowSizeChanger]="true"
-    [nzShowPagination]="true">
+    [nzScroll]="{ x: '2500px' }"
+    [nzShowPagination]="true"
+    [nzBordered]="true">
     <thead>
       <tr>
         <th [nzWidth]="'40px'" [(nzChecked)]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
-        <th>Mã số BHXH</th>
-        <th>Họ tên</th>
-        <th>CCCD</th>
-        <th>Ngày sinh</th>
-        <th>Giới tính</th>
-        <th>Số điện thoại</th>
-        <th>Địa chỉ</th>
-        <th>Mức lương đóng</th>
-        <th>Thời gian đóng</th>
-        <th>Thành tiền</th>
-        <th style="width: 100px;">Thao tác</th>
+        <th nzWidth="120px" nzBreakWord>Mã số BHXH</th>
+        <th nzWidth="150px" nzBreakWord>Họ tên</th>
+        <th nzWidth="120px" nzBreakWord>CCCD</th>
+        <th nzWidth="100px" nzBreakWord>Ngày sinh</th>
+        <th nzWidth="80px" nzBreakWord>Giới tính</th>
+        <th nzWidth="120px" nzBreakWord>Số điện thoại</th>
+        <th nzWidth="150px" nzBreakWord>Mức thu nhập</th>
+        <th nzWidth="100px" nzBreakWord>Tỷ lệ đóng</th>
+        <th nzWidth="100px" nzBreakWord>Tỷ lệ NSNN</th>
+        <th nzWidth="120px" nzBreakWord>Loại NSNN</th>
+        <th nzWidth="150px" nzBreakWord>Tiền hỗ trợ</th>
+        <th nzWidth="150px" nzBreakWord>Số tiền cần đóng</th>
+        <th nzWidth="150px" nzBreakWord>Phương thức đóng</th>
+        <th nzWidth="120px" nzBreakWord>Tháng bắt đầu</th>
+        <th nzWidth="120px" nzBreakWord>Phương án</th>
+        <th nzWidth="120px" nzBreakWord>Ngày biên lai</th>
+        <th nzWidth="150px" nzBreakWord>Ghi chú</th>
+        <th nzWidth="100px" nzRight nzBreakWord>Thao tác</th>
       </tr>
     </thead>
     <tbody>
@@ -399,15 +406,45 @@
         <td>{{ data.ngay_sinh | date:'dd/MM/yyyy' }}</td>
         <td>{{ data.gioi_tinh }}</td>
         <td>{{ data.so_dien_thoai }}</td>
-        <td>{{ data.dia_chi_nkq }}</td>
-        <td>{{ data.muc_luong_dong | number }}</td>
-        <td>{{ data.thoi_gian_dong }} tháng</td>
-        <td>{{ data.thanh_tien | number }}</td>
+        <td>{{ data.muc_thu_nhap | number:'1.0-0' }}đ</td>
+        <td>{{ data.ty_le_dong }}%</td>
+        <td>{{ data.ty_le_nsnn }}%</td>
         <td>
+          <ng-container [ngSwitch]="data.loai_nsnn">
+            <span *ngSwitchCase="'ngheo'">Nghèo</span>
+            <span *ngSwitchCase="'can_ngheo'">Cận nghèo</span>
+            <span *ngSwitchCase="'khac'">Khác</span>
+          </ng-container>
+        </td>
+        <td>{{ data.tien_ho_tro | number:'1.0-0' }}đ</td>
+        <td>{{ data.so_tien_can_dong | number:'1.0-0' }}đ</td>
+        <td>
+          <ng-container [ngSwitch]="data.phuong_thuc_dong">
+            <span *ngSwitchCase="1">Đóng 1 tháng</span>
+            <span *ngSwitchCase="3">Đóng 3 tháng</span>
+            <span *ngSwitchCase="6">Đóng 6 tháng</span>
+            <span *ngSwitchCase="12">Đóng 1 năm</span>
+            <span *ngSwitchCase="'VS'">Đóng cho những năm về sau</span>
+            <span *ngSwitchCase="'TH'">Đóng cho những năm còn thiếu</span>
+          </ng-container>
+        </td>
+        <td>{{ data.thang_bat_dau | date:'MM/yyyy' }}</td>
+        <td>
+          <ng-container [ngSwitch]="data.phuong_an">
+            <span *ngSwitchCase="'TM'">Tăng mới</span>
+            <span *ngSwitchCase="'DT'">Đóng tiếp</span>
+            <span *ngSwitchCase="'DB'">Đóng bù</span>
+            <span *ngSwitchCase="'DL'">Đóng lại</span>
+            <span *ngSwitchCase="'GH'">Dừng đóng</span>
+          </ng-container>
+        </td>
+        <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
+        <td>{{ data.ghi_chu }}</td>
+        <td nzRight>
           <a nz-button nzType="link" (click)="showModal(data)">
             <span nz-icon nzType="edit" nzTheme="outline"></span>
           </a>
-          <a nz-button nzType="link" nzDanger>
+          <a nz-button nzType="link" nzDanger (click)="deleteKeKhaiBHXH(data.id)">
             <span nz-icon nzType="delete" nzTheme="outline"></span>
           </a>
         </td>

@@ -8,7 +8,17 @@ interface LoginResponse {
   user: {
     id: number;
     username: string;
-    // ... các thông tin user khác
+    ma_nhan_vien: string;
+    hoTen: string;
+    roles: string[];
+    donViCongTac: string;
+    chucDanh: string;
+    clientId: string;
+    email: string | null;
+    soDienThoai: string | null;
+    status: number;
+    isSuperAdmin: boolean;
+    typeMangLuoi: string | null;
   }
 }
 
@@ -47,7 +57,8 @@ export class AuthService {
     // Lưu thông tin user riêng
     const userData = {
       ...authResult.user,
-      token: authResult.token // Thêm token vào object user
+      token: authResult.token, // Thêm token vào object user
+      ma_nhan_vien: authResult.user.username // Sử dụng username làm mã nhân viên
     };
     localStorage.setItem('user', JSON.stringify(userData));
 

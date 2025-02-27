@@ -32,8 +32,8 @@ namespace WebApp.API.Models
         [Column("tien_ho_tro")]
         public decimal tien_ho_tro { get; set; }
 
-        [Column("so_tien_phai_dong")]
-        public decimal so_tien_phai_dong { get; set; }
+        [Column("so_tien_can_dong")]
+        public decimal so_tien_can_dong { get; set; }
 
         [Column("phuong_thuc_dong")]
         public int phuong_thuc_dong { get; set; }
@@ -41,9 +41,7 @@ namespace WebApp.API.Models
         [Column("thang_bat_dau")]
         public DateTime thang_bat_dau { get; set; }
 
-        [Column("tu_thang")]
-        public DateTime? tu_thang { get; set; }
-
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         [Column("so_thang_dong")]
         public int so_thang_dong { get; set; }
 
@@ -63,7 +61,7 @@ namespace WebApp.API.Models
         public int? quyen_bien_lai_id { get; set; }
 
         [Column("ghi_chu")]
-        public string ghi_chu { get; set; }
+        public string? ghi_chu { get; set; }
 
         [Column("nguoi_tao")]
         public string nguoi_tao { get; set; }
@@ -77,10 +75,23 @@ namespace WebApp.API.Models
         [Column("trang_thai")]
         public string trang_thai { get; set; }
 
+        [Column("ma_nhan_vien")]
+        [Required(ErrorMessage = "Mã nhân viên không được để trống")]
+        public string ma_nhan_vien { get; set; } = "";
+
+        [Column("tinh_nkq")]
+        public string? tinh_nkq { get; set; }
+
+        [Column("huyen_nkq")]
+        public string? huyen_nkq { get; set; }
+
+        [Column("xa_nkq")]
+        public string? xa_nkq { get; set; }
+
         [ForeignKey("thong_tin_the_id")]
-        public virtual ThongTinThe ThongTinThe { get; set; }
+        public virtual ThongTinThe? ThongTinThe { get; set; }
 
         [ForeignKey("dot_ke_khai_id")]
-        public virtual DotKeKhai DotKeKhai { get; set; }
+        public virtual DotKeKhai? DotKeKhai { get; set; }
     }
 } 

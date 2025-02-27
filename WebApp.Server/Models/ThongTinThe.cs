@@ -88,8 +88,10 @@ namespace WebApp.API.Models
         /// <summary>
         /// Quốc tịch
         /// </summary>
-        [StringLength(50)]
-        public string? quoc_tich { get; set; }
+        [Required]
+        [StringLength(10)]
+        [System.ComponentModel.DefaultValue("VN")]
+        public string quoc_tich { get; set; } = "VN";
 
         /// <summary>
         /// Mã bệnh viện

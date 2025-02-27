@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.API.Data;
 using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Npgsql;
 
 namespace WebApp.API.Controllers
 {
@@ -50,10 +53,9 @@ namespace WebApp.API.Controllers
                         k.ty_le_nsnn,
                         k.loai_nsnn,
                         k.tien_ho_tro,
-                        k.so_tien_phai_dong,
+                        k.so_tien_can_dong,
                         k.phuong_thuc_dong,
                         k.thang_bat_dau,
-                        k.tu_thang,
                         k.so_thang_dong,
                         k.phuong_an,
                         k.loai_khai_bao,
@@ -98,25 +100,166 @@ namespace WebApp.API.Controllers
             }
         }
 
-        // POST: api/dot-ke-khai/{dotKeKhaiId}/ke-khai-bhxh
-        [HttpPost("{dotKeKhaiId}/ke-khai-bhxh")]
-        public async Task<ActionResult<KeKhaiBHXH>> CreateKeKhaiBHXH(int dotKeKhaiId, KeKhaiBHXH keKhaiBHXH)
+        // POST: api/dot-ke-khai/ke-khai-bhxh
+        [HttpPost("ke-khai-bhxh")]
+        public async Task<ActionResult<KeKhaiBHXH>> CreateKeKhaiBHXH([FromBody] JsonElement requestData)
         {
             try
             {
-                keKhaiBHXH.dot_ke_khai_id = dotKeKhaiId;
-                keKhaiBHXH.ngay_tao = DateTime.Now;
-
+                _logger.LogInformation("Nhận yêu cầu tạo kê khai BHXH");
+                
+                // Lấy thông tin từ request
+                if (!requestData.TryGetProperty("dot_ke_khai_id", out JsonElement dotKeKhaiIdElement))
+                {
+                    return BadRequest(new { message = "Thiếu thông tin dot_ke_khai_id" });
+                }
+                
+                int dotKeKhaiId = dotKeKhaiIdElement.GetInt32();
+                
+                // Kiểm tra đợt kê khai tồn tại
+                var dotKeKhai = await _context.DotKeKhais.FindAsync(dotKeKhaiId);
+                if (dotKeKhai == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {dotKeKhaiId}" });
+                }
+                
+                // Lấy thông tin thẻ từ request
+                if (!requestData.TryGetProperty("thong_tin_the", out JsonElement thongTinTheElement))
+                {
+                    return BadRequest(new { message = "Thiếu thông tin thẻ" });
+                }
+                
+                // Xử lý thông tin thẻ
+                var thongTinThe = new ThongTinThe
+                {
+                    ma_so_bhxh = GetStringProperty(thongTinTheElement, "ma_so_bhxh"),
+                    cccd = GetStringProperty(thongTinTheElement, "cccd"),
+                    ho_ten = GetStringProperty(thongTinTheElement, "ho_ten"),
+                    ngay_sinh = GetStringProperty(thongTinTheElement, "ngay_sinh"),
+                    gioi_tinh = GetStringProperty(thongTinTheElement, "gioi_tinh"),
+                    so_dien_thoai = GetStringProperty(thongTinTheElement, "so_dien_thoai", ""),
+                    ma_tinh_nkq = GetStringProperty(thongTinTheElement, "ma_tinh_nkq", ""),
+                    ma_huyen_nkq = GetStringProperty(thongTinTheElement, "huyen_nkq", ""),
+                    ma_xa_nkq = GetStringProperty(thongTinTheElement, "xa_nkq", ""),
+                    ma_hgd = "",
+                    quoc_tich = "VN",
+                    nguoi_tao = GetStringProperty(requestData, "nguoi_tao"),
+                    ngay_tao = DateTime.Now
+                };
+                
+                // Kiểm tra nếu thẻ đã tồn tại (dựa vào mã số BHXH hoặc CCCD)
+                var existingThe = await _context.ThongTinThes
+                    .FirstOrDefaultAsync(t => t.ma_so_bhxh == thongTinThe.ma_so_bhxh || t.cccd == thongTinThe.cccd);
+                
+                if (existingThe != null)
+                {
+                    // Cập nhật thông tin thẻ nếu đã tồn tại
+                    existingThe.ho_ten = thongTinThe.ho_ten;
+                    existingThe.ngay_sinh = thongTinThe.ngay_sinh;
+                    existingThe.gioi_tinh = thongTinThe.gioi_tinh;
+                    existingThe.so_dien_thoai = thongTinThe.so_dien_thoai;
+                    existingThe.ma_tinh_nkq = thongTinThe.ma_tinh_nkq;
+                    existingThe.ma_huyen_nkq = thongTinThe.ma_huyen_nkq;
+                    existingThe.ma_xa_nkq = thongTinThe.ma_xa_nkq;
+                    
+                    _context.ThongTinThes.Update(existingThe);
+                    thongTinThe = existingThe;
+                }
+                else
+                {
+                    // Thêm mới nếu chưa tồn tại
+                    _context.ThongTinThes.Add(thongTinThe);
+                }
+                
+                await _context.SaveChangesAsync();
+                
+                // Tạo kê khai BHXH
+                var keKhaiBHXH = new KeKhaiBHXH
+                {
+                    dot_ke_khai_id = dotKeKhaiId,
+                    thong_tin_the_id = thongTinThe.id,
+                    muc_thu_nhap = GetDecimalProperty(requestData, "muc_thu_nhap"),
+                    ty_le_dong = GetDecimalProperty(requestData, "ty_le_dong"),
+                    ty_le_nsnn = GetDecimalProperty(requestData, "ty_le_nsnn"),
+                    loai_nsnn = GetStringProperty(requestData, "loai_nsnn"),
+                    tien_ho_tro = GetDecimalProperty(requestData, "tien_ho_tro"),
+                    so_tien_can_dong = GetDecimalProperty(requestData, "so_tien_can_dong"),
+                    phuong_thuc_dong = GetInt32Property(requestData, "phuong_thuc_dong"),
+                    thang_bat_dau = GetDateTimeProperty(requestData, "thang_bat_dau"),
+                    phuong_an = GetStringProperty(requestData, "phuong_an"),
+                    loai_khai_bao = GetStringProperty(requestData, "loai_khai_bao"),
+                    ngay_bien_lai = GetDateTimeProperty(requestData, "ngay_bien_lai"),
+                    ghi_chu = GetStringProperty(requestData, "ghi_chu", ""),
+                    nguoi_tao = GetStringProperty(requestData, "nguoi_tao"),
+                    ngay_tao = DateTime.Now,
+                    trang_thai = "chua_gui",
+                    so_bien_lai = "",
+                    ma_nhan_vien = GetStringProperty(requestData, "ma_nhan_vien", ""),
+                    tinh_nkq = GetStringProperty(requestData, "tinh_nkq", ""),
+                    huyen_nkq = GetStringProperty(requestData, "huyen_nkq", ""),
+                    xa_nkq = GetStringProperty(requestData, "xa_nkq", "")
+                };
+                
                 _context.KeKhaiBHXHs.Add(keKhaiBHXH);
                 await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetKeKhaiBHXH), new { dotKeKhaiId, id = keKhaiBHXH.id }, keKhaiBHXH);
+                
+                return CreatedAtAction(nameof(GetKeKhaiBHXH), new { dotKeKhaiId, id = keKhaiBHXH.id }, new { id = keKhaiBHXH.id });
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Lỗi khi tạo kê khai BHXH: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                }
                 return StatusCode(500, new { message = "Lỗi khi tạo kê khai BHXH", error = ex.Message });
             }
+        }
+
+        // Các phương thức hỗ trợ để lấy giá trị từ JsonElement
+        private string GetStringProperty(JsonElement element, string propertyName, string defaultValue = "")
+        {
+            if (element.TryGetProperty(propertyName, out JsonElement property) && 
+                property.ValueKind != JsonValueKind.Null && 
+                property.ValueKind != JsonValueKind.Undefined)
+            {
+                return property.GetString() ?? defaultValue;
+            }
+            return defaultValue;
+        }
+
+        private decimal GetDecimalProperty(JsonElement element, string propertyName, decimal defaultValue = 0)
+        {
+            if (element.TryGetProperty(propertyName, out JsonElement property) && 
+                property.ValueKind != JsonValueKind.Null && 
+                property.ValueKind != JsonValueKind.Undefined)
+            {
+                return property.GetDecimal();
+            }
+            return defaultValue;
+        }
+
+        private int GetInt32Property(JsonElement element, string propertyName, int defaultValue = 0)
+        {
+            if (element.TryGetProperty(propertyName, out JsonElement property) && 
+                property.ValueKind != JsonValueKind.Null && 
+                property.ValueKind != JsonValueKind.Undefined)
+            {
+                return property.GetInt32();
+            }
+            return defaultValue;
+        }
+
+        private DateTime GetDateTimeProperty(JsonElement element, string propertyName, DateTime? defaultValue = null)
+        {
+            if (element.TryGetProperty(propertyName, out JsonElement property) && 
+                property.ValueKind != JsonValueKind.Null && 
+                property.ValueKind != JsonValueKind.Undefined)
+            {
+                return DateTime.Parse(property.GetString());
+            }
+            return defaultValue ?? DateTime.Now;
         }
 
         // PUT: api/dot-ke-khai/{dotKeKhaiId}/ke-khai-bhxh/{id}

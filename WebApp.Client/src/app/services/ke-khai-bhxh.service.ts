@@ -12,7 +12,9 @@ export class KeKhaiBHXHService {
   constructor(private http: HttpClient) { }
 
   create(keKhaiBHXH: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, keKhaiBHXH);
+    console.log('Gọi API tạo kê khai BHXH:', this.apiUrl);
+    console.log('Dữ liệu gửi đi:', keKhaiBHXH);
+    return this.http.post<any>(`${this.apiUrl}/ke-khai-bhxh`, keKhaiBHXH);
   }
 
   update(id: number, keKhaiBHXH: any): Observable<any> {
@@ -27,7 +29,7 @@ export class KeKhaiBHXHService {
     return this.http.get<any[]>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhxh`);
   }
 
-  delete(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/${id}`);
+  delete(dotKeKhaiId: number, id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhxh/${id}`);
   }
 } 
