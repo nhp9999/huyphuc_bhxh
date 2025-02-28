@@ -3,7 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { map } from 'rxjs/operators';
-import { KeKhaiBHYT } from './ke-khai-bhyt.service';
 
 export interface LichSuKeKhaiSearchParams {
   maSoBHXH?: string;
@@ -11,6 +10,51 @@ export interface LichSuKeKhaiSearchParams {
   hoTen?: string;
   tuNgay?: Date | null;
   denNgay?: Date | null;
+}
+
+export interface DotKeKhai {
+  so_dot: number;
+  thang: number;
+  nam: number;
+  trang_thai: string;
+  ngay_tao?: Date;
+}
+
+export interface ThongTinThe {
+  ma_so_bhxh: string;
+  ho_ten: string;
+  cccd: string;
+  ngay_sinh: Date;
+  gioi_tinh: string;
+  ngay_tao?: Date;
+}
+
+export interface KeKhaiBHYT {
+  id: number;
+  dotKeKhai?: DotKeKhai;
+  thongTinThe: ThongTinThe;
+  nguoi_thu: number;
+  phuong_an_dong: string;
+  so_thang_dong: number;
+  so_tien_can_dong: number;
+  ngay_tao: Date;
+  han_the_cu?: Date | null;
+  han_the_moi_tu: Date;
+  han_the_moi_den: Date;
+  ngay_bien_lai?: Date | null;
+  dotKeKhaiInfo?: string;
+}
+
+export interface KeKhaiBHXH {
+  id: number;
+  dotKeKhai?: DotKeKhai;
+  thongTinThe: ThongTinThe;
+  muc_luong: number;
+  phuong_an_dong: string;
+  so_thang_dong: number;
+  so_tien_can_dong: number;
+  ngay_tao: Date;
+  dotKeKhaiInfo?: string;
 }
 
 @Injectable({
@@ -21,87 +65,76 @@ export class LichSuKeKhaiService {
 
   constructor(private http: HttpClient) {}
 
-  // Lấy tất cả lịch sử kê khai BHYT với các tham số tìm kiếm
+  private formatParams(params?: LichSuKeKhaiSearchParams): HttpParams {
+    let queryParams = new HttpParams();
+    
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const value = params[key as keyof LichSuKeKhaiSearchParams];
+        if (value !== null && value !== undefined && value !== '') {
+          if (key === 'tuNgay' || key === 'denNgay') {
+            queryParams = queryParams.append(key, (value as Date).toISOString());
+          } else {
+            queryParams = queryParams.append(key, value.toString());
+          }
+        }
+      });
+    }
+
+    return queryParams;
+  }
+
+  private convertDates(item: any): any {
+    return {
+      ...item,
+      thongTinThe: {
+        ...item.thongTinThe,
+        ngay_sinh: new Date(item.thongTinThe.ngay_sinh),
+        ngay_tao: item.thongTinThe.ngay_tao ? new Date(item.thongTinThe.ngay_tao) : undefined
+      },
+      dotKeKhai: item.dotKeKhai ? {
+        ...item.dotKeKhai,
+        ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined
+      } : undefined,
+      han_the_cu: item.han_the_cu ? new Date(item.han_the_cu) : null,
+      han_the_moi_tu: item.han_the_moi_tu ? new Date(item.han_the_moi_tu) : undefined,
+      han_the_moi_den: item.han_the_moi_den ? new Date(item.han_the_moi_den) : undefined,
+      ngay_tao: new Date(item.ngay_tao),
+      ngay_bien_lai: item.ngay_bien_lai ? new Date(item.ngay_bien_lai) : null
+    };
+  }
+
   getAllKeKhaiBHYT(params?: LichSuKeKhaiSearchParams): Observable<KeKhaiBHYT[]> {
-    let queryParams = new HttpParams();
-    
-    if (params) {
-      Object.keys(params).forEach(key => {
-        const value = params[key as keyof LichSuKeKhaiSearchParams];
-        if (value !== null && value !== undefined && value !== '') {
-          if (key === 'tuNgay' || key === 'denNgay') {
-            queryParams = queryParams.append(key, (value as Date).toISOString());
-          } else {
-            queryParams = queryParams.append(key, value.toString());
-          }
-        }
-      });
-    }
-    
+    const queryParams = this.formatParams(params);
     return this.http.get<KeKhaiBHYT[]>(`${this.apiUrl}/lich-su`, { params: queryParams }).pipe(
-      map(data => {
-        return data.map(item => ({
-          ...item,
-          thongTinThe: {
-            ...item.thongTinThe,
-            ngay_sinh: new Date(item.thongTinThe.ngay_sinh),
-            ngay_tao: item.thongTinThe.ngay_tao ? new Date(item.thongTinThe.ngay_tao) : undefined
-          },
-          dotKeKhai: item.dotKeKhai ? {
-            ...item.dotKeKhai,
-            ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined
-          } : undefined,
-          han_the_cu: item.han_the_cu ? new Date(item.han_the_cu) : null,
-          han_the_moi_tu: new Date(item.han_the_moi_tu),
-          han_the_moi_den: new Date(item.han_the_moi_den),
-          ngay_tao: new Date(item.ngay_tao),
-          ngay_bien_lai: item.ngay_bien_lai ? new Date(item.ngay_bien_lai) : null
-        }));
-      })
+      map(data => data.map(item => this.convertDates(item)))
     );
   }
 
-  // Lấy chi tiết một kê khai BHYT
   getKeKhaiBHYTDetail(id: number): Observable<KeKhaiBHYT> {
-    return this.http.get<KeKhaiBHYT>(`${this.apiUrl}/lich-su/${id}`).pipe(
-      map(item => ({
-        ...item,
-        thongTinThe: {
-          ...item.thongTinThe,
-          ngay_sinh: new Date(item.thongTinThe.ngay_sinh),
-          ngay_tao: item.thongTinThe.ngay_tao ? new Date(item.thongTinThe.ngay_tao) : undefined
-        },
-        dotKeKhai: item.dotKeKhai ? {
-          ...item.dotKeKhai,
-          ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined
-        } : undefined,
-        han_the_cu: item.han_the_cu ? new Date(item.han_the_cu) : null,
-        han_the_moi_tu: new Date(item.han_the_moi_tu),
-        han_the_moi_den: new Date(item.han_the_moi_den),
-        ngay_tao: new Date(item.ngay_tao),
-        ngay_bien_lai: item.ngay_bien_lai ? new Date(item.ngay_bien_lai) : null
-      }))
+    return this.http.get<KeKhaiBHYT>(`${this.apiUrl}/${id}`).pipe(
+      map(item => this.convertDates(item))
     );
   }
 
-  // Xuất dữ liệu lịch sử kê khai ra Excel
-  exportToExcel(params?: LichSuKeKhaiSearchParams): Observable<Blob> {
-    let queryParams = new HttpParams();
-    
-    if (params) {
-      Object.keys(params).forEach(key => {
-        const value = params[key as keyof LichSuKeKhaiSearchParams];
-        if (value !== null && value !== undefined && value !== '') {
-          if (key === 'tuNgay' || key === 'denNgay') {
-            queryParams = queryParams.append(key, (value as Date).toISOString());
-          } else {
-            queryParams = queryParams.append(key, value.toString());
-          }
-        }
-      });
-    }
+  getAllKeKhaiBHXH(params?: LichSuKeKhaiSearchParams): Observable<KeKhaiBHXH[]> {
+    const queryParams = this.formatParams(params);
+    return this.http.get<KeKhaiBHXH[]>(`${this.apiUrl}/lich-su-bhxh`, { params: queryParams }).pipe(
+      map(data => data.map(item => this.convertDates(item)))
+    );
+  }
 
-    return this.http.get(`${this.apiUrl}/lich-su/export`, {
+  exportBHYTToExcel(params?: LichSuKeKhaiSearchParams): Observable<Blob> {
+    const queryParams = this.formatParams(params);
+    return this.http.get(`${this.apiUrl}/export`, {
+      params: queryParams,
+      responseType: 'blob'
+    });
+  }
+
+  exportBHXHToExcel(params?: LichSuKeKhaiSearchParams): Observable<Blob> {
+    const queryParams = this.formatParams(params);
+    return this.http.get(`${this.apiUrl}/lich-su-bhxh/export`, {
       params: queryParams,
       responseType: 'blob'
     });

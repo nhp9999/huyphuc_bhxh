@@ -213,5 +213,91 @@ namespace WebApp.API.Controllers
                 return StatusCode(500, new { success = false, message = "Lỗi khi xuất lịch sử kê khai", error = ex.Message });
             }
         }
+
+        [HttpGet("lich-su-bhxh")]
+        public async Task<ActionResult<IEnumerable<object>>> GetLichSuKeKhaiBHXH(
+            [FromQuery] string? maSoBHXH,
+            [FromQuery] string? cccd,
+            [FromQuery] string? hoTen,
+            [FromQuery] DateTime? tuNgay,
+            [FromQuery] DateTime? denNgay)
+        {
+            try
+            {
+                var query = _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .Include(k => k.DotKeKhai)
+                    .AsQueryable();
+
+                // Áp dụng các điều kiện tìm kiếm
+                if (!string.IsNullOrEmpty(maSoBHXH))
+                {
+                    query = query.Where(k => k.ThongTinThe.ma_so_bhxh.Contains(maSoBHXH));
+                }
+
+                if (!string.IsNullOrEmpty(cccd))
+                {
+                    query = query.Where(k => k.ThongTinThe.cccd.Contains(cccd));
+                }
+
+                if (!string.IsNullOrEmpty(hoTen))
+                {
+                    query = query.Where(k => k.ThongTinThe.ho_ten.Contains(hoTen));
+                }
+
+                if (tuNgay.HasValue)
+                {
+                    query = query.Where(k => k.ngay_tao >= tuNgay.Value.Date);
+                }
+
+                if (denNgay.HasValue)
+                {
+                    query = query.Where(k => k.ngay_tao <= denNgay.Value.Date.AddDays(1).AddSeconds(-1));
+                }
+
+                var keKhaiBHXHs = await query
+                    .Select(k => new {
+                        k.id,
+                        k.dot_ke_khai_id,
+                        k.thong_tin_the_id,
+                        k.muc_thu_nhap,
+                        k.ty_le_dong,
+                        k.ty_le_nsnn,
+                        k.loai_nsnn,
+                        k.tien_ho_tro,
+                        k.so_tien_can_dong,
+                        k.phuong_thuc_dong,
+                        k.thang_bat_dau,
+                        k.so_thang_dong,
+                        k.phuong_an,
+                        k.loai_khai_bao,
+                        k.ngay_bien_lai,
+                        k.so_bien_lai,
+                        k.ngay_tao,
+                        ThongTinThe = new {
+                            k.ThongTinThe.ma_so_bhxh,
+                            k.ThongTinThe.ho_ten,
+                            k.ThongTinThe.cccd,
+                            k.ThongTinThe.ngay_sinh,
+                            k.ThongTinThe.gioi_tinh
+                        },
+                        DotKeKhai = new {
+                            k.DotKeKhai.so_dot,
+                            k.DotKeKhai.thang,
+                            k.DotKeKhai.nam,
+                            k.DotKeKhai.trang_thai
+                        }
+                    })
+                    .OrderByDescending(k => k.ngay_tao)
+                    .ToListAsync();
+
+                return Ok(keKhaiBHXHs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi lấy danh sách kê khai BHXH: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách kê khai BHXH", error = ex.Message });
+            }
+        }
     }
 } 
