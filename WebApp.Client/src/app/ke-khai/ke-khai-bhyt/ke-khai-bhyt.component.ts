@@ -241,6 +241,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Thêm biến để theo dõi trạng thái loading khi lưu
   loadingSave = false;
+  loadingGui = false;
 
   // Thêm các thuộc tính cho modal nhập nhanh
   isQuickInputVisible = false;
@@ -1286,8 +1287,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private async processSearchResult(data: any): Promise<void> {
     try {
       // Xử lý và chuyển đổi ngày tháng
-      const ngaySinh = data.ngaySinh ? this.formatDate(data.ngaySinh) : '';
-      const denNgayTheCu = this.parseDate(data.denNgayTheCu);
+      const ngaySinhDate = this.formatNgaySinh(data.ngaySinh);
+      const ngaySinh = this.formatDateToString(ngaySinhDate);
+      const denNgayTheCu = data.denNgayTheCu ? this.formatNgaySinh(data.denNgayTheCu) : null;
 
       // Cập nhật form với dữ liệu từ API
       this.form.patchValue({
@@ -2506,20 +2508,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Tách phần gán giá trị form ra một phương thức riêng
   private setFormValues(data: KeKhaiBHYT): void {
     if (data.thongTinThe) {
-      // Định dạng lại ngày sinh trước khi gán vào form
-      let formattedNgaySinh = '';
+      // Xử lý ngày sinh
+      let ngaySinh = '';
       if (data.thongTinThe.ngay_sinh) {
-        const d = new Date(data.thongTinThe.ngay_sinh);
-        if (!isNaN(d.getTime())) {
-          formattedNgaySinh = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-        }
+        const ngaySinhDate = this.formatNgaySinh(data.thongTinThe.ngay_sinh);
+        ngaySinh = this.formatDateToString(ngaySinhDate);
       }
       
       this.form.patchValue({
         ma_so_bhxh: data.thongTinThe.ma_so_bhxh,
         cccd: data.thongTinThe.cccd,
         ho_ten: data.thongTinThe.ho_ten,
-        ngay_sinh: formattedNgaySinh, // Sử dụng chuỗi đã định dạng
+        ngay_sinh: ngaySinh,
         gioi_tinh: data.thongTinThe.gioi_tinh,
         so_dien_thoai: data.thongTinThe.so_dien_thoai,
         ma_hgd: data.thongTinThe.ma_hgd,
@@ -3292,7 +3292,6 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     else if (typeof ngaySinhInput === 'string' && /^\d{4}$/.test(ngaySinhInput)) {
       const year = parseInt(ngaySinhInput);
       if (year >= 1900 && year <= new Date().getFullYear()) {
-        // Sử dụng UTC để tránh vấn đề múi giờ
         date = new Date(Date.UTC(year, 0, 1));
       } else {
         date = new Date();
@@ -3301,7 +3300,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     // Xử lý trường hợp dd/MM/yyyy
     else if (typeof ngaySinhInput === 'string' && ngaySinhInput.includes('/')) {
       const [day, month, year] = ngaySinhInput.split('/').map(Number);
-      // Sử dụng UTC để tránh vấn đề múi giờ
+      // Sử dụng Date.UTC để đảm bảo múi giờ
       date = new Date(Date.UTC(year, month - 1, day));
       
       // Kiểm tra tính hợp lệ của ngày
@@ -3318,7 +3317,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
     // Trường hợp đã là đối tượng Date
     else if (ngaySinhInput instanceof Date && !isNaN(ngaySinhInput.getTime())) {
-      // Tạo lại date với UTC để tránh vấn đề múi giờ
+      // Tạo lại date với UTC để đảm bảo múi giờ
       date = new Date(Date.UTC(
         ngaySinhInput.getFullYear(),
         ngaySinhInput.getMonth(),
@@ -3329,7 +3328,6 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       date = new Date();
     }
     
-    // Trả về đối tượng Date
     return date;
   }
 
@@ -3416,5 +3414,43 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       input.value = upperCaseValue;
       this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
     }
+  }
+
+  // Thêm phương thức mới để format ngày sinh thành chuỗi dd/MM/yyyy
+  private formatDateToString(date: Date): string {
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  guiDotKeKhai(): void {
+    if (!this.dotKeKhai || this.dotKeKhai.trang_thai === 'cho_thanh_toan' || this.keKhaiBHYTs.length === 0) {
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: 'Xác nhận gửi',
+      nzContent: 'Bạn có chắc chắn muốn gửi đợt kê khai này? Sau khi gửi sẽ không thể chỉnh sửa.',
+      nzOkText: 'Gửi',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        this.loadingGui = true;
+        this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId).subscribe({
+          next: () => {
+            this.message.success('Gửi đợt kê khai thành công');
+            this.loadDotKeKhai();
+          },
+          error: (error) => {
+            console.error('Lỗi khi gửi đợt kê khai:', error);
+            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+          },
+          complete: () => {
+            this.loadingGui = false;
+          }
+        });
+      },
+      nzCancelText: 'Hủy'
+    });
   }
 } 

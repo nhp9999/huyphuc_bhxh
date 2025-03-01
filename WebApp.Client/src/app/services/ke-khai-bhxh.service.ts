@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -31,5 +31,35 @@ export class KeKhaiBHXHService {
 
   delete(dotKeKhaiId: number, id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhxh/${id}`);
+  }
+
+  searchBHXH(maSoBHXH: string): Observable<any> {
+    // Lấy token từ localStorage
+    const token = localStorage.getItem('ssmv2_token');
+    if (!token) {
+      throw new Error('Chưa đăng nhập SSMV2');
+    }
+
+    const headers = new HttpHeaders()
+      .set('Accept', 'application/json, text/plain, */*')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Origin', 'https://ssmv2.vnpost.vn')
+      .set('Referer', 'https://ssmv2.vnpost.vn/')
+      .set('Host', 'ssmv2.vnpost.vn')
+      .set('sec-ch-ua', '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"')
+      .set('sec-ch-ua-mobile', '?0')
+      .set('sec-ch-ua-platform', '"Windows"')
+      .set('Sec-Fetch-Dest', 'empty')
+      .set('Sec-Fetch-Mode', 'cors')
+      .set('Sec-Fetch-Site', 'same-origin');
+
+    // Gọi trực tiếp đến API SSMV2
+    return this.http.post<any>('https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhxhtnforkekhai', {
+      maSoBHXH: maSoBHXH
+    }, { 
+      headers,
+      withCredentials: true 
+    });
   }
 } 

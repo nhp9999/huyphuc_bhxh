@@ -31,6 +31,14 @@
       <button nz-button nzType="default" (click)="showQuickInputModal()">
         <i nz-icon nzType="import"></i>Nhập nhanh
       </button>
+      <button 
+        nz-button 
+        nzType="primary" 
+        (click)="guiDotKeKhai()"
+        [disabled]="!dotKeKhai || dotKeKhai.trang_thai === 'cho_thanh_toan' || keKhaiBHYTs.length === 0"
+        [nzLoading]="loadingGui">
+        <i nz-icon nzType="send"></i>Gửi
+      </button>
     </div>
   </div>
 

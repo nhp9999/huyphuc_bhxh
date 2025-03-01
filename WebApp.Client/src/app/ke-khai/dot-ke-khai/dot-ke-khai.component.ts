@@ -761,7 +761,7 @@ export class DotKeKhaiComponent implements OnInit {
       return;
     }
 
-    const dotKeKhaiId = data.id; // Lưu id vào biến để TypeScript hiểu là number
+    const dotKeKhaiId = data.id;
 
     // Lấy thông tin user từ service
     this.userService.getCurrentUserInfo().subscribe({
@@ -771,6 +771,22 @@ export class DotKeKhaiComponent implements OnInit {
         this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
           next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
             console.log('Dữ liệu từ API:', keKhaiBHYTs);
+
+            // Hàm trích xuất số từ chuỗi biên lai
+            const extractNumber = (str: string | undefined): number => {
+              if (!str) return 0;
+              const matches = str.match(/\d+/g);
+              return matches ? parseInt(matches[matches.length - 1]) : 0;
+            };
+
+            // Sắp xếp dữ liệu theo số biên lai (từ bé đến lớn)
+            const sortedKeKhaiBHYTs = [...keKhaiBHYTs].sort((a, b) => {
+              // Lấy số từ biên lai
+              const soA = extractNumber(a.so_bien_lai);
+              const soB = extractNumber(b.so_bien_lai);
+              return soA - soB; // Sắp xếp tăng dần
+            });
+
             // Chuẩn bị dữ liệu cho sheet danh sách kê khai
             const keKhaiHeaders = [
               'STT', // Cột A - Số thứ tự
@@ -845,7 +861,7 @@ export class DotKeKhaiComponent implements OnInit {
               Array(13).fill('')   // Dòng 2 trống với 13 cột
             ];
             
-            const keKhaiData = keKhaiBHYTs.map((item, index) => [
+            const keKhaiData = sortedKeKhaiBHYTs.map((item, index) => [
               index + 1, // STT
               item.ho_ten,
               item.ma_so_bhxh || '', 

@@ -20,9 +20,10 @@
                   formControlName="ma_so_bhxh" 
                   placeholder="Nhập mã số BHXH" 
                   maxlength="10"
-                  (keypress)="onlyNumber($event)" />
-                <button nz-button nzType="primary">
-                  <span nz-icon nzType="search" nzTheme="outline"></span>
+                  (keypress)="onlyNumber($event)"
+                  (keyup)="onKeyUp($event)" />
+                <button nz-button nzType="primary" (click)="searchBHXH()">
+                  <span nz-icon nzType="search"></span>
                 </button>
               </div>
             </nz-form-control>
@@ -451,4 +452,45 @@
       </tr>
     </tbody>
   </nz-table>
-</div> 
+</div>
+
+<!-- Modal đăng nhập SSMV2 -->
+<nz-modal
+  [(nzVisible)]="isLoginVisible"
+  [nzTitle]="'Xác thực captcha'"
+  (nzOnCancel)="handleLoginCancel()"
+  (nzOnOk)="handleLogin()"
+  [nzOkText]="'Xác nhận'"
+  [nzCancelText]="'Hủy'"
+  [nzOkLoading]="loadingLogin">
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="loginForm">
+      <!-- Ẩn input tài khoản và mật khẩu -->
+      <input type="hidden" formControlName="userName">
+      <input type="hidden" formControlName="password">
+
+      <nz-form-item>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
+          <div class="captcha-container">
+            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
+              style="margin-bottom: 8px; max-width: 100%;" />
+            <div class="input-with-button">
+              <input nz-input 
+                formControlName="text" 
+                placeholder="Nhập mã xác nhận"
+                (input)="convertToUpperCase($event)"
+                maxlength="4" />
+              <button 
+                nz-button 
+                nzType="default"
+                class="refresh-button"
+                (click)="getCaptcha()">
+                <i nz-icon nzType="reload"></i>
+              </button>
+            </div>
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal> 

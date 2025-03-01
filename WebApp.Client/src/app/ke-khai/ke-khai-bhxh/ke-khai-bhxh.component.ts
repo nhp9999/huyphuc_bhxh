@@ -26,8 +26,15 @@ import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
 import { SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline } from '@ant-design/icons-angular/icons';
 import { KeKhaiBHXHService } from '../../services/ke-khai-bhxh.service';
+import { SSMV2Service } from '../../services/ssmv2.service';
 
 registerLocaleData(vi);
+
+interface SearchResponse {
+  success: boolean;
+  data: any;
+  message?: string;
+}
 
 @Component({
   selector: 'app-ke-khai-bhxh',
@@ -162,6 +169,16 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   formatPercent = (value: number | string): string => `${value}%`;
   parsePercent = (value: string): number => Number(value.replace('%', ''));
 
+  // Thêm biến để kiểm soát thời gian giữa các lần gọi API
+  private isSearching = false;
+
+  // Thêm các thuộc tính SSMV2
+  isLoginVisible = false;
+  captchaImage = '';
+  captchaCode = '';
+  loginForm: FormGroup;
+  loadingLogin = false;
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -170,10 +187,22 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     private diaChiService: DiaChiService,
     private datePipe: DatePipe,
     private iconService: NzIconService,
-    private keKhaiBHXHService: KeKhaiBHXHService
+    private keKhaiBHXHService: KeKhaiBHXHService,
+    private ssmv2Service: SSMV2Service
   ) {
     this.iconService.addIcon(...[SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline]);
     this.generateMucThuNhap();
+    
+    // Khởi tạo form login SSMV2
+    this.loginForm = this.fb.group({
+      userName: ['884000_xa_tli_phuoclt'],
+      password: ['123456d@D'],
+      text: ['', [
+        Validators.required,
+        Validators.minLength(4),
+        Validators.maxLength(4)
+      ]]
+    });
   }
 
   generateMucThuNhap(): void {
@@ -724,5 +753,208 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       },
       nzCancelText: 'Hủy'
     });
+  }
+
+  // Xử lý sự kiện keyup
+  onKeyUp(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !this.isSearching) {
+      this.searchBHXH();
+    }
+  }
+
+  searchBHXH(): void {
+    if (this.isSearching) return;
+
+    const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
+    if (maSoBHXH && maSoBHXH.length === 10) {
+      // Kiểm tra token trước khi tìm kiếm
+      if (!this.ssmv2Service.getToken()) {
+        this.getAccessToken();
+        return;
+      }
+
+      this.isSearching = true;
+      
+      this.keKhaiBHXHService.searchBHXH(maSoBHXH).subscribe({
+        next: (response: SearchResponse) => {
+          if (response.success) {
+            const data = response.data;
+            console.log('BHXH search response:', data);
+            this.processSearchResult(data);
+          } else {
+            this.message.error(response.message || 'Lỗi không xác định');
+          }
+        },
+        error: (err: any) => {
+          console.error('Search error:', err);
+          if (err.error?.error === 'Lỗi xác thực') {
+            this.ssmv2Service.clearToken();
+            this.getAccessToken();
+          } else {
+            this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || 'Lỗi không xác định'));
+          }
+        },
+        complete: () => {
+          this.isSearching = false;
+        }
+      });
+    } else {
+      this.message.warning('Vui lòng nhập đủ 10 số BHXH');
+    }
+  }
+
+  private processSearchResult(data: any): void {
+    try {
+      // Xử lý và chuyển đổi ngày tháng
+      const ngaySinh = data.ngaySinh ? this.formatDate(data.ngaySinh) : '';
+
+      // Cập nhật form với dữ liệu từ API
+      this.form.patchValue({
+        ma_so_bhxh: data.maSoBHXH,
+        cccd: data.cmnd,
+        ho_ten: data.hoTen,
+        ngay_sinh: ngaySinh,
+        gioi_tinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
+        so_dien_thoai: data.soDienThoai,
+        ma_hgd: data.maHoGiaDinh,
+        ma_tinh_ks: data.maTinhKS,
+        ma_huyen_ks: data.maHuyenKS,
+        ma_xa_ks: data.maXaKS,
+        tinh_nkq: data.maTinhNkq,
+        huyen_nkq: data.maHuyenNkq,
+        xa_nkq: data.maXaNkq,
+        dia_chi_nkq: data.noiNhanHoSo,
+        ma_dan_toc: data.danToc,
+        quoc_tich: data.quocTich,
+      });
+
+      this.message.success('Đã tìm thấy thông tin BHXH');
+    } catch (error) {
+      console.error('Error processing search result:', error);
+      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
+    }
+  }
+
+  private formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    // Kiểm tra nếu dateString đã ở định dạng yyyy-MM-dd
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+  }
+
+  // Thêm phương thức lấy token
+  getAccessToken(): void {
+    this.isLoginVisible = true;
+    this.getCaptcha();
+  }
+
+  getCaptcha(): void {
+    this.ssmv2Service.getCaptcha().subscribe({
+      next: (res) => {
+        console.log('Captcha response:', res);
+        if (res && res.data) {
+          this.captchaImage = res.data.image;
+          this.captchaCode = res.data.code;
+        } else {
+          this.message.error('Không nhận được dữ liệu captcha');
+        }
+      },
+      error: (err) => {
+        console.error('Captcha error:', err);
+        this.message.error('Lỗi khi lấy captcha: ' + err.message);
+      }
+    });
+  }
+
+  handleLogin(): void {
+    if (this.loginForm.get('text')?.valid) {
+      this.loadingLogin = true;
+      
+      const data = {
+        grant_type: 'password',
+        userName: this.loginForm.get('userName')?.value,
+        password: this.loginForm.get('password')?.value,
+        text: this.loginForm.get('text')?.value,
+        code: this.captchaCode,
+        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
+        isWeb: true
+      };
+
+      this.ssmv2Service.authenticate(data).subscribe({
+        next: (response) => {
+          this.loadingLogin = false;
+          
+          if (response.body?.access_token) {
+            this.message.success('Xác thực thành công');
+            this.isLoginVisible = false;
+            
+            if (this.form.get('ma_so_bhxh')?.value) {
+              this.searchBHXH();
+            }
+          } else {
+            this.message.error('Không nhận được token');
+            this.getCaptcha();
+          }
+        },
+        error: (err) => {
+          console.log('Error details:', {
+            error: err.error,
+            status: err.status,
+            message: err.message,
+            fullError: err
+          });
+
+          this.loadingLogin = false;
+          this.loginForm.patchValue({ text: '' });
+
+          if (err.error?.error === 'invalid_captcha') {
+            this.message.error('Mã xác thực sai');
+          } else if (err.error?.error_description?.includes('xác thực')) {
+            this.message.error('Mã xác thực sai');
+          } else if (err.error?.message) {
+            this.message.error(err.error.message);
+          } else {
+            this.message.error('Xác thực thất bại, vui lòng thử lại');
+          }
+
+          setTimeout(() => {
+            this.getCaptcha();
+          }, 100);
+        }
+      });
+    } else {
+      Object.values(this.loginForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsTouched();
+        }
+      });
+    }
+  }
+
+  handleLoginCancel(): void {
+    this.isLoginVisible = false;
+    this.loginForm.reset();
+  }
+
+  convertToUpperCase(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const upperCaseValue = input.value.toUpperCase();
+    
+    if (input.value !== upperCaseValue) {
+      input.value = upperCaseValue;
+      this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
+    }
   }
 } 
