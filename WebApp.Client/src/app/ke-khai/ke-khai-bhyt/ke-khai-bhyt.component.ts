@@ -56,6 +56,7 @@ import Docxtemplater from 'docxtemplater';
 import { AuthService } from '../../services/auth.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 import { BienLaiService, BienLai } from '../../services/bien-lai.service';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 
 registerLocaleData(vi);
 
@@ -179,7 +180,8 @@ interface CCCDResult {
     NzSpinModule,
     NzEmptyModule,
     NzToolTipModule,
-    NzRadioModule
+    NzRadioModule,
+    NzAlertModule
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -3438,7 +3440,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         this.loadingGui = true;
         this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId).subscribe({
           next: () => {
-            this.message.success('Gửi đợt kê khai thành công');
+            this.message.success('Gửi đợt kê khai thành công.');
             this.loadDotKeKhai();
           },
           error: (error) => {

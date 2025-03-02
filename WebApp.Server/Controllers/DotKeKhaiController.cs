@@ -424,10 +424,15 @@ namespace WebApp.API.Controllers
         [HttpPatch("{id}/gui")]
         public async Task<IActionResult> GuiDotKeKhai(int id)
         {
+            // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Kiểm tra đợt kê khai tồn tại
-                var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                var dotKeKhai = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
+                    .FirstOrDefaultAsync(d => d.id == id);
+                    
                 if (dotKeKhai == null)
                 {
                     return NotFound(new { message = "Không tìm thấy đợt kê khai" });
@@ -439,25 +444,132 @@ namespace WebApp.API.Controllers
                     return BadRequest(new { message = "Đợt kê khai không ở trạng thái chưa gửi" });
                 }
 
+                // Lấy thông tin người dùng đăng nhập
+                var userName = User.Identity != null ? User.Identity.Name : null;
+                if (string.IsNullOrEmpty(userName))
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin người dùng đăng nhập" });
+                }
+
+                var nguoiThu = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(n => n.user_name == userName);
+
+                if (nguoiThu == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin người thu" });
+                }
+
+                // Lấy quyển biên lai đang sử dụng
+                var quyenBienLai = await _context.QuyenBienLais
+                    .Where(q => q.nhan_vien_thu == nguoiThu.id && 
+                           q.trang_thai == "dang_su_dung")
+                    .OrderBy(q => q.ngay_cap)
+                    .FirstOrDefaultAsync();
+
+                if (quyenBienLai == null)
+                {
+                    return BadRequest(new { message = "Người thu chưa được cấp quyển biên lai hoặc đã hết số" });
+                }
+
                 // Cập nhật trạng thái đợt kê khai sang chờ thanh toán
                 dotKeKhai.trang_thai = "cho_thanh_toan";
                 
-                // Cập nhật trạng thái các kê khai BHYT trong đợt
+                // Cập nhật trạng thái các kê khai BHYT trong đợt và cấp số biên lai
                 var keKhaiBHYTs = await _context.KeKhaiBHYTs
-                    .Where(k => k.dot_ke_khai_id == id)
+                    .Include(k => k.ThongTinThe)
+                    .Where(k => k.dot_ke_khai_id == id && k.so_bien_lai == null)
                     .ToListAsync();
 
                 foreach (var keKhai in keKhaiBHYTs)
                 {
+                    // Cập nhật trạng thái
                     keKhai.trang_thai = "cho_thanh_toan";
+                    
+                    // Gán quyển biên lai cho kê khai
+                    keKhai.quyen_bien_lai_id = quyenBienLai.id;
+
+                    if (quyenBienLai.so_hien_tai == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = "Số hiện tại không hợp lệ" });
+                    }
+
+                    try
+                    {
+                        var soHienTai = int.Parse(quyenBienLai.so_hien_tai);
+                        var denSo = int.Parse(quyenBienLai.den_so);
+                        
+                        _logger.LogInformation($"Số hiện tại: {soHienTai}, Đến số: {denSo}");
+
+                        if (soHienTai > denSo)
+                        {
+                            quyenBienLai.trang_thai = "da_su_dung";
+                            await _context.SaveChangesAsync();
+                            
+                            // Tìm quyển biên lai mới
+                            quyenBienLai = await _context.QuyenBienLais
+                                .Where(q => q.nhan_vien_thu == nguoiThu.id && 
+                                       q.trang_thai == "chua_su_dung")
+                                .OrderBy(q => q.ngay_cap)
+                                .FirstOrDefaultAsync();
+                                
+                            if (quyenBienLai == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return BadRequest(new { message = "Đã hết số biên lai, vui lòng cấp thêm quyển biên lai mới" });
+                            }
+                            
+                            // Cập nhật trạng thái quyển mới
+                            quyenBienLai.trang_thai = "dang_su_dung";
+                            quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
+                            await _context.SaveChangesAsync();
+                            
+                            // Cập nhật lại số hiện tại
+                            soHienTai = int.Parse(quyenBienLai.so_hien_tai);
+                            denSo = int.Parse(quyenBienLai.den_so);
+                        }
+
+                        keKhai.so_bien_lai = soHienTai.ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
+                        quyenBienLai.so_hien_tai = (soHienTai + 1).ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
+
+                        _logger.LogInformation($"Cấp số biên lai: {keKhai.so_bien_lai}, Số tiếp theo: {quyenBienLai.so_hien_tai}");
+                        
+                        // Tạo biên lai
+                        var bienLai = new BienLai
+                        {
+                            quyen_so = quyenBienLai.quyen_so,
+                            so_bien_lai = keKhai.so_bien_lai,
+                            ten_nguoi_dong = keKhai.ThongTinThe.ho_ten,
+                            so_tien = keKhai.so_tien_can_dong,
+                            ke_khai_bhyt_id = keKhai.id,
+                            ma_so_bhxh = keKhai.ThongTinThe.ma_so_bhxh,
+                            ma_nhan_vien = nguoiThu.ma_nhan_vien,
+                            ngay_bien_lai = keKhai.ngay_bien_lai ?? DateTime.Now,
+                            ma_co_quan_bhxh = dotKeKhai.DonVi?.MaCoQuanBHXH ?? "",
+                            ma_so_bhxh_don_vi = dotKeKhai.DonVi?.MaSoBHXH ?? "",
+                            tinh_chat = "bien_lai_goc",
+                            is_bhyt = dotKeKhai.dich_vu == "BHYT",
+                            is_bhxh = dotKeKhai.dich_vu == "BHXH TN"
+                        };
+
+                        _context.BienLais.Add(bienLai);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Lỗi xử lý số biên lai: {ex.Message}");
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return Ok(new { message = "Gửi đợt kê khai thành công" });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error sending dot ke khai {id}: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi gửi đợt kê khai", error = ex.Message });
             }
