@@ -121,6 +121,23 @@ namespace WebApp.API.Controllers
             existingQuyenBienLai.den_so = quyenBienLai.den_so;
             existingQuyenBienLai.nhan_vien_thu = quyenBienLai.nhan_vien_thu;
             existingQuyenBienLai.trang_thai = quyenBienLai.trang_thai;
+            
+            // Cập nhật số hiện tại nếu được cung cấp
+            if (!string.IsNullOrEmpty(quyenBienLai.so_hien_tai))
+            {
+                // Kiểm tra số hiện tại có hợp lệ không (nằm trong khoảng từ số đến số)
+                if (int.TryParse(quyenBienLai.so_hien_tai, out int soHienTai) && 
+                    int.TryParse(quyenBienLai.tu_so, out int tuSo) && 
+                    int.TryParse(quyenBienLai.den_so, out int denSo))
+                {
+                    if (soHienTai < tuSo || soHienTai > denSo)
+                    {
+                        return BadRequest(new { message = "Số hiện tại phải nằm trong khoảng từ số đến số" });
+                    }
+                }
+                
+                existingQuyenBienLai.so_hien_tai = quyenBienLai.so_hien_tai;
+            }
 
             try
             {

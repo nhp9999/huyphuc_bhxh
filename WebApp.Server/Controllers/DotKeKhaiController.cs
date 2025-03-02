@@ -249,6 +249,7 @@ namespace WebApp.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDotKeKhai(int id)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
@@ -257,13 +258,43 @@ namespace WebApp.API.Controllers
                     return NotFound(new { message = "Không tìm thấy đợt kê khai" });
                 }
 
-                _context.DotKeKhais.Remove(dotKeKhai);
+                // Lấy tất cả các bản ghi kê khai BHYT trong đợt
+                var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                    .Include(k => k.QuyenBienLai)
+                    .Include(k => k.BienLai)
+                    .Where(k => k.dot_ke_khai_id == id)
+                    .ToListAsync();
+
+                // Xử lý số biên lai cho từng bản ghi trước khi xóa
+                foreach (var keKhai in keKhaiBHYTs)
+                {
+                    if (keKhai.QuyenBienLai != null && !string.IsNullOrEmpty(keKhai.so_bien_lai))
+                    {
+                        // Reset số hiện tại về số của biên lai bị xóa
+                        keKhai.QuyenBienLai.so_hien_tai = keKhai.so_bien_lai;
+                        
+                        // Nếu trạng thái là đã sử dụng thì chuyển về đang sử dụng
+                        if (keKhai.QuyenBienLai.trang_thai == "da_su_dung")
+                        {
+                            keKhai.QuyenBienLai.trang_thai = "dang_su_dung";
+                        }
+                        
+                        _context.QuyenBienLais.Update(keKhai.QuyenBienLai);
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
+                // Xóa đợt kê khai (các bản ghi kê khai sẽ tự động bị xóa do có Cascade)
+                _context.DotKeKhais.Remove(dotKeKhai);
+                await _context.SaveChangesAsync();
+                
+                await transaction.CommitAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError($"Error deleting dot ke khai {id}: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi xóa đợt kê khai", error = ex.Message });
             }

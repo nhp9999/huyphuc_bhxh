@@ -102,7 +102,8 @@ export class QuyenBienLaiComponent implements OnInit {
       tu_so: ['', [Validators.required]],
       den_so: ['', [Validators.required]],
       nhan_vien_thu: [null, [Validators.required]],
-      trang_thai: ['dang_su_dung']
+      trang_thai: ['dang_su_dung'],
+      so_hien_tai: ['']
     });
 
     // Thêm subscription để theo dõi thay đổi của tu_so
@@ -116,6 +117,20 @@ export class QuyenBienLaiComponent implements OnInit {
           }, { emitEvent: false }); // Không trigger valueChanges của den_so
         }
       }
+    });
+
+    // Thêm validator cho số hiện tại
+    this.form.get('so_hien_tai')?.valueChanges.subscribe(() => {
+      this.validateSoHienTai();
+    });
+
+    // Khi từ số hoặc đến số thay đổi, cũng cần validate lại số hiện tại
+    this.form.get('tu_so')?.valueChanges.subscribe(() => {
+      this.validateSoHienTai();
+    });
+
+    this.form.get('den_so')?.valueChanges.subscribe(() => {
+      this.validateSoHienTai();
     });
   }
 
@@ -189,7 +204,7 @@ export class QuyenBienLaiComponent implements OnInit {
         den_so: formValue.den_so,
         nhan_vien_thu: Number(formValue.nhan_vien_thu),
         trang_thai: formValue.trang_thai,
-        so_hien_tai: this.editingQuyenBienLai?.so_hien_tai || formValue.tu_so,
+        so_hien_tai: this.editingQuyenBienLai ? formValue.so_hien_tai : formValue.tu_so,
         nguoi_cap: this.editingQuyenBienLai?.nguoi_cap || currentUser?.user_name || currentUser?.userName || currentUser?.username
       };
 
@@ -248,7 +263,8 @@ export class QuyenBienLaiComponent implements OnInit {
       tu_so: item.tu_so,
       den_so: item.den_so,
       nhan_vien_thu: item.nhan_vien_thu,
-      trang_thai: item.trang_thai
+      trang_thai: item.trang_thai,
+      so_hien_tai: item.so_hien_tai
     });
     this.isVisible = true;
   }
@@ -408,5 +424,30 @@ export class QuyenBienLaiComponent implements OnInit {
            user.userName || 
            user.username || 
            'Không có tên';
+  }
+
+  // Thêm phương thức validate số hiện tại
+  validateSoHienTai(): void {
+    const soHienTaiControl = this.form.get('so_hien_tai');
+    const tuSoControl = this.form.get('tu_so');
+    const denSoControl = this.form.get('den_so');
+
+    if (soHienTaiControl && tuSoControl && denSoControl && 
+        soHienTaiControl.value && tuSoControl.value && denSoControl.value) {
+      const soHienTai = parseInt(soHienTaiControl.value);
+      const tuSo = parseInt(tuSoControl.value);
+      const denSo = parseInt(denSoControl.value);
+
+      if (soHienTai < tuSo || soHienTai > denSo) {
+        soHienTaiControl.setErrors({ soHienTaiKhongHopLe: true });
+      } else {
+        // Xóa lỗi soHienTaiKhongHopLe nếu có
+        const errors = soHienTaiControl.errors;
+        if (errors) {
+          delete errors['soHienTaiKhongHopLe'];
+          soHienTaiControl.setErrors(Object.keys(errors).length ? errors : null);
+        }
+      }
+    }
   }
 } 

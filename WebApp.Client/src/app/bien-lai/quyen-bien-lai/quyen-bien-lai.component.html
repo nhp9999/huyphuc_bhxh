@@ -138,6 +138,28 @@
         </ng-template>
       </nz-form-item>
 
+      <nz-form-item *ngIf="editingQuyenBienLai">
+        <nz-form-label [nzSpan]="6" nzRequired>Số hiện tại</nz-form-label>
+        <nz-form-control [nzSpan]="14" [nzErrorTip]="soHienTaiErrorTpl">
+          <input nz-input 
+            formControlName="so_hien_tai" 
+            placeholder="Nhập số hiện tại (tối đa 7 số)" 
+            maxlength="7"
+            (input)="onNumberInput($event, 7)" />
+        </nz-form-control>
+        <ng-template #soHienTaiErrorTpl let-control>
+          <ng-container *ngIf="control.hasError('required')">
+            Vui lòng nhập số hiện tại!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('pattern')">
+            Số hiện tại chỉ được nhập số và tối đa 7 chữ số!
+          </ng-container>
+          <ng-container *ngIf="control.hasError('soHienTaiKhongHopLe')">
+            Số hiện tại phải nằm trong khoảng từ số đến số!
+          </ng-container>
+        </ng-template>
+      </nz-form-item>
+
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Người thu</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn người thu">

@@ -224,18 +224,56 @@ export class KeKhaiBHYTService {
     return `${day}/${month}/${year}`;
   }
 
-  private formatDateISO(date: Date): string {
-    return date.toISOString().split('T')[0];
+  private formatDateISO(date: Date | string | null): string {
+    if (!date) return '';
+    
+    let dateObj: Date;
+    
+    // Kiểm tra nếu date là chuỗi
+    if (typeof date === 'string') {
+      // Xử lý chuỗi ngày tháng theo định dạng dd/MM/yyyy
+      if (date.includes('/')) {
+        const parts = date.split('/');
+        if (parts.length === 3) {
+          dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        } else {
+          dateObj = new Date(date);
+        }
+      } else {
+        // Thử parse trực tiếp
+        dateObj = new Date(date);
+      }
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else {
+      console.error('Kiểu dữ liệu không hợp lệ cho ngày tháng:', date);
+      return '';
+    }
+    
+    // Kiểm tra tính hợp lệ của đối tượng Date
+    if (isNaN(dateObj.getTime())) {
+      console.error('Ngày tháng không hợp lệ:', date);
+      return '';
+    }
+    
+    return dateObj.toISOString().split('T')[0];
   }
 
   create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
+    // Tạo bản sao của dữ liệu để tránh thay đổi dữ liệu gốc
     const formattedData = {
       ...data,
       thongTinThe: {
         ...data.thongTinThe,
         ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
-      }
+      },
+      han_the_cu: data.han_the_cu ? this.formatDateISO(data.han_the_cu) : null,
+      han_the_moi_tu: this.formatDateISO(data.han_the_moi_tu),
+      han_the_moi_den: this.formatDateISO(data.han_the_moi_den),
+      ngay_tao: this.formatDateISO(data.ngay_tao),
+      ngay_bien_lai: data.ngay_bien_lai ? this.formatDateISO(data.ngay_bien_lai) : null
     };
+    
     return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
   }
 
@@ -245,7 +283,12 @@ export class KeKhaiBHYTService {
       thongTinThe: {
         ...data.thongTinThe,
         ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
-      }
+      },
+      han_the_cu: data.han_the_cu ? this.formatDateISO(data.han_the_cu) : null,
+      han_the_moi_tu: this.formatDateISO(data.han_the_moi_tu),
+      han_the_moi_den: this.formatDateISO(data.han_the_moi_den),
+      ngay_tao: this.formatDateISO(data.ngay_tao),
+      ngay_bien_lai: data.ngay_bien_lai ? this.formatDateISO(data.ngay_bien_lai) : null
     };
     return this.http.put<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`, formattedData);
   }

@@ -772,20 +772,9 @@ export class DotKeKhaiComponent implements OnInit {
           next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
             console.log('Dữ liệu từ API:', keKhaiBHYTs);
 
-            // Hàm trích xuất số từ chuỗi biên lai
-            const extractNumber = (str: string | undefined): number => {
-              if (!str) return 0;
-              const matches = str.match(/\d+/g);
-              return matches ? parseInt(matches[matches.length - 1]) : 0;
-            };
-
-            // Sắp xếp dữ liệu theo số biên lai (từ bé đến lớn)
-            const sortedKeKhaiBHYTs = [...keKhaiBHYTs].sort((a, b) => {
-              // Lấy số từ biên lai
-              const soA = extractNumber(a.so_bien_lai);
-              const soB = extractNumber(b.so_bien_lai);
-              return soA - soB; // Sắp xếp tăng dần
-            });
+            // Không cần sắp xếp theo số biên lai nữa, giữ nguyên thứ tự từ API
+            // Điều này sẽ giữ nguyên số thứ tự của đợt kê khai
+            const sortedKeKhaiBHYTs = [...keKhaiBHYTs];
 
             // Chuẩn bị dữ liệu cho sheet danh sách kê khai
             const keKhaiHeaders = [
@@ -862,7 +851,7 @@ export class DotKeKhaiComponent implements OnInit {
             ];
             
             const keKhaiData = sortedKeKhaiBHYTs.map((item, index) => [
-              index + 1, // STT
+              index + 1, // STT - Giữ nguyên số thứ tự theo thứ tự từ API
               item.ho_ten,
               item.ma_so_bhxh || '', 
               maNhanVien, // Sử dụng mã nhân viên từ API
