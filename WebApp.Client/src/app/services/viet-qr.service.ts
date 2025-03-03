@@ -11,6 +11,8 @@ export interface VietQRRequest {
   addInfo: string;
   format?: string;
   template?: string;
+  bankName?: string;
+  displayAmount?: boolean;
 }
 
 export interface VietQRResponse {

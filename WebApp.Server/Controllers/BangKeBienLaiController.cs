@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using WebApp.API.Data;
 using WebApp.API.Models;
+using System.Security.Claims;
 
 namespace WebApp.API.Controllers
 {
@@ -32,10 +33,29 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại từ token
+                var username = User.FindFirst(ClaimTypes.Name)?.Value;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Lấy thông tin người dùng từ database
+                var currentUser = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(u => u.user_name == username);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.BienLais
                     .Include(b => b.KeKhaiBHYT)
                         .ThenInclude(k => k.ThongTinThe)
                     .AsQueryable();
+
+                // Chỉ lấy biên lai của người dùng hiện tại
+                query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
 
                 if (tuNgay.HasValue)
                 {
@@ -69,9 +89,10 @@ namespace WebApp.API.Controllers
                         ma_nhan_vien = b.ma_nhan_vien,
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
-                        tinh_chat = b.tinh_chat
+                        tinh_chat = b.tinh_chat,
+                        ngay_tao = b.ngay_tao
                     })
-                    .OrderByDescending(b => b.ngay_bien_lai)
+                    .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
 
                 return Ok(result);
@@ -92,10 +113,29 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại từ token
+                var username = User.FindFirst(ClaimTypes.Name)?.Value;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Lấy thông tin người dùng từ database
+                var currentUser = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(u => u.user_name == username);
+
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.BienLais
                     .Include(b => b.KeKhaiBHYT)
                         .ThenInclude(k => k.ThongTinThe)
                     .AsQueryable();
+
+                // Chỉ lấy biên lai của người dùng hiện tại
+                query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
 
                 if (tuNgay.HasValue)
                 {
@@ -129,9 +169,10 @@ namespace WebApp.API.Controllers
                         ma_nhan_vien = b.ma_nhan_vien,
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
-                        tinh_chat = b.tinh_chat
+                        tinh_chat = b.tinh_chat,
+                        ngay_tao = b.ngay_tao
                     })
-                    .OrderByDescending(b => b.ngay_bien_lai)
+                    .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
 
                 // TODO: Implement export Excel logic here

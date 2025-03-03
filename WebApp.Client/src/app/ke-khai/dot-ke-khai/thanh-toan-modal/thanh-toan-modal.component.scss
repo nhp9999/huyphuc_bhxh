@@ -55,6 +55,21 @@
             display: block;
           }
 
+          .qr-note {
+            margin-bottom: 12px;
+            
+            .qr-info-badge {
+              display: inline-block;
+              padding: 4px 10px;
+              background-color: #e6f7ff;
+              border: 1px solid #91d5ff;
+              border-radius: 4px;
+              color: #1890ff;
+              font-size: 12px;
+              font-weight: 500;
+            }
+          }
+
           .qr-actions {
             margin-top: 16px;
             

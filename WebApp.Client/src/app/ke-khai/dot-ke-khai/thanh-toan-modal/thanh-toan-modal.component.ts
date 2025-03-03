@@ -155,7 +155,9 @@ export class ThanhToanModalComponent implements OnInit {
       amount: this.dotKeKhai.tong_so_tien,
       addInfo: this.getTransferContent(),
       format: 'base64',
-      template: 'compact'
+      template: 'compact2',
+      bankName: 'AGRIBANK',
+      displayAmount: true
     };
 
     this.vietQRService.generateQR(request).subscribe({

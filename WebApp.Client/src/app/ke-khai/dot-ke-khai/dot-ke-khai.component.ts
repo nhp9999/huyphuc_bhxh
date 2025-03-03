@@ -195,6 +195,25 @@ export class DotKeKhaiComponent implements OnInit {
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('thang')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('nam')?.valueChanges.subscribe(() => this.updateTenDot());
+    
+    // Thêm sự kiện lắng nghe khi thay đổi đại lý
+    this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
+      if (daiLyId) {
+        // Reset giá trị đơn vị khi thay đổi đại lý
+        this.form.patchValue({ don_vi_id: null }, { emitEvent: false });
+        // Load danh sách đơn vị theo đại lý mới
+        this.loadDonVisByDaiLy(daiLyId);
+      } else {
+        // Xóa danh sách đơn vị nếu không có đại lý
+        this.donVis = [];
+      }
+    });
+
+    // Subscribe to dotKeKhais stream
+    this.dotKeKhaiService.dotKeKhais$.subscribe(data => {
+      this.dotKeKhais = this.sortDotKeKhais(data);
+      this.filterData();
+    });
   }
 
   updateTenDot(): void {
@@ -235,18 +254,8 @@ export class DotKeKhaiComponent implements OnInit {
       this.updateSoDot();
     });
 
-    // Subscribe to dotKeKhais stream
-    this.dotKeKhaiService.dotKeKhais$.subscribe(data => {
-      this.dotKeKhais = this.sortDotKeKhais(data);
-      this.filterData();
-    });
-
-    // Subscribe để theo dõi thay đổi của dai_ly_id
-    this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
-      // Reset don_vi_id khi thay đổi đại lý
-      this.form.patchValue({ don_vi_id: null }, { emitEvent: false });
-      this.loadDonVisByDaiLy(daiLyId);
-    });
+    // Không đăng ký sự kiện valueChanges của dai_ly_id ở đây
+    // Sự kiện này sẽ được đăng ký trong phương thức showModal
   }
 
   private updateSoDot(): void {
@@ -318,10 +327,14 @@ export class DotKeKhaiComponent implements OnInit {
         }
         
         // Nếu có đại lý và form chưa có giá trị đại lý, tự động set vào form
+        // Sử dụng emitEvent: false để tránh kích hoạt sự kiện valueChanges
         if (this.daiLys.length === 1 && !this.form.get('dai_ly_id')?.value) {
           this.form.patchValue({
             dai_ly_id: this.daiLys[0].id
-          });
+          }, { emitEvent: false });
+          
+          // Gọi trực tiếp loadDonVisByDaiLy thay vì thông qua sự kiện valueChanges
+          this.loadDonVisByDaiLy(this.daiLys[0].id);
         }
         this.loading = false;
       },
@@ -369,50 +382,123 @@ export class DotKeKhaiComponent implements OnInit {
   showModal(data?: DotKeKhai): void {
     this.isEdit = !!data;
     
-    // Load danh sách đại lý trước
-    this.loadDaiLys();
+    // Tạm thời hủy đăng ký sự kiện valueChanges của dai_ly_id để tránh gọi API nhiều lần
+    const subscription = this.form.get('dai_ly_id')?.valueChanges.subscribe();
+    if (subscription) {
+      subscription.unsubscribe();
+    }
     
-    if (data) {
-      // Disable các control khi cập nhật
-      this.disableFormControls();
-      
-      this.form.patchValue({
-        id: data.id,
-        ten_dot: data.ten_dot,
-        so_dot: data.so_dot,
-        thang: data.thang,
-        nam: data.nam,
-        ghi_chu: data.ghi_chu,
-        trang_thai: data.trang_thai,
-        nguoi_tao: data.nguoi_tao,
-        don_vi_id: data.don_vi_id,
-        ma_ho_so: data.ma_ho_so,
-        dai_ly_id: data.dai_ly_id
-      }, { emitEvent: false });
-    } else {
-      // Enable lại các control khi thêm mới
-      this.enableFormControls();
-      
-      this.form.reset({
-        ten_dot: '',
-        so_dot: 1,
-        thang: new Date().getMonth() + 1,
-        nam: new Date().getFullYear(),
-        ghi_chu: '',
-        trang_thai: 'chua_gui',
-        nguoi_tao: this.currentUser.username || '',
-        don_vi_id: null,
-        ma_ho_so: '',
-        dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
-      }, { emitEvent: false });
-    }
-    this.isVisible = true;
-
-    // Nếu có đại lý được chọn, load danh sách đơn vị
-    const daiLyId = this.form.get('dai_ly_id')?.value;
-    if (daiLyId) {
-      this.loadDonVisByDaiLy(daiLyId);
-    }
+    // Load danh sách đại lý trước
+    this.loading = true;
+    this.userService.getDaiLys().subscribe({
+      next: (daiLyData) => {
+        // Nếu user có donViCongTac, lọc theo đại lý của user
+        if (this.currentUser.donViCongTac) {
+          this.daiLys = daiLyData.filter(daiLy => daiLy.ma === this.currentUser.donViCongTac);
+        } else {
+          // Nếu không có donViCongTac, lấy tất cả đại lý
+          this.daiLys = daiLyData;
+        }
+        
+        if (data) {
+          // Kiểm tra xem đại lý của đợt kê khai có tồn tại trong danh sách đại lý không
+          const daiLyExists = this.daiLys.some(daiLy => daiLy.id === data.dai_ly_id);
+          
+          // Nếu không tồn tại và chỉ có một đại lý, sử dụng đại lý đó
+          if (!daiLyExists && this.daiLys.length === 1) {
+            data.dai_ly_id = this.daiLys[0].id;
+          }
+          
+          // Disable các control khi cập nhật
+          this.disableFormControls();
+          
+          // Đầu tiên, load danh sách đơn vị dựa trên đại lý của đợt kê khai
+          this.donViService.getDonVisByDaiLy(data.dai_ly_id).subscribe({
+            next: (donViData) => {
+              this.donVis = donViData;
+              
+              // Sau khi có danh sách đơn vị, mới patch giá trị vào form
+              this.form.patchValue({
+                id: data.id,
+                ten_dot: data.ten_dot,
+                so_dot: data.so_dot,
+                thang: data.thang,
+                nam: data.nam,
+                ghi_chu: data.ghi_chu,
+                trang_thai: data.trang_thai,
+                nguoi_tao: data.nguoi_tao,
+                don_vi_id: data.don_vi_id,
+                ma_ho_so: data.ma_ho_so,
+                dai_ly_id: data.dai_ly_id
+              }, { emitEvent: false });
+              
+              this.loading = false;
+              this.isVisible = true;
+              
+              // Đăng ký lại sự kiện valueChanges của dai_ly_id sau khi đã cập nhật form
+              this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
+                if (daiLyId) {
+                  // Reset giá trị đơn vị khi thay đổi đại lý
+                  this.form.patchValue({ don_vi_id: null }, { emitEvent: false });
+                  // Load danh sách đơn vị theo đại lý mới
+                  this.loadDonVisByDaiLy(daiLyId);
+                } else {
+                  // Xóa danh sách đơn vị nếu không có đại lý
+                  this.donVis = [];
+                }
+              });
+            },
+            error: (error) => {
+              console.error('Lỗi khi tải danh sách đơn vị:', error);
+              this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
+              this.loading = false;
+            }
+          });
+        } else {
+          // Enable lại các control khi thêm mới
+          this.enableFormControls();
+          
+          this.form.reset({
+            ten_dot: '',
+            so_dot: 1,
+            thang: new Date().getMonth() + 1,
+            nam: new Date().getFullYear(),
+            ghi_chu: '',
+            trang_thai: 'chua_gui',
+            nguoi_tao: this.currentUser.username || '',
+            don_vi_id: null,
+            ma_ho_so: '',
+            dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
+          }, { emitEvent: false });
+          
+          // Nếu có đại lý được chọn, load danh sách đơn vị
+          const daiLyId = this.form.get('dai_ly_id')?.value;
+          if (daiLyId) {
+            this.loadDonVisByDaiLy(daiLyId);
+          }
+          
+          this.loading = false;
+          this.isVisible = true;
+          
+          // Đăng ký lại sự kiện valueChanges của dai_ly_id sau khi đã cập nhật form
+          this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
+            if (daiLyId) {
+              // Reset giá trị đơn vị khi thay đổi đại lý
+              this.form.patchValue({ don_vi_id: null }, { emitEvent: false });
+              // Load danh sách đơn vị theo đại lý mới
+              this.loadDonVisByDaiLy(daiLyId);
+            } else {
+              // Xóa danh sách đơn vị nếu không có đại lý
+              this.donVis = [];
+            }
+          });
+        }
+      },
+      error: () => {
+        this.message.error('Có lỗi xảy ra khi tải danh sách đại lý');
+        this.loading = false;
+      }
+    });
   }
 
   handleCancel(): void {
@@ -442,6 +528,32 @@ export class DotKeKhaiComponent implements OnInit {
   handleOk(): void {
     if (this.form.valid) {
       const formValue = this.form.getRawValue();
+      
+      // Kiểm tra đại lý trước khi tạo/cập nhật
+      const daiLyId = formValue.dai_ly_id;
+      if (daiLyId === undefined || daiLyId === null) {
+        // Nếu đang cập nhật, lấy giá trị dai_ly_id từ đợt kê khai hiện tại
+        if (this.isEdit && formValue.id) {
+          const currentDotKeKhai = this.dotKeKhais.find(d => d.id === formValue.id);
+          if (currentDotKeKhai && currentDotKeKhai.dai_ly_id) {
+            formValue.dai_ly_id = currentDotKeKhai.dai_ly_id;
+          } else if (this.daiLys.length === 1) {
+            // Nếu chỉ có một đại lý, sử dụng đại lý đó
+            formValue.dai_ly_id = this.daiLys[0].id;
+          } else {
+            // Nếu không tìm thấy đại lý, hiển thị thông báo lỗi
+            this.message.error('Không tìm thấy thông tin đại lý. Vui lòng thử lại.');
+            return;
+          }
+        } else if (this.daiLys.length === 1) {
+          // Nếu chỉ có một đại lý, sử dụng đại lý đó
+          formValue.dai_ly_id = this.daiLys[0].id;
+        } else {
+          // Nếu không tìm thấy đại lý, hiển thị thông báo lỗi
+          this.message.error('Vui lòng chọn đại lý');
+          return;
+        }
+      }
       
       // Kiểm tra đơn vị trước khi tạo/cập nhật
       const donViId = formValue.don_vi_id;
@@ -473,6 +585,31 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   private submitForm(formValue: any): void {
+    // Đảm bảo dai_ly_id luôn có giá trị
+    if (formValue.dai_ly_id === undefined || formValue.dai_ly_id === null) {
+      // Nếu đang cập nhật, lấy giá trị dai_ly_id từ đợt kê khai hiện tại
+      if (this.isEdit && formValue.id) {
+        const currentDotKeKhai = this.dotKeKhais.find(d => d.id === formValue.id);
+        if (currentDotKeKhai && currentDotKeKhai.dai_ly_id) {
+          formValue.dai_ly_id = currentDotKeKhai.dai_ly_id;
+        } else if (this.daiLys.length === 1) {
+          // Nếu chỉ có một đại lý, sử dụng đại lý đó
+          formValue.dai_ly_id = this.daiLys[0].id;
+        } else {
+          // Nếu không tìm thấy đại lý, hiển thị thông báo lỗi
+          this.message.error('Không tìm thấy thông tin đại lý. Vui lòng thử lại.');
+          return;
+        }
+      } else if (this.daiLys.length === 1) {
+        // Nếu chỉ có một đại lý, sử dụng đại lý đó
+        formValue.dai_ly_id = this.daiLys[0].id;
+      } else {
+        // Nếu không tìm thấy đại lý, hiển thị thông báo lỗi
+        this.message.error('Vui lòng chọn đại lý');
+        return;
+      }
+    }
+
     if (this.isEdit) {
       const updateData: UpdateDotKeKhai = {
         id: formValue.id,
@@ -1114,15 +1251,6 @@ export class DotKeKhaiComponent implements OnInit {
     });
   }
 
-  // Sửa lại hàm loadDonVis
-  loadDonVis(): void {
-    // Nếu có đại lý được chọn, load đơn vị theo đại lý đó
-    const daiLyId = this.form.get('dai_ly_id')?.value;
-    if (daiLyId) {
-      this.loadDonVisByDaiLy(daiLyId);
-    }
-  }
-
   // Thêm hàm để disable form controls
   private disableFormControls(): void {
     this.form.get('so_dot')?.disable();
@@ -1139,5 +1267,14 @@ export class DotKeKhaiComponent implements OnInit {
     this.form.get('nam')?.enable();
     this.form.get('dai_ly_id')?.enable();
     this.form.get('ten_dot')?.disable(); // ten_dot luôn bị disable
+  }
+
+  // Sửa lại hàm loadDonVis
+  loadDonVis(): void {
+    // Nếu có đại lý được chọn, load đơn vị theo đại lý đó
+    const daiLyId = this.form.get('dai_ly_id')?.value;
+    if (daiLyId) {
+      this.loadDonVisByDaiLy(daiLyId);
+    }
   }
 } 
