@@ -49,6 +49,7 @@ namespace WebApp.API.Controllers
                         d.nguoi_tao,
                         d.don_vi_id,
                         d.ngay_tao,
+                        d.ma_ho_so,
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
@@ -93,6 +94,7 @@ namespace WebApp.API.Controllers
                         d.nguoi_tao,
                         d.don_vi_id,
                         d.ngay_tao,
+                        d.ma_ho_so,
                         DonVi = d.DonVi,
                         tong_so_tien = _context.KeKhaiBHYTs
                             .Where(k => k.dot_ke_khai_id == d.id)
@@ -509,6 +511,7 @@ namespace WebApp.API.Controllers
                 var keKhaiBHYTs = await _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Where(k => k.dot_ke_khai_id == id && k.so_bien_lai == null)
+                    .OrderBy(k => k.id)
                     .ToListAsync();
 
                 foreach (var keKhai in keKhaiBHYTs)

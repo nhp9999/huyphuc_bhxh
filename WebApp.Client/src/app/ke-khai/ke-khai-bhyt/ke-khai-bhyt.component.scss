@@ -151,7 +151,12 @@ nz-table {
 
   .left-actions {
     display: flex;
+    align-items: center;
     gap: 8px;
+
+    nz-select {
+      min-width: 180px;
+    }
   }
 
   .right-actions {
@@ -684,4 +689,70 @@ nz-tag {
 
 .bien-lai-alert {
   margin-bottom: 16px;
+}
+
+// Style cho modal quét CCCD
+.paste-instruction {
+  text-align: center;
+  padding: 12px;
+  background-color: #f6f6f6;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border: 1px dashed #d9d9d9;
+  
+  i {
+    margin-right: 8px;
+    color: #1890ff;
+  }
+  
+  span {
+    color: rgba(0, 0, 0, 0.65);
+  }
+}
+
+// Style cho avatar uploader trong modal quét CCCD
+.avatar-uploader {
+  width: 100%;
+  min-height: 200px;
+  margin-bottom: 16px;
+}
+
+.upload-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  
+  button {
+    display: flex;
+    align-items: center;
+    
+    i {
+      margin-right: 8px;
+    }
+  }
+}
+
+.image-preview-container {
+  position: relative;
+  
+  .avatar {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  
+  .image-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    
+    span {
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.65);
+    }
+  }
 } 

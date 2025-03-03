@@ -184,11 +184,11 @@ export class DotKeKhaiComponent implements OnInit {
       so_dot: [1, [Validators.required, Validators.min(1)]],
       thang: [currentDate.getMonth() + 1, [Validators.required, Validators.min(1), Validators.max(12)]],
       nam: [currentDate.getFullYear(), [Validators.required, Validators.min(2000)]],
-      ghi_chu: [''],
+      ghi_chu: [null],
       trang_thai: ['chua_gui'],
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
       don_vi_id: [null, [Validators.required]],
-      ma_ho_so: [''],
+      ma_ho_so: [null],
       dai_ly_id: [null, [Validators.required]]
     });
 
@@ -909,9 +909,19 @@ export class DotKeKhaiComponent implements OnInit {
           next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
             console.log('Dữ liệu từ API:', keKhaiBHYTs);
 
-            // Không cần sắp xếp theo số biên lai nữa, giữ nguyên thứ tự từ API
-            // Điều này sẽ giữ nguyên số thứ tự của đợt kê khai
-            const sortedKeKhaiBHYTs = [...keKhaiBHYTs];
+            // Sắp xếp dữ liệu theo số biên lai
+            const sortedKeKhaiBHYTs = [...keKhaiBHYTs].sort((a, b) => {
+              // Nếu có quyển biên lai, sắp xếp theo quyển số trước
+              if (a.QuyenBienLai && b.QuyenBienLai) {
+                const quyenSoCompare = a.QuyenBienLai.quyen_so.localeCompare(b.QuyenBienLai.quyen_so);
+                if (quyenSoCompare !== 0) return quyenSoCompare;
+              }
+              
+              // Sau đó sắp xếp theo số biên lai
+              const soBienLaiA = parseInt(a.so_bien_lai || '0');
+              const soBienLaiB = parseInt(b.so_bien_lai || '0');
+              return soBienLaiA - soBienLaiB;
+            });
 
             // Chuẩn bị dữ liệu cho sheet danh sách kê khai
             const keKhaiHeaders = [

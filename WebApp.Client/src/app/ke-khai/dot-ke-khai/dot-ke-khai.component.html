@@ -101,6 +101,7 @@
           <th [nzWidth]="'120px'" nzAlign="right">Tổng số tiền</th>
           <th [nzWidth]="'100px'" nzAlign="center">Trạng thái</th>
           <th [nzWidth]="'120px'">Ghi chú</th>
+          <th [nzWidth]="'120px'">Mã hồ sơ</th>
           <th [nzWidth]="'120px'" nzAlign="center">Hóa đơn</th>
           <th [nzWidth]="'160px'" nzAlign="center">Thao tác</th>
         </tr>
@@ -119,6 +120,7 @@
             </nz-tag>
           </td>
           <td>{{ data.ghi_chu }}</td>
+          <td>{{ data.ma_ho_so }}</td>
           <td nzAlign="center">
             <ng-container *ngIf="data.url_bill">
               <button nz-button nzType="link" (click)="$event.stopPropagation(); showViewBillModal(data.url_bill)">
@@ -214,6 +216,13 @@
           <nz-form-label [nzSpan]="5">Ghi chú</nz-form-label>
           <nz-form-control [nzSpan]="19">
             <textarea nz-input formControlName="ghi_chu" rows="3" placeholder="Nhập ghi chú"></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="5">Mã hồ sơ</nz-form-label>
+          <nz-form-control [nzSpan]="19">
+            <input nz-input formControlName="ma_ho_so" placeholder="Nhập mã hồ sơ" />
           </nz-form-control>
         </nz-form-item>
       </form>
@@ -326,11 +335,24 @@
     text-align: center;
   }
 
-  .ant-table-tbody > tr > td:nth-child(9) {
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .ant-table-tbody > tr > td:nth-child(8) {
+    padding: 12px 8px;
+  }
+
+  .ant-table-tbody > tr > td:nth-child(10) {
+    padding: 8px 4px;
+    min-width: 120px;
+
+    img {
+      max-width: 40px;
+      max-height: 40px;
+      object-fit: contain;
+    }
+
+    .ant-btn {
+      padding: 0 8px;
+      height: 32px;
+    }
   }
 
   .ant-btn-group {
@@ -357,41 +379,10 @@
     font-size: 16px;
   }
 
-  /* Style cho cột hóa đơn */
-  .ant-table-tbody > tr > td:nth-child(10) {
-    padding: 8px 4px;
-    min-width: 120px;
-
-    img {
-      max-width: 40px;
-      max-height: 40px;
-      object-fit: contain;
-    }
-
-    .ant-btn {
-      padding: 0 8px;
-      height: 32px;
-    }
-  }
-
   /* Style cho cột thao tác */
   .ant-table-tbody > tr > td:nth-child(11) {
     padding: 8px 4px;
     min-width: 160px;
-  }
-
-  /* Style cho button group trong cột thao tác */
-  .ant-btn-group {
-    display: inline-flex;
-    gap: 4px;
-    flex-wrap: nowrap;
-    
-    .ant-btn {
-      min-width: 32px;
-      padding: 0 8px;
-      height: 32px;
-      line-height: 30px;
-    }
   }
 
   /* Đảm bảo table scroll ngang khi cần thiết */

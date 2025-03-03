@@ -387,6 +387,35 @@
         nz-tooltip="Sao chép mã số BHXH đã chọn">
         <i nz-icon nzType="copy"></i>Sao chép {{ selectedIds.length }} mã số BHXH
       </button>
+      
+      <!-- Bộ lọc người thứ -->
+      <nz-select 
+        [nzPlaceHolder]="'Lọc theo người thứ'"
+        [(ngModel)]="filterNguoiThu"
+        (ngModelChange)="onFilterNguoiThuChange($event)"
+        [nzAllowClear]="true"
+        style="width: 180px; margin-left: 16px;">
+        <nz-option *ngFor="let option of nguoiThuOptions" [nzValue]="option" [nzLabel]="getNguoiThuText(option)"></nz-option>
+      </nz-select>
+      
+      <!-- Bộ lọc số tháng đóng -->
+      <nz-select 
+        [nzPlaceHolder]="'Lọc theo số tháng đóng'"
+        [(ngModel)]="filterSoThangDong"
+        (ngModelChange)="onFilterSoThangDongChange($event)"
+        [nzAllowClear]="true"
+        style="width: 180px; margin-left: 8px;">
+        <nz-option *ngFor="let option of soThangDongOptions" [nzValue]="option" [nzLabel]="option + ' tháng'"></nz-option>
+      </nz-select>
+      
+      <button 
+        *ngIf="hasActiveFilters()"
+        nz-button 
+        nzType="default" 
+        (click)="clearFilters()"
+        style="margin-left: 8px;">
+        <i nz-icon nzType="clear"></i>Xóa bộ lọc
+      </button>
     </div>
     <div class="right-actions">
       <span>Tổng số thẻ: <strong>{{ thongKe.tongSoThe }}</strong></span>
@@ -403,7 +432,7 @@
 
   <nz-table
     #basicTable
-    [nzData]="keKhaiBHYTs"
+    [nzData]="filterSoThangDong !== null || filterNguoiThu !== null ? filteredKeKhaiBHYTs : keKhaiBHYTs"
     [nzLoading]="loading"
     [nzShowSizeChanger]="true"
     [nzShowPagination]="true">
@@ -641,7 +670,11 @@
   (nzOnCancel)="handleQuetCCCDCancel()"
   [nzFooter]="modalFooter"
 >
-  <div *nzModalContent>
+  <div *nzModalContent (paste)="handlePaste($event)" tabindex="0">
+    <div class="paste-instruction" *ngIf="!avatarUrls.length">
+      <i nz-icon nzType="scissor"></i>
+      <span>Bạn có thể dán ảnh trực tiếp từ clipboard (Ctrl+V) hoặc nhấn nút bên dưới</span>
+    </div>
     <div nz-row [nzGutter]="16">
       <div nz-col [nzSpan]="8">
         <nz-upload
@@ -669,6 +702,11 @@
             </div>
           </div>
         </nz-upload>
+        <div class="upload-actions" *ngIf="!avatarUrls.length">
+          <button nz-button nzType="primary" (click)="requestPasteFromClipboard()">
+            <i nz-icon nzType="copy"></i>Dán ảnh từ clipboard
+          </button>
+        </div>
         <div class="upload-actions" *ngIf="avatarUrls.length">
           <button nz-button (click)="clearImages()">
             <i nz-icon nzType="delete"></i>Xóa tất cả

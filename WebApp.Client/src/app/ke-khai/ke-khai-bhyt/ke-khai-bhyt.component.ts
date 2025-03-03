@@ -188,6 +188,7 @@ interface CCCDResult {
 })
 export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   keKhaiBHYTs: KeKhaiBHYT[] = [];
+  filteredKeKhaiBHYTs: KeKhaiBHYT[] = []; // Thêm biến để lưu kết quả lọc
   thongTinThe: ThongTinThe | null = null;
   dotKeKhai: DotKeKhai | null = null;
   loading = false;
@@ -215,6 +216,15 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   multipleSearchSoThangDong: number = 3;
   // Thêm biến để lưu bệnh viện được chọn
   multipleSearchBenhVien: string = '';
+
+  // Thêm biến lọc số tháng đóng
+  filterSoThangDong: number | null = null;
+  // Thêm biến lọc người thứ
+  filterNguoiThu: number | null = null;
+  // Danh sách các lựa chọn số tháng đóng phổ biến
+  soThangDongOptions: number[] = [1, 3, 6, 12];
+  // Danh sách các lựa chọn người thứ
+  nguoiThuOptions: number[] = [1, 2, 3, 4, 5];
 
   // Thêm các biến thống kê
   thongKe = {
@@ -610,6 +620,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             is_urgent: urgentItems[item.id!] || false
           }))
           .sort((a, b) => (b.id || 0) - (a.id || 0)); // Sắp xếp theo id giảm dần
+        
+        // Áp dụng bộ lọc nếu có
+        this.applyFilters();
           
         this.tinhThongKe();
         this.loading = false;
@@ -2092,13 +2105,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Thêm phương thức tính thống kê
   tinhThongKe(): void {
-    this.thongKe = {
-      daoHan: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dao_han').length,
-      tangMoi: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'tang_moi').length,
-      dungDong: this.keKhaiBHYTs.filter(item => item.phuong_an_dong === 'dung_dong').length,
-      tongSoTien: this.keKhaiBHYTs.reduce((sum, item) => sum + (item.so_tien_can_dong || 0), 0),
-      tongSoThe: this.keKhaiBHYTs.length
-    };
+    // Sử dụng dữ liệu đã lọc thay vì toàn bộ dữ liệu
+    const data = this.filterSoThangDong !== null ? this.filteredKeKhaiBHYTs : this.keKhaiBHYTs;
+    
+    this.thongKe.tongSoThe = data.length;
+    this.thongKe.daoHan = data.filter(item => item.phuong_an_dong === 'dao_han').length;
+    this.thongKe.tangMoi = data.filter(item => item.phuong_an_dong === 'tang_moi').length;
+    this.thongKe.dungDong = data.filter(item => item.phuong_an_dong === 'dung_dong').length;
+    this.thongKe.tongSoTien = data.reduce((sum, item) => sum + (item.so_tien_can_dong || 0), 0);
   }
 
   // Thêm các phương thức helper
@@ -2121,6 +2135,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   showQuetCCCDModal(): void {
     this.isQuetCCCDVisible = true;
     this.clearImages();
+    
+    // Tự động focus vào modal sau khi nó được mở
+    setTimeout(() => {
+      const modalContent = document.querySelector('.ant-modal-content');
+      if (modalContent) {
+        const focusableElement = modalContent.querySelector('[tabindex="0"]') as HTMLElement;
+        if (focusableElement) {
+          focusableElement.focus();
+        }
+      }
+    }, 100);
   }
 
   handleQuetCCCDCancel(): void {
@@ -2154,6 +2179,85 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       }
     } else if (info.file.status === 'error') {
       this.message.error(`${info.file.name} tải lên thất bại.`);
+    }
+  }
+
+  handlePaste(event: ClipboardEvent): void {
+    if (!event.clipboardData) {
+      return;
+    }
+    
+    const items = event.clipboardData.items;
+    let imageFound = false;
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        imageFound = true;
+        const blob = items[i].getAsFile();
+        
+        if (blob) {
+          // Kiểm tra kích thước file
+          const isLt2M = blob.size / 1024 / 1024 < 2;
+          if (!isLt2M) {
+            this.message.error('Ảnh phải nhỏ hơn 2MB!');
+            return;
+          }
+          
+          // Tạo tên file ngẫu nhiên
+          const fileName = `pasted-image-${new Date().getTime()}.png`;
+          const file = new File([blob], fileName, { type: 'image/png' });
+          
+          this.message.success('Đã dán ảnh từ clipboard');
+          this.addToPendingFiles(file);
+        }
+        break;
+      }
+    }
+    
+    if (!imageFound) {
+      this.message.info('Không tìm thấy ảnh trong clipboard');
+    }
+  }
+
+  requestPasteFromClipboard(): void {
+    // Hiển thị thông báo hướng dẫn
+    this.message.info('Nhấn Ctrl+V để dán ảnh từ clipboard');
+    
+    // Focus vào modal để nhận sự kiện paste
+    const modalContent = document.querySelector('.ant-modal-content');
+    if (modalContent) {
+      const focusableElement = modalContent.querySelector('[tabindex="0"]') as HTMLElement;
+      if (focusableElement) {
+        focusableElement.focus();
+      }
+    }
+    
+    // Thử đọc clipboard thông qua Clipboard API (chỉ hoạt động trên HTTPS)
+    if (navigator.clipboard && navigator.clipboard.read) {
+      navigator.clipboard.read()
+        .then(clipboardItems => {
+          for (const clipboardItem of clipboardItems) {
+            for (const type of clipboardItem.types) {
+              if (type.startsWith('image/')) {
+                clipboardItem.getType(type)
+                  .then(blob => {
+                    const fileName = `pasted-image-${new Date().getTime()}.png`;
+                    const file = new File([blob], fileName, { type });
+                    this.addToPendingFiles(file);
+                    this.message.success('Đã dán ảnh từ clipboard');
+                  })
+                  .catch(err => {
+                    console.error('Lỗi khi đọc ảnh từ clipboard:', err);
+                  });
+                return;
+              }
+            }
+          }
+        })
+        .catch(err => {
+          console.log('Không thể truy cập clipboard qua API:', err);
+          // Không hiển thị lỗi cho người dùng vì đây là tính năng bổ sung
+        });
     }
   }
 
@@ -3454,5 +3558,52 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       },
       nzCancelText: 'Hủy'
     });
+  }
+
+  // Thêm phương thức để áp dụng bộ lọc
+  applyFilters(): void {
+    // Bắt đầu với tất cả dữ liệu
+    this.filteredKeKhaiBHYTs = [...this.keKhaiBHYTs];
+    
+    // Áp dụng lọc theo số tháng đóng nếu có
+    if (this.filterSoThangDong !== null) {
+      this.filteredKeKhaiBHYTs = this.filteredKeKhaiBHYTs.filter(
+        item => item.so_thang_dong === this.filterSoThangDong
+      );
+    }
+
+    // Áp dụng lọc theo người thứ nếu có
+    if (this.filterNguoiThu !== null) {
+      this.filteredKeKhaiBHYTs = this.filteredKeKhaiBHYTs.filter(
+        item => item.nguoi_thu === this.filterNguoiThu
+      );
+    }
+  }
+
+  // Phương thức để thay đổi bộ lọc số tháng đóng
+  onFilterSoThangDongChange(value: number | null): void {
+    this.filterSoThangDong = value;
+    this.applyFilters();
+    this.tinhThongKe();
+  }
+
+  // Phương thức để thay đổi bộ lọc người thứ
+  onFilterNguoiThuChange(value: number | null): void {
+    this.filterNguoiThu = value;
+    this.applyFilters();
+    this.tinhThongKe();
+  }
+
+  // Phương thức để xóa bộ lọc
+  clearFilters(): void {
+    this.filterSoThangDong = null;
+    this.filterNguoiThu = null;
+    this.applyFilters();
+    this.tinhThongKe();
+  }
+
+  // Phương thức để kiểm tra xem có bộ lọc nào đang được áp dụng không
+  hasActiveFilters(): boolean {
+    return this.filterSoThangDong !== null || this.filterNguoiThu !== null;
   }
 } 
