@@ -52,11 +52,24 @@ export class BHXHService {
   }
 
   traCuuMaSoBHXHVNPost(request: TraCuuVNPostRequest): Observable<TraCuuVNPostResponse> {
+    const token = localStorage.getItem('vnpost_token');
+    if (!token) {
+      throw new Error('Chưa có token VNPost');
+    }
+
     const headers = new HttpHeaders({
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.getItem('vnpost_token') || ''
+      'Authorization': `Bearer ${token}`,
+      'Origin': 'https://ssmv2.vnpost.vn',
+      'Referer': 'https://ssmv2.vnpost.vn/',
+      'Host': 'ssmv2.vnpost.vn'
     });
 
-    return this.http.post<TraCuuVNPostResponse>(`${this.apiUrl}/tra-cuu-vnpost`, request, { headers });
+    return this.http.post<TraCuuVNPostResponse>(
+      'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh',
+      request,
+      { headers }
+    );
   }
 } 

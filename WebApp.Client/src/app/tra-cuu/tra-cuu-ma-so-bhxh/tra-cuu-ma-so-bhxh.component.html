@@ -45,7 +45,14 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
             <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
-              <nz-select formControlName="maTinh" (ngModelChange)="onTinhChange($event)" nzPlaceHolder="Chọn Tỉnh/Thành phố" [nzLoading]="isLoadingData">
+              <nz-select 
+                formControlName="maTinh" 
+                (ngModelChange)="onTinhChange($event)" 
+                nzPlaceHolder="Chọn Tỉnh/Thành phố" 
+                [nzLoading]="isLoadingData"
+                nzShowSearch
+                [nzAllowClear]="true"
+                [nzFilterOption]="filterOption">
                 <nz-option *ngFor="let tinh of danhSachTinh" [nzValue]="tinh.ma" [nzLabel]="tinh.ten"></nz-option>
               </nz-select>
             </nz-form-control>
@@ -54,7 +61,14 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="6" nzRequired>Quận/Huyện</nz-form-label>
             <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Quận/Huyện">
-              <nz-select formControlName="maHuyen" (ngModelChange)="onHuyenChange($event)" nzPlaceHolder="Chọn Quận/Huyện" [nzLoading]="isLoadingData">
+              <nz-select 
+                formControlName="maHuyen" 
+                (ngModelChange)="onHuyenChange($event)" 
+                nzPlaceHolder="Chọn Quận/Huyện" 
+                [nzLoading]="isLoadingData"
+                nzShowSearch
+                [nzAllowClear]="true"
+                [nzFilterOption]="filterOption">
                 <nz-option *ngFor="let huyen of huyenTheoTinh" [nzValue]="huyen.ma" [nzLabel]="huyen.ten"></nz-option>
               </nz-select>
             </nz-form-control>
@@ -63,7 +77,13 @@
           <nz-form-item>
             <nz-form-label [nzSpan]="6">Xã/Phường</nz-form-label>
             <nz-form-control [nzSpan]="14">
-              <nz-select formControlName="maXa" nzPlaceHolder="Chọn Xã/Phường" [nzLoading]="isLoadingData">
+              <nz-select 
+                formControlName="maXa" 
+                nzPlaceHolder="Chọn Xã/Phường" 
+                [nzLoading]="isLoadingData"
+                nzShowSearch
+                [nzAllowClear]="true"
+                [nzFilterOption]="filterOption">
                 <nz-option *ngFor="let xa of xaTheoHuyen" [nzValue]="xa.ma" [nzLabel]="xa.ten"></nz-option>
               </nz-select>
             </nz-form-control>
@@ -78,8 +98,14 @@
 
           <nz-form-item>
             <nz-form-label [nzSpan]="6" nzRequired>Ngày sinh</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn ngày sinh">
-              <nz-date-picker formControlName="ngaySinh" nzFormat="dd/MM/yyyy" style="width: 100%"></nz-date-picker>
+            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn hoặc nhập ngày sinh">
+              <nz-date-picker 
+                formControlName="ngaySinh" 
+                nzFormat="dd/MM/yyyy" 
+                style="width: 100%"
+                nzPlaceHolder="Nhập hoặc chọn ngày sinh"
+                [nzInputReadOnly]="false"
+                nzAllowClear></nz-date-picker>
             </nz-form-control>
           </nz-form-item>
 
