@@ -30,7 +30,13 @@ import {
   ArrowDownOutline,
   DollarOutline,
   ExportOutline,
-  SendOutline
+  SendOutline,
+  ZoomInOutline,
+  ZoomOutOutline,
+  FullscreenExitOutline,
+  RotateLeftOutline,
+  RotateRightOutline,
+  DownloadOutline
 } from '@ant-design/icons-angular/icons';
 import { NzIconService } from 'ng-zorro-antd/icon';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -43,6 +49,7 @@ import { debounceTime } from 'rxjs/operators';
 import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.component';
 import * as XLSX from 'xlsx';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 
 interface QuyenBienLai {
   id: number;
@@ -112,7 +119,8 @@ interface KeKhaiBHYT {
     NzBadgeModule,
     NzStatisticModule,
     NzCardModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzDescriptionsModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './dot-ke-khai.component.html',
@@ -138,6 +146,9 @@ export class DotKeKhaiComponent implements OnInit {
   // Thêm các thuộc tính cho modal xem hóa đơn
   isViewBillModalVisible = false;
   selectedBillUrl: string = '';
+  selectedDotKeKhai: DotKeKhai | null = null;
+  zoomLevel: number = 1;
+  rotationDegree: number = 0;
 
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
@@ -174,7 +185,13 @@ export class DotKeKhaiComponent implements OnInit {
       ArrowDownOutline,
       DollarOutline,
       ExportOutline,
-      SendOutline
+      SendOutline,
+      ZoomInOutline,
+      ZoomOutOutline,
+      FullscreenExitOutline,
+      RotateLeftOutline,
+      RotateRightOutline,
+      DownloadOutline
     );
 
     const currentDate = new Date();
@@ -1104,7 +1121,7 @@ export class DotKeKhaiComponent implements OnInit {
               { wch: 10 }, // Cột I trống
               { wch: 15 }, // Người thứ
               { wch: 15 }, // Cột K
-              { wch: 10 }, // Cột L trống
+              { wch: 10 }, // Cột L
               { wch: 10 }, // Cột M
               { wch: 10 }, // Cột N trống
               { wch: 10 }, // Cột O trống
@@ -1189,13 +1206,67 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   showViewBillModal(url: string): void {
+    // Tìm đợt kê khai tương ứng với hóa đơn này
+    const dotKeKhai = this.dotKeKhais.find(d => d.url_bill === url);
+    
     this.selectedBillUrl = url;
+    this.selectedDotKeKhai = dotKeKhai || null;
     this.isViewBillModalVisible = true;
+    
+    // Reset các giá trị zoom và xoay
+    this.zoomLevel = 1;
+    this.rotationDegree = 0;
   }
 
   handleViewBillModalCancel(): void {
     this.isViewBillModalVisible = false;
     this.selectedBillUrl = '';
+    this.selectedDotKeKhai = null;
+    this.zoomLevel = 1;
+    this.rotationDegree = 0;
+  }
+  
+  // Thêm các phương thức mới cho modal xem hóa đơn
+  zoomIn(): void {
+    if (this.zoomLevel < 3) {
+      this.zoomLevel += 0.1;
+    }
+  }
+  
+  zoomOut(): void {
+    if (this.zoomLevel > 0.5) {
+      this.zoomLevel -= 0.1;
+    }
+  }
+  
+  resetZoom(): void {
+    this.zoomLevel = 1;
+    this.rotationDegree = 0;
+  }
+  
+  rotateLeft(): void {
+    this.rotationDegree = (this.rotationDegree - 90) % 360;
+  }
+  
+  rotateRight(): void {
+    this.rotationDegree = (this.rotationDegree + 90) % 360;
+  }
+  
+  downloadBill(): void {
+    if (!this.selectedBillUrl) {
+      this.message.error('Không có hình ảnh hóa đơn để tải xuống');
+      return;
+    }
+    
+    // Tạo một thẻ a ẩn để tải xuống hình ảnh
+    const link = document.createElement('a');
+    link.href = this.selectedBillUrl;
+    link.download = `hoa-don-${this.selectedDotKeKhai?.ten_dot || 'bhxh'}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    this.message.success('Đang tải xuống hóa đơn');
   }
 
   guiDotKeKhai(data: DotKeKhai): void {

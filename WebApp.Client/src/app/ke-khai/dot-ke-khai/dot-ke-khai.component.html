@@ -232,16 +232,72 @@
   <!-- Modal xem hóa đơn -->
   <nz-modal
     [(nzVisible)]="isViewBillModalVisible"
-    [nzTitle]="'Xem hóa đơn'"
-    [nzFooter]="null"
+    [nzTitle]="billModalTitle"
+    [nzFooter]="billModalFooter"
     (nzOnCancel)="handleViewBillModalCancel()"
     [nzWidth]="800"
     [nzStyle]="{ top: '20px' }">
     <ng-container *nzModalContent>
-      <div class="bill-image-container">
-        <img [src]="selectedBillUrl" style="width: 100%; height: auto;" />
+      <div class="bill-container">
+        <div class="bill-toolbar">
+          <div class="bill-actions">
+            <button nz-button nzType="default" (click)="zoomIn()" nz-tooltip="Phóng to">
+              <i nz-icon nzType="zoom-in" nzTheme="outline"></i>
+            </button>
+            <button nz-button nzType="default" (click)="zoomOut()" nz-tooltip="Thu nhỏ">
+              <i nz-icon nzType="zoom-out" nzTheme="outline"></i>
+            </button>
+            <button nz-button nzType="default" (click)="resetZoom()" nz-tooltip="Khôi phục kích thước">
+              <i nz-icon nzType="fullscreen-exit" nzTheme="outline"></i>
+            </button>
+            <button nz-button nzType="default" (click)="rotateLeft()" nz-tooltip="Xoay trái">
+              <i nz-icon nzType="rotate-left" nzTheme="outline"></i>
+            </button>
+            <button nz-button nzType="default" (click)="rotateRight()" nz-tooltip="Xoay phải">
+              <i nz-icon nzType="rotate-right" nzTheme="outline"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="bill-content">
+          <div class="bill-image-container" [style.transform]="'scale(' + zoomLevel + ') rotate(' + rotationDegree + 'deg)'">
+            <img [src]="selectedBillUrl" alt="Hóa đơn" />
+          </div>
+        </div>
+        
+        <div class="bill-info" *ngIf="selectedDotKeKhai">
+          <nz-descriptions nzTitle="Thông tin hóa đơn" [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
+            <nz-descriptions-item nzTitle="Tên đợt">{{ selectedDotKeKhai.ten_dot }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Đơn vị">{{ getDonViName(selectedDotKeKhai.don_vi_id) }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Dịch vụ">{{ selectedDotKeKhai.dich_vu }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tổng số thẻ">{{ selectedDotKeKhai.tong_so_the || 0 }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tổng số tiền">{{ selectedDotKeKhai.tong_so_tien | number:'1.0-0' }} đ</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Trạng thái">
+              <nz-tag [nzColor]="getTagColor(selectedDotKeKhai.trang_thai)">
+                {{ getTagText(selectedDotKeKhai.trang_thai) }}
+              </nz-tag>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Mã hồ sơ">{{ selectedDotKeKhai.ma_ho_so }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày tạo">{{ selectedDotKeKhai.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</nz-descriptions-item>
+          </nz-descriptions>
+        </div>
       </div>
     </ng-container>
+    
+    <ng-template #billModalTitle>
+      <div class="modal-title">
+        <span>Xem hóa đơn</span>
+        <span *ngIf="selectedDotKeKhai" class="modal-subtitle">{{ selectedDotKeKhai.ten_dot }}</span>
+      </div>
+    </ng-template>
+    
+    <ng-template #billModalFooter>
+      <button nz-button nzType="default" (click)="handleViewBillModalCancel()">Đóng</button>
+      <button nz-button nzType="primary" (click)="downloadBill()">
+        <i nz-icon nzType="download" nzTheme="outline"></i>
+        Tải xuống
+      </button>
+    </ng-template>
   </nz-modal>
 </div>
 
@@ -302,16 +358,67 @@
   font-size: 14px;
 }
 
-.bill-image-container {
+.bill-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bill-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bill-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bill-content {
+  position: relative;
   width: 100%;
-  max-height: 80vh;
+  height: 400px;
   overflow: auto;
-  text-align: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bill-image-container {
+  transition: transform 0.3s ease;
+  transform-origin: center center;
 }
 
 .bill-image-container img {
   max-width: 100%;
   height: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.bill-info {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.modal-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 4px;
+}
+
+:host ::ng-deep .ant-descriptions-item-label {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.65);
 }
 
 :host ::ng-deep {
