@@ -70,6 +70,16 @@ export const routes: Routes = [
           { path: '', redirectTo: 'danh-sach', pathMatch: 'full' }
         ]
       },
+      {
+        path: 'tra-cuu',
+        children: [
+          {
+            path: 'ma-so-bhxh',
+            loadComponent: () => import('./tra-cuu/tra-cuu-ma-so-bhxh/tra-cuu-ma-so-bhxh.component').then(m => m.TraCuuMaSoBhxhComponent)
+          },
+          { path: '', redirectTo: 'ma-so-bhxh', pathMatch: 'full' }
+        ]
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   }
