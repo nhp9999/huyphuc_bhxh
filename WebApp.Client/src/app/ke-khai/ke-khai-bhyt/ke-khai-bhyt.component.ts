@@ -523,7 +523,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       han_the_moi_tu: [null, Validators.required],
       han_the_moi_den: [null, Validators.required],
       so_tien_can_dong: [null],
-      ngay_bien_lai: [new Date()]
+      ngay_bien_lai: [new Date()],
+      so_bien_lai: [null] // Thêm trường so_bien_lai
     });
 
     // Reset các biến trạng thái
@@ -797,7 +798,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           han_the_moi_tu: data.han_the_moi_tu,
           han_the_moi_den: data.han_the_moi_den,
           so_tien_can_dong: data.so_tien_can_dong,
-          ngay_bien_lai: data.ngay_bien_lai || new Date()
+          ngay_bien_lai: data.ngay_bien_lai || new Date(),
+          so_bien_lai: data.so_bien_lai // Thêm trường so_bien_lai
         });
 
         // Log để kiểm tra
@@ -881,45 +883,57 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             // Tiếp tục với phần cập nhật
             this.keKhaiBHYTService.updateThongTinThe(thongTinTheId, updateData).subscribe({
               next: () => {
-                // Tạo đối tượng KeKhaiBHYT với thông tin thẻ đã cập nhật
-                const keKhaiBHYTData: KeKhaiBHYT = {
-                  id: keKhaiBHYTId,
-                  dot_ke_khai_id: this.dotKeKhaiId,
-                  thong_tin_the_id: thongTinTheId,
-                  dotKeKhai: this.dotKeKhai || undefined,
-                  thongTinThe: updateData,
-                  nguoi_thu: formValue.nguoi_thu,
-                  so_thang_dong: formValue.so_thang_dong,
-                  phuong_an_dong: formValue.phuong_an_dong,
-                  han_the_cu: formValue.han_the_cu ? new Date(formValue.han_the_cu) : null,
-                  han_the_moi_tu: formValue.han_the_moi_tu ? new Date(formValue.han_the_moi_tu) : new Date(),
-                  han_the_moi_den: formValue.han_the_moi_den ? new Date(formValue.han_the_moi_den) : new Date(),
-                  tinh_nkq: this.getTinhTen(formValue.tinh_nkq),
-                  huyen_nkq: this.getHuyenTen(formValue.huyen_nkq),
-                  xa_nkq: this.getXaTen(formValue.xa_nkq),
-                  dia_chi_nkq: formValue.dia_chi_nkq,
-                  benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
-                  ma_benh_vien: formValue.benh_vien_kcb || '',
-                  nguoi_tao: this.currentUser.username,
-                  ngay_tao: new Date(),
-                  ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
-                  so_tien_can_dong: formValue.so_tien_can_dong || 0,
-                  is_urgent: false
-                };
+                // Lấy thông tin kê khai hiện tại để giữ lại số biên lai
+                this.keKhaiBHYTService.getById(this.dotKeKhaiId, keKhaiBHYTId).subscribe({
+                  next: (currentKeKhai) => {
+                    // Tạo đối tượng KeKhaiBHYT với thông tin thẻ đã cập nhật
+                    const keKhaiBHYTData: KeKhaiBHYT = {
+                      id: keKhaiBHYTId,
+                      dot_ke_khai_id: this.dotKeKhaiId,
+                      thong_tin_the_id: thongTinTheId,
+                      dotKeKhai: this.dotKeKhai || undefined,
+                      thongTinThe: updateData,
+                      nguoi_thu: formValue.nguoi_thu,
+                      so_thang_dong: formValue.so_thang_dong,
+                      phuong_an_dong: formValue.phuong_an_dong,
+                      han_the_cu: formValue.han_the_cu ? new Date(formValue.han_the_cu) : null,
+                      han_the_moi_tu: formValue.han_the_moi_tu ? new Date(formValue.han_the_moi_tu) : new Date(),
+                      han_the_moi_den: formValue.han_the_moi_den ? new Date(formValue.han_the_moi_den) : new Date(),
+                      tinh_nkq: this.getTinhTen(formValue.tinh_nkq),
+                      huyen_nkq: this.getHuyenTen(formValue.huyen_nkq),
+                      xa_nkq: this.getXaTen(formValue.xa_nkq),
+                      dia_chi_nkq: formValue.dia_chi_nkq,
+                      benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
+                      ma_benh_vien: formValue.benh_vien_kcb || '',
+                      nguoi_tao: this.currentUser.username,
+                      ngay_tao: new Date(),
+                      ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
+                      so_tien_can_dong: formValue.so_tien_can_dong || 0,
+                      is_urgent: false,
+                      so_bien_lai: currentKeKhai.so_bien_lai // Giữ lại số biên lai từ dữ liệu hiện tại
+                    };
 
-                this.keKhaiBHYTService.update(this.dotKeKhaiId, keKhaiBHYTId, keKhaiBHYTData).subscribe({
-                  next: () => {
-                    this.message.success('Cập nhật thành công');
-                    this.isVisible = false;
-                    this.isEdit = false;
-                    this.loadData();
-                    this.loading = false;
-                    this.loadingSave = false;
-                    this.initForm();
+                    this.keKhaiBHYTService.update(this.dotKeKhaiId, keKhaiBHYTId, keKhaiBHYTData).subscribe({
+                      next: () => {
+                        this.message.success('Cập nhật thành công');
+                        this.isVisible = false;
+                        this.isEdit = false;
+                        this.loadData();
+                        this.loading = false;
+                        this.loadingSave = false;
+                        this.initForm();
+                      },
+                      error: (error) => {
+                        console.error('Error updating KeKhaiBHYT:', error);
+                        this.message.error('Có lỗi xảy ra khi cập nhật kê khai');
+                        this.loading = false;
+                        this.loadingSave = false;
+                      }
+                    });
                   },
                   error: (error) => {
-                    console.error('Error updating KeKhaiBHYT:', error);
-                    this.message.error('Có lỗi xảy ra khi cập nhật kê khai');
+                    console.error('Error getting current KeKhaiBHYT:', error);
+                    this.message.error('Có lỗi xảy ra khi lấy thông tin kê khai hiện tại');
                     this.loading = false;
                     this.loadingSave = false;
                   }
@@ -994,7 +1008,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ngay_tao: new Date(),
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
           so_tien_can_dong: formValue.so_tien_can_dong || 0,
-          is_urgent: false // Thêm trường này
+          is_urgent: false, // Thêm trường này
+          so_bien_lai: formValue.so_bien_lai // Thêm trường so_bien_lai
         };
 
         // Tạo mới KeKhaiBHYT
@@ -1827,7 +1842,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       if (!tinhNKQ || !huyenNKQ || !xaNKQ) {
         const missingAddress = [];
         if (!tinhNKQ) missingAddress.push('Tỉnh');
-        if (!huyenNKQ) missingAddress.push('Huyện'); 
+        if (!huyenNKQ) missingAddress.push('Huyện');
         if (!xaNKQ) missingAddress.push('Xã');
         
         return {
@@ -1940,7 +1955,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ngay_tao: new Date(),
           ngay_bien_lai: ngayBienLai,
           so_tien_can_dong: soTienCanDong,
-          is_urgent: false // Thêm trường này
+          is_urgent: false, // Thêm trường này
+          so_bien_lai: data.soBienLai || null // Thêm trường so_bien_lai
         };
 
         // Tạo mới kê khai

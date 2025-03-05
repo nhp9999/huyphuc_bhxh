@@ -74,6 +74,7 @@ export interface KeKhaiBHYT {
   ngay_bien_lai?: Date | null;
   so_tien_can_dong: number;
   is_urgent: boolean;
+  so_bien_lai?: string;
 }
 
 export interface ThongTinBHYTResponse {

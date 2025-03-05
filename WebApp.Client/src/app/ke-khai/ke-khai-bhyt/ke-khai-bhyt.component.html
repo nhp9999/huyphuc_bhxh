@@ -435,70 +435,46 @@
     [nzData]="filterSoThangDong !== null || filterNguoiThu !== null ? filteredKeKhaiBHYTs : keKhaiBHYTs"
     [nzLoading]="loading"
     [nzShowSizeChanger]="true"
-    [nzShowPagination]="true">
+    [nzShowPagination]="true"
+    [nzScroll]="{ x: '1500px' }">
     <thead>
       <tr>
-        <th [nzWidth]="'40px'" [(nzChecked)]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
-        <th [nzWidth]="'120px'">Mã số BHXH</th>
-        <th>Họ tên</th>
-        <th>CCCD</th>
-        <th>Ngày sinh</th>
-        <th>Giới tính</th>
-        <th>Số điện thoại</th>
-        <th>Người thứ</th>
-        <th>Phương án đóng</th>
-        <th>Số tháng đóng</th>
-        <th>Tỉnh NKQ</th>
-        <th>Huyện NKQ</th>
-        <th>Xã NKQ</th>
-        <th>Bệnh viện KCB</th>
-        <th>Số tiền cần đóng</th>
-        <th style="width: 100px;">Thao tác</th>
+        <th [nzWidth]="'40px'" nzLeft [(nzChecked)]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
+        <th [nzWidth]="'120px'" nzLeft nzColumnKey="ma_so_bhxh">Mã số BHXH</th>
+        <th [nzWidth]="'180px'" nzLeft nzColumnKey="ho_ten">Họ tên</th>
+        <th [nzWidth]="'120px'" nzAlign="center" nzColumnKey="cccd">CCCD</th>
+        <th [nzWidth]="'120px'" nzAlign="center" nzColumnKey="ngay_sinh">Ngày sinh</th>
+        <th [nzWidth]="'100px'" nzAlign="center" nzColumnKey="gioi_tinh">Giới tính</th>
+        <th [nzWidth]="'120px'" nzAlign="center">Số điện thoại</th>
+        <th [nzWidth]="'120px'" nzAlign="center" nzColumnKey="nguoi_thu">Người thứ</th>
+        <th [nzWidth]="'150px'" nzAlign="center" nzColumnKey="phuong_an_dong">Phương án đóng</th>
+        <th [nzWidth]="'120px'" nzAlign="center" nzColumnKey="so_thang_dong">Số tháng đóng</th>
+        <th [nzWidth]="'180px'">Địa chỉ NKQ</th>
+        <th [nzWidth]="'150px'">Xã NKQ</th>
+        <th [nzWidth]="'150px'">Huyện NKQ</th>
+        <th [nzWidth]="'150px'">Tỉnh NKQ</th>
+        <th [nzWidth]="'250px'">Bệnh viện KCB</th>
+        <th [nzWidth]="'150px'" nzAlign="right" nzRight nzColumnKey="so_tien_can_dong">Số tiền cần đóng</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let data of basicTable.data; let i = index" (click)="showEditForm(data)">
-        <td [nzChecked]="data.id ? selectedIds.includes(data.id) : false" (nzCheckedChange)="data.id && onKeKhaiChecked(data.id, $event)"></td>
-        <td>
-          <a 
-            [class.urgent]="data.is_urgent"
-            (click)="$event.stopPropagation(); data.id && toggleUrgent(data.id, $event)"
-            nz-tooltip
-            [nzTooltipTitle]="data.is_urgent ? 'Bỏ đánh dấu gấp' : 'Đánh dấu gấp'"
-          >
-            {{ data.thongTinThe.ma_so_bhxh }}
-          </a>
-          <button 
-            nz-button 
-            nzType="link" 
-            nzSize="small"
-            nz-tooltip 
-            nzTooltipTitle="Sao chép mã số BHXH"
-            (click)="$event.stopPropagation(); copyMaSoBHXH(data.thongTinThe.ma_so_bhxh)">
-            <i nz-icon nzType="copy" nzTheme="outline"></i>
-          </button>
-        </td>
-        <td>{{ data.thongTinThe.ho_ten }}</td>
-        <td>{{ data.thongTinThe.cccd }}</td>
-        <td>{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</td>
-        <td>{{ data.thongTinThe.gioi_tinh }}</td>
-        <td>{{ data.thongTinThe.so_dien_thoai }}</td>
-        <td>{{ getNguoiThuText(data.nguoi_thu) }}</td>
-        <td>{{ getPhuongAnDongText(data.phuong_an_dong) }}</td>
-        <td>{{ data.so_thang_dong }} tháng</td>
-        <td>{{ data.tinh_nkq }}</td>
-        <td>{{ data.huyen_nkq }}</td>
-        <td>{{ data.xa_nkq }}</td>
-        <td>{{ data.benh_vien_kcb }}</td>
-        <td>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>
-        <td>
-          <a nz-button nzType="link" (click)="showModal(data)">
-            <i nz-icon nzType="edit"></i>
-          </a>
-          <a nz-button nzType="link" nzDanger (click)="delete(data.id!)">
-            <i nz-icon nzType="delete"></i>
-          </a>
-        </td>
+        <td nzLeft [nzChecked]="data.id ? selectedIds.includes(data.id) : false" (nzCheckedChange)="data.id && onKeKhaiChecked(data.id, $event)"></td>
+        <td nzLeft nzEllipsis>{{ data.thongTinThe.ma_so_bhxh }}</td>
+        <td nzLeft nzEllipsis>{{ data.thongTinThe.ho_ten }}</td>
+        <td nzAlign="center">{{ data.thongTinThe.cccd }}</td>
+        <td nzAlign="center">{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</td>
+        <td nzAlign="center">{{ data.thongTinThe.gioi_tinh }}</td>
+        <td nzAlign="center">{{ data.thongTinThe.so_dien_thoai }}</td>
+        <td nzAlign="center">{{ getNguoiThuText(data.nguoi_thu) }}</td>
+        <td nzAlign="center">{{ getPhuongAnDongText(data.phuong_an_dong) }}</td>
+        <td nzAlign="center">{{ data.so_thang_dong }} tháng</td>
+        <td nzEllipsis>{{ data.dia_chi_nkq }}</td>
+        <td nzEllipsis>{{ data.xa_nkq }}</td>
+        <td nzEllipsis>{{ data.huyen_nkq }}</td>
+        <td nzEllipsis>{{ data.tinh_nkq }}</td>
+        <td nzEllipsis>{{ data.benh_vien_kcb }}</td>
+        <td nzAlign="right" nzRight>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>
       </tr>
     </tbody>
   </nz-table>
