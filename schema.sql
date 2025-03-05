@@ -20,4 +20,18 @@ ALTER TABLE public.ke_khai_bhyt
 ADD COLUMN quyen_bien_lai_id INTEGER,
 ADD CONSTRAINT fk_ke_khai_bhyt_quyen_bien_lai 
 FOREIGN KEY (quyen_bien_lai_id) 
-REFERENCES public.quyen_bien_lai(id); 
+REFERENCES public.quyen_bien_lai(id);
+
+-- Thêm cột ma_ho_so vào bảng ke_khai_bhyt
+ALTER TABLE public.ke_khai_bhyt 
+ADD COLUMN ma_ho_so VARCHAR(50);
+
+-- Thêm comment cho cột ma_ho_so
+COMMENT ON COLUMN public.ke_khai_bhyt.ma_ho_so IS 'Mã số hồ sơ của đợt kê khai';
+
+-- Thêm cột ma_ho_so vào bảng ke_khai_bhxh
+ALTER TABLE public.ke_khai_bhxh 
+ADD COLUMN ma_ho_so VARCHAR(50);
+
+-- Thêm comment cho cột ma_ho_so trong bảng ke_khai_bhxh
+COMMENT ON COLUMN public.ke_khai_bhxh.ma_ho_so IS 'Mã số hồ sơ của đợt kê khai'; 

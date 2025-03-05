@@ -43,6 +43,7 @@ export interface KeKhaiBHYT {
   han_the_moi_den: Date;
   ngay_bien_lai?: Date | null;
   dotKeKhaiInfo?: string;
+  ma_ho_so?: string;
 }
 
 export interface KeKhaiBHXH {
@@ -55,6 +56,7 @@ export interface KeKhaiBHXH {
   so_tien_can_dong: number;
   ngay_tao: Date;
   dotKeKhaiInfo?: string;
+  ma_ho_so?: string;
 }
 
 @Injectable({

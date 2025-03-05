@@ -88,6 +88,10 @@ namespace WebApp.API.Models
         [Column("xa_nkq")]
         public string? xa_nkq { get; set; }
 
+        [Column("ma_ho_so")]
+        [StringLength(50)]
+        public string? ma_ho_so { get; set; }
+
         [ForeignKey("thong_tin_the_id")]
         public virtual ThongTinThe? ThongTinThe { get; set; }
 

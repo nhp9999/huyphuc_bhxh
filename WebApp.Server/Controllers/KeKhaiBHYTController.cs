@@ -123,6 +123,12 @@ namespace WebApp.API.Controllers
                 keKhaiBHYT.dot_ke_khai_id = dotKeKhaiId;
                 keKhaiBHYT.DotKeKhai = dotKeKhai;
 
+                // Gán mã hồ sơ từ đợt kê khai nếu có
+                if (!string.IsNullOrEmpty(dotKeKhai.ma_ho_so))
+                {
+                    keKhaiBHYT.ma_ho_so = dotKeKhai.ma_ho_so;
+                }
+
                 // Kiểm tra xem thông tin thẻ đã tồn tại chưa
                 if (keKhaiBHYT.ThongTinThe != null && !string.IsNullOrEmpty(keKhaiBHYT.ThongTinThe.ma_so_bhxh))
                 {
@@ -203,8 +209,26 @@ namespace WebApp.API.Controllers
                     _context.Entry(existingKeKhaiBHYT.ThongTinThe).CurrentValues.SetValues(keKhaiBHYT.ThongTinThe);
                 }
 
+                // Lưu giá trị quyen_bien_lai_id hiện tại nếu không được cung cấp trong request
+                if (keKhaiBHYT.quyen_bien_lai_id == null && existingKeKhaiBHYT.quyen_bien_lai_id != null)
+                {
+                    keKhaiBHYT.quyen_bien_lai_id = existingKeKhaiBHYT.quyen_bien_lai_id;
+                }
+
+                // Lưu giá trị trang_thai hiện tại nếu không được cung cấp trong request hoặc là giá trị mặc định
+                if (string.IsNullOrEmpty(keKhaiBHYT.trang_thai) || keKhaiBHYT.trang_thai == "chua_gui")
+                {
+                    keKhaiBHYT.trang_thai = existingKeKhaiBHYT.trang_thai;
+                }
+
                 // Cập nhật thông tin kê khai
                 _context.Entry(existingKeKhaiBHYT).CurrentValues.SetValues(keKhaiBHYT);
+
+                // Đảm bảo mã hồ sơ được đồng bộ với đợt kê khai
+                if (existingKeKhaiBHYT.DotKeKhai != null && !string.IsNullOrEmpty(existingKeKhaiBHYT.DotKeKhai.ma_ho_so))
+                {
+                    existingKeKhaiBHYT.ma_ho_so = existingKeKhaiBHYT.DotKeKhai.ma_ho_so;
+                }
 
                 await _context.SaveChangesAsync();
 

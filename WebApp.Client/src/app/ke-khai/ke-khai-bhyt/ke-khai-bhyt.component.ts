@@ -524,7 +524,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       han_the_moi_den: [null, Validators.required],
       so_tien_can_dong: [null],
       ngay_bien_lai: [new Date()],
-      so_bien_lai: [null] // Thêm trường so_bien_lai
+      so_bien_lai: [null], // Thêm trường so_bien_lai
+      quyen_bien_lai_id: [null], // Thêm trường quyen_bien_lai_id
+      trang_thai: ['chua_gui'] // Thêm trường trang_thai với giá trị mặc định
     });
 
     // Reset các biến trạng thái
@@ -799,7 +801,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           han_the_moi_den: data.han_the_moi_den,
           so_tien_can_dong: data.so_tien_can_dong,
           ngay_bien_lai: data.ngay_bien_lai || new Date(),
-          so_bien_lai: data.so_bien_lai // Thêm trường so_bien_lai
+          so_bien_lai: data.so_bien_lai, // Thêm trường so_bien_lai
+          quyen_bien_lai_id: data.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
+          trang_thai: data.trang_thai // Thêm trường trang_thai
         });
 
         // Log để kiểm tra
@@ -910,7 +914,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                       ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
                       so_tien_can_dong: formValue.so_tien_can_dong || 0,
                       is_urgent: false,
-                      so_bien_lai: currentKeKhai.so_bien_lai // Giữ lại số biên lai từ dữ liệu hiện tại
+                      so_bien_lai: currentKeKhai.so_bien_lai, // Giữ lại số biên lai từ dữ liệu hiện tại
+                      quyen_bien_lai_id: currentKeKhai.quyen_bien_lai_id, // Giữ lại ID quyển biên lai từ dữ liệu hiện tại
+                      trang_thai: currentKeKhai.trang_thai // Giữ lại trạng thái từ dữ liệu hiện tại
                     };
 
                     this.keKhaiBHYTService.update(this.dotKeKhaiId, keKhaiBHYTId, keKhaiBHYTData).subscribe({
@@ -1009,7 +1015,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
           so_tien_can_dong: formValue.so_tien_can_dong || 0,
           is_urgent: false, // Thêm trường này
-          so_bien_lai: formValue.so_bien_lai // Thêm trường so_bien_lai
+          so_bien_lai: formValue.so_bien_lai, // Thêm trường so_bien_lai
+          quyen_bien_lai_id: formValue.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
+          trang_thai: 'chua_gui' // Thêm trường trang_thai với giá trị mặc định
         };
 
         // Tạo mới KeKhaiBHYT
@@ -1956,7 +1964,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ngay_bien_lai: ngayBienLai,
           so_tien_can_dong: soTienCanDong,
           is_urgent: false, // Thêm trường này
-          so_bien_lai: data.soBienLai || null // Thêm trường so_bien_lai
+          so_bien_lai: data.soBienLai || null, // Thêm trường so_bien_lai
+          quyen_bien_lai_id: data.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
+          trang_thai: 'chua_gui' // Thêm trường trang_thai với giá trị mặc định
         };
 
         // Tạo mới kê khai
@@ -2698,7 +2708,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       han_the_moi_den: data.han_the_moi_den,
       dia_chi_nkq: data.dia_chi_nkq,
       so_tien_can_dong: data.so_tien_can_dong,
-      ngay_bien_lai: data.ngay_bien_lai || new Date()
+      ngay_bien_lai: data.ngay_bien_lai || new Date(),
+      so_bien_lai: data.so_bien_lai,
+      quyen_bien_lai_id: data.quyen_bien_lai_id,
+      trang_thai: data.trang_thai // Thêm trường trang_thai vào form
     });
 
     // Log để kiểm tra

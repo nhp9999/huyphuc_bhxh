@@ -93,6 +93,7 @@
             <th nzWidth="100px">Số tháng</th>
             <th nzWidth="120px" nzAlign="right">Số tiền đóng</th>
             <th nzWidth="150px">Ngày tạo</th>
+            <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
           </tr>
         </thead>
@@ -113,6 +114,7 @@
             <td>{{ item.so_thang_dong }}</td>
             <td nzAlign="right">{{ item.so_tien_can_dong | number }} đ</td>
             <td>{{ item.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ item.ma_ho_so || 'N/A' }}</td>
             <td>
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
@@ -147,6 +149,7 @@
             <th nzWidth="100px">Số tháng</th>
             <th nzWidth="120px" nzAlign="right">Số tiền đóng</th>
             <th nzWidth="150px">Ngày tạo</th>
+            <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
           </tr>
         </thead>
@@ -167,6 +170,7 @@
             <td>{{ item.so_thang_dong }}</td>
             <td nzAlign="right">{{ item.so_tien_can_dong | number }} đ</td>
             <td>{{ item.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ item.ma_ho_so || 'N/A' }}</td>
             <td>
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}

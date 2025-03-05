@@ -144,45 +144,70 @@ namespace WebApp.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<DotKeKhai>> CreateDotKeKhai(DotKeKhaiDTO dotKeKhaiDto)
+        public async Task<ActionResult<DotKeKhai>> CreateDotKeKhai(DotKeKhai dotKeKhai)
         {
             try
             {
-                // Kiểm tra đại lý tồn tại
-                var daiLy = await _context.DaiLys.FindAsync(dotKeKhaiDto.dai_ly_id);
-                if (daiLy == null)
-                {
-                    return BadRequest(new { message = "Không tìm thấy đại lý" });
-                }
-
-                // Kiểm tra đơn vị tồn tại
-                var donVi = await _context.DonVis.FindAsync(dotKeKhaiDto.don_vi_id);
+                // Kiểm tra đơn vị tồn tại và cập nhật dịch vụ
+                var donVi = await _context.DonVis.FindAsync(dotKeKhai.don_vi_id);
                 if (donVi == null)
                 {
-                    return BadRequest(new { message = "Không tìm thấy đơn vị" });
+                    ModelState.AddModelError("don_vi_id", "Không tìm thấy đơn vị");
+                    return BadRequest(new { errors = new[] { "Không tìm thấy đơn vị" } });
                 }
 
-                var dotKeKhai = new DotKeKhai
+                // Tự động xác định dịch vụ từ đơn vị
+                dotKeKhai.dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN";
+
+                // Kiểm tra dữ liệu đầu vào
+                if (!ModelState.IsValid)
                 {
-                    so_dot = dotKeKhaiDto.so_dot,
-                    thang = dotKeKhaiDto.thang,
-                    nam = dotKeKhaiDto.nam,
-                    don_vi_id = dotKeKhaiDto.don_vi_id,
-                    dai_ly_id = dotKeKhaiDto.dai_ly_id,
-                    dich_vu = donVi.IsBHYT ? "BHYT" : "BHXH TN",
-                    ghi_chu = dotKeKhaiDto.ghi_chu,
-                    trang_thai = "chua_gui",
-                    nguoi_tao = User.Identity?.Name ?? "system",
-                    ngay_tao = DateTime.UtcNow
-                };
+                    return BadRequest(ModelState);
+                }
 
                 // Tự động tạo tên đợt
                 dotKeKhai.GenerateTenDot();
+                if (string.IsNullOrEmpty(dotKeKhai.ten_dot))
+                {
+                    return BadRequest(new { message = "Không thể tạo tên đợt do dữ liệu không hợp lệ" });
+                }
+
+                // Kiểm tra trùng lặp
+                var existingDot = await _context.DotKeKhais
+                    .FirstOrDefaultAsync(d => d.don_vi_id == dotKeKhai.don_vi_id
+                                            && d.thang == dotKeKhai.thang
+                                            && d.nam == dotKeKhai.nam
+                                            && d.dich_vu == dotKeKhai.dich_vu
+                                            && d.so_dot == dotKeKhai.so_dot);
+
+                if (existingDot != null)
+                {
+                    return Conflict(new { message = "Đợt kê khai đã tồn tại", existingId = existingDot.id });
+                }
+
+                // Thiết lập thông tin tạo
+                dotKeKhai.ngay_tao = DateTime.Now;
+                dotKeKhai.nguoi_tao = User.Identity.Name;
 
                 _context.DotKeKhais.Add(dotKeKhai);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetDotKeKhai), new { id = dotKeKhai.id }, dotKeKhai);
+                // Nếu có mã hồ sơ, cập nhật mã hồ sơ cho tất cả các bản ghi KeKhaiBHYT của đợt
+                if (!string.IsNullOrEmpty(dotKeKhai.ma_ho_so))
+                {
+                    var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                        .Where(k => k.dot_ke_khai_id == dotKeKhai.id)
+                        .ToListAsync();
+
+                    foreach (var keKhai in keKhaiBHYTs)
+                    {
+                        keKhai.ma_ho_so = dotKeKhai.ma_ho_so;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                return CreatedAtAction("GetDotKeKhai", new { id = dotKeKhai.id }, dotKeKhai);
             }
             catch (Exception ex)
             {
@@ -225,9 +250,54 @@ namespace WebApp.API.Controllers
                     return BadRequest(new { message = "Không thể tạo tên đợt do dữ liệu không hợp lệ" });
                 }
 
-                _context.Entry(dotKeKhai).State = EntityState.Modified;
-                _context.Entry(dotKeKhai).Property(x => x.ngay_tao).IsModified = false;
-                _context.Entry(dotKeKhai).Property(x => x.nguoi_tao).IsModified = false;
+                // Lấy đợt kê khai hiện tại để kiểm tra mã hồ sơ có thay đổi không
+                var existingDotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                if (existingDotKeKhai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy đợt kê khai" });
+                }
+
+                // Kiểm tra trùng lặp nếu thông tin thay đổi
+                if (existingDotKeKhai.don_vi_id != dotKeKhai.don_vi_id ||
+                    existingDotKeKhai.thang != dotKeKhai.thang ||
+                    existingDotKeKhai.nam != dotKeKhai.nam ||
+                    existingDotKeKhai.dich_vu != dotKeKhai.dich_vu ||
+                    existingDotKeKhai.so_dot != dotKeKhai.so_dot)
+                {
+                    var duplicateDot = await _context.DotKeKhais
+                        .FirstOrDefaultAsync(d => d.id != id &&
+                                                d.don_vi_id == dotKeKhai.don_vi_id &&
+                                                d.thang == dotKeKhai.thang &&
+                                                d.nam == dotKeKhai.nam &&
+                                                d.dich_vu == dotKeKhai.dich_vu &&
+                                                d.so_dot == dotKeKhai.so_dot);
+
+                    if (duplicateDot != null)
+                    {
+                        return Conflict(new { message = "Đợt kê khai đã tồn tại", existingId = duplicateDot.id });
+                    }
+                }
+
+                // Kiểm tra xem mã hồ sơ có thay đổi không
+                bool maHoSoChanged = existingDotKeKhai.ma_ho_so != dotKeKhai.ma_ho_so;
+
+                // Cập nhật đợt kê khai
+                _context.Entry(existingDotKeKhai).CurrentValues.SetValues(dotKeKhai);
+                _context.Entry(existingDotKeKhai).Property(x => x.ngay_tao).IsModified = false;
+                _context.Entry(existingDotKeKhai).Property(x => x.nguoi_tao).IsModified = false;
+
+                // Nếu mã hồ sơ thay đổi, cập nhật mã hồ sơ cho tất cả các bản ghi KeKhaiBHYT của đợt
+                if (maHoSoChanged && !string.IsNullOrEmpty(dotKeKhai.ma_ho_so))
+                {
+                    var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                        .Where(k => k.dot_ke_khai_id == id)
+                        .ToListAsync();
+
+                    foreach (var keKhai in keKhaiBHYTs)
+                    {
+                        keKhai.ma_ho_so = dotKeKhai.ma_ho_so;
+                    }
+                }
 
                 await _context.SaveChangesAsync();
                 

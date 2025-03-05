@@ -159,6 +159,12 @@ namespace WebApp.API.Models
         [StringLength(20)]
         public string? so_bien_lai { get; set; }
 
+        /// <summary>
+        /// Mã số hồ sơ của đợt kê khai
+        /// </summary>
+        [StringLength(50)]
+        public string? ma_ho_so { get; set; }
+
         public int? quyen_bien_lai_id { get; set; }
 
         [ForeignKey("quyen_bien_lai_id")]

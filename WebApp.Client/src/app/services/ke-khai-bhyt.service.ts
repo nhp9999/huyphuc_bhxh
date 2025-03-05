@@ -75,6 +75,9 @@ export interface KeKhaiBHYT {
   so_tien_can_dong: number;
   is_urgent: boolean;
   so_bien_lai?: string;
+  quyen_bien_lai_id?: number;
+  ma_ho_so?: string;
+  trang_thai?: string;
 }
 
 export interface ThongTinBHYTResponse {
