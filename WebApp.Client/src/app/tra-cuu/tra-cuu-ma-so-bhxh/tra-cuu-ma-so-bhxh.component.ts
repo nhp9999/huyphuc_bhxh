@@ -256,8 +256,10 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       this.loiTraCuu = '';
       
       // Kiểm tra token VNPost
-      if (!localStorage.getItem('ssmv2_token')) {
+      const token = localStorage.getItem('ssmv2_token');
+      if (!token) {
         this.isLoading = false;
+        this.message.warning('Bạn cần đăng nhập VNPost để sử dụng chức năng này');
         this.showVNPostLogin();
         return;
       }
@@ -272,8 +274,33 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       // Gọi API tra cứu VNPost
       this.bhxhService.traCuuMaSoBHXHVNPost(formData)
         .subscribe({
-          next: (res) => {
+          next: (res: any) => {
             this.isLoading = false;
+            
+            // Log response để debug
+            console.log('Response từ API VNPost:', res);
+            
+            // Kiểm tra nếu response có chứa thông báo lỗi xác thực
+            if (res && res.error === 'Lỗi xác thực') {
+              this.ketQuaTraCuu = null;
+              this.loiTraCuu = 'Lỗi xác thực: ' + (res.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
+              this.message.error(this.loiTraCuu);
+              
+              // Hiển thị form đăng nhập lại
+              this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
+              this.showVNPostLogin();
+              return;
+            }
+            
+            // Kiểm tra nếu response có status khác 200
+            if (res && res.status && res.status !== 200) {
+              this.ketQuaTraCuu = null;
+              this.loiTraCuu = res.message || 'Có lỗi xảy ra khi tra cứu';
+              this.message.error(this.loiTraCuu);
+              return;
+            }
+            
+            // Xử lý response thành công
             if (res && res.success) {
               this.ketQuaTraCuu = this.mapVNPostResponseToData(res.data);
               this.message.success('Tra cứu thành công');
@@ -283,17 +310,34 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
               this.message.error(this.loiTraCuu);
             }
           },
-          error: (err) => {
+          error: (err: any) => {
             this.isLoading = false;
             this.ketQuaTraCuu = null;
             
+            // Log error để debug
+            console.error('Lỗi khi gọi API VNPost:', err);
+            
+            // Kiểm tra chi tiết lỗi
+            if (err.status === 401) {
+              this.loiTraCuu = 'Lỗi xác thực: Phiên đăng nhập đã hết hạn';
+              this.message.error(this.loiTraCuu);
+              this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
+              this.showVNPostLogin();
+              return;
+            }
+            
             // Kiểm tra nếu lỗi là do token hết hạn hoặc không hợp lệ
-            if (err.message && err.message.includes('token')) {
+            if (err.error && (
+                err.error.error === 'Lỗi xác thực' || 
+                (err.error.error_description && err.error.error_description.includes('phiên đăng nhập')))) {
+              this.loiTraCuu = 'Lỗi xác thực: ' + (err.error.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
+              this.message.error(this.loiTraCuu);
+              this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
               this.showVNPostLogin();
             } else {
-              this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu. Vui lòng thử lại sau.';
+              // Xử lý các lỗi khác
+              this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu: ' + (err.error?.message || err.message || 'Vui lòng thử lại sau');
               this.message.error(this.loiTraCuu);
-              console.error('Lỗi khi tra cứu VNPost:', err);
             }
           }
         });
@@ -420,26 +464,56 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
         isWeb: true
       };
       
+      // Log dữ liệu đăng nhập (không bao gồm mật khẩu)
+      console.log('Đăng nhập VNPost với username:', loginData.userName);
+      
       this.ssmv2Service.authenticate(loginData).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           this.isLoadingLogin = false;
+          
+          // Log response đăng nhập
+          console.log('Response đăng nhập VNPost:', res);
+          
           if (res && res.body && res.body.access_token) {
             // Lưu token VNPost vào localStorage
             localStorage.setItem('ssmv2_token', res.body.access_token);
+            
+            // Kiểm tra token đã lưu
+            const savedToken = localStorage.getItem('ssmv2_token');
+            console.log('Token đã lưu:', savedToken ? 'Có' : 'Không');
+            
             this.message.success('Đăng nhập VNPost thành công');
             this.closeVNPostLogin();
             
             // Tiếp tục tra cứu sau khi đăng nhập thành công
-            this.submitVNPostForm();
+            setTimeout(() => {
+              this.submitVNPostForm();
+            }, 500);
           } else {
-            this.message.error('Đăng nhập không thành công');
+            this.message.error('Đăng nhập không thành công: Không nhận được token');
             this.loadCaptcha();
           }
         },
-        error: (err) => {
+        error: (err: any) => {
           this.isLoadingLogin = false;
           console.error('Lỗi khi đăng nhập VNPost:', err);
-          this.message.error('Đăng nhập không thành công: ' + (err.error?.message || 'Vui lòng thử lại'));
+          
+          let errorMessage = 'Đăng nhập không thành công';
+          
+          // Xử lý các loại lỗi cụ thể
+          if (err.error) {
+            if (err.error.error === 'invalid_grant') {
+              errorMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác';
+            } else if (err.error.error === 'invalid_captcha') {
+              errorMessage = 'Mã xác nhận không chính xác';
+            } else if (err.error.message) {
+              errorMessage = err.error.message;
+            } else if (err.error.error_description) {
+              errorMessage = err.error.error_description;
+            }
+          }
+          
+          this.message.error(errorMessage);
           this.loadCaptcha();
         }
       });

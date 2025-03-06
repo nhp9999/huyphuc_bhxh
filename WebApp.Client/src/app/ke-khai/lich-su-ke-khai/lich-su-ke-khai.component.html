@@ -100,11 +100,21 @@
         <tbody>
           <tr *ngFor="let item of bhytTable.data">
             <td>{{ item.dotKeKhaiInfo }}</td>
-            <td>{{ item.thongTinThe?.ma_so_bhxh }}</td>
-            <td>{{ item.thongTinThe?.ho_ten }}</td>
-            <td>{{ item.thongTinThe?.cccd }}</td>
-            <td>{{ item.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
-            <td>{{ item.thongTinThe?.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' }}</td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ma_so_bhxh }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ho_ten }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.cccd }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' }}</ng-container>
+            </td>
             <td>{{ item.nguoi_thu }}</td>
             <td>
               <nz-tag [nzColor]="'blue'">
@@ -156,11 +166,21 @@
         <tbody>
           <tr *ngFor="let item of bhxhTable.data">
             <td>{{ item.dotKeKhaiInfo }}</td>
-            <td>{{ item.thongTinThe?.ma_so_bhxh }}</td>
-            <td>{{ item.thongTinThe?.ho_ten }}</td>
-            <td>{{ item.thongTinThe?.cccd }}</td>
-            <td>{{ item.thongTinThe?.ngay_sinh | date:'dd/MM/yyyy' }}</td>
-            <td>{{ item.thongTinThe?.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' }}</td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ma_so_bhxh }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ho_ten }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.cccd }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.gioi_tinh === 'nam' ? 'Nam' : 'Nữ' }}</ng-container>
+            </td>
             <td>{{ item.muc_luong | number }} đ</td>
             <td>
               <nz-tag [nzColor]="'blue'">

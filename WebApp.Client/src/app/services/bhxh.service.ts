@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 export interface TraCuuBHXHRequest {
   maSoBHXH?: string;
@@ -58,18 +59,32 @@ export class BHXHService {
     }
 
     const headers = new HttpHeaders({
-      'Accept': 'application/json',
+      'Accept': 'application/json, text/plain, */*',
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'Origin': 'https://ssmv2.vnpost.vn',
       'Referer': 'https://ssmv2.vnpost.vn/',
-      'Host': 'ssmv2.vnpost.vn'
+      'Host': 'ssmv2.vnpost.vn',
+      'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+      'sec-ch-ua-mobile': '?0',
+      'sec-ch-ua-platform': '"Windows"',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Site': 'same-origin'
     });
 
+    console.log('Request VNPost:', request);
+    console.log('Headers VNPost:', headers);
+
     return this.http.post<TraCuuVNPostResponse>(
-      'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh',
-      request,
+      'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhxhtnforkekhai',
+      { maSoBHXH: request.soCMND },
       { headers }
+    ).pipe(
+      tap(
+        response => console.log('Response VNPost:', response),
+        error => console.error('Error VNPost:', error)
+      )
     );
   }
 } 
