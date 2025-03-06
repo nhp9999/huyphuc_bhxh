@@ -52,7 +52,7 @@ export class BHXHService {
   }
 
   traCuuMaSoBHXHVNPost(request: TraCuuVNPostRequest): Observable<TraCuuVNPostResponse> {
-    const token = localStorage.getItem('vnpost_token');
+    const token = localStorage.getItem('ssmv2_token');
     if (!token) {
       throw new Error('Chưa có token VNPost');
     }

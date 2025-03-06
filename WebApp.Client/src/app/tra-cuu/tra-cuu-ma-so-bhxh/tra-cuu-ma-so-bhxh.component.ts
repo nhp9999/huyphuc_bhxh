@@ -19,9 +19,11 @@ import { NzSelectModule, NzSelectItemInterface } from 'ng-zorro-antd/select';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 import { BHXHService, TraCuuBHXHRequest, TraCuuVNPostRequest } from '../../services/bhxh.service';
 import { LocationService, Province, District, Commune } from '../../services/location.service';
 import { finalize } from 'rxjs/operators';
+import { SSMV2Service } from '../../services/ssmv2.service';
 
 interface TinhThanh {
   ma: string;
@@ -61,7 +63,8 @@ interface XaPhuong {
     NzSelectModule,
     NzDatePickerModule,
     NzTabsModule,
-    NzCheckboxModule
+    NzCheckboxModule,
+    NzModalModule
   ],
   templateUrl: './tra-cuu-ma-so-bhxh.component.html',
   styleUrls: ['./tra-cuu-ma-so-bhxh.component.scss']
@@ -83,11 +86,18 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   huyenTheoTinh: QuanHuyen[] = [];
   xaTheoHuyen: XaPhuong[] = [];
 
+  // Thêm các biến cho đăng nhập VNPost
+  isVNPostLoginVisible = false;
+  vnpostLoginForm!: FormGroup;
+  captchaData: any = null;
+  isLoadingLogin = false;
+
   constructor(
     private fb: FormBuilder,
     private bhxhService: BHXHService,
     private locationService: LocationService,
-    private message: NzMessageService
+    private message: NzMessageService,
+    private ssmv2Service: SSMV2Service
   ) {}
 
   ngOnInit(): void {
@@ -108,6 +118,13 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
     });
 
     this.loadDanhSachTinh();
+
+    // Khởi tạo form đăng nhập VNPost
+    this.vnpostLoginForm = this.fb.group({
+      userName: [null, [Validators.required]],
+      password: [null, [Validators.required]],
+      captchaText: [null, [Validators.required]]
+    });
   }
 
   loadDanhSachTinh(): void {
@@ -238,6 +255,13 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       this.daTimKiem = true;
       this.loiTraCuu = '';
       
+      // Kiểm tra token VNPost
+      if (!localStorage.getItem('ssmv2_token')) {
+        this.isLoading = false;
+        this.showVNPostLogin();
+        return;
+      }
+      
       // Lấy dữ liệu từ form
       const formData: TraCuuVNPostRequest = {
         ...this.traCuuVNPostForm.value,
@@ -262,9 +286,15 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
           error: (err) => {
             this.isLoading = false;
             this.ketQuaTraCuu = null;
-            this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu. Vui lòng thử lại sau.';
-            this.message.error(this.loiTraCuu);
-            console.error('Lỗi khi tra cứu VNPost:', err);
+            
+            // Kiểm tra nếu lỗi là do token hết hạn hoặc không hợp lệ
+            if (err.message && err.message.includes('token')) {
+              this.showVNPostLogin();
+            } else {
+              this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu. Vui lòng thử lại sau.';
+              this.message.error(this.loiTraCuu);
+              console.error('Lỗi khi tra cứu VNPost:', err);
+            }
           }
         });
     } else {
@@ -344,5 +374,87 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
     str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, 'Y');
     str = str.replace(/Đ/g, 'D');
     return str;
+  }
+
+  // Hiển thị form đăng nhập VNPost
+  showVNPostLogin(): void {
+    this.isVNPostLoginVisible = true;
+    this.vnpostLoginForm.reset();
+    this.loadCaptcha();
+  }
+  
+  // Đóng form đăng nhập VNPost
+  closeVNPostLogin(): void {
+    this.isVNPostLoginVisible = false;
+  }
+  
+  // Tải captcha
+  loadCaptcha(): void {
+    this.ssmv2Service.getCaptcha().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.captchaData = res.data;
+        } else {
+          this.message.error('Không thể tải captcha');
+        }
+      },
+      error: (err) => {
+        console.error('Lỗi khi tải captcha:', err);
+        this.message.error('Không thể tải captcha');
+      }
+    });
+  }
+  
+  // Đăng nhập VNPost
+  submitVNPostLogin(): void {
+    if (this.vnpostLoginForm.valid) {
+      this.isLoadingLogin = true;
+      
+      const loginData = {
+        grant_type: 'password',
+        userName: this.vnpostLoginForm.value.userName,
+        password: this.vnpostLoginForm.value.password,
+        text: this.vnpostLoginForm.value.captchaText,
+        code: this.captchaData.code,
+        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
+        isWeb: true
+      };
+      
+      this.ssmv2Service.authenticate(loginData).subscribe({
+        next: (res) => {
+          this.isLoadingLogin = false;
+          if (res && res.body && res.body.access_token) {
+            // Lưu token VNPost vào localStorage
+            localStorage.setItem('ssmv2_token', res.body.access_token);
+            this.message.success('Đăng nhập VNPost thành công');
+            this.closeVNPostLogin();
+            
+            // Tiếp tục tra cứu sau khi đăng nhập thành công
+            this.submitVNPostForm();
+          } else {
+            this.message.error('Đăng nhập không thành công');
+            this.loadCaptcha();
+          }
+        },
+        error: (err) => {
+          this.isLoadingLogin = false;
+          console.error('Lỗi khi đăng nhập VNPost:', err);
+          this.message.error('Đăng nhập không thành công: ' + (err.error?.message || 'Vui lòng thử lại'));
+          this.loadCaptcha();
+        }
+      });
+    } else {
+      Object.values(this.vnpostLoginForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsDirty();
+          control.updateValueAndValidity();
+        }
+      });
+    }
+  }
+
+  // Kiểm tra trạng thái đăng nhập VNPost
+  isVNPostLoggedIn(): boolean {
+    return !!this.ssmv2Service.getToken();
   }
 } 

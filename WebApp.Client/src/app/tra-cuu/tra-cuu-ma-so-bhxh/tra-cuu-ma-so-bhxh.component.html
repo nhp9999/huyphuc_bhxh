@@ -42,6 +42,17 @@
 
       <nz-tab nzTitle="Tra cứu qua VNPost">
         <form nz-form [formGroup]="traCuuVNPostForm" (ngSubmit)="submitVNPostForm()">
+          <div class="vnpost-login-button">
+            <button nz-button nzType="default" (click)="showVNPostLogin(); $event.preventDefault()">
+              <i nz-icon nzType="login" nzTheme="outline"></i>
+              Đăng nhập VNPost
+            </button>
+            <span class="login-status" *ngIf="isVNPostLoggedIn()">
+              <i nz-icon nzType="check-circle" nzTheme="twotone" [nzTwotoneColor]="'#52c41a'"></i>
+              Đã đăng nhập
+            </span>
+          </div>
+          
           <nz-form-item>
             <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
             <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
@@ -178,4 +189,86 @@
     <i nz-icon nzType="question-circle" nzTheme="outline"></i>
     Hướng dẫn
   </button>
-</ng-template> 
+</ng-template>
+
+<!-- Modal đăng nhập VNPost -->
+<nz-modal
+  [(nzVisible)]="isVNPostLoginVisible"
+  nzTitle="Đăng nhập VNPost"
+  (nzOnCancel)="closeVNPostLogin()"
+  [nzFooter]="null"
+  nzWidth="400px"
+>
+  <ng-container *nzModalContent>
+    <div class="login-info">
+      <p>Để sử dụng chức năng tra cứu qua VNPost, bạn cần đăng nhập vào hệ thống VNPost.</p>
+    </div>
+    <form nz-form [formGroup]="vnpostLoginForm" (ngSubmit)="submitVNPostLogin()">
+      <nz-form-item>
+        <nz-form-label [nzSpan]="24" nzRequired>Tên đăng nhập</nz-form-label>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập tên đăng nhập">
+          <input nz-input formControlName="userName" placeholder="Tên đăng nhập VNPost" />
+        </nz-form-control>
+      </nz-form-item>
+      
+      <nz-form-item>
+        <nz-form-label [nzSpan]="24" nzRequired>Mật khẩu</nz-form-label>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mật khẩu">
+          <input nz-input type="password" formControlName="password" placeholder="Mật khẩu VNPost" />
+        </nz-form-control>
+      </nz-form-item>
+      
+      <nz-form-item *ngIf="captchaData">
+        <nz-form-label [nzSpan]="24" nzRequired>Mã xác nhận</nz-form-label>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
+          <div class="captcha-container">
+            <img [src]="'data:image/png;base64,' + captchaData.image" alt="Captcha" class="captcha-image" />
+            <button nz-button nzType="default" (click)="loadCaptcha()" nzShape="circle">
+              <i nz-icon nzType="reload" nzTheme="outline"></i>
+            </button>
+          </div>
+          <input nz-input formControlName="captchaText" placeholder="Nhập mã xác nhận" />
+        </nz-form-control>
+      </nz-form-item>
+      
+      <div class="login-buttons">
+        <button nz-button nzType="primary" [nzLoading]="isLoadingLogin" type="submit">Đăng nhập</button>
+        <button nz-button nzType="default" (click)="closeVNPostLogin()">Hủy</button>
+      </div>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<style>
+  .login-info {
+    margin-bottom: 20px;
+  }
+  
+  .captcha-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .captcha-image {
+    max-width: 200px;
+    margin-right: 10px;
+  }
+  
+  .login-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .vnpost-login-button {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .login-status {
+    margin-left: 10px;
+    color: #52c41a;
+  }
+</style> 
