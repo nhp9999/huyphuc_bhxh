@@ -766,41 +766,58 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     if (this.isSearching) return;
 
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
-    if (maSoBHXH && maSoBHXH.length === 10) {
-      // Kiểm tra token trước khi tìm kiếm
-      if (!this.ssmv2Service.getToken()) {
-        this.getAccessToken();
-        return;
-      }
-
-      this.isSearching = true;
-      
-      this.keKhaiBHXHService.searchBHXH(maSoBHXH).subscribe({
-        next: (response: SearchResponse) => {
-          if (response.success) {
-            const data = response.data;
-            console.log('BHXH search response:', data);
-            this.processSearchResult(data);
-          } else {
-            this.message.error(response.message || 'Lỗi không xác định');
-          }
-        },
-        error: (err: any) => {
-          console.error('Search error:', err);
-          if (err.error?.error === 'Lỗi xác thực') {
-            this.ssmv2Service.clearToken();
-            this.getAccessToken();
-          } else {
-            this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || 'Lỗi không xác định'));
-          }
-        },
-        complete: () => {
-          this.isSearching = false;
-        }
-      });
-    } else {
+    if (!maSoBHXH || maSoBHXH.length !== 10) {
       this.message.warning('Vui lòng nhập đủ 10 số BHXH');
+      return;
     }
+
+    // Kiểm tra token trước khi tìm kiếm
+    const token = this.ssmv2Service.getToken();
+    if (!token) {
+      console.log('Không có token SSMV2, yêu cầu đăng nhập');
+      this.getAccessToken();
+      return;
+    }
+
+    this.isSearching = true;
+    
+    this.keKhaiBHXHService.searchBHXH(maSoBHXH).subscribe({
+      next: (response: any) => {
+        console.log('Response from BHXH search:', response);
+        
+        if (response.success) {
+          const data = response.data;
+          console.log('BHXH search response data:', data);
+          this.processSearchResult(data);
+          this.message.success('Đã tìm thấy thông tin BHXH');
+        } else {
+          this.message.error(response.message || 'Lỗi không xác định');
+        }
+      },
+      error: (err: any) => {
+        console.error('Search error:', err);
+        
+        // Xử lý lỗi xác thực
+        if (err.status === 401 || err.status === 403 || 
+            err.error?.error === 'Lỗi xác thực' || 
+            err.error?.error_description?.includes('Không tìm thấy thông tin phiên đăng nhập')) {
+          
+          console.log('Lỗi xác thực, yêu cầu đăng nhập lại');
+          this.ssmv2Service.clearToken();
+          this.getAccessToken();
+        } else if (err.status === 406) {
+          // Xử lý lỗi Not Acceptable
+          console.log('Lỗi 406 - Not Acceptable, xóa token và yêu cầu đăng nhập lại');
+          this.ssmv2Service.clearToken();
+          this.getAccessToken();
+        } else {
+          this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || err.error?.error_description || 'Lỗi không xác định'));
+        }
+      },
+      complete: () => {
+        this.isSearching = false;
+      }
+    });
   }
 
   private processSearchResult(data: any): void {
@@ -856,6 +873,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
   // Thêm phương thức lấy token
   getAccessToken(): void {
+    console.log('Yêu cầu đăng nhập SSMV2');
     this.isLoginVisible = true;
     this.getCaptcha();
   }
@@ -892,30 +910,31 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         isWeb: true
       };
 
+      console.log('Gửi request đăng nhập với data:', { ...data, password: '***' });
+
       this.ssmv2Service.authenticate(data).subscribe({
         next: (response) => {
           this.loadingLogin = false;
           
           if (response.body?.access_token) {
+            console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
             this.message.success('Xác thực thành công');
             this.isLoginVisible = false;
             
-            if (this.form.get('ma_so_bhxh')?.value) {
-              this.searchBHXH();
-            }
+            // Đảm bảo token đã được lưu trước khi tìm kiếm
+            setTimeout(() => {
+              if (this.form.get('ma_so_bhxh')?.value) {
+                console.log('Thực hiện tìm kiếm sau khi đăng nhập thành công');
+                this.searchBHXH();
+              }
+            }, 2000); // Tăng thời gian chờ lên 2 giây
           } else {
             this.message.error('Không nhận được token');
             this.getCaptcha();
           }
         },
         error: (err) => {
-          console.log('Error details:', {
-            error: err.error,
-            status: err.status,
-            message: err.message,
-            fullError: err
-          });
-
+          console.error('Login error:', err);
           this.loadingLogin = false;
           this.loginForm.patchValue({ text: '' });
 
@@ -945,7 +964,10 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
   handleLoginCancel(): void {
     this.isLoginVisible = false;
-    this.loginForm.reset();
+    this.loginForm.reset({
+      userName: '884000_xa_tli_phuoclt',
+      password: '123456d@D'
+    });
   }
 
   convertToUpperCase(event: Event): void {

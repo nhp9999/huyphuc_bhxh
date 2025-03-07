@@ -507,6 +507,8 @@
       [nzAutosize]="{ minRows: 4, maxRows: 8 }"
       placeholder="Nhập danh sách mã số BHXH, mỗi mã số một dòng"
       style="width: 100%; margin-bottom: 16px; resize: none;"
+      (input)="onMultipleSearchTextInput($event)"
+      (paste)="onMultipleSearchTextPaste($event)"
     ></textarea>
 
     <!-- Người thứ - Ẩn khi chọn chế độ Hộ gia đình -->

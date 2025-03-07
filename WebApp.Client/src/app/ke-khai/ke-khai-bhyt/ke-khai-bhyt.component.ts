@@ -3347,9 +3347,70 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức mới để xử lý khi thay đổi chế độ
   onModeChange(isHoGiaDinh: boolean): void {
     this.isHoGiaDinh = isHoGiaDinh;
+    // Nếu chuyển sang chế độ hộ gia đình, không cần chọn người thứ
     if (isHoGiaDinh) {
       this.multipleSearchNguoiThu = null as any;
     }
+  }
+
+  // Xử lý sự kiện khi người dùng nhập vào textarea
+  onMultipleSearchTextInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    const value = textarea.value;
+    
+    // Nếu người dùng nhập đủ 10 số và không có dấu xuống dòng ở cuối
+    if (value.length > 0 && !value.endsWith('\n')) {
+      const lines = value.split('\n');
+      const lastLine = lines[lines.length - 1];
+      
+      // Nếu dòng cuối cùng đã đủ 10 ký tự (đủ 1 mã số BHXH), tự động thêm xuống dòng
+      if (lastLine.length === 10 && /^\d+$/.test(lastLine)) {
+        textarea.value = value + '\n';
+        this.multipleSearchText = textarea.value;
+      }
+    }
+  }
+
+  // Xử lý sự kiện khi người dùng dán vào textarea
+  onMultipleSearchTextPaste(event: ClipboardEvent): void {
+    // Ngăn hành vi mặc định của trình duyệt
+    event.preventDefault();
+    
+    // Lấy nội dung từ clipboard
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+    
+    const pastedText = clipboardData.getData('text');
+    if (!pastedText) return;
+    
+    // Xử lý nội dung dán vào
+    const textarea = event.target as HTMLTextAreaElement;
+    const currentValue = textarea.value;
+    const cursorPosition = textarea.selectionStart;
+    
+    // Tách nội dung dán thành các dòng
+    let formattedText = pastedText
+      .replace(/\s+/g, '') // Loại bỏ tất cả khoảng trắng
+      .replace(/(.{10})/g, '$1\n'); // Thêm xuống dòng sau mỗi 10 ký tự
+    
+    // Nếu dòng cuối không đủ 10 ký tự và không phải là dòng trống, không thêm xuống dòng
+    if (formattedText.endsWith('\n') && formattedText.length % 11 !== 0) {
+      formattedText = formattedText.slice(0, -1);
+    }
+    
+    // Chèn nội dung đã định dạng vào vị trí con trỏ
+    const newValue = 
+      currentValue.substring(0, cursorPosition) + 
+      formattedText + 
+      currentValue.substring(textarea.selectionEnd || cursorPosition);
+    
+    // Cập nhật giá trị của textarea
+    textarea.value = newValue;
+    this.multipleSearchText = newValue;
+    
+    // Di chuyển con trỏ đến cuối nội dung vừa dán
+    const newCursorPosition = cursorPosition + formattedText.length;
+    textarea.setSelectionRange(newCursorPosition, newCursorPosition);
   }
 
   inBienLai(keKhaiId: number): void {

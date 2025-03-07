@@ -923,22 +923,17 @@ export class DotKeKhaiComponent implements OnInit {
         const maNhanVien = user.maNhanVien || '';
         this.loading = true;
         this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
-          next: (keKhaiBHYTs: KeKhaiBHYT[]) => {
+          next: (keKhaiBHYTs: any[]) => {
             console.log('Dữ liệu từ API:', keKhaiBHYTs);
 
-            // Sắp xếp dữ liệu theo số biên lai
-            const sortedKeKhaiBHYTs = [...keKhaiBHYTs].sort((a, b) => {
-              // Nếu có quyển biên lai, sắp xếp theo quyển số trước
-              if (a.QuyenBienLai && b.QuyenBienLai) {
-                const quyenSoCompare = a.QuyenBienLai.quyen_so.localeCompare(b.QuyenBienLai.quyen_so);
-                if (quyenSoCompare !== 0) return quyenSoCompare;
-              }
-              
-              // Sau đó sắp xếp theo số biên lai
-              const soBienLaiA = parseInt(a.so_bien_lai || '0');
-              const soBienLaiB = parseInt(b.so_bien_lai || '0');
-              return soBienLaiA - soBienLaiB;
-            });
+            // In ra console để kiểm tra dữ liệu từ API
+            console.log('Dữ liệu từ API với STT và ngày tạo:', keKhaiBHYTs.map(item => ({
+              stt: item.stt,
+              ngay_tao: item.ngay_tao,
+              ho_ten: item.ho_ten,
+              so_bien_lai: item.so_bien_lai || 'N/A',
+              quyen_so: item.QuyenBienLai?.quyen_so || 'N/A'
+            })));
 
             // Chuẩn bị dữ liệu cho sheet danh sách kê khai
             const keKhaiHeaders = [
@@ -1014,8 +1009,8 @@ export class DotKeKhaiComponent implements OnInit {
               Array(13).fill('')   // Dòng 2 trống với 13 cột
             ];
             
-            const keKhaiData = sortedKeKhaiBHYTs.map((item, index) => [
-              index + 1, // STT - Giữ nguyên số thứ tự theo thứ tự từ API
+            const keKhaiData = keKhaiBHYTs.map((item: any) => [
+              item.stt, // Sử dụng STT từ API
               item.ho_ten,
               item.ma_so_bhxh || '', 
               maNhanVien, // Sử dụng mã nhân viên từ API
@@ -1028,7 +1023,7 @@ export class DotKeKhaiComponent implements OnInit {
                 year: 'numeric'
               }) : '',
               item.so_bien_lai ? (item.QuyenBienLai ? 
-                `${item.QuyenBienLai.quyen_so}-${item.so_bien_lai}` : 
+                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
                 item.so_bien_lai
               ) : '',
               typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
@@ -1050,7 +1045,8 @@ export class DotKeKhaiComponent implements OnInit {
               item.ma_xa_nkq || '', // Cột V - Mã xã
               item.dia_chi_nkq || '', // Cột W - Địa chỉ
               item.so_thang_dong?.toString() || '', // Cột X hiển thị số tháng đóng
-              item.is_urgent ? 'Thẻ Gấp' : '', // Cột Y - Ghi "Thẻ Gấp" nếu là thẻ gấp
+              // Cột Y - Thêm "nghỉ học" nếu người tham gia có tuổi nhỏ hơn 18
+              this.isUnder18(item.ngay_sinh) ? 'Nghỉ học' : (item.is_urgent ? 'Thẻ Gấp' : ''),
               item.ngay_sinh ? new Date(item.ngay_sinh).toLocaleDateString('vi-VN', {
                 day: '2-digit',
                 month: '2-digit',
@@ -1092,7 +1088,7 @@ export class DotKeKhaiComponent implements OnInit {
               '', // Cột BH trống
               item.cccd || '', // Cột BI hiển thị CCCD
               item.so_bien_lai ? (item.QuyenBienLai ? 
-                `${item.QuyenBienLai.quyen_so}-${item.so_bien_lai}` : 
+                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
                 item.so_bien_lai
               ) : '', // Cột BJ - Số biên lai
               item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
@@ -1203,6 +1199,24 @@ export class DotKeKhaiComponent implements OnInit {
   // Thêm hàm chuyển đổi giới tính
   getGioiTinhValue(gioiTinh: string): string {
     return gioiTinh?.toLowerCase() === 'nam' ? '1' : '0';
+  }
+
+  // Thêm hàm kiểm tra tuổi
+  isUnder18(ngaySinh: string | Date | null | undefined): boolean {
+    if (!ngaySinh) return false;
+    
+    const birthDate = new Date(ngaySinh);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Nếu chưa tới tháng sinh nhật hoặc tới tháng sinh nhật nhưng chưa tới ngày sinh nhật
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age < 18;
   }
 
   showViewBillModal(url: string): void {

@@ -455,6 +455,7 @@ namespace WebApp.API.Controllers
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.QuyenBienLai)
                     .Where(k => k.dot_ke_khai_id == id)
+                    .OrderBy(k => k.ngay_tao)
                     .Select(k => new
                     {
                         ho_ten = k.ThongTinThe.ho_ten,
@@ -485,13 +486,49 @@ namespace WebApp.API.Controllers
                         QuyenBienLai = new {
                             quyen_so = k.QuyenBienLai.quyen_so
                         },
-                        ma_nhan_vien = nguoiDung.ma_nhan_vien
+                        ma_nhan_vien = nguoiDung.ma_nhan_vien,
+                        ngay_tao = k.ngay_tao
                     })
                     .ToListAsync();
 
                 _logger.LogInformation($"Tìm thấy {keKhaiBHYTs.Count} bản ghi kê khai BHYT cho đợt {id}");
                 
-                return Ok(keKhaiBHYTs);
+                // Gán STT theo thứ tự đã sắp xếp
+                var keKhaiBHYTsWithSTT = keKhaiBHYTs
+                    .Select((k, index) => new {
+                        stt = index + 1,
+                        ho_ten = k.ho_ten,
+                        cccd = k.cccd,
+                        ma_so_bhxh = k.ma_so_bhxh,
+                        ngay_sinh = k.ngay_sinh,
+                        gioi_tinh = k.gioi_tinh,
+                        phuong_an_dong = k.phuong_an_dong,
+                        so_dien_thoai = k.so_dien_thoai,
+                        so_the_bhyt = k.so_the_bhyt,
+                        so_tien = k.so_tien,
+                        nguoi_thu = k.nguoi_thu,
+                        ngay_bien_lai = k.ngay_bien_lai,
+                        ma_tinh_nkq = k.ma_tinh_nkq,
+                        ma_huyen_nkq = k.ma_huyen_nkq,
+                        ma_xa_nkq = k.ma_xa_nkq,
+                        dia_chi_nkq = k.dia_chi_nkq,
+                        so_thang_dong = k.so_thang_dong,
+                        ma_benh_vien = k.ma_benh_vien,
+                        ma_hgd = k.ma_hgd,
+                        quoc_tich = k.quoc_tich,
+                        ma_tinh_ks = k.ma_tinh_ks,
+                        ma_huyen_ks = k.ma_huyen_ks,
+                        ma_xa_ks = k.ma_xa_ks,
+                        han_the_moi_tu = k.han_the_moi_tu,
+                        is_urgent = k.is_urgent,
+                        so_bien_lai = k.so_bien_lai,
+                        QuyenBienLai = k.QuyenBienLai,
+                        ma_nhan_vien = k.ma_nhan_vien,
+                        ngay_tao = k.ngay_tao
+                    })
+                    .ToList();
+                
+                return Ok(keKhaiBHYTsWithSTT);
             }
             catch (Exception ex)
             {
