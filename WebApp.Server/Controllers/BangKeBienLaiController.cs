@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using WebApp.API.Data;
 using WebApp.API.Models;
 using System.Security.Claims;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using System.Drawing;
 
 namespace WebApp.API.Controllers
 {
@@ -54,8 +57,11 @@ namespace WebApp.API.Controllers
                         .ThenInclude(k => k.ThongTinThe)
                     .AsQueryable();
 
-                // Chỉ lấy biên lai của người dùng hiện tại
-                query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
+                // Chỉ lấy biên lai của người dùng hiện tại nếu không phải admin hoặc super admin
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
+                }
 
                 if (tuNgay.HasValue)
                 {
@@ -85,7 +91,7 @@ namespace WebApp.API.Controllers
                         ten_nguoi_dong = b.ten_nguoi_dong,
                         ma_so_bhxh = b.ma_so_bhxh,
                         so_tien = b.so_tien,
-                        ngay_bien_lai = b.ngay_bien_lai,
+                        ngay_bien_lai = b.ngay_bien_lai.Date,
                         ma_nhan_vien = b.ma_nhan_vien,
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
@@ -134,8 +140,11 @@ namespace WebApp.API.Controllers
                         .ThenInclude(k => k.ThongTinThe)
                     .AsQueryable();
 
-                // Chỉ lấy biên lai của người dùng hiện tại
-                query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
+                // Chỉ lấy biên lai của người dùng hiện tại nếu không phải admin hoặc super admin
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUser.ma_nhan_vien);
+                }
 
                 if (tuNgay.HasValue)
                 {
@@ -165,7 +174,7 @@ namespace WebApp.API.Controllers
                         ten_nguoi_dong = b.ten_nguoi_dong,
                         ma_so_bhxh = b.ma_so_bhxh,
                         so_tien = b.so_tien,
-                        ngay_bien_lai = b.ngay_bien_lai,
+                        ngay_bien_lai = b.ngay_bien_lai.Date,
                         ma_nhan_vien = b.ma_nhan_vien,
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
@@ -175,9 +184,68 @@ namespace WebApp.API.Controllers
                     .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
 
-                // TODO: Implement export Excel logic here
-                return File(new byte[] { }, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-                    $"bang-ke-bien-lai-{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                // Tạo file Excel mới
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Bảng kê biên lai");
+                    
+                    // Thiết lập tiêu đề
+                    worksheet.Cells["A1:J1"].Merge = true;
+                    worksheet.Cells["A1"].Value = "BẢNG KÊ BIÊN LAI";
+                    worksheet.Cells["A1"].Style.Font.Size = 16;
+                    worksheet.Cells["A1"].Style.Font.Bold = true;
+                    worksheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                    // Thiết lập header
+                    var headers = new[] { "Quyển số", "Số biên lai", "Tên người đóng", "Mã số BHXH", "Số tiền", "Ngày biên lai", "Mã nhân viên", "Ghi chú", "Trạng thái", "Tính chất" };
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        worksheet.Cells[3, i + 1].Value = headers[i];
+                        worksheet.Cells[3, i + 1].Style.Font.Bold = true;
+                        worksheet.Cells[3, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        worksheet.Cells[3, i + 1].Style.Fill.BackgroundColor.SetColor(Color.LightGray);
+                        worksheet.Cells[3, i + 1].Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                    }
+
+                    // Điền dữ liệu
+                    int row = 4;
+                    decimal tongSoTien = 0;
+                    foreach (var item in data)
+                    {
+                        worksheet.Cells[row, 1].Value = item.quyen_so;
+                        worksheet.Cells[row, 2].Value = item.so_bien_lai;
+                        worksheet.Cells[row, 3].Value = item.ten_nguoi_dong;
+                        worksheet.Cells[row, 4].Value = item.ma_so_bhxh;
+                        worksheet.Cells[row, 5].Value = item.so_tien;
+                        worksheet.Cells[row, 5].Style.Numberformat.Format = "#,##0";
+                        worksheet.Cells[row, 6].Value = item.ngay_bien_lai.ToString("dd/MM/yyyy");
+                        worksheet.Cells[row, 7].Value = item.ma_nhan_vien;
+                        worksheet.Cells[row, 8].Value = item.ghi_chu;
+                        worksheet.Cells[row, 9].Value = item.trang_thai;
+                        worksheet.Cells[row, 10].Value = item.tinh_chat;
+
+                        // Thêm border cho các ô
+                        worksheet.Cells[row, 1, row, 10].Style.Border.BorderAround(ExcelBorderStyle.Thin);
+
+                        tongSoTien += item.so_tien;
+                        row++;
+                    }
+
+                    // Thêm tổng số tiền
+                    worksheet.Cells[row + 1, 4].Value = "Tổng số tiền:";
+                    worksheet.Cells[row + 1, 4].Style.Font.Bold = true;
+                    worksheet.Cells[row + 1, 5].Value = tongSoTien;
+                    worksheet.Cells[row + 1, 5].Style.Font.Bold = true;
+                    worksheet.Cells[row + 1, 5].Style.Numberformat.Format = "#,##0";
+
+                    // Tự động điều chỉnh độ rộng cột
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    // Tạo file Excel
+                    var content = package.GetAsByteArray();
+                    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                        $"bang-ke-bien-lai-{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                }
             }
             catch (Exception ex)
             {

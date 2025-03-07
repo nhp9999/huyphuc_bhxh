@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Npgsql;
+using OfficeOpenXml;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+// Cấu hình giấy phép cho EPPlus
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
 
