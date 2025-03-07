@@ -1,45 +1,6 @@
 <div class="container">
   <nz-card nzTitle="Tra cứu mã số BHXH" [nzExtra]="extraTemplate">
     <nz-tabset [(nzSelectedIndex)]="activeTab" (nzSelectChange)="resetForm()">
-      <nz-tab nzTitle="Tra cứu cơ bản">
-        <form nz-form [formGroup]="traCuuForm" (ngSubmit)="submitForm()">
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập mã số BHXH">
-              <input nz-input formControlName="maSoBHXH" placeholder="Nhập mã số BHXH" />
-            </nz-form-control>
-          </nz-form-item>
-
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6">Họ và tên</nz-form-label>
-            <nz-form-control [nzSpan]="14">
-              <input nz-input formControlName="hoTen" placeholder="Nhập họ và tên (không bắt buộc)" />
-            </nz-form-control>
-          </nz-form-item>
-
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6">Số CCCD/CMND</nz-form-label>
-            <nz-form-control [nzSpan]="14">
-              <input nz-input formControlName="soCCCD" placeholder="Nhập số CCCD/CMND (không bắt buộc)" />
-            </nz-form-control>
-          </nz-form-item>
-
-          <nz-form-item>
-            <nz-form-control [nzOffset]="6" [nzSpan]="14">
-              <button nz-button nzType="primary" [disabled]="isLoading">
-                <i nz-icon nzType="search" *ngIf="!isLoading"></i>
-                <i nz-icon nzType="loading" *ngIf="isLoading"></i>
-                Tra cứu
-              </button>
-              <button nz-button (click)="resetForm()" style="margin-left: 8px;">
-                <i nz-icon nzType="clear"></i>
-                Xóa
-              </button>
-            </nz-form-control>
-          </nz-form-item>
-        </form>
-      </nz-tab>
-
       <nz-tab nzTitle="Tra cứu qua VNPost">
         <form nz-form [formGroup]="traCuuVNPostForm" (ngSubmit)="submitVNPostForm()">
           <div class="vnpost-login-button">

@@ -1,0 +1,91 @@
+<nz-modal
+  [nzVisible]="isVisible"
+  [nzTitle]="'Chi tiết quyền biên lai'"
+  [nzFooter]="null"
+  (nzOnCancel)="handleCancel()"
+  [nzWidth]="700"
+>
+  <ng-container *nzModalContent>
+    <div class="chi-tiet-quyen-bien-lai">
+      <!-- Thông tin chính -->
+      <div nz-row [nzGutter]="16">
+        <!-- Cột trái -->
+        <div nz-col [nzSpan]="12">
+          <div class="thong-tin-item">
+            <div class="label">Quyền số</div>
+            <div class="value">{{ quyenBienLai?.quyenSo }}</div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Từ số</div>
+            <div class="value">{{ quyenBienLai?.tuSo }}</div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Số hiện tại</div>
+            <div class="value">{{ quyenBienLai?.soHienTai }}</div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Người thu</div>
+            <div class="value">
+              <nz-avatar nzIcon="user" [nzSize]="24"></nz-avatar>
+              <span class="ml-2">{{ quyenBienLai?.nguoiThu }}</span>
+            </div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Ngày cấp</div>
+            <div class="value">{{ quyenBienLai?.ngayCap | date:'dd/MM/yyyy HH:mm' }}</div>
+          </div>
+        </div>
+        
+        <!-- Cột phải -->
+        <div nz-col [nzSpan]="12">
+          <div class="thong-tin-item">
+            <div class="label">Trạng thái</div>
+            <div class="value">
+              <nz-tag [nzColor]="'success'" *ngIf="quyenBienLai?.trangThai === 'Đang sử dụng'">
+                <span nz-icon nzType="check-circle" nzTheme="outline"></span> {{ quyenBienLai?.trangThai }}
+              </nz-tag>
+              <nz-tag [nzColor]="'default'" *ngIf="quyenBienLai?.trangThai === 'Đã hết'">
+                {{ quyenBienLai?.trangThai }}
+              </nz-tag>
+              <nz-tag [nzColor]="'error'" *ngIf="quyenBienLai?.trangThai === 'Đã hủy'">
+                {{ quyenBienLai?.trangThai }}
+              </nz-tag>
+            </div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Đến số</div>
+            <div class="value">{{ quyenBienLai?.denSo }}</div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Số lượng biên lai</div>
+            <div class="value">{{ quyenBienLai?.soLuongBienLai }}</div>
+          </div>
+          
+          <div class="thong-tin-item">
+            <div class="label">Người cấp</div>
+            <div class="value">{{ quyenBienLai?.nguoiCap }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tiến độ sử dụng -->
+      <div class="tien-do-container">
+        <h3 class="tien-do-title">Tiến độ sử dụng</h3>
+        <nz-progress 
+          [nzPercent]="quyenBienLai?.tienDoSuDung || 0" 
+          [nzStatus]="'active'"
+          [nzStrokeColor]="'#52c41a'"
+        ></nz-progress>
+        <div class="tien-do-info">
+          {{ quyenBienLai?.tienDoSuDung || 0 }}% ({{ getSoLuongDaSuDung() }})
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</nz-modal> 

@@ -10,6 +10,17 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import { NzProgressModule } from 'ng-zorro-antd/progress';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzLayoutModule } from 'ng-zorro-antd/layout';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { UserService, NguoiDung } from '../../services/user.service';
 import { QuyenBienLaiService, QuyenBienLai } from '../../services/quyen-bien-lai.service';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
@@ -18,9 +29,22 @@ import {
   HomeOutline,
   PlusOutline,
   EditOutline,
-  DeleteOutline
+  DeleteOutline,
+  FilterOutline,
+  ClearOutline,
+  BookOutline,
+  CheckCircleOutline,
+  InboxOutline,
+  FileDoneOutline,
+  UserOutline,
+  TagOutline,
+  SearchOutline,
+  EyeOutline,
+  NumberOutline
 } from '@ant-design/icons-angular/icons';
 import { IconDefinition } from '@ant-design/icons-angular';
+import { ChiTietQuyenBienLaiComponent } from './chi-tiet-quyen-bien-lai/chi-tiet-quyen-bien-lai.component';
+import { QuyenBienLai as QuyenBienLaiModel } from '../models/quyen-bien-lai.model';
 // Import other needed modules
 
 interface NguoiThuOption {
@@ -39,7 +63,18 @@ const icons: IconDefinition[] = [
   HomeOutline,
   PlusOutline,
   EditOutline,
-  DeleteOutline
+  DeleteOutline,
+  FilterOutline,
+  ClearOutline,
+  BookOutline,
+  CheckCircleOutline,
+  InboxOutline,
+  FileDoneOutline,
+  UserOutline,
+  TagOutline,
+  SearchOutline,
+  EyeOutline,
+  NumberOutline
 ];
 
 @Component({
@@ -57,25 +92,26 @@ const icons: IconDefinition[] = [
     NzSelectModule,
     NzIconModule,
     NzTagModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzDividerModule,
+    NzEmptyModule,
+    NzAvatarModule,
+    NzRadioModule,
+    NzDescriptionsModule,
+    NzProgressModule,
+    NzToolTipModule,
+    NzGridModule,
+    NzLayoutModule,
+    NzAlertModule,
+    NzCheckboxModule,
+    ChiTietQuyenBienLaiComponent
   ],
   templateUrl: './quyen-bien-lai.component.html',
-  styles: [`
-    .page-header {
-      margin-bottom: 16px;
-    }
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .actions {
-      text-align: right;
-    }
-  `]
+  styleUrls: ['./quyen-bien-lai.component.scss']
 })
 export class QuyenBienLaiComponent implements OnInit {
   listQuyenBienLai: QuyenBienLai[] = [];
+  filteredQuyenBienLai: QuyenBienLai[] = [];
   users: NguoiDung[] = [];
   userMap = new Map<number, NguoiDung>();
   loading = false;
@@ -88,6 +124,13 @@ export class QuyenBienLaiComponent implements OnInit {
   indeterminate = false;
   setOfCheckedId = new Set<number>();
   editingQuyenBienLai: QuyenBienLai | null = null;
+  selectedNguoiThu: any = 'all';
+  selectedTrangThai: string = 'all';
+  searchText: string = '';
+  isDetailVisible: boolean = false;
+  selectedQuyenBienLai: QuyenBienLai | null = null;
+  suggestedQuyenSo: string = '';
+  quyenSoStatus: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -137,6 +180,7 @@ export class QuyenBienLaiComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadData();
+    this.calculateSuggestedQuyenSo();
   }
 
   loadData(): void {
@@ -145,6 +189,7 @@ export class QuyenBienLaiComponent implements OnInit {
       next: (data: QuyenBienLai[]) => {
         console.log('Loaded quyen bien lai:', data);
         this.listQuyenBienLai = data;
+        this.filteredQuyenBienLai = data;
         this.loading = false;
         this.setOfCheckedId.clear();
         this.refreshCheckedStatus();
@@ -187,9 +232,12 @@ export class QuyenBienLaiComponent implements OnInit {
     });
     this.modalTitle = 'Thêm quyển biên lai';
     this.isVisible = true;
+    this.calculateSuggestedQuyenSo();
   }
 
   handleOk(): void {
+    this.checkDuplicateQuyenSo();
+    
     if (this.form.valid) {
       this.isOkLoading = true;
       
@@ -202,43 +250,28 @@ export class QuyenBienLaiComponent implements OnInit {
         quyen_so: formValue.quyen_so,
         tu_so: formValue.tu_so,
         den_so: formValue.den_so,
-        nhan_vien_thu: Number(formValue.nhan_vien_thu),
-        trang_thai: formValue.trang_thai,
         so_hien_tai: this.editingQuyenBienLai ? formValue.so_hien_tai : formValue.tu_so,
-        nguoi_cap: this.editingQuyenBienLai?.nguoi_cap || currentUser?.user_name || currentUser?.userName || currentUser?.username
+        nhan_vien_thu: formValue.nhan_vien_thu,
+        nguoi_cap: currentUser?.hoTen || currentUser?.userName,
+        ngay_cap: new Date(),
+        trang_thai: formValue.trang_thai
       };
-
-      if (this.editingQuyenBienLai) {
-        // Nếu đang sửa
-        this.quyenBienLaiService.updateQuyenBienLai(this.editingQuyenBienLai.id!, data).subscribe({
-          next: (response) => {
-            this.message.success('Cập nhật quyển biên lai thành công');
-            this.isVisible = false;
-            this.isOkLoading = false;
-            this.editingQuyenBienLai = null;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Update error:', error);
-            this.message.error(error.error?.message || 'Có lỗi xảy ra khi cập nhật');
+      
+      if (formValue.trang_thai === 'da_su_dung' && (!this.editingQuyenBienLai || this.editingQuyenBienLai.trang_thai !== 'da_su_dung')) {
+        this.modal.confirm({
+          nzTitle: 'Xác nhận trạng thái',
+          nzContent: 'Bạn đang đặt trạng thái quyển biên lai là "Đã sử dụng". Sau khi lưu, bạn sẽ không thể chỉnh sửa quyển biên lai này nữa. Bạn có chắc chắn muốn tiếp tục?',
+          nzOkText: 'Đồng ý',
+          nzOkType: 'primary',
+          nzOkDanger: true,
+          nzOnOk: () => this.saveQuyenBienLai(data),
+          nzCancelText: 'Hủy',
+          nzOnCancel: () => {
             this.isOkLoading = false;
           }
         });
       } else {
-        // Nếu đang thêm mới
-        this.quyenBienLaiService.createQuyenBienLai(data).subscribe({
-          next: (response) => {
-            this.message.success('Thêm quyển biên lai thành công');
-            this.isVisible = false;
-            this.isOkLoading = false;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Create error:', error);
-            this.message.error(error.error?.message || 'Có lỗi xảy ra khi thêm mới');
-            this.isOkLoading = false;
-          }
-        });
+        this.saveQuyenBienLai(data);
       }
     } else {
       Object.values(this.form.controls).forEach(control => {
@@ -393,7 +426,7 @@ export class QuyenBienLaiComponent implements OnInit {
 
   onAllChecked(checked: boolean): void {
     // Chỉ cho phép chọn những quyển chưa sử dụng
-    this.listQuyenBienLai
+    this.filteredQuyenBienLai
       .filter(item => item.trang_thai === 'chua_su_dung')
       .forEach(({ id }) => this.updateCheckedSet(id!, checked));
     this.refreshCheckedStatus();
@@ -401,7 +434,7 @@ export class QuyenBienLaiComponent implements OnInit {
 
   refreshCheckedStatus(): void {
     // Chỉ tính toán trạng thái checked dựa trên những quyển chưa sử dụng
-    const listChuaSuDung = this.listQuyenBienLai.filter(item => item.trang_thai === 'chua_su_dung');
+    const listChuaSuDung = this.filteredQuyenBienLai.filter(item => item.trang_thai === 'chua_su_dung');
     
     // Nếu không có quyển nào chưa sử dụng, set checked và indeterminate về false
     if (listChuaSuDung.length === 0) {
@@ -448,6 +481,236 @@ export class QuyenBienLaiComponent implements OnInit {
           soHienTaiControl.setErrors(Object.keys(errors).length ? errors : null);
         }
       }
+    }
+  }
+
+  // Phương thức xử lý khi thay đổi bộ lọc
+  onFilterChange(): void {
+    this.applyFilter();
+  }
+
+  // Phương thức đặt lại bộ lọc
+  resetFilter(): void {
+    this.selectedNguoiThu = 'all';
+    this.selectedTrangThai = 'all';
+    this.searchText = '';
+    this.applyFilter();
+  }
+
+  // Phương thức áp dụng bộ lọc
+  applyFilter(): void {
+    let filtered = [...this.listQuyenBienLai];
+    
+    // Lọc theo người thu
+    if (this.selectedNguoiThu !== 'all') {
+      filtered = filtered.filter(item => item.nhan_vien_thu === this.selectedNguoiThu);
+    }
+    
+    // Lọc theo trạng thái
+    if (this.selectedTrangThai !== 'all') {
+      filtered = filtered.filter(item => item.trang_thai === this.selectedTrangThai);
+    }
+    
+    // Lọc theo từ khóa tìm kiếm
+    if (this.searchText && this.searchText.trim() !== '') {
+      const searchLower = this.searchText.toLowerCase().trim();
+      filtered = filtered.filter(item => 
+        item.quyen_so.toString().includes(searchLower) ||
+        item.tu_so.toString().includes(searchLower) ||
+        item.den_so.toString().includes(searchLower) ||
+        (item.so_hien_tai && item.so_hien_tai.toString().includes(searchLower)) ||
+        this.getNguoiThuName(item.nhan_vien_thu).toLowerCase().includes(searchLower) ||
+        (item.nguoi_cap && item.nguoi_cap.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    this.filteredQuyenBienLai = filtered;
+    this.setOfCheckedId.clear();
+    this.refreshCheckedStatus();
+  }
+
+  // Lấy icon cho trạng thái
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'chua_su_dung':
+        return 'inbox';
+      case 'dang_su_dung':
+        return 'check-circle';
+      case 'da_su_dung':
+        return 'file-done';
+      default:
+        return 'question-circle';
+    }
+  }
+
+  // Đếm số quyển theo trạng thái
+  getQuyenCount(status: string): number {
+    return this.listQuyenBienLai.filter(item => item.trang_thai === status).length;
+  }
+
+  // Xem chi tiết quyển biên lai
+  viewDetails(item: QuyenBienLai): void {
+    this.selectedQuyenBienLai = item;
+    this.isDetailVisible = true;
+  }
+
+  // Đóng modal chi tiết
+  closeDetailModal(): void {
+    this.isDetailVisible = false;
+    this.selectedQuyenBienLai = null;
+  }
+
+  // Chuyển đổi dữ liệu từ selectedQuyenBienLai sang model QuyenBienLai
+  mapToQuyenBienLaiModel(item: any): QuyenBienLaiModel | null {
+    if (!item) return null;
+    
+    return {
+      quyenSo: item.quyen_so,
+      trangThai: this.getStatusText(item.trang_thai) as any,
+      tuSo: item.tu_so,
+      denSo: item.den_so,
+      soHienTai: item.so_hien_tai,
+      soLuongBienLai: this.calculateTotalReceipts(item),
+      nguoiThu: this.getNguoiThuName(item.nhan_vien_thu),
+      nguoiCap: item.nguoi_cap,
+      ngayCap: item.ngay_cap,
+      tienDoSuDung: this.calculateProgress(item),
+      soLuongDaSuDung: this.getUsedCount(item)
+    };
+  }
+
+  // Tính tổng số biên lai trong quyển
+  calculateTotalReceipts(item: QuyenBienLai): number {
+    const tuSo = parseInt(item.tu_so);
+    const denSo = parseInt(item.den_so);
+    return denSo - tuSo + 1;
+  }
+
+  // Tính số biên lai đã sử dụng
+  getUsedCount(item: QuyenBienLai): number {
+    if (item.trang_thai === 'chua_su_dung') {
+      return 0;
+    }
+    
+    const tuSo = parseInt(item.tu_so);
+    const soHienTai = item.so_hien_tai ? parseInt(item.so_hien_tai) : tuSo;
+    
+    return soHienTai - tuSo;
+  }
+
+  // Tính phần trăm tiến độ sử dụng
+  calculateProgress(item: QuyenBienLai): number {
+    const total = this.calculateTotalReceipts(item);
+    const used = this.getUsedCount(item);
+    
+    return Math.round((used / total) * 100);
+  }
+
+  // Lấy màu cho thanh tiến độ
+  getProgressColor(percent: number): string {
+    if (percent >= 90) {
+      return '#ff4d4f'; // Đỏ - sắp hết
+    } else if (percent >= 70) {
+      return '#faad14'; // Vàng - đã sử dụng nhiều
+    } else {
+      return '#52c41a'; // Xanh lá - còn nhiều
+    }
+  }
+
+  // Định dạng hiển thị tiến độ
+  progressFormatFn = (percent: number): string => {
+    return `${percent}%`;
+  };
+
+  // Tính toán gợi ý quyển số (quyển số tiếp theo)
+  calculateSuggestedQuyenSo(): void {
+    if (this.listQuyenBienLai.length === 0) {
+      this.suggestedQuyenSo = '1';
+      return;
+    }
+
+    // Tìm quyển số lớn nhất
+    const maxQuyenSo = Math.max(...this.listQuyenBienLai.map(item => parseInt(item.quyen_so)));
+    this.suggestedQuyenSo = (maxQuyenSo + 1).toString();
+  }
+
+  // Áp dụng gợi ý quyển số
+  applySuggestedQuyenSo(): void {
+    this.form.get('quyen_so')?.setValue(this.suggestedQuyenSo);
+    this.checkDuplicateQuyenSo();
+  }
+
+  // Kiểm tra trùng lặp quyển số
+  checkDuplicateQuyenSo(): void {
+    const quyenSoControl = this.form.get('quyen_so');
+    const quyenSoValue = quyenSoControl?.value;
+    
+    if (!quyenSoValue) {
+      this.quyenSoStatus = '';
+      return;
+    }
+
+    // Kiểm tra xem quyển số đã tồn tại chưa
+    const isDuplicate = this.listQuyenBienLai.some(item => 
+      item.quyen_so === quyenSoValue && 
+      (!this.editingQuyenBienLai || item.id !== this.editingQuyenBienLai.id)
+    );
+
+    if (isDuplicate) {
+      quyenSoControl?.setErrors({ ...quyenSoControl.errors, duplicate: true });
+      this.quyenSoStatus = 'error';
+    } else {
+      // Xóa lỗi duplicate nếu có
+      if (quyenSoControl?.hasError('duplicate')) {
+        const errors = { ...quyenSoControl.errors };
+        delete errors['duplicate'];
+        
+        // Nếu không còn lỗi nào khác, set errors = null
+        quyenSoControl.setErrors(Object.keys(errors).length ? errors : null);
+      }
+      
+      this.quyenSoStatus = quyenSoControl?.invalid ? 'error' : 'success';
+    }
+  }
+
+  // Xử lý khi thay đổi trạng thái
+  onTrangThaiChange(value: string): void {
+    if (value === 'da_su_dung') {
+      // Hiển thị cảnh báo trong form
+      // Cảnh báo đã được thêm vào template HTML
+    }
+  }
+
+  // Phương thức lưu quyển biên lai
+  saveQuyenBienLai(data: any): void {
+    if (this.editingQuyenBienLai) {
+      this.quyenBienLaiService.updateQuyenBienLai(this.editingQuyenBienLai.id!, data).subscribe({
+        next: () => {
+          this.message.success('Cập nhật quyển biên lai thành công');
+          this.isVisible = false;
+          this.isOkLoading = false;
+          this.loadData();
+        },
+        error: (err: any) => {
+          this.message.error('Lỗi khi cập nhật quyển biên lai');
+          console.error(err);
+          this.isOkLoading = false;
+        }
+      });
+    } else {
+      this.quyenBienLaiService.createQuyenBienLai(data).subscribe({
+        next: () => {
+          this.message.success('Thêm quyển biên lai thành công');
+          this.isVisible = false;
+          this.isOkLoading = false;
+          this.loadData();
+        },
+        error: (err: any) => {
+          this.message.error('Lỗi khi thêm quyển biên lai');
+          console.error(err);
+          this.isOkLoading = false;
+        }
+      });
     }
   }
 } 

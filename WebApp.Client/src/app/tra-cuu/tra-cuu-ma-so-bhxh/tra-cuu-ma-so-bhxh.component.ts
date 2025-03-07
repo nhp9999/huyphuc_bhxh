@@ -20,7 +20,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzModalModule } from 'ng-zorro-antd/modal';
-import { BHXHService, TraCuuBHXHRequest, TraCuuVNPostRequest } from '../../services/bhxh.service';
+import { BHXHService, TraCuuVNPostRequest } from '../../services/bhxh.service';
 import { LocationService, Province, District, Commune } from '../../services/location.service';
 import { finalize } from 'rxjs/operators';
 import { SSMV2Service } from '../../services/ssmv2.service';
@@ -70,7 +70,6 @@ interface XaPhuong {
   styleUrls: ['./tra-cuu-ma-so-bhxh.component.scss']
 })
 export class TraCuuMaSoBhxhComponent implements OnInit {
-  traCuuForm!: FormGroup;
   traCuuVNPostForm!: FormGroup;
   isLoading = false;
   isLoadingData = false;
@@ -101,12 +100,6 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.traCuuForm = this.fb.group({
-      maSoBHXH: [null, [Validators.required]],
-      hoTen: [null],
-      soCCCD: [null]
-    });
-
     this.traCuuVNPostForm = this.fb.group({
       maTinh: [null, [Validators.required]],
       maHuyen: [null, [Validators.required]],
@@ -205,48 +198,6 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
           this.xaTheoHuyen = [];
         }
       });
-  }
-
-  submitForm(): void {
-    if (this.traCuuForm.valid) {
-      this.isLoading = true;
-      this.daTimKiem = true;
-      this.loiTraCuu = '';
-      
-      // Lấy dữ liệu từ form
-      const formData: TraCuuBHXHRequest = this.traCuuForm.value;
-      
-      // Gọi API tra cứu thông qua service
-      this.bhxhService.traCuuMaSoBHXH(formData)
-        .subscribe({
-          next: (res) => {
-            this.isLoading = false;
-            if (res && res.success) {
-              this.ketQuaTraCuu = res.data;
-              this.message.success('Tra cứu thành công');
-            } else {
-              this.ketQuaTraCuu = null;
-              this.loiTraCuu = res.message || 'Không tìm thấy thông tin phù hợp';
-              this.message.error(this.loiTraCuu);
-            }
-          },
-          error: (err) => {
-            this.isLoading = false;
-            this.ketQuaTraCuu = null;
-            this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu. Vui lòng thử lại sau.';
-            this.message.error(this.loiTraCuu);
-            console.error('Lỗi khi tra cứu:', err);
-          }
-        });
-    } else {
-      Object.values(this.traCuuForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsDirty();
-          control.updateValueAndValidity({ onlySelf: true });
-        }
-      });
-      this.message.warning('Vui lòng nhập đầy đủ thông tin bắt buộc');
-    }
   }
 
   submitVNPostForm(): void {
@@ -353,15 +304,10 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   }
 
   resetForm(): void {
-    if (this.activeTab === 0) {
-      this.traCuuForm.reset();
-    } else {
-      this.traCuuVNPostForm.reset({
-        isCoDau: true
-      });
-      this.huyenTheoTinh = [];
-      this.xaTheoHuyen = [];
-    }
+    this.traCuuVNPostForm.reset();
+    this.traCuuVNPostForm.patchValue({ isCoDau: true });
+    this.huyenTheoTinh = [];
+    this.xaTheoHuyen = [];
     this.ketQuaTraCuu = null;
     this.daTimKiem = false;
     this.loiTraCuu = '';
