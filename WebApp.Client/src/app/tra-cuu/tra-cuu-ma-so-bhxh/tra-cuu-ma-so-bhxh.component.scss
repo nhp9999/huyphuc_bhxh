@@ -1,5 +1,5 @@
 .container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -7,8 +7,7 @@
 .loading-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 200px;
+  margin: 20px 0;
 }
 
 .error-container {
@@ -17,12 +16,61 @@
 
 .result-container {
   margin-top: 20px;
+}
 
-  h3 {
-    margin-bottom: 16px;
-    font-weight: 500;
-    color: #1890ff;
-  }
+.login-info {
+  margin-bottom: 20px;
+}
+
+.captcha-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.input-with-button {
+  display: flex;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.refresh-button {
+  margin-left: 8px;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.vnpost-login-button {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.login-status {
+  margin-left: 10px;
+  color: #52c41a;
+}
+
+/* Cải thiện giao diện nhập ngày sinh */
+::ng-deep .ant-picker-input > input {
+  cursor: text !important;
+}
+
+::ng-deep .ant-tooltip {
+  max-width: 300px;
+}
+
+::ng-deep .ant-tooltip-inner {
+  text-align: left;
 }
 
 ::ng-deep {
@@ -42,4 +90,11 @@
       text-align: left !important;
     }
   }
+}
+
+.date-input-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+  font-style: italic;
 } 

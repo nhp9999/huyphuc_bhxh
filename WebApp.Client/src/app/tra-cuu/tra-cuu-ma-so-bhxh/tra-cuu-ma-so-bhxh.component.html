@@ -1,116 +1,113 @@
 <div class="container">
   <nz-card nzTitle="Tra cứu mã số BHXH" [nzExtra]="extraTemplate">
-    <nz-tabset [(nzSelectedIndex)]="activeTab" (nzSelectChange)="resetForm()">
-      <nz-tab nzTitle="Tra cứu qua VNPost">
-        <form nz-form [formGroup]="traCuuVNPostForm" (ngSubmit)="submitVNPostForm()">
-          <div class="vnpost-login-button">
-            <button nz-button nzType="default" (click)="showVNPostLogin(); $event.preventDefault()">
-              <i nz-icon nzType="login" nzTheme="outline"></i>
-              Đăng nhập VNPost
-            </button>
-            <span class="login-status" *ngIf="isVNPostLoggedIn()">
-              <i nz-icon nzType="check-circle" nzTheme="twotone" [nzTwotoneColor]="'#52c41a'"></i>
-              Đã đăng nhập
-            </span>
-          </div>
-          
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
-              <nz-select 
-                formControlName="maTinh" 
-                (ngModelChange)="onTinhChange($event)" 
-                nzPlaceHolder="Chọn Tỉnh/Thành phố" 
-                [nzLoading]="isLoadingData"
-                nzShowSearch
-                [nzAllowClear]="true"
-                [nzFilterOption]="filterOption">
-                <nz-option *ngFor="let tinh of danhSachTinh" [nzValue]="tinh.ma" [nzLabel]="tinh.ten"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
+    <form nz-form [formGroup]="traCuuVNPostForm" (ngSubmit)="submitVNPostForm()">
+      <div class="vnpost-login-button">
+        <button nz-button nzType="default" (click)="showVNPostLogin(); $event.preventDefault()">
+          <i nz-icon nzType="login" nzTheme="outline"></i>
+          Đăng nhập VNPost
+        </button>
+        <span class="login-status" *ngIf="isVNPostLoggedIn()">
+          <i nz-icon nzType="check-circle" nzTheme="twotone" [nzTwotoneColor]="'#52c41a'"></i>
+          Đã đăng nhập
+        </span>
+      </div>
+      
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
+          <nz-select 
+            formControlName="maTinh" 
+            (ngModelChange)="onTinhChange($event)" 
+            nzPlaceHolder="Chọn Tỉnh/Thành phố" 
+            [nzLoading]="isLoadingData"
+            nzShowSearch
+            [nzAllowClear]="true"
+            [nzFilterOption]="filterOption">
+            <nz-option *ngFor="let tinh of danhSachTinh" [nzValue]="tinh.ma" [nzLabel]="tinh.ten"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Quận/Huyện</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Quận/Huyện">
-              <nz-select 
-                formControlName="maHuyen" 
-                (ngModelChange)="onHuyenChange($event)" 
-                nzPlaceHolder="Chọn Quận/Huyện" 
-                [nzLoading]="isLoadingData"
-                nzShowSearch
-                [nzAllowClear]="true"
-                [nzFilterOption]="filterOption">
-                <nz-option *ngFor="let huyen of huyenTheoTinh" [nzValue]="huyen.ma" [nzLabel]="huyen.ten"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Quận/Huyện</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Quận/Huyện">
+          <nz-select 
+            formControlName="maHuyen" 
+            (ngModelChange)="onHuyenChange($event)" 
+            nzPlaceHolder="Chọn Quận/Huyện" 
+            [nzLoading]="isLoadingData"
+            nzShowSearch
+            [nzAllowClear]="true"
+            [nzFilterOption]="filterOption">
+            <nz-option *ngFor="let huyen of huyenTheoTinh" [nzValue]="huyen.ma" [nzLabel]="huyen.ten"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6">Xã/Phường</nz-form-label>
-            <nz-form-control [nzSpan]="14">
-              <nz-select 
-                formControlName="maXa" 
-                nzPlaceHolder="Chọn Xã/Phường" 
-                [nzLoading]="isLoadingData"
-                nzShowSearch
-                [nzAllowClear]="true"
-                [nzFilterOption]="filterOption">
-                <nz-option *ngFor="let xa of xaTheoHuyen" [nzValue]="xa.ma" [nzLabel]="xa.ten"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6">Xã/Phường</nz-form-label>
+        <nz-form-control [nzSpan]="14">
+          <nz-select 
+            formControlName="maXa" 
+            nzPlaceHolder="Chọn Xã/Phường" 
+            [nzLoading]="isLoadingData"
+            nzShowSearch
+            [nzAllowClear]="true"
+            [nzFilterOption]="filterOption">
+            <nz-option *ngFor="let xa of xaTheoHuyen" [nzValue]="xa.ma" [nzLabel]="xa.ten"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Họ và tên</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập họ và tên">
-              <input nz-input formControlName="hoTen" placeholder="Nhập họ và tên" />
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Họ và tên</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập họ và tên">
+          <input nz-input formControlName="hoTen" placeholder="Nhập họ và tên" />
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Ngày sinh</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn hoặc nhập ngày sinh">
-              <nz-date-picker 
-                formControlName="ngaySinh" 
-                nzFormat="dd/MM/yyyy" 
-                style="width: 100%"
-                nzPlaceHolder="Nhập hoặc chọn ngày sinh"
-                [nzInputReadOnly]="false"
-                nzAllowClear></nz-date-picker>
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Ngày sinh</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn hoặc nhập ngày sinh" nzTooltip="Nhập theo định dạng dd/MM/yyyy, ví dụ: 01/01/1990">
+          <nz-date-picker 
+            formControlName="ngaySinh" 
+            nzFormat="dd/MM/yyyy" 
+            style="width: 100%"
+            nzPlaceHolder="Nhập hoặc chọn ngày sinh"
+            [nzInputReadOnly]="false"
+            (input)="onDateInputChange($event)"
+            nzAllowClear></nz-date-picker>
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6" nzRequired>Số CCCD/CMND</nz-form-label>
-            <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số CCCD/CMND">
-              <input nz-input formControlName="soCMND" placeholder="Nhập số CCCD/CMND" />
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Số CCCD/CMND</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số CCCD/CMND">
+          <input nz-input formControlName="soCMND" placeholder="Nhập số CCCD/CMND" />
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-label [nzSpan]="6">Có dấu</nz-form-label>
-            <nz-form-control [nzSpan]="14">
-              <label nz-checkbox formControlName="isCoDau">Tìm kiếm có dấu</label>
-            </nz-form-control>
-          </nz-form-item>
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6">Có dấu</nz-form-label>
+        <nz-form-control [nzSpan]="14">
+          <label nz-checkbox formControlName="isCoDau">Tìm kiếm có dấu</label>
+        </nz-form-control>
+      </nz-form-item>
 
-          <nz-form-item>
-            <nz-form-control [nzOffset]="6" [nzSpan]="14">
-              <button nz-button nzType="primary" [disabled]="isLoading">
-                <i nz-icon nzType="search" *ngIf="!isLoading"></i>
-                <i nz-icon nzType="loading" *ngIf="isLoading"></i>
-                Tra cứu
-              </button>
-              <button nz-button (click)="resetForm()" style="margin-left: 8px;">
-                <i nz-icon nzType="clear"></i>
-                Xóa
-              </button>
-            </nz-form-control>
-          </nz-form-item>
-        </form>
-      </nz-tab>
-    </nz-tabset>
+      <nz-form-item>
+        <nz-form-control [nzOffset]="6" [nzSpan]="14">
+          <button nz-button nzType="primary" [disabled]="isLoading">
+            <i nz-icon nzType="search" *ngIf="!isLoading"></i>
+            <i nz-icon nzType="loading" *ngIf="isLoading"></i>
+            Tra cứu
+          </button>
+          <button nz-button (click)="resetForm()" style="margin-left: 8px;">
+            <i nz-icon nzType="clear"></i>
+            Xóa
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
 
     <ng-container *ngIf="daTimKiem">
       <nz-divider></nz-divider>
@@ -130,15 +127,15 @@
           <nz-descriptions-item nzTitle="Mã số BHXH">{{ ketQuaTraCuu.maSoBHXH }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Họ và tên">{{ ketQuaTraCuu.hoTen }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Ngày sinh">{{ ketQuaTraCuu.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-          <nz-descriptions-item nzTitle="Giới tính">{{ ketQuaTraCuu.gioiTinh === 'M' ? 'Nam' : 'Nữ' }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Giới tính">{{ ketQuaTraCuu.gioiTinh }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Số CCCD/CMND">{{ ketQuaTraCuu.soCCCD }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Địa chỉ">{{ ketQuaTraCuu.diaChi }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Mã hộ" *ngIf="ketQuaTraCuu.maHo">{{ ketQuaTraCuu.maHo }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Trạng thái">
-            <nz-tag [nzColor]="ketQuaTraCuu.trangThai === 'active' ? 'green' : 'red'">
-              {{ ketQuaTraCuu.trangThai === 'active' ? 'Đang hoạt động' : 'Không hoạt động' }}
+            <nz-tag [nzColor]="ketQuaTraCuu.trangThai === 'Đã duyệt' ? 'green' : 'red'">
+              {{ ketQuaTraCuu.trangThai }}
             </nz-tag>
           </nz-descriptions-item>
-          <nz-descriptions-item nzTitle="Ngày cấp">{{ ketQuaTraCuu.ngayCap | date:'dd/MM/yyyy' }}</nz-descriptions-item>
         </nz-descriptions>
       </div>
     </ng-container>
@@ -155,47 +152,41 @@
 <!-- Modal đăng nhập VNPost -->
 <nz-modal
   [(nzVisible)]="isVNPostLoginVisible"
-  nzTitle="Đăng nhập VNPost"
+  [nzTitle]="'Xác thực captcha'"
   (nzOnCancel)="closeVNPostLogin()"
-  [nzFooter]="null"
-  nzWidth="400px"
->
+  (nzOnOk)="handleLogin()"
+  [nzOkText]="'Xác nhận'"
+  [nzCancelText]="'Hủy'"
+  [nzOkLoading]="isLoadingLogin"
+  nzWidth="400px">
   <ng-container *nzModalContent>
-    <div class="login-info">
-      <p>Để sử dụng chức năng tra cứu qua VNPost, bạn cần đăng nhập vào hệ thống VNPost.</p>
-    </div>
-    <form nz-form [formGroup]="vnpostLoginForm" (ngSubmit)="submitVNPostLogin()">
+    <form nz-form [formGroup]="vnpostLoginForm">
+      <!-- Ẩn input tài khoản và mật khẩu -->
+      <input type="hidden" formControlName="userName">
+      <input type="hidden" formControlName="password">
+
       <nz-form-item>
-        <nz-form-label [nzSpan]="24" nzRequired>Tên đăng nhập</nz-form-label>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập tên đăng nhập">
-          <input nz-input formControlName="userName" placeholder="Tên đăng nhập VNPost" />
-        </nz-form-control>
-      </nz-form-item>
-      
-      <nz-form-item>
-        <nz-form-label [nzSpan]="24" nzRequired>Mật khẩu</nz-form-label>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mật khẩu">
-          <input nz-input type="password" formControlName="password" placeholder="Mật khẩu VNPost" />
-        </nz-form-control>
-      </nz-form-item>
-      
-      <nz-form-item *ngIf="captchaData">
-        <nz-form-label [nzSpan]="24" nzRequired>Mã xác nhận</nz-form-label>
         <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
           <div class="captcha-container">
-            <img [src]="'data:image/png;base64,' + captchaData.image" alt="Captcha" class="captcha-image" />
-            <button nz-button nzType="default" (click)="loadCaptcha()" nzShape="circle">
-              <i nz-icon nzType="reload" nzTheme="outline"></i>
-            </button>
+            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
+              style="margin-bottom: 8px; max-width: 100%;" />
+            <div class="input-with-button">
+              <input nz-input 
+                formControlName="text" 
+                placeholder="Nhập mã xác nhận"
+                (input)="convertToUpperCase($event)"
+                maxlength="4" />
+              <button 
+                nz-button 
+                nzType="default"
+                class="refresh-button"
+                (click)="getCaptcha(); $event.preventDefault()">
+                <i nz-icon nzType="reload"></i>
+              </button>
+            </div>
           </div>
-          <input nz-input formControlName="captchaText" placeholder="Nhập mã xác nhận" />
         </nz-form-control>
       </nz-form-item>
-      
-      <div class="login-buttons">
-        <button nz-button nzType="primary" [nzLoading]="isLoadingLogin" type="submit">Đăng nhập</button>
-        <button nz-button nzType="default" (click)="closeVNPostLogin()">Hủy</button>
-      </div>
     </form>
   </ng-container>
 </nz-modal>
@@ -207,13 +198,23 @@
   
   .captcha-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     margin-bottom: 10px;
   }
   
-  .captcha-image {
-    max-width: 200px;
-    margin-right: 10px;
+  .input-with-button {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .input-with-button input {
+    flex: 1;
+  }
+  
+  .refresh-button {
+    margin-left: 8px;
   }
   
   .login-buttons {
