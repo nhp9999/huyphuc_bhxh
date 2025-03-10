@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -13,15 +13,16 @@ import { IpService } from '../services/ip.service';
   standalone: true,
   imports: [FormsModule, CommonModule]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginData = {
     username: '',
-    password: ''
+    password: '',
+    remember: false
   };
   errorMessage = '';
   isLoading = false;
-  rememberMe = false;
   showPassword = false;
+  currentYear = new Date().getFullYear();
 
   constructor(
     private authService: AuthService,
@@ -31,10 +32,6 @@ export class LoginComponent {
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
-    const passwordInput = document.getElementById('password') as HTMLInputElement;
-    if (passwordInput) {
-      passwordInput.type = this.showPassword ? 'text' : 'password';
-    }
   }
 
   onSubmit(): void {
@@ -57,8 +54,10 @@ export class LoginComponent {
       next: (ip) => {
         this.authService.login(this.loginData.username, this.loginData.password, ip).subscribe({
           next: (response) => {
-            if (this.rememberMe) {
+            if (this.loginData.remember) {
               localStorage.setItem('remember_username', this.loginData.username);
+            } else {
+              localStorage.removeItem('remember_username');
             }
             localStorage.setItem('user', JSON.stringify({
               ...response.user,
@@ -82,8 +81,10 @@ export class LoginComponent {
         // Nếu không lấy được IP, vẫn tiếp tục login
         this.authService.login(this.loginData.username, this.loginData.password).subscribe({
           next: (response) => {
-            if (this.rememberMe) {
+            if (this.loginData.remember) {
               localStorage.setItem('remember_username', this.loginData.username);
+            } else {
+              localStorage.removeItem('remember_username');
             }
             localStorage.setItem('user', JSON.stringify({
               ...response.user,
@@ -106,12 +107,17 @@ export class LoginComponent {
     });
   }
 
+  forgotPassword(): void {
+    // Xử lý quên mật khẩu
+    alert('Tính năng đang được phát triển');
+  }
+
   ngOnInit(): void {
     // Kiểm tra xem có thông tin đăng nhập đã lưu không
     const savedUsername = localStorage.getItem('remember_username');
     if (savedUsername) {
       this.loginData.username = savedUsername;
-      this.rememberMe = true;
+      this.loginData.remember = true;
     }
   }
 } 

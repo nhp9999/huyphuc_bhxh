@@ -1,0 +1,57 @@
+// Biến màu sắc chính của dự án - Royal Blue Theme
+$primary-color: #0056b3;        // Màu chính - xanh dương đậm
+$primary-color-light: #1976d2;   // Màu sáng hơn cho hover
+$primary-color-dark: #0056b3;    // Màu đậm hơn cho sidebar - khớp với ảnh
+
+// Màu sắc phụ
+$secondary-color: #52c41a;
+$danger-color: #ff4d4f;
+$warning-color: #faad14;
+$success-color: #52c41a;
+$info-color: #1890ff;
+
+// Màu sắc văn bản
+$text-color: rgba(0, 0, 0, 0.85);
+$text-color-secondary: rgba(0, 0, 0, 0.65);
+$text-color-disabled: rgba(0, 0, 0, 0.45);
+$text-color-light: #8c8c8c;
+
+// Màu sắc nền
+$background-color: #fff;
+$background-color-light: #f0f2f5;
+$background-color-dark: $primary-color-dark;
+
+// Màu sắc viền
+$border-color: #d9d9d9;
+$border-color-split: #f0f0f0;
+
+// Màu sắc cho hover và active
+$item-hover-bg: rgba(0, 86, 179, 0.1);  // Cập nhật để phù hợp với màu chính mới
+$item-active-bg: #e3f2fd;  // Màu nền active nhạt hơn cho màu xanh dương
+
+// Màu sắc cho các trạng thái
+$status-success: #52c41a;
+$status-processing: #1890ff;
+$status-error: #ff4d4f;
+$status-warning: #faad14;
+$status-default: #d9d9d9;
+
+// Màu sắc cho login
+$login-primary: #0056b3;  // Cập nhật để phù hợp với màu chính mới
+$login-primary-dark: #004494;  // Cập nhật để phù hợp với màu chính đậm mới
+$login-text-secondary: #5f6368;
+$login-error: #d93025;
+$login-error-bg: #fce8e6;
+$login-border: #dadce0;
+
+// Màu sắc cho layout
+$layout-header-background: $primary-color;
+$layout-trigger-background: $primary-color-dark;
+$layout-trigger-color: #fff;
+$layout-sider-background: $primary-color-dark;
+
+// Màu sắc cho menu
+$menu-dark-bg: $primary-color-dark;
+$menu-dark-item-active-bg: #1976d2;  // Màu sáng hơn khi chọn menu
+$menu-dark-item-hover-bg: #1976d2;  // Màu sáng hơn khi hover menu
+$menu-dark-submenu-bg: $primary-color-dark; 

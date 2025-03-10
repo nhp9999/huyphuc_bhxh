@@ -1,8 +1,54 @@
 .ke-khai-bhxh-container {
   padding: 24px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  background-image: linear-gradient(to bottom right, rgba(24, 144, 255, 0.05), rgba(9, 109, 217, 0.05));
 
   .form-card {
     margin-bottom: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    
+    ::ng-deep .ant-card-head {
+      border-bottom: 1px solid #f0f2f5;
+      padding: 16px 24px;
+      background-color: #fafafa;
+      border-radius: 8px 8px 0 0;
+      
+      .ant-card-head-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1890ff;
+        position: relative;
+        padding-left: 12px;
+        
+        &:before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 4px;
+          height: 18px;
+          background: linear-gradient(to bottom, #1890ff, #096dd9);
+          border-radius: 2px;
+        }
+      }
+      
+      .card-actions {
+        display: flex;
+        gap: 8px;
+      }
+    }
+    
+    ::ng-deep .ant-card-body {
+      padding: 24px;
+    }
   }
 
   .table-actions {
@@ -10,19 +56,43 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 16px;
 
     .left-actions {
       display: flex;
-      gap: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
+      
+      button {
+        transition: all 0.2s ease;
+        
+        &:hover {
+          transform: translateY(-2px);
+        }
+      }
     }
 
     .right-actions {
       display: flex;
       align-items: center;
       gap: 16px;
+      flex-wrap: wrap;
 
       .amount {
         color: #1890ff;
+        font-weight: 600;
+        font-size: 16px;
+        background: rgba(24, 144, 255, 0.1);
+        padding: 4px 12px;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
+        
+        &:hover {
+          background: rgba(24, 144, 255, 0.2);
+          transform: translateY(-2px);
+        }
       }
     }
   }
@@ -33,16 +103,94 @@
     input {
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
+      transition: all 0.3s ease;
+      
+      &:focus {
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
     }
 
     button {
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: #096dd9;
+      }
     }
   }
 
   nz-form-label {
     font-weight: 500;
+    color: #262626;
+  }
+  
+  nz-form-item {
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      ::ng-deep .ant-form-item-label > label {
+        color: #1890ff;
+      }
+    }
+  }
+  
+  ::ng-deep .ant-select {
+    width: 100%;
+    
+    &-selector {
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    
+    &-focused .ant-select-selector {
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+    }
+  }
+  
+  ::ng-deep .ant-input-number {
+    width: 100%;
+    border-radius: 4px;
+    
+    &-focused {
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+  
+  ::ng-deep .ant-btn {
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    
+    &-primary {
+      background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+      border: none;
+      
+      &:hover {
+        background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+      }
+    }
+  }
+  
+  .table-actions-cell {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    
+    button {
+      transition: all 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+    }
   }
 }
 
@@ -53,13 +201,123 @@
 
   .ant-picker {
     width: 100%;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    
+    &:hover, &-focused {
+      border-color: #40a9ff;
+    }
+    
+    &-focused {
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+    
     &-input {
       > input {
         text-align: left;
       }
     }
+    
     &-panel-container {
       z-index: 1050;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+  }
+  
+  .ant-table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    
+    &-thead > tr > th {
+      background-color: #fafafa;
+      font-weight: 600;
+      
+      &:first-child {
+        border-top-left-radius: 8px;
+      }
+      
+      &:last-child {
+        border-top-right-radius: 8px;
+      }
+    }
+    
+    &-row {
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: #e6f7ff !important;
+      }
+      
+      &:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+    }
+    
+    &-pagination {
+      margin: 16px 0;
+    }
+    
+    &-cell {
+      transition: all 0.2s ease;
+    }
+  }
+  
+  .ant-tag {
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 500;
+  }
+  
+  .ant-modal {
+    &-content {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+    
+    &-header {
+      border-bottom: 1px solid #f0f2f5;
+      padding: 16px 24px;
+      
+      .ant-modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1890ff;
+      }
+    }
+    
+    &-body {
+      padding: 24px;
+    }
+    
+    &-footer {
+      border-top: 1px solid #f0f2f5;
+      padding: 16px 24px;
+      
+      .ant-btn {
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+  
+  .ant-checkbox {
+    &-checked .ant-checkbox-inner {
+      background-color: #1890ff;
+      border-color: #1890ff;
+    }
+    
+    &-wrapper:hover .ant-checkbox-inner, 
+    &:hover .ant-checkbox-inner, 
+    &-input:focus + .ant-checkbox-inner {
+      border-color: #1890ff;
     }
   }
 }
@@ -68,6 +326,9 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .text-right {
@@ -86,6 +347,12 @@
 
     input {
       flex: 1;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      
+      &:focus {
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
     }
 
     .refresh-button {
@@ -94,6 +361,136 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background-color: #f5f5f5;
+      }
     }
+  }
+}
+
+.captcha-image {
+  margin-top: 12px;
+  text-align: center;
+  
+  img {
+    max-width: 100%;
+    border-radius: 4px;
+    border: 1px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+.login-form {
+  padding: 8px;
+}
+
+.modal-form {
+  padding: 8px;
+  
+  nz-form-item {
+    margin-bottom: 16px;
+  }
+  
+  textarea {
+    resize: none;
+    border-radius: 4px;
+    
+    &:focus {
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+}
+
+// Responsive styles
+@media (max-width: 768px) {
+  .ke-khai-bhxh-container {
+    padding: 16px;
+    
+    .form-card {
+      ::ng-deep .ant-card-body {
+        padding: 16px;
+      }
+    }
+    
+    .table-actions {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .right-actions {
+        margin-top: 12px;
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+
+// Animation keyframes
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// Thêm hiệu ứng ripple cho các nút
+.ripple {
+  position: relative;
+  overflow: hidden;
+  
+  &:after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+  }
+  
+  &:active:after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
   }
 } 

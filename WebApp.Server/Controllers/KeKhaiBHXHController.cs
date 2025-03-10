@@ -139,9 +139,13 @@ namespace WebApp.API.Controllers
                     gioi_tinh = GetStringProperty(thongTinTheElement, "gioi_tinh"),
                     so_dien_thoai = GetStringProperty(thongTinTheElement, "so_dien_thoai", ""),
                     ma_tinh_nkq = GetStringProperty(thongTinTheElement, "ma_tinh_nkq", ""),
-                    ma_huyen_nkq = GetStringProperty(thongTinTheElement, "huyen_nkq", ""),
-                    ma_xa_nkq = GetStringProperty(thongTinTheElement, "xa_nkq", ""),
-                    ma_hgd = "",
+                    ma_huyen_nkq = GetStringProperty(thongTinTheElement, "ma_huyen_nkq", ""),
+                    ma_xa_nkq = GetStringProperty(thongTinTheElement, "ma_xa_nkq", ""),
+                    ma_tinh_ks = GetStringProperty(thongTinTheElement, "ma_tinh_ks", ""),
+                    ma_huyen_ks = GetStringProperty(thongTinTheElement, "ma_huyen_ks", ""),
+                    ma_xa_ks = GetStringProperty(thongTinTheElement, "ma_xa_ks", ""),
+                    ma_dan_toc = GetStringProperty(thongTinTheElement, "ma_dan_toc", ""),
+                    ma_hgd = GetStringProperty(thongTinTheElement, "ma_hgd", ""),
                     quoc_tich = "VN",
                     nguoi_tao = GetStringProperty(requestData, "nguoi_tao"),
                     ngay_tao = DateTime.Now
@@ -161,6 +165,11 @@ namespace WebApp.API.Controllers
                     existingThe.ma_tinh_nkq = thongTinThe.ma_tinh_nkq;
                     existingThe.ma_huyen_nkq = thongTinThe.ma_huyen_nkq;
                     existingThe.ma_xa_nkq = thongTinThe.ma_xa_nkq;
+                    existingThe.ma_tinh_ks = thongTinThe.ma_tinh_ks;
+                    existingThe.ma_huyen_ks = thongTinThe.ma_huyen_ks;
+                    existingThe.ma_xa_ks = thongTinThe.ma_xa_ks;
+                    existingThe.ma_dan_toc = thongTinThe.ma_dan_toc;
+                    existingThe.ma_hgd = thongTinThe.ma_hgd;
                     
                     _context.ThongTinThes.Update(existingThe);
                     thongTinThe = existingThe;

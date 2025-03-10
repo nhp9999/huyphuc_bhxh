@@ -27,6 +27,8 @@ import vi from '@angular/common/locales/vi';
 import { SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline } from '@ant-design/icons-angular/icons';
 import { KeKhaiBHXHService } from '../../services/ke-khai-bhxh.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 registerLocaleData(vi);
 
@@ -179,6 +181,17 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   loginForm: FormGroup;
   loadingLogin = false;
 
+  // Thêm thuộc tính để lưu cache
+  private diaChiCache: {
+    tinhs: { [key: string]: DanhMucTinh[] },
+    huyens: { [key: string]: DanhMucHuyen[] },
+    xas: { [key: string]: DanhMucXa[] }
+  } = {
+    tinhs: {},
+    huyens: {},
+    xas: {}
+  };
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -235,33 +248,10 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       this.initForm();
       this.loadDanhMucTinh();
       this.loadData();
-    });
-    
-    // Theo dõi thay đổi của các trường để tính số tiền
-    this.form.get('muc_thu_nhap')?.valueChanges.subscribe(() => {
-      this.tinhSoTienPhaiDong();
-    });
-
-    this.form.get('ty_le_dong')?.valueChanges.subscribe(() => {
-      this.tinhSoTienPhaiDong();
-    });
-
-    this.form.get('ty_le_nsnn')?.valueChanges.subscribe(() => {
-      this.tinhSoTienPhaiDong();
-    });
-
-    this.form.get('phuong_thuc_dong')?.valueChanges.subscribe(() => {
-      this.tinhSoTienPhaiDong();
-    });
-
-    // Theo dõi thay đổi loại NSNN
-    this.form.get('loai_nsnn')?.valueChanges.subscribe((value) => {
-      this.onLoaiNSNNChange(value);
-    });
-
-    // Theo dõi thay đổi phương án
-    this.form.get('phuong_an')?.valueChanges.subscribe((value) => {
-      this.onPhuongAnChange(value);
+      this.generateMucThuNhap();
+      
+      // Thiết lập các sự kiện theo dõi thay đổi của form
+      this.setupFormValueChanges();
     });
   }
 
@@ -279,6 +269,8 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       cccd: ['', [Validators.required, Validators.pattern(/^\d{12}$/)]],
       ho_ten: ['', [Validators.required]],
       ma_nhan_vien: [{value: maNhanVien, disabled: true}, [Validators.required]],
+      ma_hgd: ['', [Validators.maxLength(20)]],
+      ma_dan_toc: ['', [Validators.maxLength(20)]],
       ngay_sinh: [null, Validators.required],
       gioi_tinh: [null, Validators.required],
       so_dien_thoai: ['', [Validators.pattern(/^(0|84)\d{9,10}$/)]],
@@ -320,9 +312,16 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   loadDanhMucTinh(): void {
+    // Kiểm tra cache trước
+    if (this.danhMucTinhs.length > 0) {
+      return;
+    }
+
     this.diaChiService.getDanhMucTinh().subscribe({
       next: (data) => {
         this.danhMucTinhs = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+        // Lưu vào cache
+        this.diaChiCache.tinhs['all'] = this.danhMucTinhs;
       },
       error: (error) => {
         console.error('Lỗi khi tải danh mục tỉnh:', error);
@@ -332,15 +331,29 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   onTinhChange(maTinh: string): void {
-    if (!maTinh) {
-      this.danhMucHuyens = [];
-      this.danhMucXas = [];
+    console.log('onTinhChange được gọi với mã tỉnh:', maTinh);
+    
+    // Reset các danh sách và giá trị form
+    this.danhMucHuyens = [];
+    this.danhMucXas = [];
+    this.form.patchValue({
+      huyen_nkq: null,
+      xa_nkq: null
+    });
+    
+    if (!maTinh) return;
+
+    // Kiểm tra cache
+    if (this.diaChiCache.huyens[maTinh]) {
+      this.danhMucHuyens = this.diaChiCache.huyens[maTinh];
       return;
     }
 
     this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
       next: (data) => {
         this.danhMucHuyens = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+        // Lưu vào cache
+        this.diaChiCache.huyens[maTinh] = this.danhMucHuyens;
       },
       error: (error) => {
         console.error('Lỗi khi tải danh mục huyện:', error);
@@ -350,16 +363,37 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   onHuyenChange(maHuyen: string): void {
-    if (!maHuyen) {
-      this.danhMucXas = [];
+    console.log('onHuyenChange được gọi với mã huyện:', maHuyen);
+    
+    // Reset danh sách xã và giá trị form
+    this.danhMucXas = [];
+    this.form.patchValue({
+      xa_nkq: null
+    });
+    
+    if (!maHuyen) return;
+
+    // Kiểm tra cache
+    if (this.diaChiCache.xas[maHuyen]) {
+      this.danhMucXas = this.diaChiCache.xas[maHuyen];
       return;
     }
 
+    // Lấy mã tỉnh từ form
+    const maTinh = this.form.get('tinh_nkq')?.value;
+    if (!maTinh) return;
+
+    // Kiểm tra xem huyện có thuộc tỉnh đã chọn không
+    const huyenHopLe = this.danhMucHuyens.find(h => h.ma === maHuyen && h.ma_tinh === maTinh);
+    if (!huyenHopLe) return;
+
     this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
-      next: (data) => {
-        this.danhMucXas = data.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+      next: (xas: DanhMucXa[]) => {
+        this.danhMucXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+        // Lưu vào cache
+        this.diaChiCache.xas[maHuyen] = this.danhMucXas;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Lỗi khi tải danh mục xã:', error);
         this.message.error('Có lỗi xảy ra khi tải danh mục phường/xã');
       }
@@ -491,11 +525,17 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   resetForm(): void {
+    // Lấy mã nhân viên từ currentUser
+    const maNhanVien = this.currentUser?.ma_nhan_vien || this.currentUser?.username || '';
+    console.log('Reset form với mã nhân viên:', maNhanVien);
+    
     this.form.reset({
       ma_so_bhxh: '',
       cccd: '',
       ho_ten: '',
-      ma_nhan_vien: '',
+      ma_nhan_vien: maNhanVien, // Sử dụng mã nhân viên từ currentUser
+      ma_hgd: '',
+      ma_dan_toc: '',
       ngay_sinh: null,
       gioi_tinh: null,
       so_dien_thoai: '',
@@ -518,38 +558,55 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       ghi_chu: ''
     });
     
+    // Đảm bảo trường ma_nhan_vien bị vô hiệu hóa
+    this.form.get('ma_nhan_vien')?.disable();
+    
     // Reset các dropdown phụ thuộc
     this.danhMucHuyens = [];
     this.danhMucXas = [];
   }
 
-  saveKeKhaiBHXH(): void {
-    console.log('Form valid:', this.form.valid);
-    console.log('Form values:', this.form.value);
-    console.log('Form errors:', this.getFormValidationErrors());
-    
-    if (this.form.invalid) {
-      // Đánh dấu tất cả các trường là đã chạm vào để hiển thị lỗi
-      Object.values(this.form.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-          control.updateValueAndValidity();
-        }
-      });
-      this.message.warning('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
+  // Phương thức kiểm tra trùng lặp mã số BHXH
+  private checkDuplicateBHXH(maSoBHXH: string): Observable<boolean> {
+    // Nếu không có đợt kê khai, không cần kiểm tra
+    if (!this.dotKeKhaiId) {
+      return of(false);
     }
     
-    // Hiển thị thông báo đang xử lý
-    const msgId = this.message.loading('Đang lưu thông tin...', { nzDuration: 0 }).messageId;
+    // Kiểm tra trong danh sách kê khai hiện tại (không cần gọi API)
+    const existingRecord = this.keKhaiBHXHs.find(item => 
+      item.ma_so_bhxh === maSoBHXH && 
+      (!this.isEdit || (this.isEdit && item.id !== this.form.get('id')?.value))
+    );
     
-    // Gọi trực tiếp processKeKhaiBHXH
-    this.processKeKhaiBHXH();
+    if (existingRecord) {
+      return of(true); // Đã tìm thấy bản ghi trùng trong danh sách hiện tại
+    }
     
-    // Đóng thông báo loading sau khi gọi API
-    setTimeout(() => {
-      this.message.remove(msgId);
-    }, 500);
+    // Nếu không tìm thấy trong danh sách hiện tại, trả về false
+    return of(false);
+  }
+
+  saveKeKhaiBHXH(): void {
+    // Kiểm tra form hợp lệ
+    if (this.form.invalid) {
+      this.getFormValidationErrors();
+      this.message.error('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
+    
+    // Kiểm tra trùng lặp mã số BHXH
+    this.checkDuplicateBHXH(maSoBHXH).subscribe(isDuplicate => {
+      if (isDuplicate) {
+        this.message.error(`Mã số BHXH ${maSoBHXH} đã tồn tại trong đợt kê khai này!`);
+        return;
+      }
+      
+      // Tiếp tục xử lý lưu kê khai nếu không trùng lặp
+      this.processKeKhaiBHXH();
+    });
   }
 
   // Thêm hàm này để kiểm tra lỗi của form
@@ -564,24 +621,28 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  // Phương thức để lấy tên huyện từ mã huyện
-  getHuyenTen(maHuyen: string): string {
-    const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
-    if (!huyen) {
-      console.warn(`Không tìm thấy huyện với mã: ${maHuyen}`);
-      return maHuyen; // Trả về mã nếu không tìm thấy tên
-    }
-    return huyen.ten;
+  // Phương thức để lấy tên tỉnh từ mã
+  getTinhTen(maTinh: string): string {
+    if (!maTinh) return '';
+    
+    const tinh = this.danhMucTinhs.find(t => t.ma === maTinh);
+    return tinh ? tinh.ten : '';
   }
 
-  // Phương thức để lấy tên xã từ mã xã
+  // Phương thức để lấy tên huyện từ mã
+  getHuyenTen(maHuyen: string): string {
+    if (!maHuyen) return '';
+    
+    const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
+    return huyen ? huyen.ten : '';
+  }
+
+  // Phương thức để lấy tên xã từ mã
   getXaTen(maXa: string): string {
+    if (!maXa) return '';
+    
     const xa = this.danhMucXas.find(x => x.ma === maXa);
-    if (!xa) {
-      console.warn(`Không tìm thấy xã với mã: ${maXa}`);
-      return maXa; // Trả về mã nếu không tìm thấy tên
-    }
-    return xa.ten;
+    return xa ? xa.ten : '';
   }
 
   processKeKhaiBHXH(): void {
@@ -607,6 +668,34 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     const maXa = formValue.xa_nkq;
     const tenXa = this.getXaTen(maXa);
     
+    // Xử lý thang_bat_dau để chỉ lưu tháng và năm
+    let thangBatDau = formValue.thang_bat_dau;
+    let thangBatDauFormatted = '';
+    if (thangBatDau) {
+      // Format thành yyyy-MM (không có ngày)
+      const date = new Date(thangBatDau);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const formattedMonth = month < 10 ? `0${month}` : `${month}`;
+      thangBatDauFormatted = `${year}-${formattedMonth}`;
+      
+      console.log('Tháng bắt đầu đã được format:', thangBatDauFormatted);
+    }
+    
+    // Xử lý tu_thang để chỉ lưu tháng và năm
+    let tuThangDate = tuThang;
+    let tuThangFormatted = null;
+    if (tuThangDate) {
+      // Format thành yyyy-MM (không có ngày)
+      const date = new Date(tuThangDate);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const formattedMonth = month < 10 ? `0${month}` : `${month}`;
+      tuThangFormatted = `${year}-${formattedMonth}`;
+      
+      console.log('Từ tháng đã được format:', tuThangFormatted);
+    }
+    
     const keKhaiBHXH = {
       dot_ke_khai_id: this.dotKeKhaiId,
       thong_tin_the: {
@@ -620,9 +709,14 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         huyen_nkq: formValue.huyen_nkq,
         xa_nkq: formValue.xa_nkq,
         dia_chi_nkq: formValue.dia_chi_nkq,
-        ma_tinh_nkq: maTinh, // Mã tỉnh
-        ma_huyen_nkq: maHuyen, // Mã huyện
-        ma_xa_nkq: maXa // Mã xã
+        ma_tinh_nkq: maTinh,
+        ma_huyen_nkq: maHuyen,
+        ma_xa_nkq: maXa,
+        ma_tinh_ks: maTinh,
+        ma_huyen_ks: maHuyen,
+        ma_xa_ks: maXa,
+        ma_hgd: formValue.ma_hgd,
+        ma_dan_toc: formValue.ma_dan_toc
       },
       muc_thu_nhap: formValue.muc_thu_nhap,
       ty_le_dong: tyLeDong, // Sử dụng giá trị đã chuyển đổi
@@ -631,8 +725,8 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       tien_ho_tro: formValue.tien_ho_tro,
       so_tien_can_dong: formValue.so_tien_can_dong,
       phuong_thuc_dong: formValue.phuong_thuc_dong,
-      thang_bat_dau: this.datePipe.transform(formValue.thang_bat_dau, 'yyyy-MM-dd'),
-      tu_thang: tuThang ? this.datePipe.transform(tuThang, 'yyyy-MM-dd') : null,
+      thang_bat_dau: thangBatDauFormatted, // Sử dụng định dạng yyyy-MM
+      tu_thang: tuThangFormatted, // Sử dụng định dạng yyyy-MM
       phuong_an: formValue.phuong_an,
       loai_khai_bao: loaiKhaiBao, // Luôn sử dụng giá trị '1'
       ngay_bien_lai: this.datePipe.transform(formValue.ngay_bien_lai, 'yyyy-MM-dd'),
@@ -689,14 +783,22 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     console.log('Tỷ lệ đóng đã tính:', tyLeDong);
   }
 
-  // Phương thức để lấy tên tỉnh từ mã tỉnh
-  getTinhTen(maTinh: string): string {
-    const tinh = this.danhMucTinhs.find(t => t.ma === maTinh);
-    if (!tinh) {
-      console.warn(`Không tìm thấy tỉnh với mã: ${maTinh}`);
-      return maTinh; // Trả về mã nếu không tìm thấy tên
+  // Xử lý khi người dùng chọn tháng bắt đầu
+  onThangBatDauChange(date: Date): void {
+    if (date) {
+      // Cập nhật giá trị vào form
+      this.form.patchValue({
+        thang_bat_dau: date
+      });
+      
+      // Format thành yyyy-MM để hiển thị
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const formattedMonth = month < 10 ? `0${month}` : `${month}`;
+      const formattedDate = `${year}-${formattedMonth}`;
+      
+      console.log('Tháng bắt đầu đã được chọn:', formattedDate);
     }
-    return tinh.ten;
   }
 
   deleteKeKhaiBHXH(id: number): void {
@@ -763,112 +865,51 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   searchBHXH(): void {
-    if (this.isSearching) return;
+    if (this.isSearching) {
+      return;
+    }
 
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
-    if (!maSoBHXH || maSoBHXH.length !== 10) {
-      this.message.warning('Vui lòng nhập đủ 10 số BHXH');
+    if (!maSoBHXH) {
+      this.message.warning('Vui lòng nhập mã số BHXH để tìm kiếm!');
       return;
     }
 
-    // Kiểm tra token trước khi tìm kiếm
-    const token = this.ssmv2Service.getToken();
-    if (!token) {
-      console.log('Không có token SSMV2, yêu cầu đăng nhập');
-      this.getAccessToken();
-      return;
-    }
-
+    // Bắt đầu tìm kiếm
     this.isSearching = true;
     
+    // Hiển thị loading
+    const msgId = this.message.loading('Đang tìm kiếm thông tin...', { nzDuration: 0 }).messageId;
+    
+    // Gọi API tìm kiếm
     this.keKhaiBHXHService.searchBHXH(maSoBHXH).subscribe({
-      next: (response: any) => {
-        console.log('Response from BHXH search:', response);
-        
-        if (response.success) {
-          const data = response.data;
-          console.log('BHXH search response data:', data);
-          this.processSearchResult(data);
-          this.message.success('Đã tìm thấy thông tin BHXH');
-        } else {
-          this.message.error(response.message || 'Lỗi không xác định');
-        }
-      },
-      error: (err: any) => {
-        console.error('Search error:', err);
-        
-        // Xử lý lỗi xác thực
-        if (err.status === 401 || err.status === 403 || 
-            err.error?.error === 'Lỗi xác thực' || 
-            err.error?.error_description?.includes('Không tìm thấy thông tin phiên đăng nhập')) {
-          
-          console.log('Lỗi xác thực, yêu cầu đăng nhập lại');
-          this.ssmv2Service.clearToken();
-          this.getAccessToken();
-        } else if (err.status === 406) {
-          // Xử lý lỗi Not Acceptable
-          console.log('Lỗi 406 - Not Acceptable, xóa token và yêu cầu đăng nhập lại');
-          this.ssmv2Service.clearToken();
-          this.getAccessToken();
-        } else {
-          this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || err.error?.error_description || 'Lỗi không xác định'));
-        }
-      },
-      complete: () => {
+      next: (response: SearchResponse) => {
         this.isSearching = false;
+        this.message.remove(msgId);
+        
+        if (response.success && response.data) {
+          // Xử lý dữ liệu trả về
+          const fixedData = this.fixDiaChiData(response.data);
+          this.processSearchResult(fixedData);
+          this.message.success('Tìm kiếm thông tin thành công!');
+        } else {
+          this.message.error(response.message || 'Không tìm thấy thông tin!');
+        }
+      },
+      error: (error: any) => {
+        this.isSearching = false;
+        this.message.remove(msgId);
+        
+        if (error.status === 401) {
+          // Xử lý lỗi xác thực
+          this.getCaptcha();
+          this.isLoginVisible = true;
+        } else {
+          this.message.error('Có lỗi xảy ra khi tìm kiếm thông tin!');
+        }
+        console.error('Lỗi khi tìm kiếm:', error);
       }
     });
-  }
-
-  private processSearchResult(data: any): void {
-    try {
-      // Xử lý và chuyển đổi ngày tháng
-      const ngaySinh = data.ngaySinh ? this.formatDate(data.ngaySinh) : '';
-
-      // Cập nhật form với dữ liệu từ API
-      this.form.patchValue({
-        ma_so_bhxh: data.maSoBHXH,
-        cccd: data.cmnd,
-        ho_ten: data.hoTen,
-        ngay_sinh: ngaySinh,
-        gioi_tinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
-        so_dien_thoai: data.soDienThoai,
-        ma_hgd: data.maHoGiaDinh,
-        ma_tinh_ks: data.maTinhKS,
-        ma_huyen_ks: data.maHuyenKS,
-        ma_xa_ks: data.maXaKS,
-        tinh_nkq: data.maTinhNkq,
-        huyen_nkq: data.maHuyenNkq,
-        xa_nkq: data.maXaNkq,
-        dia_chi_nkq: data.noiNhanHoSo,
-        ma_dan_toc: data.danToc,
-        quoc_tich: data.quocTich,
-      });
-
-      this.message.success('Đã tìm thấy thông tin BHXH');
-    } catch (error) {
-      console.error('Error processing search result:', error);
-      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
-    }
-  }
-
-  private formatDate(dateStr: string): string {
-    if (!dateStr) return '';
-    
-    // Kiểm tra nếu dateString đã ở định dạng yyyy-MM-dd
-    if (dateStr.includes('-')) {
-      const [year, month, day] = dateStr.split('-');
-      return `${day}/${month}/${year}`;
-    }
-    
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '';
-    
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    
-    return `${day}/${month}/${year}`;
   }
 
   // Thêm phương thức lấy token
@@ -978,5 +1019,364 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       input.value = upperCaseValue;
       this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
     }
+  }
+
+  // Phương thức để tải danh sách huyện theo tỉnh
+  loadHuyensByTinh(maTinh: string): void {
+    if (!maTinh) return;
+    
+    this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
+      next: (huyens: DanhMucHuyen[]) => {
+        this.danhMucHuyens = huyens;
+        console.log(`Đã tải ${huyens.length} huyện của tỉnh ${maTinh}`);
+      },
+      error: (error: any) => {
+        console.error('Lỗi khi tải danh sách huyện:', error);
+        this.message.error('Có lỗi xảy ra khi tải danh sách huyện');
+      }
+    });
+  }
+
+  // Phương thức để tính số tiền cần đóng
+  calculateSoTienCanDong(): void {
+    const mucThuNhap = this.form.get('muc_thu_nhap')?.value || 0;
+    const tyLeDong = this.form.get('ty_le_dong')?.value || 0;
+    const tyLeNSNN = this.form.get('ty_le_nsnn')?.value || 0;
+    
+    // Tính tiền hỗ trợ
+    const tienHoTro = Math.round((mucThuNhap * tyLeNSNN) / 100);
+    
+    // Tính số tiền cần đóng
+    const soTienCanDong = Math.round((mucThuNhap * tyLeDong) / 100) - tienHoTro;
+    
+    // Cập nhật form
+    this.form.patchValue({
+      tien_ho_tro: tienHoTro,
+      so_tien_can_dong: soTienCanDong
+    });
+    
+    console.log('Đã tính toán số tiền:', {
+      mucThuNhap,
+      tyLeDong,
+      tyLeNSNN,
+      tienHoTro,
+      soTienCanDong
+    });
+  }
+
+  // Phương thức định dạng ngày tháng
+  private formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    // Kiểm tra nếu dateString đã ở định dạng yyyy-MM-dd
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      console.log('Parsed date from yyyy-MM-dd:', date);
+      return date.toISOString().split('T')[0];
+    }
+    
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${year}-${month}-${day}`;
+  }
+
+  // Phương thức để xử lý các sự kiện thay đổi giá trị form
+  setupFormValueChanges(): void {
+    console.log('Thiết lập các sự kiện theo dõi thay đổi của form');
+    
+    // Không cần thiết lập sự kiện cho tinh_nkq và huyen_nkq vì đã có onTinhChange và onHuyenChange
+    // Chỉ thiết lập sự kiện cho các trường khác
+    
+    // Xử lý khi thay đổi mức thu nhập hoặc tỷ lệ đóng
+    this.form.get('muc_thu_nhap')?.valueChanges.subscribe(() => {
+      this.calculateSoTienCanDong();
+      this.tinhSoTienPhaiDong(); // Gọi phương thức cũ nếu cần
+    });
+
+    this.form.get('ty_le_dong')?.valueChanges.subscribe(() => {
+      this.calculateSoTienCanDong();
+      this.tinhSoTienPhaiDong(); // Gọi phương thức cũ nếu cần
+    });
+
+    this.form.get('ty_le_nsnn')?.valueChanges.subscribe(() => {
+      this.calculateSoTienCanDong();
+      this.tinhSoTienPhaiDong(); // Gọi phương thức cũ nếu cần
+    });
+
+    this.form.get('phuong_thuc_dong')?.valueChanges.subscribe(() => {
+      this.tinhSoTienPhaiDong(); // Gọi phương thức cũ
+    });
+
+    // Theo dõi thay đổi loại NSNN
+    this.form.get('loai_nsnn')?.valueChanges.subscribe(loaiNSNN => {
+      // Cập nhật tỷ lệ NSNN dựa trên loại NSNN
+      let tyLeNSNN = 0;
+      if (loaiNSNN === 'ngheo') {
+        tyLeNSNN = 30;
+      } else if (loaiNSNN === 'can_ngheo') {
+        tyLeNSNN = 25;
+      } else if (loaiNSNN === 'khac') {
+        tyLeNSNN = 10;
+      }
+      
+      this.form.patchValue({
+        ty_le_nsnn: tyLeNSNN
+      });
+      
+      // Tính lại số tiền cần đóng
+      this.calculateSoTienCanDong();
+      
+      // Gọi phương thức cũ nếu cần
+      this.onLoaiNSNNChange(loaiNSNN);
+    });
+
+    // Theo dõi thay đổi phương án
+    this.form.get('phuong_an')?.valueChanges.subscribe(phuongAn => {
+      this.onPhuongAnChange(phuongAn);
+    });
+  }
+
+  // Phương thức để kiểm tra và sửa lỗi dữ liệu tỉnh, huyện, xã
+  fixDiaChiData(data: any): any {
+    // Clone dữ liệu để không ảnh hưởng đến dữ liệu gốc
+    const fixedData = { ...data };
+    
+    // Kiểm tra mã tỉnh
+    if (!fixedData.maTinhKs) {
+      console.log('Không tìm thấy mã tỉnh trong dữ liệu API');
+      
+      // Thử tìm mã tỉnh từ danh sách tỉnh nếu có
+      if (this.danhMucTinhs.length > 0) {
+        // Nếu có mã huyện, thử tìm mã tỉnh từ mã huyện
+        if (fixedData.maHuyenKs) {
+          console.log('Tìm mã tỉnh từ mã huyện:', fixedData.maHuyenKs);
+          const huyen = this.danhMucHuyens.find(h => h.ma === fixedData.maHuyenKs);
+          if (huyen) {
+            console.log('Đã tìm thấy mã tỉnh từ huyện:', huyen.ma_tinh);
+            fixedData.maTinhKs = huyen.ma_tinh;
+          }
+        }
+      }
+    }
+    
+    // Nếu vẫn không có mã tỉnh, gán giá trị mặc định
+    if (!fixedData.maTinhKs) {
+      console.log('Không thể tìm thấy mã tỉnh, sử dụng giá trị mặc định');
+      // Sử dụng mã tỉnh đầu tiên trong danh sách (nếu có)
+      if (this.danhMucTinhs.length > 0) {
+        fixedData.maTinhKs = this.danhMucTinhs[0].ma;
+      }
+    }
+    
+    // Kiểm tra và chuyển đổi các giá trị khác
+    if (fixedData.phuongThuc && typeof fixedData.phuongThuc === 'string') {
+      // Chuyển đổi phuongThuc từ chuỗi sang số nếu có thể
+      const phuongThucNum = parseInt(fixedData.phuongThuc);
+      if (!isNaN(phuongThucNum)) {
+        fixedData.phuongThuc = phuongThucNum;
+      }
+    }
+    
+    // Đảm bảo các giá trị số là số
+    if (fixedData.mucThuNhap && typeof fixedData.mucThuNhap === 'string') {
+      fixedData.mucThuNhap = parseFloat(fixedData.mucThuNhap);
+    }
+    
+    if (fixedData.tongTien && typeof fixedData.tongTien === 'string') {
+      fixedData.tongTien = parseFloat(fixedData.tongTien);
+    }
+    
+    if (fixedData.tienHoTro && typeof fixedData.tienHoTro === 'string') {
+      fixedData.tienHoTro = parseFloat(fixedData.tienHoTro);
+    }
+    
+    console.log('Dữ liệu sau khi sửa:', fixedData);
+    return fixedData;
+  }
+
+  // Phương thức để xử lý dữ liệu từ API
+  private processSearchResult(data: any): void {
+    try {
+      console.log('Processing search result:', data);
+      
+      // Log để kiểm tra giá trị giới tính từ API
+      console.log('Giới tính từ API:', data.gioiTinh);
+      
+      // Xử lý dữ liệu cơ bản
+      const processedData = {
+        ...data,
+        ngaySinh: this.parseDate(data.ngaySinh),
+        gioiTinh: data.gioiTinh, // Giữ nguyên giá trị gốc
+        thangBatDau: this.parseDate(data.thangBatDau),
+        phuongThuc: parseInt(data.phuongThuc),
+        mucThuNhap: parseFloat(data.mucThuNhap),
+        tongTien: parseFloat(data.tongTien),
+        tienHoTro: parseFloat(data.tienHoTro),
+        maHoGiaDinh: data.maHoGiaDinh,
+        maDanToc: data.danToc
+      };
+
+      // Format thangBatDau thành yyyy-MM
+      if (processedData.thangBatDau) {
+        const date = new Date(processedData.thangBatDau);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const formattedMonth = month < 10 ? `0${month}` : `${month}`;
+        
+        // Tạo chuỗi yyyy-MM
+        const formattedDate = `${year}-${formattedMonth}`;
+        
+        console.log('Tháng bắt đầu đã được format:', formattedDate);
+        
+        // Lưu lại giá trị đã format
+        processedData.thangBatDauFormatted = formattedDate;
+      }
+      
+      // Cập nhật form với dữ liệu cơ bản
+      const formData = {
+        ma_so_bhxh: processedData.maSoBHXH,
+        cccd: processedData.cmnd,
+        ho_ten: processedData.hoTen,
+        ngay_sinh: processedData.ngaySinh,
+        gioi_tinh: processedData.gioiTinh === 1 || processedData.gioiTinh === '1' ? 'Nam' : 'Nữ',
+        so_dien_thoai: processedData.dienThoaiLh,
+        muc_thu_nhap: processedData.mucThuNhap,
+        phuong_an: processedData.phuongAn,
+        phuong_thuc_dong: processedData.phuongThuc,
+        thang_bat_dau: processedData.thangBatDau,
+        ty_le_dong: 22,
+        tien_ho_tro: processedData.tienHoTro,
+        so_tien_can_dong: processedData.tongTien,
+        ma_hgd: processedData.maHoGiaDinh,
+        ma_dan_toc: data.danToc
+      };
+
+      console.log('Giới tính sau khi xử lý:', formData.gioi_tinh);
+      
+      this.form.patchValue(formData);
+
+      // Xử lý địa chỉ
+      if (processedData.maTinhKs) {
+        this.form.patchValue({ tinh_nkq: processedData.maTinhKs });
+        
+        // Load danh sách huyện
+        this.diaChiService.getDanhMucHuyenByMaTinh(processedData.maTinhKs).subscribe({
+          next: (huyens) => {
+            this.danhMucHuyens = huyens;
+            if (processedData.maHuyenKs) {
+              this.form.patchValue({ huyen_nkq: processedData.maHuyenKs });
+              
+              // Load danh sách xã
+              this.diaChiService.getDanhMucXaByMaHuyen(processedData.maHuyenKs).subscribe({
+                next: (xas) => {
+                  this.danhMucXas = xas;
+                  if (processedData.maXaKs) {
+                    this.form.patchValue({ xa_nkq: processedData.maXaKs });
+                  }
+                }
+              });
+            }
+          }
+        });
+      }
+
+      // Tính toán các giá trị liên quan
+      this.tinhSoTienPhaiDong();
+
+    } catch (error) {
+      console.error('Lỗi khi xử lý dữ liệu từ API:', error);
+      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
+    }
+  }
+
+  private parseDate(dateStr: string | null): Date | null {
+    if (!dateStr) return null;
+    
+    console.log('Parsing date:', dateStr);
+    
+    try {
+      if (typeof dateStr === 'string') {
+        // Xử lý định dạng yyyy-MM-dd hoặc yyyy-MM
+        if (dateStr.includes('-')) {
+          const parts = dateStr.split('-');
+          if (parts.length === 3) {
+            // Định dạng yyyy-MM-dd
+            const [year, month, day] = parts;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            console.log('Parsed date from yyyy-MM-dd:', date);
+            return date;
+          } else if (parts.length === 2) {
+            // Định dạng yyyy-MM
+            const [year, month] = parts;
+            // Tạo đối tượng Date với ngày 1
+            const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+            console.log('Parsed date from yyyy-MM:', date);
+            return date;
+          }
+        }
+        
+        // Xử lý định dạng dd/MM/yyyy hoặc MM/yyyy
+        if (dateStr.includes('/')) {
+          const parts = dateStr.split('/');
+          if (parts.length === 3) {
+            // Định dạng dd/MM/yyyy
+            const [day, month, year] = parts;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            console.log('Parsed date from dd/MM/yyyy:', date);
+            return date;
+          } else if (parts.length === 2) {
+            // Định dạng MM/yyyy
+            const [month, year] = parts;
+            // Tạo đối tượng Date với ngày 1
+            const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+            console.log('Parsed date from MM/yyyy:', date);
+            return date;
+          }
+        }
+        
+        // Xử lý timestamp
+        const timestamp = parseInt(dateStr);
+        if (!isNaN(timestamp)) {
+          const date = new Date(timestamp);
+          console.log('Parsed date from timestamp:', date);
+          return date;
+        }
+      }
+      
+      // Thử parse trực tiếp
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        console.log('Parsed date directly:', date);
+        return date;
+      }
+      
+      console.log('Failed to parse date');
+      return null;
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return null;
+    }
+  }
+
+  private parseGioiTinh(gioiTinh: any): string | null {
+    if (gioiTinh === null || gioiTinh === undefined) return null;
+    
+    if (typeof gioiTinh === 'number') {
+      return gioiTinh === 1 ? 'Nam' : 'Nữ';
+    }
+    
+    if (typeof gioiTinh === 'string') {
+      const gioiTinhLower = gioiTinh.toLowerCase();
+      if (['nam', 'male', '1'].includes(gioiTinhLower)) return 'Nam';
+      if (['nữ', 'nu', 'female', '0'].includes(gioiTinhLower)) return 'Nữ';
+    }
+    
+    return null;
   }
 } 
