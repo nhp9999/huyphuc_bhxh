@@ -39,7 +39,7 @@ namespace WebApp.API.Models
         public int phuong_thuc_dong { get; set; }
 
         [Column("thang_bat_dau")]
-        public DateTime thang_bat_dau { get; set; }
+        public string thang_bat_dau { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         [Column("so_thang_dong")]

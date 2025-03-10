@@ -52,7 +52,16 @@ export class SSMV2Service {
       'Host': 'ssmv2.vnpost.vn'
     });
 
-    return this.http.get(`${this.baseUrl}/oauth2/Captcha`, { headers });
+    return this.http.get(`${this.baseUrl}/oauth2/Captcha`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Lỗi khi lấy captcha:', error);
+          return throwError(() => new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.'));
+        }),
+        tap(response => {
+          console.log('Captcha response raw:', response);
+        })
+      );
   }
 
   authenticate(data: {

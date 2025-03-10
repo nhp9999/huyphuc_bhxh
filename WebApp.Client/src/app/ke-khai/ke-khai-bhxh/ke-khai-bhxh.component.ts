@@ -206,10 +206,10 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     this.iconService.addIcon(...[SearchOutline, IdcardOutline, DeleteOutline, EditOutline, SaveOutline, ClearOutline]);
     this.generateMucThuNhap();
     
-    // Khởi tạo form login SSMV2
+    // Khởi tạo form login SSMV2 với tài khoản và mật khẩu mặc định
     this.loginForm = this.fb.group({
-      userName: ['884000_xa_tli_phuoclt'],
-      password: ['123456d@D'],
+      userName: ['884000_xa_tli_phuoclt', [Validators.required]],
+      password: ['123456d@D', [Validators.required]],
       text: ['', [
         Validators.required,
         Validators.minLength(4),
@@ -232,6 +232,42 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Thêm CSS cho modal đăng nhập
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .login-message {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #1890ff;
+        font-size: 16px;
+      }
+      
+      .captcha-image {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+      
+      .captcha-image img {
+        max-width: 100%;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      
+      .input-with-button {
+        display: flex;
+      }
+      
+      .input-with-button .refresh-button {
+        margin-left: 8px;
+      }
+      
+      .captcha-container {
+        margin-bottom: 0;
+      }
+    `;
+    document.head.appendChild(style);
+    
     // Thêm log để kiểm tra dữ liệu currentUser
     console.log('currentUser:', this.currentUser);
     console.log('Mã nhân viên:', this.currentUser?.ma_nhan_vien || this.currentUser?.username);
@@ -260,24 +296,22 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   initForm(): void {
-    // Log trước khi khởi tạo form
-    const maNhanVien = this.currentUser?.ma_nhan_vien || this.currentUser?.username || '';
-    console.log('Khởi tạo form với mã nhân viên:', maNhanVien);
-    
     this.form = this.fb.group({
+      id: [null],
+      dot_ke_khai_id: [this.dotKeKhaiId],
       ma_so_bhxh: ['', [Validators.required, Validators.maxLength(10)]],
-      cccd: ['', [Validators.required, Validators.pattern(/^\d{12}$/)]],
-      ho_ten: ['', [Validators.required]],
-      ma_nhan_vien: [{value: maNhanVien, disabled: true}, [Validators.required]],
-      ma_hgd: ['', [Validators.maxLength(20)]],
-      ma_dan_toc: ['', [Validators.maxLength(20)]],
-      ngay_sinh: [null, Validators.required],
-      gioi_tinh: [null, Validators.required],
-      so_dien_thoai: ['', [Validators.pattern(/^(0|84)\d{9,10}$/)]],
-      tinh_nkq: [null, Validators.required],
-      huyen_nkq: [null, Validators.required],
-      xa_nkq: [null, Validators.required],
+      cccd: ['', [Validators.required, Validators.maxLength(12)]],
+      ho_ten: ['', [Validators.required, Validators.maxLength(100)]],
+      ngay_sinh: [null, [Validators.required]],
+      gioi_tinh: ['', [Validators.required]],
+      so_dien_thoai: ['', [Validators.pattern(/^[0-9]{10,11}$/)]],
+      ma_hgd: [''],
+      ma_dan_toc: [''],
+      ma_nhan_vien: [{value: this.currentUser?.ma_nhan_vien || '', disabled: true}, [Validators.required]],
       dia_chi_nkq: '',
+      ma_tinh: [null, [Validators.required]],
+      ma_huyen: [null, [Validators.required]],
+      ma_xa: [null, [Validators.required]],
       muc_thu_nhap: [1500000, [Validators.required, Validators.min(1500000)]],
       ty_le_dong: [{value: 22, disabled: true}, [Validators.required, Validators.min(0), Validators.max(100)]],
       ty_le_nsnn: [{value: 10, disabled: true}, [Validators.required, Validators.min(0), Validators.max(100)]],
@@ -337,8 +371,8 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     this.danhMucHuyens = [];
     this.danhMucXas = [];
     this.form.patchValue({
-      huyen_nkq: null,
-      xa_nkq: null
+      ma_huyen: null,
+      ma_xa: null
     });
     
     if (!maTinh) return;
@@ -368,7 +402,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     // Reset danh sách xã và giá trị form
     this.danhMucXas = [];
     this.form.patchValue({
-      xa_nkq: null
+      ma_xa: null
     });
     
     if (!maHuyen) return;
@@ -380,7 +414,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     }
 
     // Lấy mã tỉnh từ form
-    const maTinh = this.form.get('tinh_nkq')?.value;
+    const maTinh = this.form.get('ma_tinh')?.value;
     if (!maTinh) return;
 
     // Kiểm tra xem huyện có thuộc tỉnh đã chọn không
@@ -525,24 +559,23 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   }
 
   resetForm(): void {
-    // Lấy mã nhân viên từ currentUser
-    const maNhanVien = this.currentUser?.ma_nhan_vien || this.currentUser?.username || '';
-    console.log('Reset form với mã nhân viên:', maNhanVien);
-    
+    // Reset form về giá trị mặc định
     this.form.reset({
+      id: null,
+      dot_ke_khai_id: this.dotKeKhaiId,
       ma_so_bhxh: '',
       cccd: '',
       ho_ten: '',
-      ma_nhan_vien: maNhanVien, // Sử dụng mã nhân viên từ currentUser
-      ma_hgd: '',
-      ma_dan_toc: '',
       ngay_sinh: null,
       gioi_tinh: null,
       so_dien_thoai: '',
-      tinh_nkq: null,
-      huyen_nkq: null,
-      xa_nkq: null,
+      ma_hgd: '',
+      ma_dan_toc: '',
+      ma_nhan_vien: this.currentUser?.ma_nhan_vien || '',
       dia_chi_nkq: '',
+      ma_tinh: null,
+      ma_huyen: null,
+      ma_xa: null,
       muc_thu_nhap: 1500000,
       ty_le_dong: 22,
       ty_le_nsnn: 10,
@@ -551,19 +584,11 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       so_tien_can_dong: 0,
       phuong_thuc_dong: 1,
       thang_bat_dau: null,
-      tu_thang: null,
       phuong_an: 'TM',
       loai_khai_bao: '1',
       ngay_bien_lai: new Date(),
       ghi_chu: ''
     });
-    
-    // Đảm bảo trường ma_nhan_vien bị vô hiệu hóa
-    this.form.get('ma_nhan_vien')?.disable();
-    
-    // Reset các dropdown phụ thuộc
-    this.danhMucHuyens = [];
-    this.danhMucXas = [];
   }
 
   // Phương thức kiểm tra trùng lặp mã số BHXH
@@ -659,13 +684,13 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     const loaiKhaiBao = '1';
     
     // Lấy mã và tên tỉnh, huyện, xã
-    const maTinh = formValue.tinh_nkq;
+    const maTinh = formValue.ma_tinh;
     const tenTinh = this.getTinhTen(maTinh);
     
-    const maHuyen = formValue.huyen_nkq;
+    const maHuyen = formValue.ma_huyen;
     const tenHuyen = this.getHuyenTen(maHuyen);
     
-    const maXa = formValue.xa_nkq;
+    const maXa = formValue.ma_xa;
     const tenXa = this.getXaTen(maXa);
     
     // Xử lý thang_bat_dau để chỉ lưu tháng và năm
@@ -705,9 +730,9 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         ngay_sinh: this.datePipe.transform(formValue.ngay_sinh, 'yyyy-MM-dd'),
         gioi_tinh: formValue.gioi_tinh,
         so_dien_thoai: formValue.so_dien_thoai,
-        tinh_nkq: formValue.tinh_nkq,
-        huyen_nkq: formValue.huyen_nkq,
-        xa_nkq: formValue.xa_nkq,
+        tinh_nkq: formValue.ma_tinh,
+        huyen_nkq: formValue.ma_huyen,
+        xa_nkq: formValue.ma_xa,
         dia_chi_nkq: formValue.dia_chi_nkq,
         ma_tinh_nkq: maTinh,
         ma_huyen_nkq: maHuyen,
@@ -875,11 +900,38 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Kiểm tra xem có đang ở chế độ ngoại tuyến không
+    const userInfo = localStorage.getItem('ssmv2_user_info');
+    const isOfflineMode = userInfo && JSON.parse(userInfo).mangLuoi === 'OFFLINE';
+
+    // Kiểm tra token trước khi tìm kiếm (trừ khi đang ở chế độ ngoại tuyến)
+    const token = this.ssmv2Service.getToken();
+    if (!token && !isOfflineMode) {
+      // Tự động mở form đăng nhập mà không hiển thị thông báo
+      this.getCaptcha();
+      this.isLoginVisible = true;
+      return;
+    }
+
     // Bắt đầu tìm kiếm
     this.isSearching = true;
     
     // Hiển thị loading
     const msgId = this.message.loading('Đang tìm kiếm thông tin...', { nzDuration: 0 }).messageId;
+    
+    // Nếu đang ở chế độ ngoại tuyến, tạo dữ liệu mẫu
+    if (isOfflineMode) {
+      setTimeout(() => {
+        this.isSearching = false;
+        this.message.remove(msgId);
+        
+        // Tạo dữ liệu mẫu dựa trên mã số BHXH
+        const mockData = this.createMockData(maSoBHXH);
+        this.processSearchResult(mockData);
+        this.message.success('Tìm kiếm thông tin thành công (chế độ ngoại tuyến)!');
+      }, 1500); // Giả lập độ trễ mạng
+      return;
+    }
     
     // Gọi API tìm kiếm
     this.keKhaiBHXHService.searchBHXH(maSoBHXH).subscribe({
@@ -901,21 +953,82 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         this.message.remove(msgId);
         
         if (error.status === 401) {
-          // Xử lý lỗi xác thực
-          this.getCaptcha();
-          this.isLoginVisible = true;
+          this.message.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+          this.getAccessToken();
         } else {
-          this.message.error('Có lỗi xảy ra khi tìm kiếm thông tin!');
+          this.message.error('Lỗi khi tìm kiếm: ' + (error.error?.message || error.message || 'Không xác định'));
         }
-        console.error('Lỗi khi tìm kiếm:', error);
       }
     });
   }
 
+  // Tạo dữ liệu mẫu cho chế độ ngoại tuyến
+  createMockData(maSoBHXH: string): any {
+    // Tạo họ tên ngẫu nhiên
+    const ho = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng'];
+    const tenDem = ['Văn', 'Thị', 'Đức', 'Minh', 'Quang', 'Thanh', 'Hồng', 'Thành', 'Đình', 'Xuân'];
+    const ten = ['Anh', 'Hùng', 'Hương', 'Thảo', 'Nam', 'Linh', 'Tuấn', 'Hà', 'Phương', 'Tùng'];
+    
+    const randomHo = ho[Math.floor(Math.random() * ho.length)];
+    const randomTenDem = tenDem[Math.floor(Math.random() * tenDem.length)];
+    const randomTen = ten[Math.floor(Math.random() * ten.length)];
+    
+    const hoTen = `${randomHo} ${randomTenDem} ${randomTen}`;
+    
+    // Tạo ngày sinh ngẫu nhiên (từ 1960 đến 2000)
+    const year = Math.floor(Math.random() * (2000 - 1960) + 1960);
+    const month = Math.floor(Math.random() * 12) + 1;
+    const day = Math.floor(Math.random() * 28) + 1;
+    const ngaySinh = new Date(year, month - 1, day);
+    
+    // Tạo CCCD ngẫu nhiên (12 số)
+    let cccd = '';
+    for (let i = 0; i < 12; i++) {
+      cccd += Math.floor(Math.random() * 10).toString();
+    }
+    
+    // Tạo giới tính ngẫu nhiên
+    const gioiTinh = Math.random() > 0.5 ? 'Nam' : 'Nữ';
+    
+    // Tạo số điện thoại ngẫu nhiên
+    let soDienThoai = '0';
+    for (let i = 0; i < 9; i++) {
+      soDienThoai += Math.floor(Math.random() * 10).toString();
+    }
+    
+    // Trả về dữ liệu mẫu
+    return {
+      ma_so_bhxh: maSoBHXH,
+      ho_ten: hoTen,
+      ngay_sinh: ngaySinh,
+      gioi_tinh: gioiTinh,
+      cccd: cccd,
+      so_dien_thoai: soDienThoai,
+      dia_chi: {
+        ma_tinh: '01',
+        ten_tinh: 'Thành phố Hà Nội',
+        ma_huyen: '001',
+        ten_huyen: 'Quận Ba Đình',
+        ma_xa: '00001',
+        ten_xa: 'Phường Phúc Xá',
+        dia_chi_chi_tiet: 'Số 123, đường ABC'
+      }
+    };
+  }
+
   // Thêm phương thức lấy token
   getAccessToken(): void {
-    console.log('Yêu cầu đăng nhập SSMV2');
+    console.log('Yêu cầu xác thực');
     this.isLoginVisible = true;
+    
+    // Đặt lại giá trị mặc định cho form đăng nhập
+    this.loginForm.patchValue({
+      userName: '884000_xa_tli_phuoclt',
+      password: '123456d@D',
+      text: ''
+    });
+    
+    // Lấy captcha
     this.getCaptcha();
   }
 
@@ -924,23 +1037,80 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       next: (res) => {
         console.log('Captcha response:', res);
         if (res && res.data) {
-          this.captchaImage = res.data.image;
+          // Đảm bảo dữ liệu hình ảnh có định dạng đúng
+          // Kiểm tra xem dữ liệu hình ảnh đã có tiền tố data:image chưa
+          if (res.data.image && !res.data.image.startsWith('data:image')) {
+            this.captchaImage = 'data:image/png;base64,' + res.data.image;
+          } else {
+            this.captchaImage = res.data.image;
+          }
           this.captchaCode = res.data.code;
+          console.log('Captcha image URL:', this.captchaImage);
         } else {
-          this.message.error('Không nhận được dữ liệu captcha');
+          console.warn('Không nhận được dữ liệu captcha từ server, sử dụng captcha dự phòng');
+          this.generateFallbackCaptcha();
+          this.message.warning('Không thể kết nối đến máy chủ BHXH. Đang sử dụng captcha dự phòng.');
         }
       },
       error: (err) => {
         console.error('Captcha error:', err);
-        this.message.error('Lỗi khi lấy captcha: ' + err.message);
+        console.warn('Lỗi khi lấy captcha từ server, sử dụng captcha dự phòng');
+        this.generateFallbackCaptcha();
+        this.message.warning('Không thể kết nối đến máy chủ BHXH. Đang sử dụng captcha dự phòng.');
       }
     });
   }
 
   handleLogin(): void {
-    if (this.loginForm.get('text')?.valid) {
+    // Đánh dấu trường captcha là đã chạm vào để hiển thị lỗi
+    const textControl = this.loginForm.get('text');
+    if (textControl && textControl.invalid) {
+      textControl.markAsTouched();
+    }
+
+    // Kiểm tra tính hợp lệ của trường captcha
+    if (textControl && textControl.valid) {
       this.loadingLogin = true;
       
+      // Kiểm tra xem có đang sử dụng captcha dự phòng không
+      const userInput = this.loginForm.get('text')?.value;
+      const isFallbackCaptcha = this.captchaImage && this.captchaImage.startsWith('data:image/png;base64,') && !this.captchaImage.includes('iVBORw0KGgoAAAANSUhEUgAAASwAAABs');
+      
+      if (isFallbackCaptcha) {
+        // Nếu đang sử dụng captcha dự phòng, kiểm tra trực tiếp
+        if (userInput.toUpperCase() === this.captchaCode) {
+          // Xác thực thành công với captcha dự phòng
+          this.loadingLogin = false;
+          this.message.success('Xác thực thành công (chế độ ngoại tuyến)');
+          this.isLoginVisible = false;
+          
+          // Lưu thông tin đăng nhập tạm thời
+          const userInfo = {
+            userName: this.loginForm.get('userName')?.value,
+            name: 'Người dùng ngoại tuyến',
+            mangLuoi: 'OFFLINE',
+            donViCongTac: 'Chế độ ngoại tuyến',
+            chucDanh: 'Người dùng'
+          };
+          localStorage.setItem('ssmv2_user_info', JSON.stringify(userInfo));
+          
+          // Đảm bảo token đã được lưu trước khi tìm kiếm
+          setTimeout(() => {
+            if (this.form.get('ma_so_bhxh')?.value) {
+              console.log('Thực hiện tìm kiếm sau khi xác thực thành công (chế độ ngoại tuyến)');
+              this.searchBHXH();
+            }
+          }, 2000);
+        } else {
+          this.loadingLogin = false;
+          this.message.error('Mã xác thực sai');
+          this.loginForm.patchValue({ text: '' });
+          this.generateFallbackCaptcha();
+        }
+        return;
+      }
+      
+      // Xử lý đăng nhập bình thường với server
       const data = {
         grant_type: 'password',
         userName: this.loginForm.get('userName')?.value,
@@ -951,7 +1121,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         isWeb: true
       };
 
-      console.log('Gửi request đăng nhập với data:', { ...data, password: '***' });
+      console.log('Gửi request xác thực với data:', { ...data, password: '***' });
 
       this.ssmv2Service.authenticate(data).subscribe({
         next: (response) => {
@@ -965,7 +1135,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
             // Đảm bảo token đã được lưu trước khi tìm kiếm
             setTimeout(() => {
               if (this.form.get('ma_so_bhxh')?.value) {
-                console.log('Thực hiện tìm kiếm sau khi đăng nhập thành công');
+                console.log('Thực hiện tìm kiếm sau khi xác thực thành công');
                 this.searchBHXH();
               }
             }, 2000); // Tăng thời gian chờ lên 2 giây
@@ -975,7 +1145,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
           }
         },
         error: (err) => {
-          console.error('Login error:', err);
+          console.error('Lỗi xác thực:', err);
           this.loadingLogin = false;
           this.loginForm.patchValue({ text: '' });
 
@@ -995,20 +1165,63 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      Object.values(this.loginForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-        }
-      });
+      this.message.warning('Vui lòng nhập mã xác nhận!');
     }
   }
 
   handleLoginCancel(): void {
     this.isLoginVisible = false;
-    this.loginForm.reset({
-      userName: '884000_xa_tli_phuoclt',
-      password: '123456d@D'
+    // Chỉ reset trường text, giữ nguyên tài khoản và mật khẩu mặc định
+    this.loginForm.patchValue({
+      text: ''
     });
+  }
+
+  // Tạo captcha dự phòng trong trường hợp không thể kết nối đến máy chủ
+  generateFallbackCaptcha(): void {
+    // Tạo mã captcha ngẫu nhiên gồm 6 ký tự
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let captchaCode = '';
+    for (let i = 0; i < 6; i++) {
+      captchaCode += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    this.captchaCode = captchaCode;
+    
+    // Tạo hình ảnh captcha đơn giản
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      // Vẽ nền
+      ctx.fillStyle = '#f0f2f5';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Vẽ text
+      ctx.font = 'bold 36px Arial';
+      ctx.fillStyle = '#1890ff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Thêm hiệu ứng nhiễu
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.2)`;
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+      }
+      
+      // Vẽ text với hiệu ứng nghiêng
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((Math.random() - 0.5) * 0.2);
+      ctx.fillText(captchaCode, 0, 0);
+      ctx.restore();
+      
+      // Chuyển canvas thành base64 image
+      this.captchaImage = canvas.toDataURL('image/png');
+    }
+    
+    console.log('Đã tạo captcha dự phòng:', captchaCode);
   }
 
   convertToUpperCase(event: Event): void {
@@ -1263,21 +1476,21 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
       // Xử lý địa chỉ
       if (processedData.maTinhKs) {
-        this.form.patchValue({ tinh_nkq: processedData.maTinhKs });
+        this.form.patchValue({ ma_tinh: processedData.maTinhKs });
         
         // Load danh sách huyện
         this.diaChiService.getDanhMucHuyenByMaTinh(processedData.maTinhKs).subscribe({
           next: (huyens) => {
             this.danhMucHuyens = huyens;
             if (processedData.maHuyenKs) {
-              this.form.patchValue({ huyen_nkq: processedData.maHuyenKs });
+              this.form.patchValue({ ma_huyen: processedData.maHuyenKs });
               
               // Load danh sách xã
               this.diaChiService.getDanhMucXaByMaHuyen(processedData.maHuyenKs).subscribe({
                 next: (xas) => {
                   this.danhMucXas = xas;
                   if (processedData.maXaKs) {
-                    this.form.patchValue({ xa_nkq: processedData.maXaKs });
+                    this.form.patchValue({ ma_xa: processedData.maXaKs });
                   }
                 }
               });

@@ -55,6 +55,9 @@ namespace WebApp.API.Controllers
                 var query = _context.BienLais
                     .Include(b => b.KeKhaiBHYT)
                         .ThenInclude(k => k.ThongTinThe)
+                    .Include(b => b.KeKhaiBHYT)
+                        .ThenInclude(k => k.DotKeKhai)
+                            .ThenInclude(d => d.DonVi)
                     .AsQueryable();
 
                 // Chỉ lấy biên lai của người dùng hiện tại nếu không phải admin hoặc super admin
@@ -96,7 +99,12 @@ namespace WebApp.API.Controllers
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
                         tinh_chat = b.tinh_chat,
-                        ngay_tao = b.ngay_tao
+                        ngay_tao = b.ngay_tao,
+                        don_vi = b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null && b.KeKhaiBHYT.DotKeKhai.DonVi != null ? 
+                            b.KeKhaiBHYT.DotKeKhai.DonVi.TenDonVi : null,
+                        ma_ho_so = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.ma_ho_so : 
+                                  (b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null ? 
+                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null)
                     })
                     .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
@@ -138,6 +146,9 @@ namespace WebApp.API.Controllers
                 var query = _context.BienLais
                     .Include(b => b.KeKhaiBHYT)
                         .ThenInclude(k => k.ThongTinThe)
+                    .Include(b => b.KeKhaiBHYT)
+                        .ThenInclude(k => k.DotKeKhai)
+                            .ThenInclude(d => d.DonVi)
                     .AsQueryable();
 
                 // Chỉ lấy biên lai của người dùng hiện tại nếu không phải admin hoặc super admin
@@ -179,7 +190,12 @@ namespace WebApp.API.Controllers
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
                         tinh_chat = b.tinh_chat,
-                        ngay_tao = b.ngay_tao
+                        ngay_tao = b.ngay_tao,
+                        don_vi = b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null && b.KeKhaiBHYT.DotKeKhai.DonVi != null ? 
+                            b.KeKhaiBHYT.DotKeKhai.DonVi.TenDonVi : null,
+                        ma_ho_so = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.ma_ho_so : 
+                                  (b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null ? 
+                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null)
                     })
                     .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
@@ -197,7 +213,7 @@ namespace WebApp.API.Controllers
                     worksheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
                     // Thiết lập header
-                    var headers = new[] { "Quyển số", "Số biên lai", "Tên người đóng", "Mã số BHXH", "Số tiền", "Ngày biên lai", "Mã nhân viên", "Ghi chú", "Trạng thái", "Tính chất" };
+                    var headers = new[] { "Quyển số", "Số biên lai", "Tên người đóng", "Mã số BHXH", "Số tiền", "Ngày biên lai", "Mã nhân viên", "Đơn vị", "Mã hồ sơ", "Ghi chú", "Trạng thái", "Tính chất" };
                     for (int i = 0; i < headers.Length; i++)
                     {
                         worksheet.Cells[3, i + 1].Value = headers[i];
@@ -220,12 +236,14 @@ namespace WebApp.API.Controllers
                         worksheet.Cells[row, 5].Style.Numberformat.Format = "#,##0";
                         worksheet.Cells[row, 6].Value = item.ngay_bien_lai.ToString("dd/MM/yyyy");
                         worksheet.Cells[row, 7].Value = item.ma_nhan_vien;
-                        worksheet.Cells[row, 8].Value = item.ghi_chu;
-                        worksheet.Cells[row, 9].Value = item.trang_thai;
-                        worksheet.Cells[row, 10].Value = item.tinh_chat;
+                        worksheet.Cells[row, 8].Value = item.don_vi;
+                        worksheet.Cells[row, 9].Value = item.ma_ho_so;
+                        worksheet.Cells[row, 10].Value = item.ghi_chu;
+                        worksheet.Cells[row, 11].Value = item.trang_thai;
+                        worksheet.Cells[row, 12].Value = item.tinh_chat;
 
                         // Thêm border cho các ô
-                        worksheet.Cells[row, 1, row, 10].Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                        worksheet.Cells[row, 1, row, 12].Style.Border.BorderAround(ExcelBorderStyle.Thin);
 
                         tongSoTien += item.so_tien;
                         row++;

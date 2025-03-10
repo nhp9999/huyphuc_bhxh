@@ -415,7 +415,7 @@
           <th [nzWidth]="'150px'">Mức thu nhập</th>
           <th [nzWidth]="'100px'">Tỷ lệ đóng</th>
           <th [nzWidth]="'100px'">Tỷ lệ NSNN</th>
-          <th [nzWidth]="'150px'">Số tiền phải đóng</th>
+          <th [nzWidth]="'150px'">Số tiền cần đóng</th>
           <th [nzWidth]="'120px'" [nzRight]="true">Thao tác</th>
         </tr>
       </thead>
@@ -433,7 +433,7 @@
           <td>{{ data.muc_thu_nhap | number:'1.0-0' }}</td>
           <td>{{ data.ty_le_dong }}%</td>
           <td>{{ data.ty_le_nsnn }}%</td>
-          <td>{{ data.so_tien_phai_dong | number:'1.0-0' }}</td>
+          <td>{{ data.so_tien_can_dong | number:'1.0-0' }}</td>
           <td [nzRight]="true">
             <div class="table-actions-cell">
               <button nz-button nzType="primary" nzShape="circle" nzSize="small" nzTooltip="Sửa" (click)="showModal(data)">
@@ -453,40 +453,49 @@
 <!-- Modal đăng nhập -->
 <nz-modal
   [(nzVisible)]="isLoginVisible"
-  [nzTitle]="'Đăng nhập hệ thống BHXH'"
-  [nzOkText]="'Đăng nhập'"
+  [nzTitle]="'Xác thực'"
+  [nzOkText]="'Xác thực'"
   [nzCancelText]="'Hủy'"
   [nzOkLoading]="loadingLogin"
   (nzOnOk)="handleLogin()"
   (nzOnCancel)="handleLoginCancel()">
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="loginForm" class="login-form">
-      <nz-form-item>
-        <nz-form-label [nzSpan]="24" nzRequired>Tên đăng nhập</nz-form-label>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập tên đăng nhập">
-          <input nz-input formControlName="username" placeholder="Nhập tên đăng nhập" />
-        </nz-form-control>
-      </nz-form-item>
-      <nz-form-item>
-        <nz-form-label [nzSpan]="24" nzRequired>Mật khẩu</nz-form-label>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mật khẩu">
-          <input nz-input type="password" formControlName="password" placeholder="Nhập mật khẩu" />
-        </nz-form-control>
-      </nz-form-item>
+      <!-- Ẩn phần nhập tài khoản và mật khẩu -->
+      <div style="display: none;">
+        <nz-form-item>
+          <nz-form-label [nzSpan]="24" nzRequired>Tên đăng nhập</nz-form-label>
+          <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập tên đăng nhập">
+            <input nz-input formControlName="userName" placeholder="Nhập tên đăng nhập" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label [nzSpan]="24" nzRequired>Mật khẩu</nz-form-label>
+          <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mật khẩu">
+            <input nz-input type="password" formControlName="password" placeholder="Nhập mật khẩu" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div class="login-message">
+        <p>Vui lòng nhập mã xác nhận để tiếp tục</p>
+      </div>
+      
+      <div class="captcha-image" *ngIf="captchaImage">
+        <img [src]="captchaImage" alt="Captcha" />
+      </div>
+      
       <nz-form-item class="captcha-container">
         <nz-form-label [nzSpan]="24" nzRequired>Mã xác nhận</nz-form-label>
         <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
           <div class="input-with-button">
-            <input nz-input formControlName="captcha" placeholder="Nhập mã xác nhận" (input)="convertToUpperCase($event)" />
+            <input nz-input formControlName="text" placeholder="Nhập mã xác nhận" (input)="convertToUpperCase($event)" />
             <button nz-button class="refresh-button" (click)="getCaptcha()">
               <span nz-icon nzType="reload" nzTheme="outline"></span>
             </button>
           </div>
         </nz-form-control>
       </nz-form-item>
-      <div class="captcha-image" *ngIf="captchaImage">
-        <img [src]="captchaImage" alt="Captcha" />
-      </div>
     </form>
   </ng-container>
 </nz-modal>

@@ -95,6 +95,7 @@ export class BangKeBienLaiComponent implements OnInit {
   }
 
   exportToExcel(): void {
+    this.loading = true;
     const params = {
       ...this.searchForm,
       quyenSo: this.searchForm.quyenSo || undefined,
@@ -103,14 +104,20 @@ export class BangKeBienLaiComponent implements OnInit {
 
     this.bienLaiService.exportBangKeBienLai(params).subscribe({
       next: (data: Blob) => {
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(data);
-        link.download = `bang-ke-bien-lai-${new Date().getTime()}.xlsx`;
-        link.click();
+        const url = window.URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bang-ke-bien-lai-${new Date().getTime()}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        this.loading = false;
       },
       error: (error) => {
         console.error('Lỗi khi xuất Excel:', error);
         this.message.error('Có lỗi xảy ra khi xuất Excel');
+        this.loading = false;
       }
     });
   }

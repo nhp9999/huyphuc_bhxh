@@ -84,6 +84,7 @@ namespace WebApp.API.Controllers
             try
             {
                 var keKhaiBHXH = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
                     .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
 
                 if (keKhaiBHXH == null)
@@ -194,7 +195,7 @@ namespace WebApp.API.Controllers
                     tien_ho_tro = GetDecimalProperty(requestData, "tien_ho_tro"),
                     so_tien_can_dong = GetDecimalProperty(requestData, "so_tien_can_dong"),
                     phuong_thuc_dong = GetInt32Property(requestData, "phuong_thuc_dong"),
-                    thang_bat_dau = GetDateTimeProperty(requestData, "thang_bat_dau"),
+                    thang_bat_dau = GetStringProperty(requestData, "thang_bat_dau"),
                     phuong_an = GetStringProperty(requestData, "phuong_an"),
                     loai_khai_bao = GetStringProperty(requestData, "loai_khai_bao"),
                     ngay_bien_lai = GetDateTimeProperty(requestData, "ngay_bien_lai"),

@@ -33,6 +33,8 @@ export interface BangKeBienLai {
   ghi_chu?: string;
   trang_thai: string;
   tinh_chat: string;
+  don_vi?: string;
+  ma_ho_so?: string;
 }
 
 @Injectable({
