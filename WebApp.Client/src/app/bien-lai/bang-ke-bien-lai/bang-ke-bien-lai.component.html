@@ -80,9 +80,12 @@
           <th nzWidth="100px">Mã số BHXH</th>
           <th nzWidth="120px" nzAlign="right">Số tiền</th>
           <th nzWidth="150px">Ngày biên lai</th>
-          <th nzWidth="100px">Mã NV</th>
+          <th nzWidth="80px">Mã NV</th>
+          <th nzWidth="150px">Tên nhân viên</th>
           <th nzWidth="150px">Đơn vị</th>
           <th nzWidth="120px">Mã hồ sơ</th>
+          <th nzWidth="80px" nzAlign="center">Số tháng</th>
+          <th nzWidth="100px">Người thứ</th>
           <th nzWidth="100px">Trạng thái</th>
           <th nzWidth="100px">Tính chất</th>
           <th nzWidth="200px">Ghi chú</th>
@@ -97,8 +100,11 @@
           <td nzAlign="right">{{ item.so_tien | number }}</td>
           <td>{{ item.ngay_bien_lai | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ item.ma_nhan_vien }}</td>
+          <td>{{ item.ten_nhan_vien }}</td>
           <td>{{ item.don_vi }}</td>
           <td>{{ item.ma_ho_so }}</td>
+          <td nzAlign="center">{{ item.so_thang_dong }}</td>
+          <td>{{ getNguoiThuText(item.nguoi_thu) }}</td>
           <td>{{ item.trang_thai }}</td>
           <td>{{ item.tinh_chat }}</td>
           <td>{{ item.ghi_chu }}</td>

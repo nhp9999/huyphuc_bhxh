@@ -96,6 +96,10 @@ namespace WebApp.API.Controllers
                         so_tien = b.so_tien,
                         ngay_bien_lai = b.ngay_bien_lai.Date,
                         ma_nhan_vien = b.ma_nhan_vien,
+                        ten_nhan_vien = _context.NguoiDungs
+                            .Where(n => n.ma_nhan_vien == b.ma_nhan_vien)
+                            .Select(n => n.ho_ten)
+                            .FirstOrDefault(),
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
                         tinh_chat = b.tinh_chat,
@@ -104,7 +108,9 @@ namespace WebApp.API.Controllers
                             b.KeKhaiBHYT.DotKeKhai.DonVi.TenDonVi : null,
                         ma_ho_so = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.ma_ho_so : 
                                   (b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null ? 
-                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null)
+                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null),
+                        so_thang_dong = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.so_thang_dong : 0,
+                        nguoi_thu = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.nguoi_thu : 0
                     })
                     .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
@@ -187,6 +193,10 @@ namespace WebApp.API.Controllers
                         so_tien = b.so_tien,
                         ngay_bien_lai = b.ngay_bien_lai.Date,
                         ma_nhan_vien = b.ma_nhan_vien,
+                        ten_nhan_vien = _context.NguoiDungs
+                            .Where(n => n.ma_nhan_vien == b.ma_nhan_vien)
+                            .Select(n => n.ho_ten)
+                            .FirstOrDefault(),
                         ghi_chu = b.ghi_chu,
                         trang_thai = b.trang_thai,
                         tinh_chat = b.tinh_chat,
@@ -195,7 +205,9 @@ namespace WebApp.API.Controllers
                             b.KeKhaiBHYT.DotKeKhai.DonVi.TenDonVi : null,
                         ma_ho_so = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.ma_ho_so : 
                                   (b.KeKhaiBHYT != null && b.KeKhaiBHYT.DotKeKhai != null ? 
-                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null)
+                                   b.KeKhaiBHYT.DotKeKhai.ma_ho_so : null),
+                        so_thang_dong = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.so_thang_dong : 0,
+                        nguoi_thu = b.KeKhaiBHYT != null ? b.KeKhaiBHYT.nguoi_thu : 0
                     })
                     .OrderByDescending(b => b.ngay_tao)
                     .ToListAsync();
@@ -213,7 +225,7 @@ namespace WebApp.API.Controllers
                     worksheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
                     // Thiết lập header
-                    var headers = new[] { "Quyển số", "Số biên lai", "Tên người đóng", "Mã số BHXH", "Số tiền", "Ngày biên lai", "Mã nhân viên", "Đơn vị", "Mã hồ sơ", "Ghi chú", "Trạng thái", "Tính chất" };
+                    var headers = new[] { "Quyển số", "Số biên lai", "Tên người đóng", "Mã số BHXH", "Số tiền", "Ngày biên lai", "Mã NV", "Tên nhân viên", "Đơn vị", "Mã hồ sơ", "Số tháng", "Người thứ", "Ghi chú", "Trạng thái", "Tính chất" };
                     for (int i = 0; i < headers.Length; i++)
                     {
                         worksheet.Cells[3, i + 1].Value = headers[i];
@@ -236,14 +248,17 @@ namespace WebApp.API.Controllers
                         worksheet.Cells[row, 5].Style.Numberformat.Format = "#,##0";
                         worksheet.Cells[row, 6].Value = item.ngay_bien_lai.ToString("dd/MM/yyyy");
                         worksheet.Cells[row, 7].Value = item.ma_nhan_vien;
-                        worksheet.Cells[row, 8].Value = item.don_vi;
-                        worksheet.Cells[row, 9].Value = item.ma_ho_so;
-                        worksheet.Cells[row, 10].Value = item.ghi_chu;
-                        worksheet.Cells[row, 11].Value = item.trang_thai;
-                        worksheet.Cells[row, 12].Value = item.tinh_chat;
+                        worksheet.Cells[row, 8].Value = item.ten_nhan_vien;
+                        worksheet.Cells[row, 9].Value = item.don_vi;
+                        worksheet.Cells[row, 10].Value = item.ma_ho_so;
+                        worksheet.Cells[row, 11].Value = item.so_thang_dong;
+                        worksheet.Cells[row, 12].Value = GetNguoiThuText(item.nguoi_thu);
+                        worksheet.Cells[row, 13].Value = item.ghi_chu;
+                        worksheet.Cells[row, 14].Value = item.trang_thai;
+                        worksheet.Cells[row, 15].Value = item.tinh_chat;
 
                         // Thêm border cho các ô
-                        worksheet.Cells[row, 1, row, 12].Style.Border.BorderAround(ExcelBorderStyle.Thin);
+                        worksheet.Cells[row, 1, row, 15].Style.Border.BorderAround(ExcelBorderStyle.Thin);
 
                         tongSoTien += item.so_tien;
                         row++;
@@ -269,6 +284,26 @@ namespace WebApp.API.Controllers
             {
                 _logger.LogError($"Error exporting bang ke bien lai: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi xuất bảng kê biên lai" });
+            }
+        }
+
+        // Hàm chuyển đổi số người thứ sang text
+        private string GetNguoiThuText(int nguoiThu)
+        {
+            switch (nguoiThu)
+            {
+                case 1:
+                    return "Người thứ 1";
+                case 2:
+                    return "Người thứ 2";
+                case 3:
+                    return "Người thứ 3";
+                case 4:
+                    return "Người thứ 4";
+                case 5:
+                    return "Người thứ 5 trở đi";
+                default:
+                    return "";
             }
         }
     }

@@ -32,7 +32,7 @@ export interface ThongTinThe {
   ma_benh_vien?: string;
   so_the_bhyt?: string;
   ma_dan_toc?: string;
-  quoc_tich?: string;
+  quoc_tich: string;
   nguoi_tao: string;
   ngay_tao?: Date;
   noiNhanHoSo?: NoiNhanHoSo;

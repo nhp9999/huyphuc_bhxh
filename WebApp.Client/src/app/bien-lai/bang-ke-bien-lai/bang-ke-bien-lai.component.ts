@@ -121,4 +121,24 @@ export class BangKeBienLaiComponent implements OnInit {
       }
     });
   }
+
+  // Hàm chuyển đổi số người thứ sang text
+  getNguoiThuText(nguoiThu: number | undefined): string {
+    if (!nguoiThu) return '';
+    
+    switch (nguoiThu) {
+      case 1:
+        return 'Người thứ 1';
+      case 2:
+        return 'Người thứ 2';
+      case 3:
+        return 'Người thứ 3';
+      case 4:
+        return 'Người thứ 4';
+      case 5:
+        return 'Người thứ 5 trở đi';
+      default:
+        return '';
+    }
+  }
 } 

@@ -285,6 +285,61 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm biến theo dõi đã tải dữ liệu hay chưa
   private dataInitialized = false;
 
+  // Thêm biến locale cho DatePicker
+  locale = {
+    lang: {
+      placeholder: 'Chọn ngày',
+      rangePlaceholder: ['Ngày bắt đầu', 'Ngày kết thúc'],
+      today: 'Hôm nay',
+      now: 'Bây giờ',
+      backToToday: 'Trở về hôm nay',
+      ok: 'Đồng ý',
+      clear: 'Xóa',
+      month: 'Tháng',
+      year: 'Năm',
+      timeSelect: 'Chọn giờ',
+      dateSelect: 'Chọn ngày',
+      monthSelect: 'Chọn tháng',
+      yearSelect: 'Chọn năm',
+      decadeSelect: 'Chọn thập kỷ',
+      yearFormat: 'YYYY',
+      dateFormat: 'DD/MM/YYYY',
+      dayFormat: 'DD',
+      dateTimeFormat: 'DD/MM/YYYY HH:mm:ss',
+      monthBeforeYear: true,
+      previousMonth: 'Tháng trước',
+      nextMonth: 'Tháng sau',
+      previousYear: 'Năm trước',
+      nextYear: 'Năm sau',
+      previousDecade: 'Thập kỷ trước',
+      nextDecade: 'Thập kỷ sau',
+      previousCentury: 'Thế kỷ trước',
+      nextCentury: 'Thế kỷ sau'
+    },
+    timePickerLocale: {
+      placeholder: 'Chọn giờ'
+    }
+  };
+
+  // Thêm biến countries cho danh sách quốc tịch
+  countries = [
+    { ma: 'VN', ten: 'Việt Nam' },
+    { ma: 'US', ten: 'Hoa Kỳ' },
+    { ma: 'CN', ten: 'Trung Quốc' },
+    { ma: 'JP', ten: 'Nhật Bản' },
+    { ma: 'KR', ten: 'Hàn Quốc' },
+    { ma: 'GB', ten: 'Anh' },
+    { ma: 'FR', ten: 'Pháp' },
+    { ma: 'DE', ten: 'Đức' },
+    { ma: 'SG', ten: 'Singapore' },
+    { ma: 'TH', ten: 'Thái Lan' },
+    { ma: 'LA', ten: 'Lào' },
+    { ma: 'KH', ten: 'Campuchia' },
+    { ma: 'MY', ten: 'Malaysia' },
+    { ma: 'AU', ten: 'Úc' },
+    { ma: 'CA', ten: 'Canada' }
+  ];
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -515,7 +570,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       ma_benh_vien: [''],
       so_the_bhyt: [''],
       ma_dan_toc: [null],
-      quoc_tich: [null],
+      quoc_tich: ['VN'],
       nguoi_thu: [null, Validators.required],
       so_thang_dong: [null, Validators.required],
       phuong_an_dong: [null, Validators.required],
@@ -875,7 +930,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               ngay_tao: new Date(),
               so_the_bhyt: formValue.so_the_bhyt || '',
               ma_dan_toc: formValue.ma_dan_toc || '',
-              quoc_tich: formValue.quoc_tich || '',
+              quoc_tich: formValue.quoc_tich || 'VN',
               noiNhanHoSo: {
                 tinh: this.getTinhTen(formValue.tinh_nkq),
                 huyen: this.getHuyenTen(formValue.huyen_nkq),
@@ -988,7 +1043,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ma_xa_nkq: formValue.xa_nkq || '',
           so_the_bhyt: formValue.so_the_bhyt || '',
           ma_dan_toc: formValue.ma_dan_toc || '',
-          quoc_tich: formValue.quoc_tich || '',
+          quoc_tich: formValue.quoc_tich || 'VN',
           ma_benh_vien: formValue.benh_vien_kcb || '',
         };
 
@@ -1882,7 +1937,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         ma_benh_vien: maBenhVien,
         so_the_bhyt: data.soTheBHYT || '',
         ma_dan_toc: data.danToc || '',
-        quoc_tich: data.quocTich || '',
+        quoc_tich: data.quocTich || 'VN',
         nguoi_tao: this.currentUser.username,
         ngay_tao: new Date(),
         noiNhanHoSo: {
@@ -3695,5 +3750,37 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Phương thức để kiểm tra xem có bộ lọc nào đang được áp dụng không
   hasActiveFilters(): boolean {
     return this.filterSoThangDong !== null || this.filterNguoiThu !== null;
+  }
+
+  /**
+   * Kiểm tra họ tên hợp lệ
+   */
+  validateHoTen(): void {
+    const hoTenControl = this.form.get('ho_ten');
+    if (hoTenControl && hoTenControl.value) {
+      const hoTen = hoTenControl.value.trim();
+      
+      // Kiểm tra độ dài
+      if (hoTen.length < 3) {
+        hoTenControl.setErrors({ invalidName: true });
+        return;
+      }
+      
+      // Kiểm tra ký tự đặc biệt không hợp lệ
+      const regex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s\-]+$/;
+      if (!regex.test(hoTen)) {
+        hoTenControl.setErrors({ invalidName: true });
+        return;
+      }
+      
+      // Kiểm tra khoảng trắng liên tiếp
+      if (/\s\s/.test(hoTen)) {
+        hoTenControl.setErrors({ invalidName: true });
+        return;
+      }
+      
+      // Nếu mọi kiểm tra đều thành công, xóa lỗi
+      hoTenControl.setErrors(null);
+    }
   }
 } 

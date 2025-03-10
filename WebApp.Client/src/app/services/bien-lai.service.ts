@@ -30,11 +30,14 @@ export interface BangKeBienLai {
   so_tien: number;
   ngay_bien_lai: Date;
   ma_nhan_vien: string;
+  ten_nhan_vien?: string;
   ghi_chu?: string;
   trang_thai: string;
   tinh_chat: string;
   don_vi?: string;
   ma_ho_so?: string;
+  so_thang_dong?: number;
+  nguoi_thu?: number;
 }
 
 @Injectable({
