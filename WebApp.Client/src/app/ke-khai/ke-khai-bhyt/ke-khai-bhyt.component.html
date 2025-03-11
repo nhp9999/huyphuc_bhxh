@@ -1,12 +1,8 @@
 <div class="ke-khai-bhyt-container">
-  <nz-card class="form-card fade-in" [nzExtra]="extraTemplate" [nzTitle]="titleTemplate">
+  <nz-card class="form-card" [nzExtra]="extraTemplate" [nzTitle]="titleTemplate">
     <ng-template #titleTemplate>
       <div class="card-title">
         <div class="title-text">Kê khai bảo hiểm y tế</div>
-        <div class="title-dot shine-effect">
-          <span nz-icon nzType="calendar" nzTheme="outline"></span>
-          <span class="dot-text">{{ dotKeKhai?.ten_dot }}</span>
-        </div>
       </div>
     </ng-template>
     <ng-template #extraTemplate>
@@ -113,17 +109,25 @@
         <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Ngày sinh</nz-form-label>
-            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn ngày sinh">
-              <nz-date-picker 
+            <nz-form-control [nzSpan]="24" [nzErrorTip]="ngaySinhErrorTpl">
+              <input 
+                nz-input
                 formControlName="ngay_sinh"
-                nzFormat="dd/MM/yyyy"
-                [nzLocale]="locale"
-                [nzPlaceHolder]="'Chọn ngày sinh'"
-                [nzAllowClear]="false"
-                [nzShowToday]="true"
-                [nzInputReadOnly]="true"
-                class="w-100">
-              </nz-date-picker>
+                placeholder="Nhập ngày sinh (dd/MM/yyyy)"
+                (blur)="onNgaySinhBlur($event)"
+                (paste)="handleNgaySinhPaste($event)"
+              />
+              <ng-template #ngaySinhErrorTpl let-control>
+                <ng-container *ngIf="control.hasError('required')">
+                  Vui lòng nhập ngày sinh
+                </ng-container>
+                <ng-container *ngIf="control.hasError('pattern')">
+                  Ngày sinh không đúng định dạng (dd/MM/yyyy hoặc yyyy)
+                </ng-container>
+                <ng-container *ngIf="control.hasError('invalidDate')">
+                  Ngày sinh không hợp lệ
+                </ng-container>
+              </ng-template>
             </nz-form-control>
           </nz-form-item>
         </div>
@@ -141,6 +145,15 @@
         </div>
 
         <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Số điện thoại</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập đúng định dạng số điện thoại">
+              <input nz-input formControlName="so_dien_thoai" placeholder="Nhập số điện thoại" (keypress)="onlyNumber($event)" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4" [style.display]="'none'">
           <nz-form-item>
             <nz-form-label [nzSpan]="24" nzRequired>Quốc tịch</nz-form-label>
             <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn quốc tịch">
@@ -386,7 +399,7 @@
     </form>
   </nz-card>
 
-  <nz-card class="form-card fade-in" nzTitle="Danh sách kê khai">
+  <nz-card class="form-card" nzTitle="Danh sách kê khai">
     <div class="table-actions">
       <div class="left-actions">
         <button *ngIf="selectedIds.length > 0" nz-button nzType="primary" nzDanger class="ripple" (click)="deleteMultiple()">

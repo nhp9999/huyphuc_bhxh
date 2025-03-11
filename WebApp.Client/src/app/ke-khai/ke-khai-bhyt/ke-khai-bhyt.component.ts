@@ -554,7 +554,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       ho_ten: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
       ngay_sinh: ['', [
         Validators.required,
-        Validators.pattern(/^(\d{1,2}\/\d{1,2}\/\d{4}|\d{4})$/) // Cho phép dd/MM/yyyy hoặc yyyy
+        Validators.pattern(/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}|\d{4}$/)
       ]],
       gioi_tinh: [null, Validators.required],
       so_dien_thoai: ['', [Validators.pattern(/^(0|84)\d{9,10}$/)]],

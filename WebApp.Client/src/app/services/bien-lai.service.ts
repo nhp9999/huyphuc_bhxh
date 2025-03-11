@@ -20,6 +20,11 @@ export interface BangKeBienLaiSearchParams {
   denNgay?: Date | null;
   quyenSo?: string | null | undefined;
   maNhanVien?: string | null | undefined;
+  trangThai?: string | null | undefined;
+  donVi?: string | null | undefined;
+  tinhChat?: string | null | undefined;
+  maHoSo?: string | null | undefined;
+  mauBaoCao?: string;
 }
 
 export interface BangKeBienLai {
@@ -94,6 +99,28 @@ export class BienLaiService {
     }
 
     return this.http.get(`${this.apiUrl}/bang-ke/export`, {
+      params: queryParams,
+      responseType: 'blob'
+    });
+  }
+
+  exportBaoCaoBC01(params?: BangKeBienLaiSearchParams): Observable<Blob> {
+    let queryParams = new HttpParams();
+    
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const value = params[key as keyof BangKeBienLaiSearchParams];
+        if (value !== null && value !== undefined && value !== '') {
+          if (key === 'tuNgay' || key === 'denNgay') {
+            queryParams = queryParams.append(key, (value as Date).toISOString());
+          } else {
+            queryParams = queryParams.append(key, value.toString());
+          }
+        }
+      });
+    }
+
+    return this.http.get(`${this.apiUrl}/bang-ke/bao-cao/bc01`, {
       params: queryParams,
       responseType: 'blob'
     });

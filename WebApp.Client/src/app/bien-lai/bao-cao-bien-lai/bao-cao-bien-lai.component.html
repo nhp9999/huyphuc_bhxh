@@ -1,169 +1,486 @@
 <div class="page-header">
-  <h2>Báo cáo biên lai</h2>
+  <div class="header-content">
+    <h2>Báo cáo biên lai</h2>
+    <div class="header-actions">
+      <nz-radio-group [(ngModel)]="viewMode" nzButtonStyle="solid">
+        <label nz-radio-button nzValue="table" nz-tooltip nzTooltipTitle="Xem dạng bảng">
+          <i nz-icon nzType="table"></i>
+        </label>
+        <label nz-radio-button nzValue="card" nz-tooltip nzTooltipTitle="Xem dạng thẻ">
+          <i nz-icon nzType="appstore"></i>
+        </label>
+        <label nz-radio-button nzValue="compact" nz-tooltip nzTooltipTitle="Xem dạng thu gọn">
+          <i nz-icon nzType="unordered-list"></i>
+        </label>
+      </nz-radio-group>
+    </div>
+  </div>
 </div>
 
 <div class="page-content">
-  <!-- Form tìm kiếm -->
-  <form nz-form [nzLayout]="'inline'" class="search-form">
-    <div nz-row [nzGutter]="16">
-      <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="8">
-        <nz-form-item>
-          <nz-form-label>Thời gian</nz-form-label>
-          <nz-form-control>
-            <nz-range-picker 
-              [(ngModel)]="dateRange" 
-              name="dateRange"
-              (ngModelChange)="onDateRangeChange($event)"
-              nzFormat="dd/MM/yyyy"
-              [nzAllowClear]="true">
-            </nz-range-picker>
-          </nz-form-control>
-        </nz-form-item>
+  <nz-tabset [(nzSelectedIndex)]="activeTab" (nzSelectedIndexChange)="changeTab($event)">
+    <nz-tab nzTitle="Báo cáo tổng hợp">
+      <!-- Form tìm kiếm -->
+      <form nz-form [nzLayout]="'inline'" class="search-form">
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="8">
+            <nz-form-item>
+              <nz-form-label>Thời gian</nz-form-label>
+              <nz-form-control>
+                <nz-range-picker 
+                  [(ngModel)]="dateRange" 
+                  name="dateRange"
+                  (ngModelChange)="onDateRangeChange($event)"
+                  nzFormat="dd/MM/yyyy"
+                  [nzAllowClear]="true">
+                </nz-range-picker>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+            <nz-form-item>
+              <nz-form-label>Quyển số</nz-form-label>
+              <nz-form-control>
+                <input nz-input [(ngModel)]="searchForm.quyenSo" name="quyenSo" placeholder="Nhập quyển số" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+            <nz-form-item>
+              <nz-form-label>Mã nhân viên</nz-form-label>
+              <nz-form-control>
+                <input nz-input [(ngModel)]="searchForm.maNhanVien" name="maNhanVien" placeholder="Nhập mã nhân viên" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+            <nz-form-item>
+              <nz-form-label>Trạng thái</nz-form-label>
+              <nz-form-control>
+                <nz-select [(ngModel)]="searchForm.trangThai" name="trangThai" [nzPlaceHolder]="'Chọn trạng thái'" [nzAllowClear]="true">
+                  <nz-option *ngFor="let option of trangThaiOptions" [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4" *ngIf="showAdvancedFilter">
+            <nz-form-item>
+              <nz-form-label>Tính chất</nz-form-label>
+              <nz-form-control>
+                <nz-select [(ngModel)]="searchForm.tinhChat" name="tinhChat" [nzPlaceHolder]="'Chọn tính chất'" [nzAllowClear]="true">
+                  <nz-option *ngFor="let option of tinhChatOptions" [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4" *ngIf="showAdvancedFilter">
+            <nz-form-item>
+              <nz-form-label>Đơn vị</nz-form-label>
+              <nz-form-control>
+                <input nz-input [(ngModel)]="searchForm.donVi" name="donVi" placeholder="Nhập đơn vị" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4" *ngIf="showAdvancedFilter">
+            <nz-form-item>
+              <nz-form-label>Mã hồ sơ</nz-form-label>
+              <nz-form-control>
+                <input nz-input [(ngModel)]="searchForm.maHoSo" name="maHoSo" placeholder="Nhập mã hồ sơ" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="24" [nzLg]="24" class="button-group">
+            <button nz-button [nzType]="'primary'" (click)="onSearch()">
+              <i nz-icon nzType="search"></i>Tìm kiếm
+            </button>
+            <button nz-button (click)="resetForm()">
+              <i nz-icon nzType="clear"></i>Xóa bộ lọc
+            </button>
+            <button nz-button (click)="toggleAdvancedFilter()">
+              <i nz-icon [nzType]="showAdvancedFilter ? 'up' : 'down'"></i>
+              {{ showAdvancedFilter ? 'Thu gọn' : 'Mở rộng' }}
+            </button>
+            <nz-divider nzType="vertical"></nz-divider>
+            <button nz-button [nzType]="'primary'" (click)="exportToExcel()" [nzLoading]="loading">
+              <i nz-icon nzType="file-excel"></i>Excel
+            </button>
+            <button nz-button [nzType]="'primary'" nz-tooltip nzTooltipTitle="Xuất báo cáo BC01/QTAC" (click)="exportBC01()" [nzLoading]="loading">
+              <i nz-icon nzType="file-text"></i>BC01
+            </button>
+            <button nz-button [nzType]="'primary'" (click)="exportToPdf()">
+              <i nz-icon nzType="file-pdf"></i>PDF
+            </button>
+            <button nz-button [nzType]="'default'" (click)="printReport()">
+              <i nz-icon nzType="printer"></i>In
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Thống kê tổng hợp -->
+      <div class="statistics-section">
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="24" [nzLg]="24" [nzXl]="24">
+            <nz-card class="progress-card">
+              <div class="progress-header">
+                <div class="progress-title">Tỷ lệ thu tiền</div>
+                <div class="progress-value">{{ getProgressPercent() }}%</div>
+              </div>
+              <nz-progress [nzPercent]="getProgressPercent()" [nzStatus]="getProgressPercent() >= 80 ? 'success' : 'active'" [nzStrokeColor]="getProgressPercent() >= 80 ? '#52c41a' : '#1890ff'"></nz-progress>
+              <div class="progress-footer">
+                <div>Đã thu: {{ formatCurrency(thongKe.tien_da_thu) }}</div>
+                <div>Tổng tiền: {{ formatCurrency(thongKe.tong_so_tien) }}</div>
+              </div>
+            </nz-card>
+          </div>
+        </div>
+        
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6">
+            <nz-card class="stat-card total-card">
+              <div class="stat-icon">
+                <i nz-icon nzType="file-text" nzTheme="outline"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-title">Tổng số biên lai</div>
+                <div class="stat-value">{{ thongKe.tong_so_bien_lai }}</div>
+                <div class="stat-subtitle">{{ formatCurrency(thongKe.tong_so_tien) }}</div>
+              </div>
+            </nz-card>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6">
+            <nz-card class="stat-card success-card">
+              <div class="stat-icon">
+                <i nz-icon nzType="check-circle" nzTheme="outline"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-title">Đã thu</div>
+                <div class="stat-value">{{ thongKe.bien_lai_da_thu }}</div>
+                <div class="stat-subtitle">{{ formatCurrency(thongKe.tien_da_thu) }}</div>
+              </div>
+            </nz-card>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6">
+            <nz-card class="stat-card warning-card">
+              <div class="stat-icon">
+                <i nz-icon nzType="clock-circle" nzTheme="outline"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-title">Chưa thu</div>
+                <div class="stat-value">{{ thongKe.bien_lai_chua_thu }}</div>
+                <div class="stat-subtitle">{{ formatCurrency(thongKe.tien_chua_thu) }}</div>
+              </div>
+            </nz-card>
+          </div>
+          
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6">
+            <nz-card class="stat-card danger-card">
+              <div class="stat-icon">
+                <i nz-icon nzType="close-circle" nzTheme="outline"></i>
+              </div>
+              <div class="stat-content">
+                <div class="stat-title">Đã hủy</div>
+                <div class="stat-value">{{ thongKe.bien_lai_huy }}</div>
+                <div class="stat-subtitle">{{ formatCurrency(thongKe.tien_huy) }}</div>
+              </div>
+            </nz-card>
+          </div>
+        </div>
       </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
-        <nz-form-item>
-          <nz-form-label>Quyển số</nz-form-label>
-          <nz-form-control>
-            <input nz-input [(ngModel)]="searchForm.quyenSo" name="quyenSo" placeholder="Nhập quyển số" />
-          </nz-form-control>
-        </nz-form-item>
+
+      <!-- Bảng dữ liệu -->
+      <div class="data-section" *ngIf="viewMode === 'table'">
+        <nz-table
+          #basicTable
+          [nzData]="bienLais"
+          [nzLoading]="loading"
+          [nzShowSizeChanger]="true"
+          [nzPageSizeOptions]="[10, 20, 50, 100]"
+          [nzShowTotal]="totalTemplate"
+          nzBordered>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Quyển số</th>
+              <th>Số biên lai</th>
+              <th>Người đóng</th>
+              <th>Mã số BHXH</th>
+              <th>Số tiền</th>
+              <th>Ngày biên lai</th>
+              <th>Mã nhân viên</th>
+              <th>Trạng thái</th>
+              <th>Tính chất</th>
+              <th>Đơn vị</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let data of basicTable.data; let i = index" (click)="showBienLaiDetails(data)" class="clickable-row">
+              <td>{{ i + 1 }}</td>
+              <td>{{ data.quyen_so }}</td>
+              <td>{{ data.so_bien_lai }}</td>
+              <td>{{ data.ten_nguoi_dong }}</td>
+              <td>{{ data.ma_so_bhxh }}</td>
+              <td class="text-right">{{ formatCurrency(data.so_tien) }}</td>
+              <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
+              <td>{{ data.ma_nhan_vien }}</td>
+              <td>
+                <nz-tag [nzColor]="getTrangThaiColor(data.trang_thai)">
+                  {{ getTrangThaiText(data.trang_thai) }}
+                </nz-tag>
+              </td>
+              <td>{{ getTinhChatText(data.tinh_chat) }}</td>
+              <td>{{ data.don_vi }}</td>
+              <td>
+                <a nz-tooltip nzTooltipTitle="Xem chi tiết" (click)="showBienLaiDetails(data); $event.stopPropagation()">
+                  <i nz-icon nzType="eye"></i>
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
       </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
-        <nz-form-item>
-          <nz-form-label>Mã nhân viên</nz-form-label>
-          <nz-form-control>
-            <input nz-input [(ngModel)]="searchForm.maNhanVien" name="maNhanVien" placeholder="Nhập mã nhân viên" />
-          </nz-form-control>
-        </nz-form-item>
+
+      <!-- Hiển thị dạng thẻ -->
+      <div class="card-view" *ngIf="viewMode === 'card'">
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6" *ngFor="let data of bienLais">
+            <nz-card class="bien-lai-card" [nzActions]="[actionView]" (click)="showBienLaiDetails(data)">
+              <nz-card-meta
+                [nzTitle]="cardTitle"
+                [nzDescription]="cardDescription"
+                [nzAvatar]="cardAvatar"
+              ></nz-card-meta>
+              <ng-template #cardTitle>
+                <div class="card-title">
+                  <span>{{ data.quyen_so }}-{{ data.so_bien_lai }}</span>
+                  <nz-tag [nzColor]="getTrangThaiColor(data.trang_thai)">
+                    {{ getTrangThaiText(data.trang_thai) }}
+                  </nz-tag>
+                </div>
+              </ng-template>
+              <ng-template #cardDescription>
+                <div class="card-description">
+                  <p><strong>Người đóng:</strong> {{ data.ten_nguoi_dong }}</p>
+                  <p><strong>Mã số BHXH:</strong> {{ data.ma_so_bhxh }}</p>
+                  <p><strong>Số tiền:</strong> {{ formatCurrency(data.so_tien) }}</p>
+                  <p><strong>Ngày:</strong> {{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</p>
+                </div>
+              </ng-template>
+              <ng-template #cardAvatar>
+                <nz-avatar [nzShape]="'square'" [nzSize]="'large'" [nzIcon]="'file-text'" [style]="{ backgroundColor: getRandomColor() }"></nz-avatar>
+              </ng-template>
+              <ng-template #actionView>
+                <i nz-icon nzType="eye" nzTheme="outline"></i>
+              </ng-template>
+            </nz-card>
+          </div>
+        </div>
+        <div class="pagination-container">
+          <nz-pagination 
+            [nzPageIndex]="1" 
+            [nzTotal]="bienLais.length" 
+            [nzPageSize]="12"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="[12, 24, 48, 96]"
+            [nzShowTotal]="totalTemplate">
+          </nz-pagination>
+        </div>
       </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
-        <nz-form-item>
-          <nz-form-label>Trạng thái</nz-form-label>
-          <nz-form-control>
-            <nz-select [(ngModel)]="searchForm.trangThai" name="trangThai" [nzPlaceHolder]="'Chọn trạng thái'" [nzAllowClear]="true">
-              <nz-option *ngFor="let option of trangThaiOptions" [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
+
+      <!-- Hiển thị dạng thu gọn -->
+      <div class="compact-view" *ngIf="viewMode === 'compact'">
+        <nz-list [nzDataSource]="bienLais" [nzRenderItem]="item" [nzItemLayout]="'horizontal'" [nzLoading]="loading">
+          <ng-template #item let-item>
+            <nz-list-item [nzActions]="[viewAction]">
+              <ng-template #viewAction>
+                <a (click)="showBienLaiDetails(item)"><i nz-icon nzType="eye"></i></a>
+              </ng-template>
+              <nz-list-item-meta
+                [nzAvatar]="avatarTemplate"
+                [nzTitle]="titleTemplate"
+                [nzDescription]="descriptionTemplate"
+              >
+                <ng-template #avatarTemplate>
+                  <nz-avatar [nzIcon]="'file-text'" [style]="{ backgroundColor: getRandomColor() }"></nz-avatar>
+                </ng-template>
+                <ng-template #titleTemplate>
+                  <div class="compact-title">
+                    <span>{{ item.quyen_so }}-{{ item.so_bien_lai }}</span>
+                    <nz-tag [nzColor]="getTrangThaiColor(item.trang_thai)">
+                      {{ getTrangThaiText(item.trang_thai) }}
+                    </nz-tag>
+                  </div>
+                </ng-template>
+                <ng-template #descriptionTemplate>
+                  <div class="compact-description">
+                    <span>{{ item.ten_nguoi_dong }} | {{ item.ma_so_bhxh }}</span>
+                    <span>{{ formatCurrency(item.so_tien) }} | {{ item.ngay_bien_lai | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </ng-template>
+              </nz-list-item-meta>
+            </nz-list-item>
+          </ng-template>
+        </nz-list>
+        <div class="pagination-container">
+          <nz-pagination 
+            [nzPageIndex]="1" 
+            [nzTotal]="bienLais.length" 
+            [nzPageSize]="10"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="[10, 20, 50, 100]"
+            [nzShowTotal]="totalTemplate">
+          </nz-pagination>
+        </div>
       </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
-        <nz-form-item>
-          <nz-form-label>Đơn vị</nz-form-label>
-          <nz-form-control>
-            <input nz-input [(ngModel)]="searchForm.donVi" name="donVi" placeholder="Nhập đơn vị" />
-          </nz-form-control>
-        </nz-form-item>
+
+      <ng-template #totalTemplate let-total>
+        Tổng cộng {{ total }} bản ghi
+      </ng-template>
+    </nz-tab>
+
+    <nz-tab nzTitle="Thống kê chi tiết">
+      <div class="statistics-detail-section">
+        <div nz-row [nzGutter]="16">
+          <!-- Thống kê theo nhân viên -->
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12">
+            <nz-card nzTitle="Thống kê theo nhân viên" [nzExtra]="extraTemplate">
+              <nz-table #nhanVienTable [nzData]="thongKeNhanVien" [nzSize]="'small'" [nzShowPagination]="false">
+                <thead>
+                  <tr>
+                    <th>Mã NV</th>
+                    <th>Tên nhân viên</th>
+                    <th>Số biên lai</th>
+                    <th>Tổng tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let data of nhanVienTable.data">
+                    <td>{{ data.ma_nhan_vien }}</td>
+                    <td>{{ data.ten_nhan_vien }}</td>
+                    <td>{{ data.so_bien_lai }}</td>
+                    <td class="text-right">{{ formatCurrency(data.tong_tien) }}</td>
+                  </tr>
+                </tbody>
+              </nz-table>
+            </nz-card>
+          </div>
+
+          <!-- Thống kê theo đơn vị -->
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12">
+            <nz-card nzTitle="Thống kê theo đơn vị" [nzExtra]="extraTemplate">
+              <nz-table #donViTable [nzData]="thongKeDonVi" [nzSize]="'small'" [nzShowPagination]="false">
+                <thead>
+                  <tr>
+                    <th>Đơn vị</th>
+                    <th>Số biên lai</th>
+                    <th>Tổng tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let data of donViTable.data">
+                    <td>{{ data.don_vi }}</td>
+                    <td>{{ data.so_bien_lai }}</td>
+                    <td class="text-right">{{ formatCurrency(data.tong_tien) }}</td>
+                  </tr>
+                </tbody>
+              </nz-table>
+            </nz-card>
+          </div>
+
+          <ng-template #extraTemplate>
+            <button nz-button nzType="link" nzSize="small">
+              <i nz-icon nzType="download"></i>
+            </button>
+          </ng-template>
+        </div>
+
+        <!-- Biểu đồ -->
+        <div nz-row [nzGutter]="16" class="chart-section">
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12">
+            <nz-card nzTitle="Phân bố theo trạng thái">
+              <div class="chart-placeholder">
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <div class="legend-color" style="background-color: #52c41a;"></div>
+                    <div class="legend-text">Đã thu: {{ formatCurrency(thongKe.tien_da_thu) }}</div>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-color" style="background-color: #faad14;"></div>
+                    <div class="legend-text">Chưa thu: {{ formatCurrency(thongKe.tien_chua_thu) }}</div>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f5222d;"></div>
+                    <div class="legend-text">Đã hủy: {{ formatCurrency(thongKe.tien_huy) }}</div>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <div class="pie-chart-placeholder">
+                    <div class="pie-segment" style="--percentage: {{ getProgressPercent() }}; --color: #52c41a;"></div>
+                    <div class="pie-segment" style="--percentage: {{ 100 - getProgressPercent() }}; --color: #faad14;"></div>
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+          <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12">
+            <nz-card nzTitle="Xu hướng theo thời gian">
+              <div class="chart-placeholder">
+                <div class="bar-chart-placeholder">
+                  <div *ngFor="let item of bieuDoTheoNgay.slice(0, 10)" class="bar-item">
+                    <div class="bar-value" [style.height.%]="item.value / (bieuDoTheoNgay[0]?.value || 1) * 100"></div>
+                    <div class="bar-label">{{ item.name | date:'dd/MM' }}</div>
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+        </div>
       </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="24" [nzLg]="24" class="button-group">
-        <button nz-button [nzType]="'primary'" (click)="onSearch()">
-          <i nz-icon nzType="search"></i>Tìm kiếm
-        </button>
-        <button nz-button (click)="resetForm()">
-          <i nz-icon nzType="clear"></i>Xóa bộ lọc
-        </button>
-        <button nz-button [nzType]="'primary'" (click)="exportToExcel()" [nzLoading]="loading">
-          <i nz-icon nzType="download"></i>Xuất Excel
-        </button>
-      </div>
+    </nz-tab>
+  </nz-tabset>
+</div>
+
+<!-- Drawer chi tiết biên lai -->
+<nz-drawer
+  [nzVisible]="showBienLaiDetail"
+  [nzWidth]="500"
+  [nzClosable]="true"
+  [nzMaskClosable]="true"
+  nzTitle="Chi tiết biên lai"
+  (nzOnClose)="closeBienLaiDetail()">
+  <ng-container *nzDrawerContent>
+    <nz-descriptions *ngIf="selectedBienLai" [nzBordered]="true" [nzColumn]="1">
+      <nz-descriptions-item nzTitle="Quyển số">{{ selectedBienLai.quyen_so }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Số biên lai">{{ selectedBienLai.so_bien_lai }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Người đóng">{{ selectedBienLai.ten_nguoi_dong }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Mã số BHXH">{{ selectedBienLai.ma_so_bhxh }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Số tiền">{{ formatCurrency(selectedBienLai.so_tien) }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày biên lai">{{ selectedBienLai.ngay_bien_lai | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Mã nhân viên">{{ selectedBienLai.ma_nhan_vien }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Tên nhân viên">{{ selectedBienLai.ten_nhan_vien }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Trạng thái">
+        <nz-tag [nzColor]="getTrangThaiColor(selectedBienLai.trang_thai)">
+          {{ getTrangThaiText(selectedBienLai.trang_thai) }}
+        </nz-tag>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Tính chất">{{ getTinhChatText(selectedBienLai.tinh_chat) }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Đơn vị">{{ selectedBienLai.don_vi }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Mã hồ sơ">{{ selectedBienLai.ma_ho_so }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ghi chú">{{ selectedBienLai.ghi_chu }}</nz-descriptions-item>
+    </nz-descriptions>
+
+    <div class="drawer-footer">
+      <button nz-button nzType="primary" (click)="closeBienLaiDetail()">Đóng</button>
     </div>
-  </form>
-
-  <!-- Thống kê tổng hợp -->
-  <div class="statistics-section">
-    <div nz-row [nzGutter]="16">
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
-        <nz-card nzTitle="Tổng số biên lai" [nzBordered]="true">
-          <div class="stat-content">
-            <div class="stat-value">{{ thongKe.tong_so_bien_lai }}</div>
-            <div class="stat-label">Biên lai</div>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatCurrency(thongKe.tong_so_tien) }}</div>
-            <div class="stat-label">Tổng tiền</div>
-          </div>
-        </nz-card>
-      </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
-        <nz-card nzTitle="Đã thu" [nzBordered]="true" class="success-card">
-          <div class="stat-content">
-            <div class="stat-value">{{ thongKe.bien_lai_da_thu }}</div>
-            <div class="stat-label">Biên lai</div>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatCurrency(thongKe.tien_da_thu) }}</div>
-            <div class="stat-label">Tổng tiền</div>
-          </div>
-        </nz-card>
-      </div>
-      
-      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
-        <nz-card nzTitle="Chưa thu" [nzBordered]="true" class="warning-card">
-          <div class="stat-content">
-            <div class="stat-value">{{ thongKe.bien_lai_chua_thu }}</div>
-            <div class="stat-label">Biên lai</div>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ formatCurrency(thongKe.tien_chua_thu) }}</div>
-            <div class="stat-label">Tổng tiền</div>
-          </div>
-        </nz-card>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bảng dữ liệu -->
-  <nz-table
-    #basicTable
-    [nzData]="bienLais"
-    [nzLoading]="loading"
-    [nzShowSizeChanger]="true"
-    [nzPageSizeOptions]="[10, 20, 50, 100]"
-    [nzShowTotal]="totalTemplate"
-    nzBordered>
-    <thead>
-      <tr>
-        <th>STT</th>
-        <th>Quyển số</th>
-        <th>Số biên lai</th>
-        <th>Người đóng</th>
-        <th>Mã số BHXH</th>
-        <th>Số tiền</th>
-        <th>Ngày biên lai</th>
-        <th>Mã nhân viên</th>
-        <th>Trạng thái</th>
-        <th>Đơn vị</th>
-        <th>Ghi chú</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let data of basicTable.data; let i = index">
-        <td>{{ i + 1 }}</td>
-        <td>{{ data.quyen_so }}</td>
-        <td>{{ data.so_bien_lai }}</td>
-        <td>{{ data.ten_nguoi_dong }}</td>
-        <td>{{ data.ma_so_bhxh }}</td>
-        <td class="text-right">{{ formatCurrency(data.so_tien) }}</td>
-        <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
-        <td>{{ data.ma_nhan_vien }}</td>
-        <td>
-          <nz-tag 
-            [nzColor]="data.trang_thai === 'da_thu' ? 'success' : data.trang_thai === 'chua_thu' ? 'warning' : 'error'">
-            {{ getTrangThaiText(data.trang_thai) }}
-          </nz-tag>
-        </td>
-        <td>{{ data.don_vi }}</td>
-        <td>{{ data.ghi_chu }}</td>
-      </tr>
-    </tbody>
-  </nz-table>
-
-  <ng-template #totalTemplate let-total>
-    Tổng cộng {{ total }} bản ghi
-  </ng-template>
-</div> 
+  </ng-container>
+</nz-drawer> 
