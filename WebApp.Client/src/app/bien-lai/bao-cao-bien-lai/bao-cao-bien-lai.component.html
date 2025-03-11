@@ -1,0 +1,169 @@
+<div class="page-header">
+  <h2>Báo cáo biên lai</h2>
+</div>
+
+<div class="page-content">
+  <!-- Form tìm kiếm -->
+  <form nz-form [nzLayout]="'inline'" class="search-form">
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="8">
+        <nz-form-item>
+          <nz-form-label>Thời gian</nz-form-label>
+          <nz-form-control>
+            <nz-range-picker 
+              [(ngModel)]="dateRange" 
+              name="dateRange"
+              (ngModelChange)="onDateRangeChange($event)"
+              nzFormat="dd/MM/yyyy"
+              [nzAllowClear]="true">
+            </nz-range-picker>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+        <nz-form-item>
+          <nz-form-label>Quyển số</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="searchForm.quyenSo" name="quyenSo" placeholder="Nhập quyển số" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+        <nz-form-item>
+          <nz-form-label>Mã nhân viên</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="searchForm.maNhanVien" name="maNhanVien" placeholder="Nhập mã nhân viên" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+        <nz-form-item>
+          <nz-form-label>Trạng thái</nz-form-label>
+          <nz-form-control>
+            <nz-select [(ngModel)]="searchForm.trangThai" name="trangThai" [nzPlaceHolder]="'Chọn trạng thái'" [nzAllowClear]="true">
+              <nz-option *ngFor="let option of trangThaiOptions" [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" [nzLg]="4">
+        <nz-form-item>
+          <nz-form-label>Đơn vị</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="searchForm.donVi" name="donVi" placeholder="Nhập đơn vị" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="24" [nzLg]="24" class="button-group">
+        <button nz-button [nzType]="'primary'" (click)="onSearch()">
+          <i nz-icon nzType="search"></i>Tìm kiếm
+        </button>
+        <button nz-button (click)="resetForm()">
+          <i nz-icon nzType="clear"></i>Xóa bộ lọc
+        </button>
+        <button nz-button [nzType]="'primary'" (click)="exportToExcel()" [nzLoading]="loading">
+          <i nz-icon nzType="download"></i>Xuất Excel
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Thống kê tổng hợp -->
+  <div class="statistics-section">
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
+        <nz-card nzTitle="Tổng số biên lai" [nzBordered]="true">
+          <div class="stat-content">
+            <div class="stat-value">{{ thongKe.tong_so_bien_lai }}</div>
+            <div class="stat-label">Biên lai</div>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(thongKe.tong_so_tien) }}</div>
+            <div class="stat-label">Tổng tiền</div>
+          </div>
+        </nz-card>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
+        <nz-card nzTitle="Đã thu" [nzBordered]="true" class="success-card">
+          <div class="stat-content">
+            <div class="stat-value">{{ thongKe.bien_lai_da_thu }}</div>
+            <div class="stat-label">Biên lai</div>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(thongKe.tien_da_thu) }}</div>
+            <div class="stat-label">Tổng tiền</div>
+          </div>
+        </nz-card>
+      </div>
+      
+      <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="8">
+        <nz-card nzTitle="Chưa thu" [nzBordered]="true" class="warning-card">
+          <div class="stat-content">
+            <div class="stat-value">{{ thongKe.bien_lai_chua_thu }}</div>
+            <div class="stat-label">Biên lai</div>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(thongKe.tien_chua_thu) }}</div>
+            <div class="stat-label">Tổng tiền</div>
+          </div>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bảng dữ liệu -->
+  <nz-table
+    #basicTable
+    [nzData]="bienLais"
+    [nzLoading]="loading"
+    [nzShowSizeChanger]="true"
+    [nzPageSizeOptions]="[10, 20, 50, 100]"
+    [nzShowTotal]="totalTemplate"
+    nzBordered>
+    <thead>
+      <tr>
+        <th>STT</th>
+        <th>Quyển số</th>
+        <th>Số biên lai</th>
+        <th>Người đóng</th>
+        <th>Mã số BHXH</th>
+        <th>Số tiền</th>
+        <th>Ngày biên lai</th>
+        <th>Mã nhân viên</th>
+        <th>Trạng thái</th>
+        <th>Đơn vị</th>
+        <th>Ghi chú</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let data of basicTable.data; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ data.quyen_so }}</td>
+        <td>{{ data.so_bien_lai }}</td>
+        <td>{{ data.ten_nguoi_dong }}</td>
+        <td>{{ data.ma_so_bhxh }}</td>
+        <td class="text-right">{{ formatCurrency(data.so_tien) }}</td>
+        <td>{{ data.ngay_bien_lai | date:'dd/MM/yyyy' }}</td>
+        <td>{{ data.ma_nhan_vien }}</td>
+        <td>
+          <nz-tag 
+            [nzColor]="data.trang_thai === 'da_thu' ? 'success' : data.trang_thai === 'chua_thu' ? 'warning' : 'error'">
+            {{ getTrangThaiText(data.trang_thai) }}
+          </nz-tag>
+        </td>
+        <td>{{ data.don_vi }}</td>
+        <td>{{ data.ghi_chu }}</td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <ng-template #totalTemplate let-total>
+    Tổng cộng {{ total }} bản ghi
+  </ng-template>
+</div> 
