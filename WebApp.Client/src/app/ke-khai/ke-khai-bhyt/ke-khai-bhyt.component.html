@@ -60,7 +60,7 @@
                   maxlength="10"
                   (keypress)="onlyNumber($event)"
                   (keyup.enter)="$event.preventDefault(); onSearchBHYT()" />
-                <button nz-button nzType="primary" class="pulse" nzTooltip="Tìm kiếm thông tin BHYT" (click)="onSearchBHYT()">
+                <button nz-button nzType="primary" class="pulse" nzTooltip="Tìm kiếm thông tin BHYT" (click)="onSearchBHYT()" [nzLoading]="loadingSearch">
                   <span nz-icon nzType="search"></span>
                 </button>
               </div>
@@ -461,7 +461,7 @@
     <nz-table
       #basicTable
       [nzData]="filterSoThangDong !== null || filterNguoiThu !== null ? filteredKeKhaiBHYTs : keKhaiBHYTs"
-      [nzLoading]="loading"
+      [nzLoading]="loadingTable"
       [nzShowSizeChanger]="true"
       [nzShowPagination]="true"
       [nzScroll]="{ x: '1500px' }">

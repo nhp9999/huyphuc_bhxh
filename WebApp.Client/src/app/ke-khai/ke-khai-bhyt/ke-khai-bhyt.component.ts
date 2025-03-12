@@ -191,7 +191,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   filteredKeKhaiBHYTs: KeKhaiBHYT[] = []; // Thêm biến để lưu kết quả lọc
   thongTinThe: ThongTinThe | null = null;
   dotKeKhai: DotKeKhai | null = null;
-  loading = false;
+  loadingSearch = false; // Thêm biến loading cho tìm kiếm
+  loadingTable = false; // Thêm biến loading cho bảng
   isVisible = false;
   isEdit = false;
   form!: FormGroup;
@@ -665,29 +666,25 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   loadData(): void {
-    this.loading = true;
+    this.loadingTable = true; // Sử dụng loadingTable thay vì loading
     this.keKhaiBHYTService.getByDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
-        // Khôi phục trạng thái urgent từ localStorage
         const urgentItems = JSON.parse(localStorage.getItem('urgentItems') || '{}');
         
-        // Sắp xếp dữ liệu theo id giảm dần (mới nhất lên đầu)
         this.keKhaiBHYTs = data
           .map(item => ({
             ...item,
             is_urgent: urgentItems[item.id!] || false
           }))
-          .sort((a, b) => (b.id || 0) - (a.id || 0)); // Sắp xếp theo id giảm dần
+          .sort((a, b) => (b.id || 0) - (a.id || 0));
         
-        // Áp dụng bộ lọc nếu có
         this.applyFilters();
-          
         this.tinhThongKe();
-        this.loading = false;
+        this.loadingTable = false; // Sử dụng loadingTable
       },
       error: (error) => {
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
-        this.loading = false;
+        this.loadingTable = false; // Sử dụng loadingTable
       }
     });
   }
@@ -898,7 +895,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
         if (typeof keKhaiBHYTId !== 'number' || typeof thongTinTheId !== 'number') {
           this.message.error('Không tìm thấy ID kê khai hoặc thông tin thẻ');
-          this.loading = false;
+          this.loadingTable = false;
           return;
         }
 
@@ -980,14 +977,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                         this.isVisible = false;
                         this.isEdit = false;
                         this.loadData();
-                        this.loading = false;
+                        this.loadingTable = false;
                         this.loadingSave = false;
                         this.initForm();
                       },
                       error: (error) => {
                         console.error('Error updating KeKhaiBHYT:', error);
                         this.message.error('Có lỗi xảy ra khi cập nhật kê khai');
-                        this.loading = false;
+                        this.loadingTable = false;
                         this.loadingSave = false;
                       }
                     });
@@ -995,7 +992,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                   error: (error) => {
                     console.error('Error getting current KeKhaiBHYT:', error);
                     this.message.error('Có lỗi xảy ra khi lấy thông tin kê khai hiện tại');
-                    this.loading = false;
+                    this.loadingTable = false;
                     this.loadingSave = false;
                   }
                 });
@@ -1003,7 +1000,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               error: (error) => {
                 console.error('Error updating ThongTinThe:', error);
                 this.message.error('Có lỗi xảy ra khi cập nhật thông tin thẻ');
-                this.loading = false;
+                this.loadingTable = false;
                 this.loadingSave = false;
               }
             });
@@ -1011,7 +1008,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           error: (error) => {
             console.error('Error getting ThongTinThe:', error);
             this.message.error('Có lỗi xảy ra khi lấy thông tin thẻ');
-            this.loading = false;
+            this.loadingTable = false;
             this.loadingSave = false;
           }
         });
@@ -1297,7 +1294,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   onSearchBHYT(): void {
-    if (this.loading) return;
+    if (this.loadingSearch) return; // Sử dụng loadingSearch
     
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     if (maSoBHXH && maSoBHXH.length === 10) {
@@ -1309,7 +1306,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.loading = true;
+      this.loadingSearch = true; // Sử dụng loadingSearch
       
       this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
         next: async (response) => {
@@ -1339,7 +1336,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                       },
                       nzOnCancel: () => {
                         this.form.reset();
-                        this.loading = false;
+                        this.loadingSearch = false;
                         resolve(false);
                       }
                     });
@@ -1368,7 +1365,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           }
         },
         complete: () => {
-          this.loading = false;
+          this.loadingSearch = false; // Sử dụng loadingSearch
         }
       });
     } else {
@@ -1404,16 +1401,21 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         ma_benh_vien: data.maBenhVien,
         so_the_bhyt: data.soTheBHYT,
         han_the_cu: denNgayTheCu,
-        ma_dan_toc: data.danToc, // Thêm mã dân tộc
-        quoc_tich: data.quocTich, // Thêm quốc tịch
+        ma_dan_toc: data.danToc,
+        quoc_tich: data.quocTich,
       });
 
-      // Load danh sách huyện và xã tương ứng
-      if (data.maTinhNkq) {
-        await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
-      }
-      if (data.maHuyenNkq) {
-        await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
+      try {
+        // Load danh sách huyện và xã tương ứng
+        if (data.maTinhNkq) {
+          await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
+        }
+        if (data.maHuyenNkq) {
+          await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải danh mục địa chỉ:', error);
+        this.message.warning('Không thể tải đầy đủ thông tin địa chỉ');
       }
 
       // Tính toán phương án đóng
@@ -1433,8 +1435,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       this.message.success('Đã tìm thấy thông tin BHYT');
     } catch (error) {
-      console.error('Error processing search result:', error);
-      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
+      console.error('Lỗi xử lý dữ liệu BHYT:', error);
+      this.message.error('Có lỗi khi xử lý thông tin BHYT');
+    } finally {
+      this.loadingSearch = false;
     }
   }
 
@@ -1458,7 +1462,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
 
     // Hiển thị loading
-    this.loading = true;
+    this.loadingSearch = true;
 
     // Gọi API tra cứu thông tin BHYT
     this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
@@ -1486,16 +1490,16 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             this.loadDanhMucCSKCB();
           }
 
-          this.loading = false;
+          this.loadingSearch = false;
         } else {
           this.message.error(response.message || 'Không tìm thấy thông tin BHYT');
-          this.loading = false;
+          this.loadingSearch = false;
         }
       },
       error: (error) => {
         console.error('Lỗi tra cứu BHYT:', error);
         this.message.error('Có lỗi xảy ra khi tra cứu thông tin BHYT');
-        this.loading = false;
+        this.loadingSearch = false;
       }
     });
   }
@@ -1531,7 +1535,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   refresh(): void {
-    this.loading = true;
+    this.loadingTable = true;
     this.loadData();
     this.message.success('Đã làm mới dữ liệu');
   }
@@ -3309,7 +3313,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       this.ssmv2Service.authenticate(data).subscribe({
         next: (response) => {
-          this.loadingLogin = false; // Reset loading khi có response thành công
+          this.loadingLogin = false;
           
           if (response.body?.access_token) {
             this.message.success('Xác thực thành công');
