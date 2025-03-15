@@ -926,8 +926,30 @@ export class DotKeKhaiComponent implements OnInit {
           next: (keKhaiBHYTs: any[]) => {
             console.log('Dữ liệu từ API:', keKhaiBHYTs);
 
-            // In ra console để kiểm tra dữ liệu từ API
-            console.log('Dữ liệu từ API với STT và ngày tạo:', keKhaiBHYTs.map(item => ({
+            // Sắp xếp dữ liệu theo số biên lai tăng dần
+            keKhaiBHYTs.sort((a, b) => {
+              // Nếu một trong hai bản ghi không có số biên lai, đặt nó ở cuối
+              if (!a.so_bien_lai && !b.so_bien_lai) return 0;
+              if (!a.so_bien_lai) return 1;
+              if (!b.so_bien_lai) return -1;
+              
+              // Nếu cùng quyển biên lai, so sánh số biên lai
+              if (a.QuyenBienLai?.quyen_so === b.QuyenBienLai?.quyen_so) {
+                return parseInt(a.so_bien_lai) - parseInt(b.so_bien_lai);
+              }
+              
+              // Nếu khác quyển biên lai, so sánh quyển biên lai
+              return (a.QuyenBienLai?.quyen_so || '').localeCompare(b.QuyenBienLai?.quyen_so || '');
+            });
+            
+            // Cập nhật lại STT sau khi sắp xếp
+            keKhaiBHYTs = keKhaiBHYTs.map((item, index) => ({
+              ...item,
+              stt: index + 1
+            }));
+
+            // In ra console để kiểm tra dữ liệu sau khi sắp xếp
+            console.log('Dữ liệu sau khi sắp xếp theo số biên lai:', keKhaiBHYTs.map(item => ({
               stt: item.stt,
               ngay_tao: item.ngay_tao,
               ho_ten: item.ho_ten,

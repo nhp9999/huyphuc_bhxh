@@ -93,8 +93,11 @@ export class DotKeKhaiService {
   createDotKeKhai(dotKeKhai: CreateDotKeKhai): Observable<DotKeKhai> {
     return this.http.post<DotKeKhai>(this.apiUrl, dotKeKhai).pipe(
       tap(newDotKeKhai => {
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
         const currentData = this.dotKeKhaisSubject.value;
-        this.dotKeKhaisSubject.next([...currentData, newDotKeKhai]);
+        // Chỉ cập nhật dữ liệu của người dùng hiện tại
+        const filteredData = currentData.filter(item => item.nguoi_tao === username);
+        this.dotKeKhaisSubject.next([...filteredData, newDotKeKhai]);
       })
     );
   }
@@ -102,8 +105,11 @@ export class DotKeKhaiService {
   updateDotKeKhai(id: number, dotKeKhai: UpdateDotKeKhai): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, dotKeKhai).pipe(
       tap(() => {
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
         const currentData = this.dotKeKhaisSubject.value;
-        const updatedData = currentData.map(item => 
+        // Chỉ cập nhật dữ liệu của người dùng hiện tại
+        const filteredData = currentData.filter(item => item.nguoi_tao === username);
+        const updatedData = filteredData.map(item => 
           item.id === id ? { ...item, ...dotKeKhai } : item
         );
         this.dotKeKhaisSubject.next(updatedData);
@@ -114,8 +120,13 @@ export class DotKeKhaiService {
   deleteDotKeKhai(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       tap(() => {
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
         const currentData = this.dotKeKhaisSubject.value;
-        this.dotKeKhaisSubject.next(currentData.filter(item => item.id !== id));
+        // Chỉ cập nhật dữ liệu của người dùng hiện tại
+        const filteredData = currentData
+          .filter(item => item.nguoi_tao === username)
+          .filter(item => item.id !== id);
+        this.dotKeKhaisSubject.next(filteredData);
       })
     );
   }
@@ -134,10 +145,12 @@ export class DotKeKhaiService {
     // Thay vì gọi API update-tong-so-tien, ta sẽ lấy tổng số tiền từ bảng ke_khai_bhyt
     return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}`).pipe(
       tap(dotKeKhai => {
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
         const currentData = this.dotKeKhaisSubject.value;
-        const updatedData = currentData.map(item => 
-          item.id === id ? { ...item, tong_so_tien: dotKeKhai.tong_so_tien } : item
-        );
+        // Chỉ cập nhật dữ liệu của người dùng hiện tại
+        const updatedData = currentData
+          .filter(item => item.nguoi_tao === username)
+          .map(item => item.id === id ? { ...item, tong_so_tien: dotKeKhai.tong_so_tien } : item);
         this.dotKeKhaisSubject.next(updatedData);
       })
     );
@@ -152,8 +165,11 @@ export class DotKeKhaiService {
       .pipe(
         tap(() => {
           // Cập nhật lại danh sách đợt kê khai
+          const username = JSON.parse(localStorage.getItem('user') || '{}').username;
           this.getDotKeKhais().subscribe(data => {
-            this.dotKeKhaisSubject.next(data);
+            // Lọc dữ liệu theo người dùng hiện tại trước khi cập nhật dotKeKhaisSubject
+            const filteredData = data.filter(dot => dot.nguoi_tao === username);
+            this.dotKeKhaisSubject.next(filteredData);
           });
         })
       );
@@ -164,8 +180,11 @@ export class DotKeKhaiService {
     return this.http.patch(`${this.apiUrl}/${id}/gui`, {}).pipe(
       tap(() => {
         // Cập nhật lại danh sách đợt kê khai
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
         this.getDotKeKhais().subscribe(data => {
-          this.dotKeKhaisSubject.next(data);
+          // Lọc dữ liệu theo người dùng hiện tại trước khi cập nhật dotKeKhaisSubject
+          const filteredData = data.filter(dot => dot.nguoi_tao === username);
+          this.dotKeKhaisSubject.next(filteredData);
         });
       })
     );
