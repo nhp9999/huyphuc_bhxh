@@ -1,9 +1,22 @@
 <div class="container">
   <div class="header">
-    <h2>Danh sách kê khai</h2>
-    <button nz-button nzType="primary" (click)="showModal()">
-      <i nz-icon nzType="plus"></i>Thêm mới
-    </button>
+    <div class="title">
+      <h2>Quản lý đợt kê khai</h2>
+    </div>
+    <div class="actions">
+      <button nz-button nzType="primary" (click)="showModal()">
+        <i nz-icon nzType="plus"></i>
+        Thêm mới
+      </button>
+      <button nz-button nzType="default" [disabled]="selectedIds.length === 0" (click)="deleteSelected()">
+        <i nz-icon nzType="delete"></i>
+        Xóa đã chọn
+      </button>
+      <button nz-button nzType="default" [disabled]="selectedIds.length === 0" (click)="downloadAllBills()" nz-tooltip="Tải tất cả ảnh hóa đơn của các đợt kê khai đã chọn">
+        <i nz-icon nzType="download"></i>
+        Tải tất cả hóa đơn <span *ngIf="getSelectedBillCount() > 0">({{ getSelectedBillCount() }})</span>
+      </button>
+    </div>
   </div>
 
   <!-- Thay thế phần thống kê hiện tại bằng đoạn code sau -->

@@ -294,6 +294,31 @@
             </ng-template>
           </nz-form-item>
 
+          <!-- Số hiện tại -->
+          <nz-form-item>
+            <nz-form-label>Số hiện tại</nz-form-label>
+            <nz-form-control [nzErrorTip]="soHienTaiErrorTpl">
+              <nz-input-group [nzPrefix]="soHienTaiPrefix">
+                <input nz-input 
+                  formControlName="so_hien_tai" 
+                  placeholder="Nhập số hiện tại (tối đa 7 số)"
+                  maxlength="7"
+                  (input)="onNumberInput($event, 7)" />
+              </nz-input-group>
+              <ng-template #soHienTaiPrefix>
+                <span nz-icon nzType="arrow-right"></span>
+              </ng-template>
+            </nz-form-control>
+            <ng-template #soHienTaiErrorTpl let-control>
+              <ng-container *ngIf="control.hasError('soHienTaiKhongHopLe')">
+                <span nz-icon nzType="warning"></span> Số hiện tại phải nằm trong khoảng Từ số đến Đến số!
+              </ng-container>
+              <ng-container *ngIf="control.hasError('pattern')">
+                <span nz-icon nzType="warning"></span> Chỉ được nhập số và tối đa 7 chữ số!
+              </ng-container>
+            </ng-template>
+          </nz-form-item>
+
           <!-- Người thu -->
           <nz-form-item>
             <nz-form-label nzRequired>Người thu</nz-form-label>

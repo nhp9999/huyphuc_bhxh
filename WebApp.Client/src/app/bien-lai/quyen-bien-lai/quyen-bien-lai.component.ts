@@ -158,6 +158,13 @@ export class QuyenBienLaiComponent implements OnInit {
           this.form.patchValue({
             den_so: denSo
           }, { emitEvent: false }); // Không trigger valueChanges của den_so
+          
+          // Nếu là thêm mới và chưa có số hiện tại, đặt số hiện tại = từ số
+          if (!this.editingQuyenBienLai && !this.form.get('so_hien_tai')?.value) {
+            this.form.patchValue({
+              so_hien_tai: value
+            }, { emitEvent: false });
+          }
         }
       }
     });
@@ -228,7 +235,8 @@ export class QuyenBienLaiComponent implements OnInit {
   showModal(): void {
     this.editingQuyenBienLai = null;
     this.form.reset({
-      trang_thai: 'dang_su_dung'
+      trang_thai: 'dang_su_dung',
+      so_hien_tai: '' // Số hiện tại sẽ được thiết lập sau khi chọn từ số
     });
     this.modalTitle = 'Thêm quyển biên lai';
     this.isVisible = true;
@@ -245,12 +253,23 @@ export class QuyenBienLaiComponent implements OnInit {
       
       const formValue = this.form.value;
       
+      // Đảm bảo có số hiện tại
+      let soHienTai = formValue.so_hien_tai;
+      if (!soHienTai) {
+        // Nếu không có số hiện tại, đặt dựa trên trạng thái
+        if (formValue.trang_thai === 'chua_su_dung' || formValue.trang_thai === 'dang_su_dung') {
+          soHienTai = formValue.tu_so;
+        } else if (formValue.trang_thai === 'da_su_dung') {
+          soHienTai = formValue.den_so;
+        }
+      }
+      
       const data = {
         id: this.editingQuyenBienLai?.id,
         quyen_so: formValue.quyen_so,
         tu_so: formValue.tu_so,
         den_so: formValue.den_so,
-        so_hien_tai: this.editingQuyenBienLai ? formValue.so_hien_tai : formValue.tu_so,
+        so_hien_tai: soHienTai,
         nhan_vien_thu: formValue.nhan_vien_thu,
         nguoi_cap: currentUser?.hoTen || currentUser?.userName,
         ngay_cap: new Date(),
@@ -464,13 +483,20 @@ export class QuyenBienLaiComponent implements OnInit {
     const soHienTaiControl = this.form.get('so_hien_tai');
     const tuSoControl = this.form.get('tu_so');
     const denSoControl = this.form.get('den_so');
+    const trangThaiControl = this.form.get('trang_thai');
 
     if (soHienTaiControl && tuSoControl && denSoControl && 
         soHienTaiControl.value && tuSoControl.value && denSoControl.value) {
+      // Thêm validator pattern
+      const currentValidators = soHienTaiControl.validator ? [soHienTaiControl.validator] : [];
+      soHienTaiControl.setValidators([...currentValidators, Validators.pattern(/^\d+$/)]);
+      soHienTaiControl.updateValueAndValidity();
+      
       const soHienTai = parseInt(soHienTaiControl.value);
       const tuSo = parseInt(tuSoControl.value);
       const denSo = parseInt(denSoControl.value);
 
+      // Kiểm tra số hiện tại nằm trong khoảng từ số đến đến số
       if (soHienTai < tuSo || soHienTai > denSo) {
         soHienTaiControl.setErrors({ soHienTaiKhongHopLe: true });
       } else {
@@ -678,6 +704,29 @@ export class QuyenBienLaiComponent implements OnInit {
     if (value === 'da_su_dung') {
       // Hiển thị cảnh báo trong form
       // Cảnh báo đã được thêm vào template HTML
+    }
+    
+    // Thiết lập số hiện tại dựa trên trạng thái
+    const tuSoControl = this.form.get('tu_so');
+    const denSoControl = this.form.get('den_so');
+    
+    if (tuSoControl?.value && denSoControl?.value) {
+      const tuSo = parseInt(tuSoControl.value);
+      const denSo = parseInt(denSoControl.value);
+      
+      if (value === 'chua_su_dung') {
+        // Nếu chưa sử dụng, số hiện tại = từ số
+        this.form.patchValue({ so_hien_tai: tuSoControl.value });
+      } else if (value === 'dang_su_dung') {
+        // Nếu đang sử dụng, giữ nguyên số hiện tại nếu đã có, nếu không thì lấy từ số
+        const soHienTai = this.form.get('so_hien_tai')?.value;
+        if (!soHienTai) {
+          this.form.patchValue({ so_hien_tai: tuSoControl.value });
+        }
+      } else if (value === 'da_su_dung') {
+        // Nếu đã sử dụng, số hiện tại = đến số
+        this.form.patchValue({ so_hien_tai: denSoControl.value });
+      }
     }
   }
 

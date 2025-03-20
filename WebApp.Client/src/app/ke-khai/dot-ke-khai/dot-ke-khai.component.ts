@@ -50,6 +50,8 @@ import { ThanhToanModalComponent } from './thanh-toan-modal/thanh-toan-modal.com
 import * as XLSX from 'xlsx';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface QuyenBienLai {
   id: number;
@@ -1294,15 +1296,137 @@ export class DotKeKhaiComponent implements OnInit {
       return;
     }
     
+    if (!this.selectedDotKeKhai) {
+      this.message.error('Không có thông tin đợt kê khai');
+      return;
+    }
+    
+    // Lấy mã hồ sơ và mã nhân viên
+    const maHoSo = this.selectedDotKeKhai.ma_ho_so || 'unknown';
+    const maNhanVien = this.currentUser.username || 'unknown';
+    
     // Tạo một thẻ a ẩn để tải xuống hình ảnh
     const link = document.createElement('a');
     link.href = this.selectedBillUrl;
-    link.download = `hoa-don-${this.selectedDotKeKhai?.ten_dot || 'bhxh'}.jpg`;
+    link.download = `${maHoSo}_${maNhanVien}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
     this.message.success('Đang tải xuống hóa đơn');
+  }
+
+  downloadAllBills(): void {
+    // Lấy danh sách các đợt kê khai đã chọn
+    const selectedDotKeKhais = this.dotKeKhais.filter(item => this.checkedSet.has(item.id!));
+    
+    // Kiểm tra nếu không có đợt kê khai nào được chọn
+    if (selectedDotKeKhais.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một đợt kê khai có hóa đơn');
+      return;
+    }
+    
+    // Lọc các đợt kê khai có hóa đơn
+    const dotKeKhaisWithBill = selectedDotKeKhais.filter(item => item.url_bill);
+    
+    if (dotKeKhaisWithBill.length === 0) {
+      this.message.warning('Không có hóa đơn nào trong các đợt kê khai đã chọn');
+      return;
+    }
+    
+    // Hiển thị thông báo đang tải
+    const loadingMessageId = this.message.loading(`Đang chuẩn bị tải ${dotKeKhaisWithBill.length} hóa đơn...`, { nzDuration: 0 }).messageId;
+    
+    // Lấy mã nhân viên
+    const maNhanVien = this.currentUser.username || 'unknown';
+    
+    // Tạo một mảng để lưu trữ các blob của ảnh
+    const imageBlobs: { fileName: string, blob: Blob }[] = [];
+    
+    // Hàm tải ảnh từ URL
+    const downloadImage = (dotKeKhai: DotKeKhai) => {
+      return new Promise<void>((resolve, reject) => {
+        if (!dotKeKhai.url_bill) {
+          resolve();
+          return;
+        }
+        
+        // Tải ảnh từ URL
+        fetch(dotKeKhai.url_bill)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Không thể tải ảnh: ${response.statusText}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            // Lấy mã hồ sơ và đảm bảo không có ký tự đặc biệt
+            const maHoSo = (dotKeKhai.ma_ho_so || 'unknown').replace(/[\/\\:*?"<>|]/g, '_');
+            
+            // Tạo tên file theo cú pháp "mã hồ sơ_mã nhân viên.jpg"
+            // Đảm bảo không có ký tự đặc biệt trong tên file
+            const fileName = `${maHoSo}_${maNhanVien.replace(/[\/\\:*?"<>|]/g, '_')}.jpg`;
+            
+            // Thêm vào mảng imageBlobs
+            imageBlobs.push({ fileName, blob });
+            
+            resolve();
+          })
+          .catch(error => {
+            console.error(`Lỗi khi tải ảnh cho đợt kê khai ${dotKeKhai.id}:`, error);
+            reject(error);
+          });
+      });
+    };
+    
+    // Tải tất cả ảnh
+    const downloadPromises = dotKeKhaisWithBill.map(dotKeKhai => downloadImage(dotKeKhai));
+    
+    Promise.all(downloadPromises)
+      .then(() => {
+        try {
+          // Tạo file ZIP mới
+          const zip = new JSZip();
+          
+          // Thêm các ảnh vào ZIP
+          imageBlobs.forEach(item => {
+            // Đảm bảo tên file không chứa đường dẫn
+            const simpleName = item.fileName.split(/[\/\\]/).pop() || item.fileName;
+            zip.file(simpleName, item.blob);
+          });
+          
+          // Tạo file ZIP
+          return zip.generateAsync({ 
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 9 }
+          });
+        } catch (error) {
+          throw error;
+        }
+      })
+      .then(content => {
+        // Tải xuống file ZIP
+        saveAs(content, `hoa-don.zip`);
+        
+        // Đóng thông báo loading và hiển thị thông báo thành công
+        this.message.remove(loadingMessageId);
+        this.message.success(`Đã tải xuống ${imageBlobs.length} hóa đơn thành công`);
+      })
+      .catch(error => {
+        // Đóng thông báo loading và hiển thị thông báo lỗi
+        this.message.remove(loadingMessageId);
+        console.error('Lỗi khi tạo file ZIP:', error);
+        this.message.error('Có lỗi xảy ra khi tải xuống hóa đơn');
+      });
+  }
+
+  getSelectedBillCount(): number {
+    // Lấy danh sách các đợt kê khai đã chọn
+    const selectedDotKeKhais = this.dotKeKhais.filter(item => this.checkedSet.has(item.id!));
+    
+    // Đếm số lượng đợt kê khai có hóa đơn
+    return selectedDotKeKhais.filter(item => item.url_bill).length;
   }
 
   guiDotKeKhai(data: DotKeKhai): void {
