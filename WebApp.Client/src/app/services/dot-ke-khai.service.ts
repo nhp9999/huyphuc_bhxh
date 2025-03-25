@@ -56,6 +56,7 @@ export interface DotKeKhai {
   nguoi_tao: string;
   don_vi_id: number;
   ngay_tao?: Date;
+  ngay_gui?: Date;
   checked?: boolean;
   tong_so_tien?: number;
   tong_so_the?: number;
@@ -64,6 +65,19 @@ export interface DotKeKhai {
   dai_ly_id: number;
   KeKhaiBHYTs?: any[];
   DonVi?: {
+    id: number;
+    tenDonVi: string;
+    maCoQuanBHXH: string;
+    maSoBHXH: string;
+  };
+  // Thêm các thuộc tính thay thế để tương thích với dữ liệu API
+  donVi?: {
+    id: number;
+    tenDonVi: string;
+    maCoQuanBHXH: string;
+    maSoBHXH: string;
+  };
+  don_vi?: {
     id: number;
     tenDonVi: string;
     maCoQuanBHXH: string;

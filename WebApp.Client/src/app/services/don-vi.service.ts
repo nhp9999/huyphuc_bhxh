@@ -19,6 +19,11 @@ export interface DonVi {
   daiLy?: any;
   loading?: boolean;
   isActive?: boolean;
+  ma_co_quan_bhxh?: string;
+  ma_so_bhxh?: string;
+  ten_don_vi?: string;
+  is_bhxhtn?: boolean;
+  is_bhyt?: boolean;
 }
 
 @Injectable({

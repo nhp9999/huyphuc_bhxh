@@ -32,6 +32,11 @@ export const routes: Routes = [
         path: 'lich-su-ke-khai',
         loadComponent: () => import('./ke-khai/lich-su-ke-khai/lich-su-ke-khai.component').then(m => m.LichSuKeKhaiComponent)
       },
+      {
+        path: 'admin-danh-sach-ke-khai',
+        loadComponent: () => import('./ke-khai/admin-danh-sach-ke-khai/admin-danh-sach-ke-khai.component').then(m => m.AdminDanhSachKeKhaiComponent),
+        canActivate: [AdminGuard]
+      },
       { 
         path: 'reports',
         children: [

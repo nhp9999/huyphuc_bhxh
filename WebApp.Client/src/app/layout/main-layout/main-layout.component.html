@@ -32,6 +32,10 @@
               <span>Lịch sử kê khai</span>
             </a>
           </li>
+          <li nz-menu-item nzMatchRouter routerLink="/admin-danh-sach-ke-khai" *ngIf="isAdmin">
+            <span nz-icon nzType="audit"></span>
+            <span>Quản lý kê khai</span>
+          </li>
         </ul>
       </li>
       <li nz-submenu nzTitle="Quản lý" nzIcon="appstore" *ngIf="isAdmin">

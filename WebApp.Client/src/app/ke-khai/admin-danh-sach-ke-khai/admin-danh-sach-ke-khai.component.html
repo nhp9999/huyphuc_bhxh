@@ -1,0 +1,331 @@
+<div class="page-container">
+  <nz-card class="main-card">
+    <div class="page-header">
+      <h2>Quản lý danh sách kê khai</h2>
+      <div class="page-actions">
+        <button nz-button nzType="primary" (click)="xuatExcelNhieuDotKeKhai()" nz-tooltip nzTooltipTitle="Xuất Excel danh sách">
+          <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+          Xuất Excel
+        </button>
+        <button nz-button nzType="primary" (click)="xuatVNPTNhieuDot()" nz-tooltip nzTooltipTitle="Xuất định dạng VNPT" [disabled]="getSoDotKeKhaiDaChon() === 0">
+          <span nz-icon nzType="export" nzTheme="outline"></span>
+          Xuất VNPT <span *ngIf="getSoDotKeKhaiDaChon() > 0">({{ getSoDotKeKhaiDaChon() }})</span>
+        </button>
+        <button nz-button nzType="primary" (click)="refreshData()" nz-tooltip nzTooltipTitle="Làm mới dữ liệu">
+          <span nz-icon nzType="reload" nzTheme="outline"></span>
+          Làm mới
+        </button>
+      </div>
+    </div>
+
+    <nz-divider></nz-divider>
+    
+    <!-- Thông báo hướng dẫn -->
+    <nz-alert *ngIf="dotKeKhaiList.length > 0" nzType="info" nzMessage="Chọn các đợt kê khai muốn xuất VNPT bằng cách tích vào ô checkbox đầu mỗi dòng." nzShowIcon></nz-alert>
+    <div *ngIf="dotKeKhaiList.length > 0 && getSoDotKeKhaiDaChon() > 0" class="selected-summary">
+      Đã chọn {{ getSoDotKeKhaiDaChon() }} / {{ dotKeKhaiList.length }} đợt kê khai
+      <a (click)="onCheckTatCa(true)" *ngIf="getSoDotKeKhaiDaChon() < dotKeKhaiList.length">Chọn tất cả</a>
+      <a (click)="onCheckTatCa(false)" *ngIf="getSoDotKeKhaiDaChon() > 0">Bỏ chọn tất cả</a>
+    </div>
+
+    <!-- Thống kê theo trạng thái -->
+    <div class="status-statistics">
+      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('chua_gui')">
+        <nz-statistic
+          [nzValue]="getCountByStatus('chua_gui')"
+          [nzTitle]="'Chưa gửi'"
+          [nzValueStyle]="{ color: '#8c8c8c' }"
+          [nzPrefix]="prefixChuaGui"
+        ></nz-statistic>
+        <ng-template #prefixChuaGui><span nz-icon nzType="file" nzTheme="outline"></span></ng-template>
+      </nz-card>
+      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_gui')">
+        <nz-statistic
+          [nzValue]="getCountByStatus('da_gui')"
+          [nzTitle]="'Đã gửi'"
+          [nzValueStyle]="{ color: '#1890ff' }"
+          [nzPrefix]="prefixDaGui"
+        ></nz-statistic>
+        <ng-template #prefixDaGui><span nz-icon nzType="send" nzTheme="outline"></span></ng-template>
+      </nz-card>
+      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_duyet')">
+        <nz-statistic
+          [nzValue]="getCountByStatus('da_duyet')"
+          [nzTitle]="'Đã duyệt'"
+          [nzValueStyle]="{ color: '#52c41a' }"
+          [nzPrefix]="prefixDaDuyet"
+        ></nz-statistic>
+        <ng-template #prefixDaDuyet><span nz-icon nzType="check-circle" nzTheme="outline"></span></ng-template>
+      </nz-card>
+      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_tu_choi')">
+        <nz-statistic
+          [nzValue]="getCountByStatus('da_tu_choi')"
+          [nzTitle]="'Đã từ chối'"
+          [nzValueStyle]="{ color: '#f5222d' }"
+          [nzPrefix]="prefixDaTuChoi"
+        ></nz-statistic>
+        <ng-template #prefixDaTuChoi><span nz-icon nzType="close-circle" nzTheme="outline"></span></ng-template>
+      </nz-card>
+      <nz-card class="statistic-card" [nzBordered]="false" (click)="refreshData()">
+        <nz-statistic
+          [nzValue]="originalDotKeKhaiList.length"
+          [nzTitle]="'Tổng số'"
+          [nzValueStyle]="{ color: '#722ed1' }"
+          [nzPrefix]="prefixTotal"
+        ></nz-statistic>
+        <ng-template #prefixTotal><span nz-icon nzType="database" nzTheme="outline"></span></ng-template>
+      </nz-card>
+    </div>
+
+    <!-- Tab phân loại theo trạng thái -->
+    <div class="status-tabs">
+      <nz-tabset [(nzSelectedIndex)]="tabTrangThaiIndex" (nzSelectedIndexChange)="onTabChange($event)">
+        <nz-tab [nzTitle]="tabTitleTatCa">
+          <ng-template #tabTitleTatCa>
+            <div class="tab-title-container">
+              <span>Tất cả</span>
+              <nz-badge [nzCount]="originalDotKeKhaiList.length" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#722ed1' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleChuaGui">
+          <ng-template #tabTitleChuaGui>
+            <div class="tab-title-container">
+              <span>Chưa gửi</span>
+              <nz-badge [nzCount]="getCountByStatus('chua_gui')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#8c8c8c' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleDaGui">
+          <ng-template #tabTitleDaGui>
+            <div class="tab-title-container">
+              <span>Đã gửi</span>
+              <nz-badge [nzCount]="getCountByStatus('da_gui')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#1890ff' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleDaDuyet">
+          <ng-template #tabTitleDaDuyet>
+            <div class="tab-title-container">
+              <span>Đã duyệt</span>
+              <nz-badge [nzCount]="getCountByStatus('da_duyet')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#52c41a' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleDaTuChoi">
+          <ng-template #tabTitleDaTuChoi>
+            <div class="tab-title-container">
+              <span>Đã từ chối</span>
+              <nz-badge [nzCount]="getCountByStatus('da_tu_choi')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#f5222d' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleChoThanhToan">
+          <ng-template #tabTitleChoThanhToan>
+            <div class="tab-title-container">
+              <span>Chờ thanh toán</span>
+              <nz-badge [nzCount]="getCountByStatus('cho_thanh_toan')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#faad14' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleHoanThanh">
+          <ng-template #tabTitleHoanThanh>
+            <div class="tab-title-container">
+              <span>Hoàn thành</span>
+              <nz-badge [nzCount]="getCountByStatus('hoan_thanh')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#13c2c2' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+      </nz-tabset>
+    </div>
+
+    <!-- Bộ lọc và tìm kiếm -->
+    <div class="filter-section">
+      <div class="search-box">
+        <nz-input-group [nzSuffix]="suffixIconSearch">
+          <input type="text" nz-input placeholder="Tìm kiếm theo tên đợt kê khai..." [(ngModel)]="searchText" />
+        </nz-input-group>
+        <ng-template #suffixIconSearch>
+          <span nz-icon nzType="search" nzTheme="outline"></span>
+        </ng-template>
+      </div>
+
+      <div class="filter-options">
+        <nz-select class="filter-item" nzPlaceHolder="Loại dịch vụ" [(ngModel)]="danhSachFilters.dichVu" nzAllowClear>
+          <nz-option *ngFor="let option of danhSachDichVu" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
+        </nz-select>
+
+        <nz-select class="filter-item" nzPlaceHolder="Đơn vị" [(ngModel)]="danhSachFilters.donVi" nzAllowClear>
+          <nz-option *ngFor="let option of danhSachDonVi" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
+        </nz-select>
+
+        <nz-select class="filter-item" nzPlaceHolder="Tháng" [(ngModel)]="danhSachFilters.thang" nzAllowClear>
+          <nz-option *ngFor="let option of danhSachThang" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
+        </nz-select>
+
+        <nz-select class="filter-item" nzPlaceHolder="Năm" [(ngModel)]="danhSachFilters.nam" nzAllowClear>
+          <nz-option *ngFor="let option of danhSachNam" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
+        </nz-select>
+
+        <button nz-button nzType="primary" (click)="searchData()">
+          <span nz-icon nzType="filter" nzTheme="outline"></span>
+          Lọc
+        </button>
+      </div>
+    </div>
+
+    <!-- Danh sách kê khai -->
+    <nz-table
+      #basicTable
+      [nzData]="dotKeKhaiList"
+      [nzLoading]="loading"
+      [nzBordered]="true"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 30, 50]"
+      nzShowPagination
+    >
+      <thead>
+        <tr>
+          <th nzWidth="40px" [nzChecked]="isTatCaDaChon()" [nzIndeterminate]="isIndeterminate()" (nzCheckedChange)="onCheckTatCa($event)"></th>
+          <th nzWidth="60px">STT</th>
+          <th>Tên đợt kê khai</th>
+          <th>Loại dịch vụ</th>
+          <th>Đơn vị</th>
+          <th>Số thẻ</th>
+          <th>Tổng tiền</th>
+          <th>Ngày gửi</th>
+          <th>Mã nhân viên</th>
+          <th>Trạng thái</th>
+          <th nzWidth="100px">Hóa đơn</th>
+          <th nzWidth="150px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of basicTable.data; let i = index">
+          <td [nzChecked]="data.id ? danhSachDaChon.has(data.id) : false" (nzCheckedChange)="data.id && onCheckDotKeKhai(data.id, $event)"></td>
+          <td>{{ i + 1 }}</td>
+          <td>{{ data.ten_dot }}</td>
+          <td>{{ data.dich_vu }}</td>
+          <td>{{ getDonViName(data) }}</td>
+          <td>{{ data.tong_so_the || 0 }}</td>
+          <td>{{ data.tong_so_tien | number }} đ</td>
+          <td>
+            <ng-container *ngIf="data.ngay_gui">{{ data.ngay_gui | date: 'dd/MM/yyyy HH:mm' }}</ng-container>
+            <ng-container *ngIf="!data.ngay_gui">-</ng-container>
+          </td>
+          <td>{{ data.nguoi_tao || '-' }}</td>
+          <td>
+            <nz-tag [nzColor]="getTrangThaiType(data.trang_thai)">
+              {{ getTrangThaiText(data.trang_thai) }}
+            </nz-tag>
+          </td>
+          <td>
+            <button 
+              *ngIf="data.url_bill" 
+              nz-button 
+              nzType="default" 
+              nzShape="circle" 
+              (click)="xemHoaDon(data)" 
+              nz-tooltip 
+              nzTooltipTitle="Xem hóa đơn">
+              <span nz-icon nzType="file-image" nzTheme="outline"></span>
+            </button>
+            <span *ngIf="!data.url_bill">Không có</span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button nz-button nzType="default" nzShape="circle" (click)="xemChiTiet(data)" nz-tooltip nzTooltipTitle="Xem chi tiết">
+                <span nz-icon nzType="eye" nzTheme="outline"></span>
+              </button>
+              
+              <button nz-button nzType="default" nzShape="circle" (click)="chinhSuaDotKeKhai(data)" nz-tooltip nzTooltipTitle="Chỉnh sửa">
+                <span nz-icon nzType="edit" nzTheme="outline"></span>
+              </button>
+              
+              <ng-container *ngIf="data.trang_thai === 'da_gui'">
+                <button nz-button nzType="primary" nzShape="circle" (click)="duyetDotKeKhai(data)" nz-tooltip nzTooltipTitle="Duyệt">
+                  <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+                </button>
+                <button nz-button nzDanger nzType="primary" nzShape="circle" (click)="tuChoiDotKeKhai(data)" nz-tooltip nzTooltipTitle="Từ chối">
+                  <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+                </button>
+              </ng-container>
+              
+              <button nz-button nzType="default" nzShape="circle" (click)="xuatExcelDotKeKhai(data)" nz-tooltip nzTooltipTitle="Xuất Excel">
+                <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+              </button>
+              
+              <button nz-button nzDanger nzType="primary" nzShape="circle" (click)="xoaDotKeKhai(data)" nz-tooltip nzTooltipTitle="Xóa">
+                <span nz-icon nzType="delete" nzTheme="outline"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>
+
+<!-- Modal xem hóa đơn -->
+<app-xem-hoa-don-modal
+  [isVisible]="isModalVisible"
+  [dotKeKhai]="selectedDotKeKhai"
+  [urlBill]="selectedHoaDonUrl"
+  (closeModal)="handleModalCancel()"
+  (viewKeKhaiBHYT)="xemKeKhaiBHYT($event)"
+  (uploadBill)="uploadThayThe()"
+  (downloadBill)="taiHoaDon()"
+></app-xem-hoa-don-modal>
+
+<!-- Modal nhập mã nhân viên thu -->
+<nz-modal
+  [(nzVisible)]="isModalNhapMaNhanVienVisible"
+  nzTitle="Nhập mã nhân viên thu"
+  (nzOnCancel)="handleModalNhapMaNhanVienCancel()"
+  (nzOnOk)="handleModalOk()"
+  [nzOkText]="'Đồng ý'"
+  [nzCancelText]="'Hủy'"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="maNhanVienForm">
+      <nz-form-item>
+        <nz-form-label [nzSpan]="24">Mã nhân viên thu</nz-form-label>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã nhân viên">
+          <input nz-input formControlName="maNhanVien" placeholder="Nhập mã nhân viên thu" />
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-control [nzSpan]="24">
+          <label nz-checkbox formControlName="luuMaNhanVien">Lưu mã nhân viên này cho các lần sau</label>
+        </nz-form-control>
+      </nz-form-item>
+      <nz-alert
+        nzType="info"
+        nzMessage="Thông báo"
+        nzDescription="Mã nhân viên thu sẽ được sử dụng trong file xuất VNPT"
+        nzShowIcon
+      ></nz-alert>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- Modal xác nhận xóa đợt kê khai -->
+<nz-modal
+  [(nzVisible)]="isModalXoaVisible"
+  nzTitle="Xác nhận xóa đợt kê khai"
+  (nzOnCancel)="handleModalXoaCancel()"
+  (nzOnOk)="confirmXoaDotKeKhai()"
+  [nzOkText]="'Xóa'"
+  [nzOkDanger]="true"
+  [nzCancelText]="'Hủy'"
+>
+  <ng-container *nzModalContent>
+    <p>Bạn có chắc chắn muốn xóa đợt kê khai "<strong>{{ selectedDotKeKhai?.ten_dot }}</strong>"?</p>
+    <nz-alert
+      nzType="warning"
+      nzMessage="Cảnh báo"
+      nzDescription="Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan đến đợt kê khai này sẽ bị xóa vĩnh viễn."
+      nzShowIcon
+    ></nz-alert>
+  </ng-container>
+</nz-modal> 

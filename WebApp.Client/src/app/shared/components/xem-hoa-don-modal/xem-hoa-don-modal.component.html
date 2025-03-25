@@ -1,0 +1,136 @@
+<nz-modal
+  [(nzVisible)]="isVisible"
+  [nzTitle]="modalTitle"
+  [nzContent]="modalContent"
+  [nzFooter]="modalFooter"
+  (nzOnCancel)="handleCancel()"
+  [nzWidth]="900"
+  [nzBodyStyle]="{ padding: '0' }"
+  [nzClassName]="'bill-modal'"
+  [nzMaskClosable]="!isFullscreen"
+  [nzStyle]="{ top: '20px' }"
+>
+  <ng-template #modalTitle>
+    <div class="modal-title">
+      <span>Xem hóa đơn</span>
+      <span *ngIf="dotKeKhai" class="bill-subtitle">{{ dotKeKhai.ten_dot }}</span>
+    </div>
+  </ng-template>
+  
+  <ng-template #modalContent>
+    <div class="bill-modal-content" [class.fullscreen-mode]="isFullscreen">
+      <!-- Phần xem ảnh -->
+      <div class="bill-image-wrapper">
+        <!-- Loading spinner -->
+        <div *ngIf="isImageLoading" class="loading-container">
+          <nz-spin nzTip="Đang tải ảnh..."></nz-spin>
+        </div>
+        
+        <!-- Container ảnh -->
+        <div class="bill-image-container">
+          <!-- Thanh công cụ -->
+          <div class="bill-toolbar">
+            <button nz-button nzType="text" nzShape="circle" (click)="zoomIn()" nz-tooltip nzTooltipTitle="Phóng to">
+              <span nz-icon nzType="zoom-in" nzTheme="outline"></span>
+            </button>
+            <button nz-button nzType="text" nzShape="circle" (click)="zoomOut()" nz-tooltip nzTooltipTitle="Thu nhỏ">
+              <span nz-icon nzType="zoom-out" nzTheme="outline"></span>
+            </button>
+            <button nz-button nzType="text" nzShape="circle" (click)="rotateImage()" nz-tooltip nzTooltipTitle="Xoay ảnh">
+              <span nz-icon nzType="redo" nzTheme="outline"></span>
+            </button>
+            <button nz-button nzType="text" nzShape="circle" (click)="resetImage()" nz-tooltip nzTooltipTitle="Khôi phục">
+              <span nz-icon nzType="sync" nzTheme="outline"></span>
+            </button>
+            <button nz-button nzType="text" nzShape="circle" (click)="toggleFullscreen()" nz-tooltip [nzTooltipTitle]="isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'">
+              <span nz-icon [nzType]="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" nzTheme="outline"></span>
+            </button>
+          </div>
+          
+          <!-- Thông báo kéo ảnh -->
+          <div class="drag-instruction" *ngIf="imageZoom > 1">
+            <span nz-icon nzType="drag" nzTheme="outline"></span>
+            <span>Kéo để di chuyển ảnh</span>
+          </div>
+          
+          <!-- Ảnh hóa đơn -->
+          <img *ngIf="selectedHoaDon"
+            [src]="selectedHoaDon" 
+            alt="Hóa đơn" 
+            class="bill-image" 
+            [style.transform]="getImageTransform()"
+            (wheel)="handleMouseWheel($event)"
+            (mousedown)="startDrag($event)"
+            (mousemove)="onDrag($event)"
+            (mouseup)="endDrag()"
+            (mouseleave)="endDrag()"
+            (touchstart)="startTouchDrag($event)"
+            (touchmove)="onTouchDrag($event)"
+            (touchend)="endTouchDrag()"
+            (touchcancel)="endTouchDrag()"
+            (dblclick)="imageZoom === 1 ? zoomIn() : resetImage()"
+            loading="lazy"
+            (load)="isImageLoading = false"
+            [class.hidden]="isImageLoading"
+          />
+          
+          <!-- Thông báo khi không có ảnh -->
+          <div *ngIf="!selectedHoaDon && !isImageLoading" class="no-bill-message">
+            <span nz-icon nzType="file-image" nzTheme="outline" class="empty-icon"></span>
+            <span>Không tìm thấy ảnh hóa đơn</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Phần thông tin bên phải -->
+      <div class="bill-info">
+        <div *ngIf="dotKeKhai" class="bill-info-content">
+          <h3>Thông tin hóa đơn</h3>
+          <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+            <nz-descriptions-item nzTitle="Tên đợt kê khai">{{ dotKeKhai.ten_dot }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Mã hồ sơ">{{ dotKeKhai.ma_ho_so || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Loại dịch vụ">{{ dotKeKhai.dich_vu }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tổng số tiền">{{ dotKeKhai.tong_so_tien | number }} đ</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Trạng thái">
+              <nz-tag [nzColor]="getTrangThaiType(dotKeKhai.trang_thai)">
+                {{ getTrangThaiText(dotKeKhai.trang_thai) }}
+              </nz-tag>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tên file">{{ getFileName() }}</nz-descriptions-item>
+          </nz-descriptions>
+          
+          <div class="action-buttons">
+            <button nz-button nzType="primary" (click)="taiHoaDon()">
+              <span nz-icon nzType="download" nzTheme="outline"></span>
+              Tải xuống
+            </button>
+            <button nz-button nzType="default"
+              *ngIf="dotKeKhai.trang_thai === 'chua_gui' || dotKeKhai.trang_thai === 'da_tu_choi'"
+              (click)="uploadThayThe()">
+              <span nz-icon nzType="upload" nzTheme="outline"></span>
+              Tải lại hóa đơn
+            </button>
+          </div>
+        </div>
+        
+        <nz-alert *ngIf="isFullscreen" 
+          nzType="info" 
+          nzMessage="Nhấn ESC hoặc click nút thu nhỏ để thoát chế độ toàn màn hình" 
+          class="fullscreen-note">
+        </nz-alert>
+      </div>
+    </div>
+  </ng-template>
+  
+  <ng-template #modalFooter>
+    <div class="modal-footer">
+      <button nz-button nzType="default" 
+        (click)="xemKeKhaiBHYT()" 
+        *ngIf="dotKeKhai?.id">
+        <span nz-icon nzType="solution" nzTheme="outline"></span>
+        Xem bản kê
+      </button>
+      <button nz-button nzType="default" (click)="handleCancel()">Đóng</button>
+    </div>
+  </ng-template>
+</nz-modal> 
