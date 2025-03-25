@@ -217,6 +217,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   multipleSearchSoThangDong: number = 3;
   // Thêm biến để lưu bệnh viện được chọn
   multipleSearchBenhVien: string = '';
+  // Thêm biến để lưu người thứ bắt đầu trong chế độ hộ gia đình
+  hoGiaDinhStartIndex: number = 1;
 
   // Thêm biến lọc số tháng đóng
   filterSoThangDong: number | null = null;
@@ -1738,6 +1740,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.isSearchMultipleVisible = true;
     this.multipleSearchText = '';
     this.multipleSearchBenhVien = '';
+    this.hoGiaDinhStartIndex = 1; // Reset về người thứ 1
     
     // Bỏ việc gán giá trị mặc định
     this.multipleSearchNguoiThu = null as any;
@@ -2063,6 +2066,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.isHoGiaDinh && !this.hoGiaDinhStartIndex) {
+      this.message.warning('Vui lòng chọn người thứ bắt đầu');
+      return;
+    }
+
     if (!this.multipleSearchSoThangDong) {
       this.message.warning('Vui lòng chọn số tháng đóng');
       return;
@@ -2113,9 +2121,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             
             if (this.isHoGiaDinh) {
               // Trong chế độ Hộ gia đình:
-              // - Nếu index + 1 <= 5: gán người thứ theo index + 1
-              // - Nếu index + 1 > 5: gán người thứ 5 (người thứ 5 trở đi)
-              nguoiThu = (i + 1) <= 5 ? (i + 1) : 5;
+              // - Sử dụng hoGiaDinhStartIndex làm người thứ bắt đầu
+              // - Nếu (hoGiaDinhStartIndex + i) <= 5: gán người thứ theo (hoGiaDinhStartIndex + i)
+              // - Nếu (hoGiaDinhStartIndex + i) > 5: gán người thứ 5 (người thứ 5 trở đi)
+              const calculatedIndex = this.hoGiaDinhStartIndex + i;
+              nguoiThu = calculatedIndex <= 5 ? calculatedIndex : 5;
             } else {
               // Trong chế độ thông thường, sử dụng người thứ được chọn
               nguoiThu = this.multipleSearchNguoiThu;
@@ -3409,6 +3419,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     // Nếu chuyển sang chế độ hộ gia đình, không cần chọn người thứ
     if (isHoGiaDinh) {
       this.multipleSearchNguoiThu = null as any;
+      this.hoGiaDinhStartIndex = 1; // Đặt người thứ bắt đầu mặc định là 1
     }
   }
 

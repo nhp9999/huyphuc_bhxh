@@ -557,6 +557,23 @@
       </nz-select>
     </div>
 
+    <!-- Người thứ bắt đầu - Chỉ hiển thị khi chọn chế độ Hộ gia đình -->
+    <div style="margin-bottom: 16px;" *ngIf="isHoGiaDinh">
+      <div style="margin-bottom: 8px;">Người thứ bắt đầu:</div>
+      <nz-select 
+        [(ngModel)]="hoGiaDinhStartIndex"
+        [nzPlaceHolder]="'Chọn người thứ bắt đầu'"
+        [nzDisabled]="donViName.includes('DTTS')"
+        style="width: 100%;"
+      >
+        <nz-option [nzValue]="1" [nzLabel]="'Người thứ 1'"></nz-option>
+        <nz-option [nzValue]="2" [nzLabel]="'Người thứ 2'"></nz-option>
+        <nz-option [nzValue]="3" [nzLabel]="'Người thứ 3'"></nz-option>
+        <nz-option [nzValue]="4" [nzLabel]="'Người thứ 4'"></nz-option>
+        <nz-option [nzValue]="5" [nzLabel]="'Người thứ 5'"></nz-option>
+      </nz-select>
+    </div>
+
     <!-- Số tháng đóng -->
     <div style="margin-bottom: 16px;">
       <div style="margin-bottom: 8px;">Số tháng đóng:</div>
@@ -594,7 +611,7 @@
       <i nz-icon nzType="info-circle" nzTheme="outline"></i>
       <span style="margin-left: 8px;">
         {{ isHoGiaDinh ? 
-          'Chế độ Hộ gia đình: Mã số BHXH đầu tiên sẽ là người thứ 1, mã số thứ hai là người thứ 2, và tiếp tục cho đến người thứ 5. Các mã số từ thứ 6 trở đi sẽ được gán là người thứ 5 trở đi' : 
+          'Chế độ Hộ gia đình: Mã số đầu tiên sẽ là người thứ bắt đầu, mã số thứ hai là người thứ tiếp theo, và tiếp tục. Các mã số từ thứ 6 trở đi sẽ được gán là người thứ 5 trở đi' : 
           'Lưu ý: Mỗi mã số BHXH nhập trên một dòng' }}
       </span>
     </div>
