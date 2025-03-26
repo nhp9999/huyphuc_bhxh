@@ -1,0 +1,172 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+:host ::ng-deep {
+  .ant-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+    border-radius: 8px;
+  }
+
+  .ant-btn-primary {
+    background-color: #1890ff;
+  }
+
+  .ant-descriptions-item-label {
+    font-weight: bold;
+    color: #333;
+  }
+
+  .ant-select {
+    width: 100%;
+  }
+
+  .ant-form-item-label > label {
+    color: #333;
+  }
+}
+
+.section-title {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: #1890ff;
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.result-container {
+  margin-top: 20px;
+}
+
+.result-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  margin: 40px 0;
+}
+
+.error-container {
+  margin: 20px 0;
+}
+
+.action-button {
+  margin-right: 8px;
+}
+
+.detail-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-button {
+  margin: 0 10px;
+}
+
+.info-section {
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.the-bhyt-info {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.bhxh-info {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+}
+
+.status-tag {
+  margin-left: 8px;
+}
+
+.valid-tag {
+  color: #52c41a;
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.expired-tag {
+  color: #f5222d;
+  background-color: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.info-meta {
+  margin-bottom: 4px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.input-with-button {
+  display: flex;
+  align-items: center;
+  
+  input {
+    flex: 1;
+  }
+  
+  button {
+    margin-left: 8px;
+  }
+}
+
+.captcha-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.refresh-button {
+  margin-left: 8px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .detail-buttons {
+    flex-direction: column;
+    
+    .detail-button {
+      margin: 5px 0;
+    }
+  }
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+h4 {
+  font-size: 16px;
+  color: #1890ff;
+  margin-bottom: 10px;
+  font-weight: 500;
+  position: relative;
+  padding-left: 10px;
+  
+  &::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background-color: #1890ff;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 2px;
+  }
+} 

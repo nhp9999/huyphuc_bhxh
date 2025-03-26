@@ -86,6 +86,18 @@ export const routes: Routes = [
             path: 'ma-so-bhxh',
             loadComponent: () => import('./tra-cuu/tra-cuu-ma-so-bhxh/tra-cuu-ma-so-bhxh.component').then(m => m.TraCuuMaSoBhxhComponent)
           },
+          {
+            path: 'ho-gia-dinh',
+            loadComponent: () => import('./tra-cuu/tra-cuu-ho-gia-dinh/tra-cuu-ho-gia-dinh.component').then(m => m.TraCuuHoGiaDinhComponent)
+          },
+          {
+            path: 'thong-tin-bhxh',
+            loadComponent: () => import('./tra-cuu/tra-cuu-thong-tin-bhxh/tra-cuu-thong-tin-bhxh.component').then(m => m.TraCuuThongTinBHXHComponent)
+          },
+          {
+            path: 'thong-tin-bhyt',
+            loadComponent: () => import('./tra-cuu/tra-cuu-thong-tin-bhyt/tra-cuu-thong-tin-bhyt.component').then(m => m.TraCuuThongTinBHYTComponent)
+          },
           { path: '', redirectTo: 'ma-so-bhxh', pathMatch: 'full' }
         ]
       },

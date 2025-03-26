@@ -1,0 +1,153 @@
+<div class="container">
+  <nz-card nzTitle="Tra cứu thông tin BHYT" [nzExtra]="extraTemplate">
+    <form nz-form [formGroup]="traCuuBHYTForm" (ngSubmit)="submitBHYTForm()">
+      
+      <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
+        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập mã số BHXH (phải có 10 chữ số)">
+          <div class="input-with-button">
+            <input 
+              nz-input 
+              formControlName="maSoBHXH" 
+              placeholder="Nhập mã số BHXH (10 chữ số)" 
+              (input)="formatMaSoBHXH($event)" 
+              maxlength="10" 
+            />
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-control [nzOffset]="6" [nzSpan]="14">
+          <button nz-button nzType="primary" [disabled]="isLoading">
+            <i nz-icon nzType="search" *ngIf="!isLoading"></i>
+            <i nz-icon nzType="loading" *ngIf="isLoading"></i>
+            Tra cứu
+          </button>
+          <button nz-button (click)="resetForm()" style="margin-left: 8px;">
+            <i nz-icon nzType="clear"></i>
+            Xóa
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+
+    <ng-container *ngIf="daTimKiem">
+      <nz-divider></nz-divider>
+      
+      <div *ngIf="isLoading" class="loading-container">
+        <nz-spin nzTip="Đang tra cứu..."></nz-spin>
+      </div>
+
+      <div *ngIf="!isLoading && loiTraCuu" class="error-container">
+        <nz-alert nzType="error" [nzMessage]="loiTraCuu" nzShowIcon></nz-alert>
+      </div>
+
+      <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu" class="result-container">
+        <h3>Thông tin BHYT</h3>
+        
+        <!-- Thông tin thẻ BHYT -->
+        <div class="info-section bhyt-info">
+          <h4>Thông tin thẻ BHYT</h4>
+          <nz-descriptions [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
+            <nz-descriptions-item nzTitle="Số thẻ BHYT">{{ ketQuaTraCuu.soTheBHYT }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Mã số BHXH">{{ ketQuaTraCuu.maSoBHXH }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Họ và tên">{{ ketQuaTraCuu.hoTen }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày sinh">{{ ketQuaTraCuu.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Giới tính">{{ ketQuaTraCuu.gioiTinh || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Nơi đăng ký KCB">{{ ketQuaTraCuu.noiDangKyKCB || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Giá trị sử dụng">
+              {{ ketQuaTraCuu.hanSuDung?.tuNgay | date:'dd/MM/yyyy' }} - 
+              {{ ketQuaTraCuu.hanSuDung?.denNgay | date:'dd/MM/yyyy' }}
+              <nz-tag class="status-tag" 
+                [ngClass]="isTheConHan(ketQuaTraCuu.hanSuDung?.denNgay) ? 'valid-tag' : 'expired-tag'">
+                {{ isTheConHan(ketQuaTraCuu.hanSuDung?.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
+              </nz-tag>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tỷ lệ đóng">{{ ketQuaTraCuu.tyLeDongBHYT || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Phạm vi miễn TB">{{ ketQuaTraCuu.phamViMienTB || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quyền lợi">{{ ketQuaTraCuu.quyenLoi || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Nguồn đóng">{{ ketQuaTraCuu.nguonDong || 'Không có' }}</nz-descriptions-item>
+          </nz-descriptions>
+        </div>
+        
+        <!-- Nút xem chi tiết BHYT -->
+        <button nz-button nzType="primary" (click)="xemChiTietBHYT()" style="margin-top: 15px;">
+          <i nz-icon nzType="medicine-box"></i>
+          Xem chi tiết BHYT
+        </button>
+      </div>
+    </ng-container>
+  </nz-card>
+</div>
+
+<ng-template #extraTemplate>
+  <button nz-button nzType="link">
+    <i nz-icon nzType="question-circle" nzTheme="outline"></i>
+    Hướng dẫn
+  </button>
+</ng-template>
+
+<!-- Modal xem chi tiết BHYT -->
+<nz-modal [(nzVisible)]="isModalVisible" nzTitle="Chi tiết thông tin BHYT" (nzOnCancel)="closeModal()" [nzFooter]="null" [nzWidth]="800">
+  <ng-container *nzModalContent>
+    <nz-descriptions *ngIf="chiTietItem" nzBordered [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
+      <nz-descriptions-item nzTitle="Số thẻ BHYT">{{ chiTietItem.soTheBHYT }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Mã số BHXH">{{ chiTietItem.maSoBHXH }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Họ và tên">{{ chiTietItem.hoTen }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày sinh">{{ chiTietItem.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Giới tính">{{ chiTietItem.gioiTinh || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Nơi đăng ký KCB">{{ chiTietItem.noiDangKyKCB || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Giá trị sử dụng" [nzSpan]="2">
+        {{ chiTietItem.hanSuDung?.tuNgay | date:'dd/MM/yyyy' }} - 
+        {{ chiTietItem.hanSuDung?.denNgay | date:'dd/MM/yyyy' }}
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Tỷ lệ đóng">{{ chiTietItem.tyLeDongBHYT || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Phạm vi miễn TB">{{ chiTietItem.phamViMienTB || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Quyền lợi">{{ chiTietItem.quyenLoi || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Nguồn đóng">{{ chiTietItem.nguonDong || 'Không có' }}</nz-descriptions-item>
+    </nz-descriptions>
+  </ng-container>
+</nz-modal>
+
+<!-- Modal đăng nhập VNPost -->
+<nz-modal
+  [(nzVisible)]="isVNPostLoginVisible"
+  [nzTitle]="'Xác thực captcha'"
+  (nzOnCancel)="closeVNPostLogin()"
+  (nzOnOk)="handleLogin()"
+  [nzOkText]="'Xác nhận'"
+  [nzCancelText]="'Hủy'"
+  [nzOkLoading]="isLoadingLogin"
+  nzWidth="400px">
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="vnpostLoginForm">
+      <!-- Ẩn input tài khoản và mật khẩu -->
+      <input type="hidden" formControlName="userName">
+      <input type="hidden" formControlName="password">
+
+      <nz-form-item>
+        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
+          <div class="captcha-container">
+            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
+              style="margin-bottom: 8px; max-width: 100%;" />
+            <div class="input-with-button">
+              <input nz-input 
+                formControlName="text" 
+                placeholder="Nhập mã xác nhận"
+                (input)="convertToUpperCase($event)"
+                maxlength="4" />
+              <button 
+                nz-button 
+                nzType="default"
+                class="refresh-button"
+                (click)="getCaptcha(); $event.preventDefault()">
+                <i nz-icon nzType="reload"></i>
+              </button>
+            </div>
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal> 

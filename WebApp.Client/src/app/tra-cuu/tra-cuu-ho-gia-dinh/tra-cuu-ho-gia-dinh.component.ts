@@ -16,13 +16,11 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzSelectModule, NzSelectItemInterface } from 'ng-zorro-antd/select';
-import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
-import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule } from 'ng-zorro-antd/table';
-import { BHXHService, TraCuuVNPostRequest } from '../../services/tra-cuu-ma-so-bhxh.service';
-import { LocationService, Province, District, Commune } from '../../services/location.service';
+import { BHXHService, TraCuuHoGiaDinhRequest } from '../../services/tra-cuu-ma-so-bhxh.service';
+import { LocationService } from '../../services/location.service';
 import { finalize } from 'rxjs/operators';
 import { SSMV2Service } from '../../services/ssmv2.service';
 
@@ -44,7 +42,7 @@ interface XaPhuong {
 }
 
 @Component({
-  selector: 'app-tra-cuu-ma-so-bhxh',
+  selector: 'app-tra-cuu-ho-gia-dinh',
   standalone: true,
   imports: [
     CommonModule,
@@ -62,17 +60,15 @@ interface XaPhuong {
     NzIconModule,
     NzTagModule,
     NzSelectModule,
-    NzDatePickerModule,
     NzTabsModule,
-    NzCheckboxModule,
     NzModalModule,
     NzTableModule
   ],
-  templateUrl: './tra-cuu-ma-so-bhxh.component.html',
-  styleUrls: ['./tra-cuu-ma-so-bhxh.component.scss']
+  templateUrl: './tra-cuu-ho-gia-dinh.component.html',
+  styleUrls: ['./tra-cuu-ho-gia-dinh.component.scss']
 })
-export class TraCuuMaSoBhxhComponent implements OnInit {
-  traCuuVNPostForm!: FormGroup;
+export class TraCuuHoGiaDinhComponent implements OnInit {
+  traCuuHoGiaDinhForm!: FormGroup;
   isLoading = false;
   isLoadingData = false;
   ketQuaTraCuu: any[] = [];
@@ -86,7 +82,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   huyenTheoTinh: QuanHuyen[] = [];
   xaTheoHuyen: XaPhuong[] = [];
 
-  // Thêm các thuộc tính SSMV2
+  // Thêm thuộc tính SSMV2
   isVNPostLoginVisible = false;
   captchaImage = '';
   captchaCode = '';
@@ -96,6 +92,11 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   // Thêm thuộc tính cho modal chi tiết
   isModalVisible = false;
   chiTietItem: any = null;
+  thanhVienHo: any[] = [];
+  
+  // Thêm thuộc tính cho modal chi tiết thành viên
+  isModalThanhVienVisible = false;
+  chiTietThanhVien: any = null;
 
   constructor(
     private fb: FormBuilder,
@@ -106,13 +107,12 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.traCuuVNPostForm = this.fb.group({
+    this.traCuuHoGiaDinhForm = this.fb.group({
       maTinh: [null, [Validators.required]],
       maHuyen: [null, [Validators.required]],
       maXa: [null],
-      hoTen: [null],
-      ngaySinh: [null],
-      soCMND: [null]
+      maHo: [null],
+      tenChuHo: [null]
     });
 
     this.loadDanhSachTinh();
@@ -157,7 +157,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   onTinhChange(maTinh: string): void {
     if (!maTinh) {
       this.huyenTheoTinh = [];
-      this.traCuuVNPostForm.patchValue({ maHuyen: null, maXa: null });
+      this.traCuuHoGiaDinhForm.patchValue({ maHuyen: null, maXa: null });
       this.xaTheoHuyen = [];
       return;
     }
@@ -173,7 +173,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
             maTinh: district.ma_tinh
           }));
           this.huyenTheoTinh = this.danhSachHuyen;
-          this.traCuuVNPostForm.patchValue({ maHuyen: null, maXa: null });
+          this.traCuuHoGiaDinhForm.patchValue({ maHuyen: null, maXa: null });
           this.xaTheoHuyen = [];
         },
         error: (err) => {
@@ -187,7 +187,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   onHuyenChange(maHuyen: string): void {
     if (!maHuyen) {
       this.xaTheoHuyen = [];
-      this.traCuuVNPostForm.patchValue({ maXa: null });
+      this.traCuuHoGiaDinhForm.patchValue({ maXa: null });
       return;
     }
 
@@ -206,7 +206,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
           } else {
             this.xaTheoHuyen = [];
           }
-          this.traCuuVNPostForm.patchValue({ maXa: null });
+          this.traCuuHoGiaDinhForm.patchValue({ maXa: null });
         },
         error: (err) => {
           console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen}:`, err);
@@ -216,8 +216,8 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       });
   }
 
-  submitVNPostForm(): void {
-    if (this.traCuuVNPostForm.valid) {
+  submitHoGiaDinhForm(): void {
+    if (this.traCuuHoGiaDinhForm.valid) {
       this.isLoading = true;
       this.daTimKiem = true;
       this.loiTraCuu = '';
@@ -225,33 +225,30 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       // Kiểm tra token VNPost
       const token = this.ssmv2Service.getToken();
       if (!token) {
-        // Tự động đăng nhập VNPost thay vì hiển thị thông báo
+        // Tự động đăng nhập VNPost
         this.autoLoginVNPost(true);
         return;
       }
       
       // Lấy dữ liệu từ form
-      const formData: TraCuuVNPostRequest = {
-        maTinh: this.traCuuVNPostForm.value.maTinh,
-        maHuyen: this.traCuuVNPostForm.value.maHuyen,
-        maXa: this.traCuuVNPostForm.value.maXa || '',
-        hoTen: this.traCuuVNPostForm.value.hoTen || '',
-        ngaySinh: this.traCuuVNPostForm.value.ngaySinh ? this.formatDate(this.traCuuVNPostForm.value.ngaySinh) : '',
-        soCMND: this.traCuuVNPostForm.value.soCMND || ''
+      const formData: TraCuuHoGiaDinhRequest = {
+        maTinh: this.traCuuHoGiaDinhForm.value.maTinh,
+        maHuyen: this.traCuuHoGiaDinhForm.value.maHuyen,
+        maXa: this.traCuuHoGiaDinhForm.value.maXa || '',
+        maHo: this.traCuuHoGiaDinhForm.value.maHo || '',
+        tenChuHo: this.traCuuHoGiaDinhForm.value.tenChuHo || ''
       };
       
       console.log('Dữ liệu gửi đi:', formData);
-      console.log('Ngày sinh gốc:', this.traCuuVNPostForm.value.ngaySinh);
-      console.log('Ngày sinh đã format:', formData.ngaySinh);
       
-      // Gọi API tra cứu VNPost
-      this.bhxhService.traCuuMaSoBHXHVNPost(formData)
+      // Gọi API tra cứu hộ gia đình
+      this.bhxhService.traCuuHoGiaDinh(formData)
         .subscribe({
           next: (res: any) => {
             this.isLoading = false;
             
             // Log response để debug
-            console.log('Response từ API VNPost:', res);
+            console.log('Response từ API Hộ Gia Đình:', res);
             
             // Kiểm tra nếu response có chứa thông báo lỗi xác thực
             if (res && res.error === 'Lỗi xác thực') {
@@ -276,22 +273,37 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
             
             // Xử lý dữ liệu trả về
             if (res && res.success && res.data && res.data.length > 0) {
-              // Xử lý tất cả kết quả thay vì chỉ kết quả đầu tiên
+              // Xử lý tất cả kết quả
               this.ketQuaTraCuu = res.data.map((data: any) => ({
-                maSoBHXH: data.maSoBhxh,
-                hoTen: data.hoTen,
-                ngaySinh: this.parseNgaySinh(data.ngaySinh, data.ngaySinhDt),
-                gioiTinh: data.gioiTinh,
-                soCCCD: data.soCmnd,
+                maHo: data.maHo,
+                tenChuHo: data.tenChuHo,
                 diaChi: data.diaChi,
+                soSoHoKhau: data.soSoHoKhau,
+                loaiGiayTo: data.loaiGiayTo,
+                dienThoai: data.dienThoai,
                 trangThai: data.trangThai,
-                maHo: data.maHo
+                ngayKeKhai: this.parseDate(data.ngayKeKhai, data.ngayKeKhaiDt),
+                soLuongThanhVien: data.dsThanhVien ? data.dsThanhVien.length : 0,
+                danhSachThanhVien: data.dsThanhVien ? data.dsThanhVien.map((tv: any) => ({
+                  maSoBhxh: tv.soSoBhxh,
+                  hoTen: tv.hoTen,
+                  ngaySinh: tv.ngaySinhHienThi ? this.parseDateDisplay(tv.ngaySinhHienThi) : this.parseNgaySinh(tv.ngaySinh),
+                  gioiTinh: tv.gioiTinhHienThi || (tv.gioiTinh === '1' ? 'Nam' : 'Nữ'),
+                  soCCCD: tv.soCmnd || 'Không có',
+                  mqhChuHo: tv.mqhChuHo || 'Không có',
+                  quanHeVoiChuHo: tv.mqhChuHo || 'Không có',
+                  noiSinh: `${tv.tenXaKs || ''}, ${tv.tenHuyenKs || ''}, ${tv.tenTinhKs || ''}`,
+                  danToc: tv.danToc,
+                  quocTich: tv.quocTich,
+                  diaChi: tv.diaChiLh || 'Không có',
+                  dienThoai: tv.soDienThoai || 'Không có'
+                })) : []
               }));
               
-              this.message.success(`Tra cứu thành công: Tìm thấy ${this.ketQuaTraCuu.length} kết quả`);
+              this.message.success(`Tra cứu thành công: Tìm thấy ${this.ketQuaTraCuu.length} hộ gia đình`);
             } else {
               this.ketQuaTraCuu = [];
-              this.loiTraCuu = 'Không tìm thấy thông tin mã số BHXH';
+              this.loiTraCuu = 'Không tìm thấy thông tin hộ gia đình';
               this.message.warning(this.loiTraCuu);
             }
           },
@@ -313,7 +325,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
           }
         });
     } else {
-      Object.values(this.traCuuVNPostForm.controls).forEach(control => {
+      Object.values(this.traCuuHoGiaDinhForm.controls).forEach(control => {
         if (control.invalid) {
           control.markAsDirty();
           control.updateValueAndValidity();
@@ -323,54 +335,12 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
   }
 
   resetForm(): void {
-    this.traCuuVNPostForm.reset();
+    this.traCuuHoGiaDinhForm.reset();
     this.huyenTheoTinh = [];
     this.xaTheoHuyen = [];
     this.ketQuaTraCuu = [];
     this.daTimKiem = false;
     this.loiTraCuu = '';
-  }
-
-  private formatDate(date: Date | string): string {
-    if (!date) return '';
-    
-    // Nếu là chuỗi có định dạng dd/MM/yyyy
-    if (typeof date === 'string' && date.includes('/')) {
-      // Chuyển đổi từ dd/MM/yyyy sang yyyy-MM-dd
-      const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-      const match = date.match(datePattern);
-      if (match) {
-        const [_, day, month, year] = match;
-        return `${year}-${month}-${day}`;
-      }
-    }
-    
-    // Nếu là đối tượng Date
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) return '';
-    
-    const day = dateObj.getDate().toString().padStart(2, '0');
-    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-    const year = dateObj.getFullYear();
-    
-    // Trả về định dạng yyyy-MM-dd
-    return `${year}-${month}-${day}`;
-  }
-
-  private mapVNPostResponseToData(data: any): any {
-    if (!data) return null;
-    
-    // Ánh xạ dữ liệu từ API VNPost sang định dạng dữ liệu của ứng dụng
-    return {
-      maSoBHXH: data.maSoBHXH || '',
-      hoTen: data.hoTen || '',
-      ngaySinh: data.ngaySinh || '',
-      gioiTinh: data.gioiTinh || '',
-      soCCCD: data.soCMND || '',
-      diaChi: data.diaChi || '',
-      trangThai: data.trangThai || 'active',
-      ngayCap: data.ngayCap || new Date().toISOString()
-    };
   }
 
   filterOption = (input: string, option: NzSelectItemInterface): boolean => {
@@ -459,7 +429,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
             
             // Đảm bảo token đã được lưu trước khi tìm kiếm
             setTimeout(() => {
-              this.submitVNPostForm();
+              this.submitHoGiaDinhForm();
             }, 1000);
           } else {
             this.message.error('Không nhận được token');
@@ -503,68 +473,15 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
     this.vnpostLoginForm.get('text')?.setValue(input.value);
   }
 
-  // Thêm phương thức để xử lý ngày sinh
-  private parseNgaySinh(ngaySinhStr: string, ngaySinhDt: string): Date {
-    if (ngaySinhDt) {
-      return new Date(ngaySinhDt);
-    }
-    
-    if (ngaySinhStr) {
-      // Chuyển đổi chuỗi ngày sinh dạng 'YYYYMMDD' thành Date
-      const year = parseInt(ngaySinhStr.substring(0, 4));
-      const month = parseInt(ngaySinhStr.substring(4, 6)) - 1; // Tháng trong JS bắt đầu từ 0
-      const day = parseInt(ngaySinhStr.substring(6, 8));
-      return new Date(year, month, day);
-    }
-    
-    return new Date();
-  }
-
   // Kiểm tra trạng thái đăng nhập VNPost
   isVNPostLoggedIn(): boolean {
     return !!this.ssmv2Service.getToken();
   }
 
-  // Xử lý nhập ngày sinh trực tiếp
-  onDateInputChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-    
-    // Nếu người dùng đang nhập, không làm gì cả
-    if (value.length < 10) return;
-    
-    // Kiểm tra định dạng dd/MM/yyyy
-    const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-    const match = value.match(datePattern);
-    
-    if (match) {
-      const day = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1; // Tháng trong JS bắt đầu từ 0
-      const year = parseInt(match[3], 10);
-      
-      const date = new Date(year, month, day);
-      
-      // Kiểm tra tính hợp lệ của ngày
-      if (
-        date.getDate() === day &&
-        date.getMonth() === month &&
-        date.getFullYear() === year
-      ) {
-        // Ngày hợp lệ, cập nhật giá trị form
-        this.traCuuVNPostForm.patchValue({ ngaySinh: date });
-      } else {
-        // Ngày không hợp lệ
-        this.message.warning('Ngày sinh không hợp lệ. Vui lòng nhập theo định dạng dd/MM/yyyy');
-      }
-    } else {
-      // Định dạng không đúng
-      this.message.warning('Vui lòng nhập ngày sinh theo định dạng dd/MM/yyyy');
-    }
-  }
-
-  // Thêm phương thức xem chi tiết
+  // Xem chi tiết hộ gia đình
   xemChiTiet(item: any): void {
     this.chiTietItem = item;
+    this.thanhVienHo = item.danhSachThanhVien || [];
     this.isModalVisible = true;
   }
 
@@ -601,7 +518,7 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
                 // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
                 if (fromSubmit) {
                   setTimeout(() => {
-                    this.submitVNPostForm();
+                    this.submitHoGiaDinhForm();
                   }, 1000);
                 }
               } else {
@@ -633,4 +550,58 @@ export class TraCuuMaSoBhxhComponent implements OnInit {
       }
     });
   }
-} 
+
+  // Thêm phương thức để xử lý ngày tháng
+  private parseDate(dateStr: string, dateDt: string): Date {
+    if (dateDt) {
+      return new Date(dateDt);
+    }
+    
+    if (dateStr && dateStr.length === 8) {
+      const year = parseInt(dateStr.substring(0, 4), 10);
+      const month = parseInt(dateStr.substring(4, 6), 10) - 1; // Tháng trong JS bắt đầu từ 0
+      const day = parseInt(dateStr.substring(6, 8), 10);
+      return new Date(year, month, day);
+    }
+    
+    return new Date();
+  }
+
+  // Thêm phương thức để xử lý ngày tháng hiển thị
+  private parseDateDisplay(dateDisplayStr: string): Date {
+    if (!dateDisplayStr) return new Date();
+    
+    const parts = dateDisplayStr.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Tháng trong JS bắt đầu từ 0
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    }
+    
+    return new Date();
+  }
+
+  // Thêm phương thức để xử lý ngày sinh từ định dạng YYYYMMDD
+  private parseNgaySinh(ngaySinhStr: string): Date {
+    if (ngaySinhStr && ngaySinhStr.length === 8) {
+      const year = parseInt(ngaySinhStr.substring(0, 4), 10);
+      const month = parseInt(ngaySinhStr.substring(4, 6), 10) - 1; // Tháng trong JS bắt đầu từ 0
+      const day = parseInt(ngaySinhStr.substring(6, 8), 10);
+      return new Date(year, month, day);
+    }
+    
+    return new Date();
+  }
+
+  // Xem chi tiết thành viên
+  xemChiTietThanhVien(thanhVien: any): void {
+    this.chiTietThanhVien = thanhVien;
+    this.isModalThanhVienVisible = true;
+  }
+
+  // Đóng modal chi tiết thành viên
+  closeModalThanhVien(): void {
+    this.isModalThanhVienVisible = false;
+  }
+}

@@ -1,6 +1,6 @@
 <div class="container">
-  <nz-card nzTitle="Tra cứu mã số BHXH" [nzExtra]="extraTemplate">
-    <form nz-form [formGroup]="traCuuVNPostForm" (ngSubmit)="submitVNPostForm()">
+  <nz-card nzTitle="Tra cứu thông tin hộ gia đình" [nzExtra]="extraTemplate">
+    <form nz-form [formGroup]="traCuuHoGiaDinhForm" (ngSubmit)="submitHoGiaDinhForm()">
       
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
@@ -50,30 +50,16 @@
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label [nzSpan]="6">Họ và tên</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập họ và tên">
-          <input nz-input formControlName="hoTen" placeholder="Nhập họ và tên" />
+        <nz-form-label [nzSpan]="6">Mã hộ</nz-form-label>
+        <nz-form-control [nzSpan]="14">
+          <input nz-input formControlName="maHo" placeholder="Nhập mã hộ" />
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label [nzSpan]="6">Ngày sinh</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn hoặc nhập ngày sinh" nzTooltip="Nhập theo định dạng dd/MM/yyyy, ví dụ: 01/01/1990">
-          <nz-date-picker 
-            formControlName="ngaySinh" 
-            nzFormat="dd/MM/yyyy" 
-            style="width: 100%"
-            nzPlaceHolder="Nhập hoặc chọn ngày sinh"
-            [nzInputReadOnly]="false"
-            (input)="onDateInputChange($event)"
-            nzAllowClear></nz-date-picker>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label [nzSpan]="6">Số CCCD/CMND</nz-form-label>
-        <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập số CCCD/CMND">
-          <input nz-input formControlName="soCMND" placeholder="Nhập số CCCD/CMND" />
+        <nz-form-label [nzSpan]="6">Tên chủ hộ</nz-form-label>
+        <nz-form-control [nzSpan]="14">
+          <input nz-input formControlName="tenChuHo" placeholder="Nhập tên chủ hộ" />
         </nz-form-control>
       </nz-form-item>
 
@@ -104,34 +90,24 @@
       </div>
 
       <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu.length > 0" class="result-container">
-        <h3>Kết quả tra cứu (Tìm thấy {{ ketQuaTraCuu.length }} kết quả)</h3>
+        <h3>Kết quả tra cứu (Tìm thấy {{ ketQuaTraCuu.length }} hộ gia đình)</h3>
         
         <nz-table #basicTable [nzData]="ketQuaTraCuu" [nzPageSize]="5" [nzShowPagination]="ketQuaTraCuu.length > 5">
           <thead>
             <tr>
-              <th>Mã số BHXH</th>
-              <th>Họ và tên</th>
-              <th>Ngày sinh</th>
-              <th>Giới tính</th>
-              <th>Số CCCD/CMND</th>
+              <th>Mã hộ</th>
+              <th>Tên chủ hộ</th>
               <th>Địa chỉ</th>
-              <th>Trạng thái</th>
+              <th>Số thành viên</th>
               <th>Chi tiết</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let item of basicTable.data">
-              <td>{{ item.maSoBHXH }}</td>
-              <td>{{ item.hoTen }}</td>
-              <td>{{ item.ngaySinh | date:'dd/MM/yyyy' }}</td>
-              <td>{{ item.gioiTinh }}</td>
-              <td>{{ item.soCCCD || 'Không có' }}</td>
+              <td>{{ item.maHo }}</td>
+              <td>{{ item.tenChuHo }}</td>
               <td>{{ item.diaChi || 'Không có' }}</td>
-              <td>
-                <nz-tag [nzColor]="item.trangThai === 'Đã duyệt' ? 'green' : 'red'">
-                  {{ item.trangThai }}
-                </nz-tag>
-              </td>
+              <td>{{ item.soLuongThanhVien }}</td>
               <td>
                 <button nz-button nzType="primary" nzSize="small" (click)="xemChiTiet(item)">
                   <i nz-icon nzType="eye"></i>
@@ -143,21 +119,69 @@
       </div>
 
       <!-- Modal xem chi tiết -->
-      <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Chi tiết mã số BHXH" (nzOnCancel)="closeModal()" [nzFooter]="null">
+      <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Chi tiết hộ gia đình" (nzOnCancel)="closeModal()" [nzFooter]="null" [nzWidth]="800">
         <ng-container *nzModalContent>
-          <nz-descriptions *ngIf="chiTietItem" nzBordered [nzColumn]="{ xxl: 1, xl: 1, lg: 1, md: 1, sm: 1, xs: 1 }">
-            <nz-descriptions-item nzTitle="Mã số BHXH">{{ chiTietItem.maSoBHXH }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Họ và tên">{{ chiTietItem.hoTen }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Ngày sinh">{{ chiTietItem.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Giới tính">{{ chiTietItem.gioiTinh }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Số CCCD/CMND">{{ chiTietItem.soCCCD || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Địa chỉ">{{ chiTietItem.diaChi || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Mã hộ" *ngIf="chiTietItem.maHo">{{ chiTietItem.maHo }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Trạng thái">
-              <nz-tag [nzColor]="chiTietItem.trangThai === 'Đã duyệt' ? 'green' : 'red'">
-                {{ chiTietItem.trangThai }}
-              </nz-tag>
-            </nz-descriptions-item>
+          <nz-descriptions *ngIf="chiTietItem" nzBordered [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
+            <nz-descriptions-item nzTitle="Mã hộ">{{ chiTietItem.maHo }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tên chủ hộ">{{ chiTietItem.tenChuHo }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Số sổ hộ khẩu">{{ chiTietItem.soSoHoKhau || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Loại giấy tờ">{{ chiTietItem.loaiGiayTo || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Số điện thoại">{{ chiTietItem.dienThoai || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Trạng thái">{{ chiTietItem.trangThai || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày kê khai">{{ chiTietItem.ngayKeKhai | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Số thành viên">{{ chiTietItem.soLuongThanhVien }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Địa chỉ" [nzSpan]="2">{{ chiTietItem.diaChi || 'Không có' }}</nz-descriptions-item>
+          </nz-descriptions>
+
+          <nz-divider></nz-divider>
+          <h3>Danh sách thành viên trong hộ</h3>
+
+          <nz-table #thanhVienTable [nzData]="thanhVienHo" [nzPageSize]="5" [nzShowPagination]="thanhVienHo.length > 5">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã số BHXH</th>
+                <th>Họ và tên</th>
+                <th>Ngày sinh</th>
+                <th>Giới tính</th>
+                <th>Mối quan hệ với chủ hộ</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let thanhVien of thanhVienTable.data; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ thanhVien.maSoBhxh }}</td>
+                <td>{{ thanhVien.hoTen }}</td>
+                <td>{{ thanhVien.ngaySinh | date:'dd/MM/yyyy' }}</td>
+                <td>{{ thanhVien.gioiTinh }}</td>
+                <td>{{ thanhVien.quanHeVoiChuHo || 'Không có' }}</td>
+                <td>
+                  <a nz-button nzType="link" nzSize="small" (click)="xemChiTietThanhVien(thanhVien)">
+                    Chi tiết
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </ng-container>
+      </nz-modal>
+
+      <!-- Modal xem chi tiết thành viên -->
+      <nz-modal [(nzVisible)]="isModalThanhVienVisible" nzTitle="Chi tiết thành viên" (nzOnCancel)="closeModalThanhVien()" [nzFooter]="null" [nzWidth]="700">
+        <ng-container *nzModalContent>
+          <nz-descriptions *ngIf="chiTietThanhVien" nzBordered [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
+            <nz-descriptions-item nzTitle="Mã số BHXH">{{ chiTietThanhVien.maSoBhxh || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Họ và tên">{{ chiTietThanhVien.hoTen }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày sinh">{{ chiTietThanhVien.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Giới tính">{{ chiTietThanhVien.gioiTinh }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Số CCCD/CMND">{{ chiTietThanhVien.soCCCD || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quan hệ với chủ hộ">{{ chiTietThanhVien.quanHeVoiChuHo }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Nơi sinh" [nzSpan]="2">{{ chiTietThanhVien.noiSinh || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Dân tộc">{{ chiTietThanhVien.danToc || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quốc tịch">{{ chiTietThanhVien.quocTich || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Địa chỉ" [nzSpan]="2">{{ chiTietThanhVien.diaChi || 'Không có' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Số điện thoại">{{ chiTietThanhVien.dienThoai || 'Không có' }}</nz-descriptions-item>
           </nz-descriptions>
         </ng-container>
       </nz-modal>
@@ -256,4 +280,18 @@
     margin-left: 10px;
     color: #52c41a;
   }
-</style> 
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+
+  .error-container {
+    margin: 20px 0;
+  }
+
+  .result-container {
+    margin-top: 20px;
+  }
+</style>
