@@ -21,6 +21,7 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { DotKeKhaiService, DotKeKhai } from '../../services/dot-ke-khai.service';
 import { KeKhaiBHYTService } from '../../services/ke-khai-bhyt.service';
 import { UserService } from '../../services/user.service';
@@ -42,13 +43,15 @@ import {
   FileOutline,
   DatabaseOutline,
   FileImageOutline,
-  DownloadOutline
+  DownloadOutline,
+  DollarOutline
 } from '@ant-design/icons-angular/icons';
 import { environment } from '../../../environments/environment';
 import { XemHoaDonModalComponent } from '../../shared/components/xem-hoa-don-modal/xem-hoa-don-modal.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-admin-danh-sach-ke-khai',
@@ -77,7 +80,8 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
     NzTabsModule,
     NzAlertModule,
     NzCheckboxModule,
-    XemHoaDonModalComponent
+    XemHoaDonModalComponent,
+    NzMenuModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './admin-danh-sach-ke-khai.component.html',
@@ -88,6 +92,11 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   originalDotKeKhaiList: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
   loading = false;
   searchText = '';
+  
+  // Biến cho modal chi tiết
+  isModalChiTietVisible = false;
+  danhSachKeKhai: any[] = [];
+  loadingKeKhai = false;
   
   // Biến lưu danh sách id đợt kê khai đã được chọn
   danhSachDaChon = new Set<number>();
@@ -144,6 +153,17 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   isModalXoaVisible = false;
   dotKeKhaiToDelete: DotKeKhai | null = null;
 
+  // Biến cho chế độ chỉnh sửa
+  editingId: number | null = null;
+  maHoSoTemp: string = '';
+
+  // Biến cho chế độ chỉnh sửa trạng thái
+  editingTrangThaiId: number | null = null;
+  trangThaiTemp: string = '';
+
+  // Định dạng số tiền VND
+  formatterVND = (value: number): string => `${value.toLocaleString('vi-VN')}`;
+
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
     private keKhaiBHYTService: KeKhaiBHYTService,
@@ -154,7 +174,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     private iconService: NzIconService,
     private exportVnptService: ExportVnptService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private http: HttpClient
   ) {
     this.iconService.addIcon(...[
       ExportOutline, 
@@ -171,7 +192,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       FileOutline,
       DatabaseOutline,
       FileImageOutline,
-      DownloadOutline
+      DownloadOutline,
+      DollarOutline
     ]);
 
     // Khởi tạo form
@@ -390,9 +412,45 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   }
 
   xemChiTiet(dotKeKhai: DotKeKhai): void {
-    // Điều hướng đến trang chi tiết đợt kê khai
-    // window.open(`/dot-ke-khai/${dotKeKhai.id}/chi-tiet`, '_blank');
-    this.message.info('Chức năng xem chi tiết đang được phát triển');
+    if (!dotKeKhai || !dotKeKhai.id) {
+      this.message.warning('Không tìm thấy thông tin đợt kê khai');
+      return;
+    }
+    
+    this.selectedDotKeKhai = dotKeKhai;
+    this.isModalChiTietVisible = true;
+    
+    // Tải danh sách kê khai
+    this.loadDanhSachKeKhai(dotKeKhai.id);
+  }
+  
+  // Xử lý khi đóng modal chi tiết
+  handleModalChiTietCancel(): void {
+    this.isModalChiTietVisible = false;
+    this.danhSachKeKhai = [];
+  }
+  
+  // Tải danh sách kê khai
+  loadDanhSachKeKhai(dotKeKhaiId: number): void {
+    this.loadingKeKhai = true;
+    this.danhSachKeKhai = [];
+    
+    this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
+      next: (data: any[]) => {
+        this.danhSachKeKhai = data;
+        this.loadingKeKhai = false;
+      },
+      error: (error: any) => {
+        console.error('Lỗi khi tải danh sách kê khai:', error);
+        this.message.error('Có lỗi xảy ra khi tải danh sách kê khai');
+        this.loadingKeKhai = false;
+      }
+    });
+  }
+  
+  // Tính tổng tiền từ danh sách kê khai
+  tinhTongTien(): number {
+    return this.danhSachKeKhai.reduce((sum, item) => sum + item.so_tien, 0);
   }
 
   duyetDotKeKhai(dotKeKhai: DotKeKhai): void {
@@ -402,8 +460,24 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       nzOkText: 'Duyệt',
       nzCancelText: 'Hủy',
       nzOnOk: () => {
+        // Hiển thị loading
+        const loadingMsg = this.message.loading('Đang duyệt đợt kê khai...', { nzDuration: 0 });
+        
         // Gọi API để duyệt đợt kê khai
-        this.message.info('Chức năng duyệt đợt kê khai đang được phát triển');
+        if (dotKeKhai.id) {
+          this.dotKeKhaiService.duyetDotKeKhai(dotKeKhai.id).subscribe({
+            next: () => {
+              this.message.remove(loadingMsg.messageId);
+              this.message.success(`Đã duyệt thành công đợt kê khai "${dotKeKhai.ten_dot}"`);
+              this.refreshData(); // Làm mới dữ liệu
+            },
+            error: (error) => {
+              this.message.remove(loadingMsg.messageId);
+              console.error('Lỗi khi duyệt đợt kê khai:', error);
+              this.message.error('Có lỗi xảy ra khi duyệt đợt kê khai');
+            }
+          });
+        }
       }
     });
   }
@@ -568,32 +642,114 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     });
   }
   
-  // Hàm xử lý tải hóa đơn
-  taiHoaDon(): void {
-    if (!this.selectedHoaDonUrl || !this.selectedDotKeKhai) {
-      this.message.error('Không có ảnh hóa đơn để tải');
+  // Phương thức tải hóa đơn cho nhiều đợt kê khai
+  taiHoaDonNhieuDot(): void {
+    if (this.danhSachDaChon.size === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một đợt kê khai để tải hóa đơn');
       return;
     }
-    
-    // Tạo link ảo để tải file
-    const link = document.createElement('a');
-    link.href = this.selectedHoaDonUrl;
-    
-    // Lấy tên file từ URL hoặc tạo tên mặc định
-    let fileName = 'hoa-don.jpg';
-    const tenDot = this.selectedDotKeKhai.ten_dot.replace(/\s+/g, '-').toLowerCase();
-    const extension = this.selectedHoaDonUrl.split('.').pop() || 'jpg';
-    fileName = `hoa-don-${tenDot}.${extension}`;
-    
-    link.download = fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    this.message.success('Đang tải xuống ảnh hóa đơn');
+
+    // Lấy danh sách đợt kê khai đã chọn
+    const dotKeKhaiDaChonList = this.dotKeKhaiList.filter(d => this.danhSachDaChon.has(d.id!));
+
+    if (dotKeKhaiDaChonList.length === 0) {
+      this.message.warning('Không tìm thấy dữ liệu cho các đợt kê khai đã chọn');
+      return;
+    }
+
+    // Hiển thị loading
+    const loadingMsg = this.message.loading('Đang tải hóa đơn...', { nzDuration: 0 });
+
+    // Tạo một mảng Promise để tải tất cả hóa đơn
+    const downloadPromises = dotKeKhaiDaChonList.map(dotKeKhai => {
+      if (!dotKeKhai.url_bill) {
+        return Promise.reject(`Đợt kê khai ${dotKeKhai.ten_dot} không có hóa đơn`);
+      }
+
+      // Tạo tên file theo format mới
+      const maHoSo = dotKeKhai.ma_ho_so || 'khong-co-ma';
+      const maNhanVien = dotKeKhai.nguoi_tao || 'khong-co-ma';
+      const thangNam = `${dotKeKhai.thang.toString().padStart(2, '0')}_${dotKeKhai.nam}`;
+      const extension = dotKeKhai.url_bill.split('.').pop() || 'jpg';
+      const fileName = `${maHoSo}_${maNhanVien}_${thangNam}.${extension}`;
+
+      return fetch(dotKeKhai.url_bill)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        });
+    });
+
+    // Thực hiện tải tất cả hóa đơn
+    Promise.allSettled(downloadPromises)
+      .then(results => {
+        this.message.remove(loadingMsg.messageId);
+        
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const failureCount = results.filter(r => r.status === 'rejected').length;
+
+        if (successCount > 0) {
+          this.message.success(`Đã tải thành công ${successCount} hóa đơn`);
+        }
+        if (failureCount > 0) {
+          this.message.error(`Có ${failureCount} hóa đơn không thể tải`);
+        }
+
+        // Reset danh sách đã chọn sau khi tải xong
+        this.danhSachDaChon.clear();
+      })
+      .catch(error => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.error('Có lỗi xảy ra khi tải hóa đơn');
+        console.error('Lỗi khi tải hóa đơn:', error);
+      });
   }
-  
+
+  // Phương thức tải hóa đơn đơn lẻ
+  taiHoaDon(): void {
+    if (!this.selectedDotKeKhai || !this.selectedHoaDonUrl) {
+      this.message.warning('Không có thông tin hóa đơn để tải');
+      return;
+    }
+
+    // Tạo tên file theo format mới
+    const maHoSo = this.selectedDotKeKhai.ma_ho_so || 'khong-co-ma';
+    const maNhanVien = this.selectedDotKeKhai.nguoi_tao || 'khong-co-ma';
+    const thangNam = `${this.selectedDotKeKhai.thang.toString().padStart(2, '0')}_${this.selectedDotKeKhai.nam}`;
+    const extension = this.selectedHoaDonUrl.split('.').pop() || 'jpg';
+    const fileName = `${maHoSo}_${maNhanVien}_${thangNam}.${extension}`;
+
+    // Hiển thị loading
+    const loadingMsg = this.message.loading('Đang tải hóa đơn...', { nzDuration: 0 });
+
+    fetch(this.selectedHoaDonUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        this.message.remove(loadingMsg.messageId);
+        this.message.success('Đã tải hóa đơn thành công');
+      })
+      .catch(error => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.error('Có lỗi xảy ra khi tải hóa đơn');
+        console.error('Lỗi khi tải hóa đơn:', error);
+      });
+  }
+
   // Upload thay thế hóa đơn
   uploadThayThe(): void {
     if (!this.selectedDotKeKhai || !this.selectedDotKeKhai.id) {
@@ -632,15 +788,47 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           formData.append('file', file);
           formData.append('dotKeKhaiId', this.selectedDotKeKhai!.id!.toString());
           
-          // Mẫu giả lập
-          setTimeout(() => {
-            this.message.remove(loadingMessage.messageId);
-            this.message.success('Tải lên hóa đơn thành công (giả lập)');
-            
-            // Giả lập URL mới
-            const fakeUrl = this.selectedHoaDonUrl; // Giữ nguyên URL cũ
-            this.message.info('Chức năng tải lên hóa đơn đang được phát triển');
-          }, 2000);
+          // Gọi API upload hóa đơn
+          this.http.post(`${environment.apiUrl}/DotKeKhai/${this.selectedDotKeKhai!.id}/upload-bill`, formData)
+            .subscribe({
+              next: (response: any) => {
+                this.message.remove(loadingMessage.messageId);
+                this.message.success('Tải lên hóa đơn thành công');
+                
+                // Cập nhật URL hóa đơn mới nếu có
+                if (response && response.url) {
+                  this.selectedHoaDonUrl = response.url;
+                  if (this.selectedDotKeKhai) {
+                    this.selectedDotKeKhai.url_bill = response.url;
+                  }
+                }
+                
+                // Cập nhật trạng thái sang "đang xử lý"
+                if (this.selectedDotKeKhai && this.selectedDotKeKhai.id) {
+                  this.dotKeKhaiService.updateTrangThai(this.selectedDotKeKhai.id, 'dang_xu_ly')
+                    .subscribe({
+                      next: () => {
+                        this.message.success('Đã cập nhật trạng thái sang "Đang xử lý"');
+                        // Cập nhật trạng thái trong đối tượng đã chọn
+                        if (this.selectedDotKeKhai) {
+                          this.selectedDotKeKhai.trang_thai = 'dang_xu_ly';
+                        }
+                        // Làm mới dữ liệu
+                        this.refreshData();
+                      },
+                      error: (err) => {
+                        console.error('Lỗi khi cập nhật trạng thái:', err);
+                        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+                      }
+                    });
+                }
+              },
+              error: (error) => {
+                this.message.remove(loadingMessage.messageId);
+                console.error('Lỗi khi tải lên hóa đơn:', error);
+                this.message.error('Có lỗi xảy ra khi tải lên hóa đơn');
+              }
+            });
         };
         
         // Kích hoạt sự kiện click
@@ -908,6 +1096,206 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
         console.error('Lỗi khi xóa đợt kê khai:', error);
         this.message.error('Có lỗi xảy ra khi xóa đợt kê khai');
         this.loading = false;
+      }
+    });
+  }
+
+  // Bắt đầu chỉnh sửa
+  startEdit(data: DotKeKhai): void {
+    this.editingId = data.id || null;
+    this.maHoSoTemp = data.ma_ho_so || '';
+  }
+  
+  // Hủy chỉnh sửa
+  cancelEdit(): void {
+    this.editingId = null;
+  }
+  
+  // Lưu nội dung chỉnh sửa
+  saveEdit(data: DotKeKhai): void {
+    if (!data.id || this.editingId !== data.id) {
+      return;
+    }
+    
+    // Hiển thị loading
+    const loadingMsg = this.message.loading('Đang cập nhật mã hồ sơ...', { nzDuration: 0 });
+    
+    // Gọi API cập nhật mã hồ sơ
+    const apiUrl = `${environment.apiUrl}/DotKeKhai/${data.id}/update-ma-ho-so`;
+    this.http.post(apiUrl, { ma_ho_so: this.maHoSoTemp }).subscribe({
+      next: (_response: any) => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.success('Cập nhật mã hồ sơ thành công');
+        
+        // Cập nhật lại dữ liệu trong danh sách
+        this.dotKeKhaiList = this.dotKeKhaiList.map(d => {
+          if (d.id === data.id) {
+            return { ...d, ma_ho_so: this.maHoSoTemp };
+          }
+          return d;
+        });
+        
+        // Cập nhật trong danh sách gốc
+        this.originalDotKeKhaiList = this.originalDotKeKhaiList.map(d => {
+          if (d.id === data.id) {
+            return { ...d, ma_ho_so: this.maHoSoTemp };
+          }
+          return d;
+        });
+        
+        // Kết thúc chế độ chỉnh sửa
+        this.editingId = null;
+      },
+      error: (error: any) => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.error('Có lỗi xảy ra khi cập nhật mã hồ sơ');
+        console.error('Lỗi khi cập nhật mã hồ sơ:', error);
+        // Vẫn kết thúc chế độ chỉnh sửa
+        this.editingId = null;
+      }
+    });
+  }
+
+  // Tính tổng số tiền của các đợt kê khai có trạng thái đang xử lý
+  getTotalAmount(): number {
+    return this.dotKeKhaiList.reduce((total, dot) => {
+      if (dot.trang_thai === 'dang_xu_ly') {
+        return total + (dot.tong_so_tien || 0);
+      }
+      return total;
+    }, 0);
+  }
+
+  // Tính tổng số tiền của tất cả các đợt kê khai gốc có trạng thái đang xử lý
+  getTotalAmountOriginal(): number {
+    return this.originalDotKeKhaiList.reduce((total, dot) => {
+      if (dot.trang_thai === 'dang_xu_ly') {
+        return total + (dot.tong_so_tien || 0);
+      }
+      return total + (dot.tong_so_tien || 0);
+    }, 0);
+  }
+
+  // Bắt đầu chỉnh sửa trạng thái
+  startEditTrangThai(data: DotKeKhai): void {
+    this.editingTrangThaiId = data.id || null;
+    this.trangThaiTemp = data.trang_thai;
+  }
+  
+  // Hủy chỉnh sửa trạng thái
+  cancelEditTrangThai(): void {
+    this.editingTrangThaiId = null;
+  }
+  
+  // Lưu trạng thái mới
+  saveTrangThai(data: DotKeKhai): void {
+    if (!data.id || this.editingTrangThaiId !== data.id) {
+      return;
+    }
+    
+    // Hiển thị loading
+    const loadingMsg = this.message.loading('Đang cập nhật trạng thái...', { nzDuration: 0 });
+    
+    // Gọi API cập nhật trạng thái
+    const apiUrl = `${environment.apiUrl}/DotKeKhai/${data.id}/trang-thai`;
+    this.http.patch(apiUrl, { trang_thai: this.trangThaiTemp }).subscribe({
+      next: (_response: any) => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.success('Cập nhật trạng thái thành công');
+        
+        // Cập nhật lại dữ liệu trong danh sách
+        this.dotKeKhaiList = this.dotKeKhaiList.map(d => {
+          if (d.id === data.id) {
+            return { ...d, trang_thai: this.trangThaiTemp };
+          }
+          return d;
+        });
+        
+        // Cập nhật trong danh sách gốc
+        this.originalDotKeKhaiList = this.originalDotKeKhaiList.map(d => {
+          if (d.id === data.id) {
+            return { ...d, trang_thai: this.trangThaiTemp };
+          }
+          return d;
+        });
+        
+        // Cập nhật cache số lượng
+        this.updateStatusCountCache();
+        
+        // Kết thúc chế độ chỉnh sửa
+        this.editingTrangThaiId = null;
+      },
+      error: (error: any) => {
+        this.message.remove(loadingMsg.messageId);
+        this.message.error('Có lỗi xảy ra khi cập nhật trạng thái');
+        console.error('Lỗi khi cập nhật trạng thái:', error);
+        // Vẫn kết thúc chế độ chỉnh sửa
+        this.editingTrangThaiId = null;
+      }
+    });
+  }
+
+  // Phương thức duyệt nhiều đợt kê khai cùng lúc
+  duyetNhieuDotKeKhai(): void {
+    if (this.danhSachDaChon.size === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một đợt kê khai để duyệt');
+      return;
+    }
+
+    // Lấy danh sách đợt kê khai đã chọn
+    const dotKeKhaiDaChonList = this.dotKeKhaiList.filter(d => this.danhSachDaChon.has(d.id!));
+    
+    // Lọc ra những đợt có trạng thái "đã gửi"
+    const dotKeKhaiDaGuiList = dotKeKhaiDaChonList.filter(d => d.trang_thai === 'da_gui');
+    
+    if (dotKeKhaiDaGuiList.length === 0) {
+      this.message.warning('Không có đợt kê khai nào ở trạng thái "Đã gửi" để duyệt');
+      return;
+    }
+    
+    // Hiển thị modal xác nhận
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận duyệt nhiều đợt kê khai',
+      nzContent: `Bạn có chắc chắn muốn duyệt ${dotKeKhaiDaGuiList.length} đợt kê khai đã chọn không?`,
+      nzOkText: 'Duyệt',
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        // Hiển thị loading
+        this.loading = true;
+        const loadingMsg = this.message.loading('Đang duyệt đợt kê khai...', { nzDuration: 0 });
+        
+        // Tạo một mảng Observable để duyệt tất cả đợt kê khai
+        const duyetObservables = dotKeKhaiDaGuiList.map(dotKeKhai => 
+          this.dotKeKhaiService.duyetDotKeKhai(dotKeKhai.id!)
+        );
+        
+        // Import và sử dụng forkJoin
+        import('rxjs').then(rxjs => {
+          if (duyetObservables.length === 0) {
+            this.loading = false;
+            this.message.remove(loadingMsg.messageId);
+            this.message.info('Không có đợt kê khai nào để duyệt');
+            return;
+          }
+          
+          rxjs.forkJoin(duyetObservables).subscribe({
+            next: () => {
+              this.message.remove(loadingMsg.messageId);
+              this.message.success(`Đã duyệt thành công ${dotKeKhaiDaGuiList.length} đợt kê khai`);
+              this.refreshData(); // Làm mới dữ liệu
+              this.danhSachDaChon.clear(); // Xóa danh sách đã chọn
+            },
+            error: (error) => {
+              this.message.remove(loadingMsg.messageId);
+              console.error('Lỗi khi duyệt đợt kê khai:', error);
+              this.message.error('Có lỗi xảy ra khi duyệt đợt kê khai');
+              this.loading = false;
+            },
+            complete: () => {
+              this.loading = false;
+            }
+          });
+        });
       }
     });
   }

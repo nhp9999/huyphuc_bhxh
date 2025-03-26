@@ -3,6 +3,10 @@
     <div class="page-header">
       <h2>Quản lý danh sách kê khai</h2>
       <div class="page-actions">
+        <button nz-button nzType="primary" (click)="duyetNhieuDotKeKhai()" nz-tooltip nzTooltipTitle="Duyệt nhiều đợt kê khai" [disabled]="getSoDotKeKhaiDaChon() === 0">
+          <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+          Duyệt đợt kê khai <span *ngIf="getSoDotKeKhaiDaChon() > 0">({{ getSoDotKeKhaiDaChon() }})</span>
+        </button>
         <button nz-button nzType="primary" (click)="xuatExcelNhieuDotKeKhai()" nz-tooltip nzTooltipTitle="Xuất Excel danh sách">
           <span nz-icon nzType="file-excel" nzTheme="outline"></span>
           Xuất Excel
@@ -10,6 +14,10 @@
         <button nz-button nzType="primary" (click)="xuatVNPTNhieuDot()" nz-tooltip nzTooltipTitle="Xuất định dạng VNPT" [disabled]="getSoDotKeKhaiDaChon() === 0">
           <span nz-icon nzType="export" nzTheme="outline"></span>
           Xuất VNPT <span *ngIf="getSoDotKeKhaiDaChon() > 0">({{ getSoDotKeKhaiDaChon() }})</span>
+        </button>
+        <button nz-button nzType="primary" (click)="taiHoaDonNhieuDot()" nz-tooltip nzTooltipTitle="Tải hóa đơn" [disabled]="getSoDotKeKhaiDaChon() === 0">
+          <span nz-icon nzType="download" nzTheme="outline"></span>
+          Tải hóa đơn <span *ngIf="getSoDotKeKhaiDaChon() > 0">({{ getSoDotKeKhaiDaChon() }})</span>
         </button>
         <button nz-button nzType="primary" (click)="refreshData()" nz-tooltip nzTooltipTitle="Làm mới dữ liệu">
           <span nz-icon nzType="reload" nzTheme="outline"></span>
@@ -21,7 +29,6 @@
     <nz-divider></nz-divider>
     
     <!-- Thông báo hướng dẫn -->
-    <nz-alert *ngIf="dotKeKhaiList.length > 0" nzType="info" nzMessage="Chọn các đợt kê khai muốn xuất VNPT bằng cách tích vào ô checkbox đầu mỗi dòng." nzShowIcon></nz-alert>
     <div *ngIf="dotKeKhaiList.length > 0 && getSoDotKeKhaiDaChon() > 0" class="selected-summary">
       Đã chọn {{ getSoDotKeKhaiDaChon() }} / {{ dotKeKhaiList.length }} đợt kê khai
       <a (click)="onCheckTatCa(true)" *ngIf="getSoDotKeKhaiDaChon() < dotKeKhaiList.length">Chọn tất cả</a>
@@ -74,6 +81,18 @@
           [nzPrefix]="prefixTotal"
         ></nz-statistic>
         <ng-template #prefixTotal><span nz-icon nzType="database" nzTheme="outline"></span></ng-template>
+      </nz-card>
+      <nz-card class="statistic-card statistic-money" [nzBordered]="false" (click)="refreshData()">
+        <nz-statistic
+          [nzValue]="getTotalAmount()"
+          [nzTitle]="'Tổng tiền đang xử lý'"
+          [nzValueStyle]="{ color: '#fa8c16' }"
+          [nzPrefix]="prefixMoney"
+          [nzSuffix]="suffixMoney"
+          [nzFormatter]="formatterVND"
+        ></nz-statistic>
+        <ng-template #prefixMoney><span nz-icon nzType="dollar" nzTheme="outline"></span></ng-template>
+        <ng-template #suffixMoney>đ</ng-template>
       </nz-card>
     </div>
 
@@ -187,8 +206,8 @@
       <thead>
         <tr>
           <th nzWidth="40px" [nzChecked]="isTatCaDaChon()" [nzIndeterminate]="isIndeterminate()" (nzCheckedChange)="onCheckTatCa($event)"></th>
-          <th nzWidth="60px">STT</th>
           <th>Tên đợt kê khai</th>
+          <th>Mã hồ sơ</th>
           <th>Loại dịch vụ</th>
           <th>Đơn vị</th>
           <th>Số thẻ</th>
@@ -201,10 +220,26 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let data of basicTable.data; let i = index">
+        <tr *ngFor="let data of basicTable.data">
           <td [nzChecked]="data.id ? danhSachDaChon.has(data.id) : false" (nzCheckedChange)="data.id && onCheckDotKeKhai(data.id, $event)"></td>
-          <td>{{ i + 1 }}</td>
           <td>{{ data.ten_dot }}</td>
+          <td>
+            <div class="editable-cell">
+              <div class="editable-cell-value-wrap" *ngIf="!editingId || editingId !== data.id" (click)="startEdit(data)">
+                {{ data.ma_ho_so || '-' }}
+                <span nz-icon nzType="edit" nzTheme="outline" class="edit-icon"></span>
+              </div>
+              <div *ngIf="editingId === data.id" class="editable-cell-input">
+                <input 
+                  nz-input 
+                  [(ngModel)]="maHoSoTemp" 
+                  (blur)="saveEdit(data)" 
+                  (keydown.enter)="saveEdit(data)" 
+                  (keydown.esc)="cancelEdit()" 
+                  placeholder="Nhập mã hồ sơ"/>
+              </div>
+            </div>
+          </td>
           <td>{{ data.dich_vu }}</td>
           <td>{{ getDonViName(data) }}</td>
           <td>{{ data.tong_so_the || 0 }}</td>
@@ -215,9 +250,29 @@
           </td>
           <td>{{ data.nguoi_tao || '-' }}</td>
           <td>
-            <nz-tag [nzColor]="getTrangThaiType(data.trang_thai)">
-              {{ getTrangThaiText(data.trang_thai) }}
-            </nz-tag>
+            <div class="editable-cell">
+              <div class="editable-cell-value-wrap" *ngIf="!editingTrangThaiId || editingTrangThaiId !== data.id" (click)="startEditTrangThai(data)">
+                <nz-tag [nzColor]="getTrangThaiType(data.trang_thai)">
+                  {{ getTrangThaiText(data.trang_thai) }}
+                </nz-tag>
+                <span nz-icon nzType="edit" nzTheme="outline" class="edit-icon"></span>
+              </div>
+              <div *ngIf="editingTrangThaiId === data.id" class="editable-cell-input">
+                <nz-select 
+                  #trangThaiSelect
+                  [(ngModel)]="trangThaiTemp" 
+                  (ngModelChange)="saveTrangThai(data)"
+                  (blur)="cancelEditTrangThai()"
+                  nzOpen
+                  style="width: 100%">
+                  <nz-option 
+                    *ngFor="let tt of danhSachTrangThai" 
+                    [nzValue]="tt.value" 
+                    [nzLabel]="tt.text">
+                  </nz-option>
+                </nz-select>
+              </div>
+            </div>
           </td>
           <td>
             <button 
@@ -234,30 +289,45 @@
           </td>
           <td>
             <div class="action-buttons">
-              <button nz-button nzType="default" nzShape="circle" (click)="xemChiTiet(data)" nz-tooltip nzTooltipTitle="Xem chi tiết">
+              <button nz-button nzType="primary" (click)="xemChiTiet(data)" nz-tooltip nzTooltipTitle="Xem chi tiết">
                 <span nz-icon nzType="eye" nzTheme="outline"></span>
               </button>
               
-              <button nz-button nzType="default" nzShape="circle" (click)="chinhSuaDotKeKhai(data)" nz-tooltip nzTooltipTitle="Chỉnh sửa">
-                <span nz-icon nzType="edit" nzTheme="outline"></span>
-              </button>
-              
-              <ng-container *ngIf="data.trang_thai === 'da_gui'">
-                <button nz-button nzType="primary" nzShape="circle" (click)="duyetDotKeKhai(data)" nz-tooltip nzTooltipTitle="Duyệt">
-                  <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+              <a nz-dropdown [nzDropdownMenu]="menu" nzTrigger="click" nzPlacement="bottomRight">
+                <button nz-button nzType="default">
+                  <span nz-icon nzType="more" nzTheme="outline"></span>
                 </button>
-                <button nz-button nzDanger nzType="primary" nzShape="circle" (click)="tuChoiDotKeKhai(data)" nz-tooltip nzTooltipTitle="Từ chối">
-                  <span nz-icon nzType="close-circle" nzTheme="outline"></span>
-                </button>
-              </ng-container>
-              
-              <button nz-button nzType="default" nzShape="circle" (click)="xuatExcelDotKeKhai(data)" nz-tooltip nzTooltipTitle="Xuất Excel">
-                <span nz-icon nzType="file-excel" nzTheme="outline"></span>
-              </button>
-              
-              <button nz-button nzDanger nzType="primary" nzShape="circle" (click)="xoaDotKeKhai(data)" nz-tooltip nzTooltipTitle="Xóa">
-                <span nz-icon nzType="delete" nzTheme="outline"></span>
-              </button>
+              </a>
+              <nz-dropdown-menu #menu="nzDropdownMenu">
+                <ul nz-menu>
+                  <li nz-menu-item (click)="chinhSuaDotKeKhai(data)">
+                    <span nz-icon nzType="edit" nzTheme="outline"></span>
+                    Chỉnh sửa
+                  </li>
+                  
+                  <li nz-menu-item (click)="xuatExcelDotKeKhai(data)">
+                    <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+                    Xuất Excel
+                  </li>
+                  
+                  <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="duyetDotKeKhai(data)">
+                    <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+                    Duyệt
+                  </li>
+                  
+                  <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="tuChoiDotKeKhai(data)">
+                    <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+                    Từ chối
+                  </li>
+
+                  <li nz-menu-divider></li>
+                  
+                  <li nz-menu-item nzDanger (click)="xoaDotKeKhai(data)">
+                    <span nz-icon nzType="delete" nzTheme="outline"></span>
+                    Xóa
+                  </li>
+                </ul>
+              </nz-dropdown-menu>
             </div>
           </td>
         </tr>
@@ -328,4 +398,84 @@
       nzShowIcon
     ></nz-alert>
   </ng-container>
+</nz-modal>
+
+<!-- Modal xem chi tiết đợt kê khai -->
+<nz-modal
+  [(nzVisible)]="isModalChiTietVisible"
+  [nzTitle]="chiTietModalTitle"
+  (nzOnCancel)="handleModalChiTietCancel()"
+  [nzWidth]="800"
+  [nzFooter]="chiTietModalFooter"
+>
+  <ng-template #chiTietModalTitle>
+    <div class="chi-tiet-header">
+      <h3>Chi tiết đợt kê khai</h3>
+      <span *ngIf="selectedDotKeKhai">{{ selectedDotKeKhai.ten_dot }}</span>
+    </div>
+  </ng-template>
+  
+  <ng-container *nzModalContent>
+    <nz-spin [nzSpinning]="loading">
+      <div class="chi-tiet-container">
+        <ng-container *ngIf="selectedDotKeKhai && selectedDotKeKhai.id">
+          <button nz-button nzType="primary" class="ds-button" (click)="loadDanhSachKeKhai(selectedDotKeKhai.id)">
+            <span nz-icon nzType="reload" nzTheme="outline"></span>
+            Tải danh sách
+          </button>
+          
+          <nz-table 
+            #keKhaiTable 
+            [nzData]="danhSachKeKhai" 
+            [nzLoading]="loadingKeKhai"
+            [nzPageSize]="10"
+            nzBordered>
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Họ tên</th>
+                <th>CCCD/CMND</th>
+                <th>Mã số BHXH</th>
+                <th>Số thẻ BHYT</th>
+                <th>Số tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of keKhaiTable.data; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ item.ho_ten }}</td>
+                <td>{{ item.cccd || '' }}</td>
+                <td>{{ item.ma_so_bhxh || '' }}</td>
+                <td>{{ item.so_the_bhyt || '' }}</td>
+                <td class="text-right">{{ item.so_tien | number }} đ</td>
+              </tr>
+            </tbody>
+            <tfoot *ngIf="danhSachKeKhai.length > 0">
+              <tr>
+                <td colspan="5" class="text-right font-bold">Tổng cộng:</td>
+                <td class="text-right font-bold">{{ tinhTongTien() | number }} đ</td>
+              </tr>
+            </tfoot>
+          </nz-table>
+          
+          <div *ngIf="danhSachKeKhai.length === 0 && !loadingKeKhai" class="empty-data">
+            <span nz-icon nzType="inbox" nzTheme="outline"></span>
+            <p>Không có dữ liệu kê khai</p>
+          </div>
+        </ng-container>
+      </div>
+    </nz-spin>
+  </ng-container>
+  
+  <ng-template #chiTietModalFooter>
+    <button nz-button nzType="default" (click)="handleModalChiTietCancel()">Đóng</button>
+    <button nz-button nzType="primary" *ngIf="selectedDotKeKhai" (click)="chinhSuaDotKeKhai(selectedDotKeKhai)">
+      <span nz-icon nzType="edit" nzTheme="outline"></span>
+      Chỉnh sửa
+    </button>
+    <button nz-button nzType="primary" *ngIf="selectedDotKeKhai" (click)="xuatExcelDotKeKhai(selectedDotKeKhai)">
+      <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+      Xuất Excel
+    </button>
+  </ng-template>
 </nz-modal> 

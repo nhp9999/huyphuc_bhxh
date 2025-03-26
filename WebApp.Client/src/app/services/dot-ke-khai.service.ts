@@ -203,4 +203,19 @@ export class DotKeKhaiService {
       })
     );
   }
+
+  // Phương thức duyệt đợt kê khai
+  duyetDotKeKhai(id: number): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}/trang-thai`, { trang_thai: 'cho_thanh_toan' }).pipe(
+      tap(() => {
+        // Cập nhật lại danh sách đợt kê khai
+        const username = JSON.parse(localStorage.getItem('user') || '{}').username;
+        this.getDotKeKhais().subscribe(data => {
+          // Lọc dữ liệu theo người dùng hiện tại trước khi cập nhật dotKeKhaisSubject
+          const filteredData = data.filter(dot => dot.nguoi_tao === username);
+          this.dotKeKhaisSubject.next(filteredData);
+        });
+      })
+    );
+  }
 } 

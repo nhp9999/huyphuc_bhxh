@@ -716,9 +716,56 @@ namespace WebApp.API.Controllers
             }
         }
 
+        [HttpPost("{id}/update-ma-ho-so")]
+        public async Task<IActionResult> UpdateMaHoSo(int id, [FromBody] UpdateMaHoSoDto dto)
+        {
+            try
+            {
+                // Tìm đợt kê khai theo ID
+                var dotKeKhai = await _context.DotKeKhais.FindAsync(id);
+                if (dotKeKhai == null)
+                {
+                    return NotFound($"Không tìm thấy đợt kê khai với ID {id}");
+                }
+
+                // Cập nhật chỉ trường ma_ho_so
+                dotKeKhai.ma_ho_so = dto.ma_ho_so;
+                
+                // Lưu thay đổi
+                await _context.SaveChangesAsync();
+
+                // Cập nhật mã hồ sơ cho tất cả các bản ghi KeKhaiBHYT của đợt
+                if (!string.IsNullOrEmpty(dto.ma_ho_so))
+                {
+                    var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                        .Where(k => k.dot_ke_khai_id == id)
+                        .ToListAsync();
+
+                    foreach (var keKhai in keKhaiBHYTs)
+                    {
+                        keKhai.ma_ho_so = dto.ma_ho_so;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+                
+                return Ok(new { success = true, message = "Cập nhật mã hồ sơ thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating ma_ho_so for dot ke khai {id}: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "Lỗi khi cập nhật mã hồ sơ", error = ex.Message });
+            }
+        }
+
         public class UpdateTrangThaiDto
         {
             public string trang_thai { get; set; }
+        }
+
+        public class UpdateMaHoSoDto
+        {
+            public string? ma_ho_so { get; set; }
         }
 
         private bool DotKeKhaiExists(int id)
