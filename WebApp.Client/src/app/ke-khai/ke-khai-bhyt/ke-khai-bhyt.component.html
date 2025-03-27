@@ -7,6 +7,9 @@
     </ng-template>
     <ng-template #extraTemplate>
       <div class="card-actions">
+        <button nz-button nzType="default" class="mr-2 ripple" nzTooltip="Tra cứu mã số BHXH" (click)="showTraCuuMaSoBHXHModal()">
+          <span nz-icon nzType="search" nzTheme="outline"></span>Tra cứu
+        </button>
         <button nz-button nzType="default" class="mr-2 ripple" nzTooltip="Tìm nhiều mã số" (click)="showSearchMultipleModal()">
           <span nz-icon nzType="search" nzTheme="outline"></span>Tìm nhiều mã số
         </button>
@@ -491,7 +494,10 @@
           <td nzLeft nzEllipsis>{{ data.thongTinThe.ma_so_bhxh }}</td>
           <td nzLeft nzEllipsis>{{ data.thongTinThe.ho_ten }}</td>
           <td nzAlign="center">{{ data.thongTinThe.cccd }}</td>
-          <td nzAlign="center">{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</td>
+          <td nzAlign="center">
+            <span *ngIf="data.thongTinThe.ngaySinhFormatted">{{ data.thongTinThe.ngaySinhFormatted }}</span>
+            <span *ngIf="!data.thongTinThe.ngaySinhFormatted">{{ data.thongTinThe.ngay_sinh | date:'dd/MM/yyyy' }}</span>
+          </td>
           <td nzAlign="center">{{ data.thongTinThe.gioi_tinh }}</td>
           <td nzAlign="center">{{ data.thongTinThe.so_dien_thoai }}</td>
           <td nzAlign="center">{{ getNguoiThuText(data.nguoi_thu) }}</td>
@@ -779,8 +785,11 @@
                 </td>
                 <td>{{ cccd.id || 'N/A' }}</td>
                 <td>{{ cccd.name || 'N/A' }}</td>
-                <td>{{ cccd.dob | date:'dd/MM/yyyy' }}</td>
-                <td>{{ cccd.sex || 'N/A' }}</td>
+                <td>
+                  <span *ngIf="cccd.ngaySinhFormatted">{{ cccd.ngaySinhFormatted }}</span>
+                  <span *ngIf="!cccd.ngaySinhFormatted">{{ cccd.dob | date:'dd/MM/yyyy' }}</span>
+                </td>
+                <td>{{ cccd.gioiTinh || cccd.sex }}</td>
                 <td>
                   <ng-container *ngIf="cccd.home_address; else naTemplate">
                     {{ formatFullAddress(cccd.home_address) }}
@@ -932,5 +941,172 @@
         </nz-form-control>
       </nz-form-item>
     </form>
+  </ng-container>
+</nz-modal>
+
+<!-- Sửa lại modal tra cứu mã số BHXH -->
+<nz-modal
+  [(nzVisible)]="isTraCuuMaSoBHXHVisible"
+  nzTitle="Tra cứu mã số BHXH"
+  [nzWidth]="900"
+  (nzOnCancel)="handleTraCuuMaSoBHXHCancel()"
+  [nzFooter]="null">
+
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="traCuuVNPostForm" class="tra-cuu-form">
+      <div nz-row [nzGutter]="16">
+        <!-- Tỉnh/Thành phố -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Tỉnh/Thành phố</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
+              <nz-select 
+                formControlName="maTinh" 
+                nzPlaceHolder="Chọn Tỉnh/Thành phố"
+                nzShowSearch 
+                [nzFilterOption]="filterOption"
+                (ngModelChange)="onTinhChangeTraCuu($event)">
+                <nz-option *ngFor="let tinh of danhSachTinhTraCuu" [nzValue]="tinh.ma" [nzLabel]="tinh.ten"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        
+        <!-- Quận/Huyện -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24" nzRequired>Quận/Huyện</nz-form-label>
+            <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng chọn Quận/Huyện">
+              <nz-select 
+                formControlName="maHuyen" 
+                nzPlaceHolder="Chọn Quận/Huyện"
+                nzShowSearch 
+                [nzFilterOption]="filterOption"
+                (ngModelChange)="onHuyenChangeTraCuu($event)">
+                <nz-option *ngFor="let huyen of huyenTheoTinhTraCuu" [nzValue]="huyen.ma" [nzLabel]="huyen.ten"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        
+        <!-- Xã/Phường -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Xã/Phường</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <nz-select 
+                formControlName="maXa" 
+                nzPlaceHolder="Chọn Xã/Phường"
+                nzShowSearch 
+                [nzFilterOption]="filterOption">
+                <nz-option *ngFor="let xa of xaTheoHuyenTraCuu" [nzValue]="xa.ma" [nzLabel]="xa.ten"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </div>
+
+      <div nz-row [nzGutter]="16">
+        <!-- Họ tên -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Họ tên</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <input nz-input formControlName="hoTen" placeholder="Nhập họ tên" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        
+        <!-- Ngày sinh -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Ngày sinh</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <nz-date-picker 
+                formControlName="ngaySinh" 
+                nzFormat="dd/MM/yyyy"
+                [nzPlaceHolder]="'Chọn ngày sinh'"
+                class="w-100">
+              </nz-date-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        
+        <!-- Số CMND/CCCD -->
+        <div nz-col [nzXs]="24" [nzMd]="8">
+          <nz-form-item>
+            <nz-form-label [nzSpan]="24">Số CMND/CCCD</nz-form-label>
+            <nz-form-control [nzSpan]="24">
+              <input nz-input formControlName="soCMND" placeholder="Nhập số CMND/CCCD" (keypress)="onlyNumber($event)" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </div>
+
+      <div nz-row [nzGutter]="16" class="btn-row">
+        <div nz-col [nzSpan]="24" class="text-right">
+          <button nz-button nzType="primary" (click)="submitTraCuuVNPostForm()" [nzLoading]="isLoadingTraCuu" class="mr-8">
+            <span nz-icon nzType="search"></span> Tra cứu
+          </button>
+          <button nz-button nzType="default" (click)="resetTraCuuForm()" class="mr-8">
+            <span nz-icon nzType="redo"></span> Làm mới
+          </button>
+          <button nz-button nzType="default" (click)="handleTraCuuMaSoBHXHCancel()">
+            <span nz-icon nzType="close"></span> Đóng
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Hiển thị thông báo khi không tìm thấy hoặc có lỗi -->
+    <nz-alert *ngIf="daTimKiem && loiTraCuu" [nzType]="'error'" [nzMessage]="loiTraCuu" nzShowIcon class="mb-3"></nz-alert>
+
+    <!-- Hiển thị bảng kết quả -->
+    <div *ngIf="daTimKiem && ketQuaTraCuu.length > 0" class="ket-qua-container">
+      <h3>Kết quả tra cứu</h3>
+      <nz-table 
+        #ketQuaTable 
+        [nzData]="ketQuaTraCuu" 
+        [nzPageSize]="5"
+        [nzBordered]="true"
+        [nzScroll]="{ x: '1200px' }"
+        [nzLoading]="isLoadingTraCuu">
+        <thead>
+          <tr>
+            <th nzWidth="120px">Mã số BHXH</th>
+            <th nzWidth="160px">Họ tên</th>
+            <th nzWidth="120px">Ngày sinh</th>
+            <th nzWidth="80px">Giới tính</th>
+            <th nzWidth="130px">CCCD/CMND</th>
+            <th nzWidth="120px">Mã hộ</th>
+            <th>Địa chỉ</th>
+            <th nzWidth="100px">Trạng thái</th>
+            <th nzWidth="100px" nzRight>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of ketQuaTable.data">
+            <td>{{ item.maSoBHXH }}</td>
+            <td>{{ item.hoTen }}</td>
+            <td>
+              <span *ngIf="item.ngaySinhFormatted">{{ item.ngaySinhFormatted }}</span>
+              <span *ngIf="!item.ngaySinhFormatted">{{ item.ngaySinh | date:'dd/MM/yyyy' }}</span>
+            </td>
+            <td>{{ item.gioiTinh }}</td>
+            <td>{{ item.soCCCD }}</td>
+            <td>{{ item.maHo }}</td>
+            <td [attr.title]="item.diaChi">{{ item.diaChi || 'N/A' }}</td>
+            <td>
+              <nz-tag [nzColor]="item.trangThai === 'Đã duyệt' ? 'success' : 'warning'">{{ item.trangThai }}</nz-tag>
+            </td>
+            <td nzRight>
+              <button nz-button nzType="primary" nzSize="small" (click)="apDungThongTinBHXH(item)" title="Áp dụng thông tin này">
+                <span nz-icon nzType="import"></span> Áp dụng
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+    </div>
   </ng-container>
 </nz-modal> 

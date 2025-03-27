@@ -36,6 +36,8 @@ export interface ThongTinThe {
   nguoi_tao: string;
   ngay_tao?: Date;
   noiNhanHoSo?: NoiNhanHoSo;
+  ngaySinhFormatted?: string;
+  ngaySinh?: Date;
 }
 
 export interface DotKeKhai {

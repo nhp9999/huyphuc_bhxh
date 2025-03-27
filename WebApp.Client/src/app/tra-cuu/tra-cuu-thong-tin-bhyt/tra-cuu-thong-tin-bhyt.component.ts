@@ -15,7 +15,8 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzModalModule } from 'ng-zorro-antd/modal';
-import { BHYTService, TraCuuThongTinBHYTRequest } from '../../services/tra-cuu-thong-tin-bhyt.service';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
+import { BHYTService, TraCuuThongTinBHYTRequest, TraCuuThongTinBHYTResponse } from '../../services/tra-cuu-thong-tin-bhyt.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 
 @Component({
@@ -36,7 +37,8 @@ import { SSMV2Service } from '../../services/ssmv2.service';
     NzDividerModule,
     NzIconModule,
     NzTagModule,
-    NzModalModule
+    NzModalModule,
+    NzTabsModule
   ],
   templateUrl: './tra-cuu-thong-tin-bhyt.component.html',
   styleUrls: ['./tra-cuu-thong-tin-bhyt.component.scss']
@@ -48,14 +50,14 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
   loiTraCuu = '';
   ketQuaTraCuu: any = null;
 
-  // Thêm thuộc tính SSMV2
+  // Additional properties for SSMV2
   isVNPostLoginVisible = false;
   captchaImage = '';
   captchaCode = '';
   vnpostLoginForm!: FormGroup;
   isLoadingLogin = false;
 
-  // Thêm thuộc tính cho modal chi tiết
+  // Additional properties for detail modal
   isModalVisible = false;
   chiTietItem: any = null;
 
@@ -68,18 +70,13 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
 
   ngOnInit(): void {
     this.traCuuBHYTForm = this.fb.group({
-      maSoBHXH: [null, [Validators.required, Validators.pattern(/^\d{10}$/)]]
+      maSoBHXH: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]]
     });
 
-    // Khởi tạo form đăng nhập VNPost
     this.vnpostLoginForm = this.fb.group({
-      userName: ['884000_xa_tli_phuoclt', [Validators.required]],
-      password: ['123456d@D', [Validators.required]],
-      text: ['', [
-        Validators.required,
-        Validators.minLength(4),
-        Validators.maxLength(4)
-      ]]
+      userName: ['ssmv2'],
+      password: ['ssmv2@123'],
+      text: ['', Validators.required]
     });
 
     // Kiểm tra và tự động đăng nhập VNPost nếu chưa có token
@@ -91,230 +88,198 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
   }
 
   submitBHYTForm(): void {
-    if (this.traCuuBHYTForm.valid) {
-      this.isLoading = true;
-      this.daTimKiem = true;
-      this.loiTraCuu = '';
-      this.ketQuaTraCuu = null;
-      
-      // Kiểm tra token VNPost
-      const token = this.ssmv2Service.getToken();
-      if (!token) {
-        // Tự động đăng nhập VNPost
-        this.autoLoginVNPost(true);
-        return;
-      }
-      
-      // Lấy dữ liệu từ form
-      const formData: TraCuuThongTinBHYTRequest = {
-        maSoBHXH: this.traCuuBHYTForm.value.maSoBHXH
-      };
-      
-      console.log('Dữ liệu gửi đi:', formData);
-      
-      // Gọi API tra cứu thông tin BHYT
-      this.bhytService.traCuuThongTinBHYT(formData)
-        .subscribe({
-          next: (res: any) => {
-            console.log('Response từ API BHYT:', res);
-            
-            // Kiểm tra nếu response có chứa thông báo lỗi xác thực
-            if (res && res.error === 'Lỗi xác thực') {
-              this.ketQuaTraCuu = null;
-              this.loiTraCuu = 'Lỗi xác thực: ' + (res.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
-              this.message.error(this.loiTraCuu);
-              
-              // Hiển thị form đăng nhập lại
-              this.ssmv2Service.clearToken();
-              this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
-              this.showVNPostLogin();
-              this.isLoading = false;
-              return;
-            }
-            
-            // Xử lý dữ liệu trả về
-            if (res && res.success && res.data) {
-              this.ketQuaTraCuu = this.formatThongTinBHYT(res.data);
-              this.isLoading = false;
-              this.message.success('Tra cứu thành công thông tin BHYT');
-            } else {
-              this.ketQuaTraCuu = null;
-              this.loiTraCuu = 'Không tìm thấy thông tin BHYT';
-              this.message.warning(this.loiTraCuu);
-              this.isLoading = false;
-            }
-          },
-          error: (err: any) => {
-            this.isLoading = false;
-            this.ketQuaTraCuu = null;
-            
-            console.error('Lỗi khi tra cứu:', err);
-            
-            if (err.error === 'Lỗi xác thực') {
-              this.loiTraCuu = 'Lỗi xác thực: ' + (err.error_description || 'Phiên làm việc đã hết hạn');
-              this.message.error(this.loiTraCuu);
-              this.ssmv2Service.clearToken();
-              this.showVNPostLogin();
-            } else {
-              this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu: ' + (err.error?.message || err.message || 'Vui lòng thử lại sau');
-              this.message.error(this.loiTraCuu);
-            }
-          }
-        });
-    } else {
+    if (this.traCuuBHYTForm.invalid) {
       Object.values(this.traCuuBHYTForm.controls).forEach(control => {
         if (control.invalid) {
           control.markAsDirty();
-          control.updateValueAndValidity();
+          control.updateValueAndValidity({ onlySelf: true });
         }
       });
+      return;
     }
-  }
 
-  // Xử lý định dạng dữ liệu thông tin BHYT
-  private formatThongTinBHYT(data: any): any {
-    return {
-      soTheBHYT: data.soTheBHYT || '',
-      maSoBHXH: data.maSoBHXH || '',
-      hoTen: data.hoTen || '',
-      ngaySinh: data.ngaySinh ? this.parseNgaySinhFromNumber(data.ngaySinh) : null,
-      gioiTinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
-      noiDangKyKCB: data.noiDangKyKCB || '',
-      hanSuDung: {
-        tuNgay: data.tuNgay ? this.parseNgaySinhFromNumber(data.tuNgay) : null,
-        denNgay: data.denNgay ? this.parseNgaySinhFromNumber(data.denNgay) : null
-      },
-      tyLeDongBHYT: data.tyLeDongBHYT || '',
-      phamViMienTB: data.phamViMienTB || '',
-      quyenLoi: data.quyenLoi || '',
-      nguonDong: data.nguonDong || '',
-      raw: data // Lưu lại dữ liệu gốc
+    this.isLoading = true;
+    this.daTimKiem = true;
+    this.loiTraCuu = '';
+    this.ketQuaTraCuu = null;
+
+    const formData: TraCuuThongTinBHYTRequest = {
+      maSoBHXH: this.traCuuBHYTForm.value.maSoBHXH
     };
+
+    this.bhytService.traCuuThongTinBHYT(formData).subscribe({
+      next: (response: TraCuuThongTinBHYTResponse) => {
+        this.isLoading = false;
+        if (response.success && response.data) {
+          this.ketQuaTraCuu = response.data;
+          this.message.success('Tra cứu thông tin BHYT thành công');
+        } else {
+          if (response.error && response.error.toString().includes('authenticat')) {
+            this.getCaptcha();
+            this.isVNPostLoginVisible = true;
+          } else {
+            this.loiTraCuu = response.message || 'Không tìm thấy thông tin thẻ BHYT';
+          }
+        }
+      },
+      error: (error: any) => {
+        this.isLoading = false;
+        if (error && error.error && error.error.includes('xác thực')) {
+          this.getCaptcha();
+          this.isVNPostLoginVisible = true;
+        } else {
+          this.loiTraCuu = error.error || 'Có lỗi xảy ra khi tra cứu thông tin BHYT';
+        }
+      }
+    });
   }
 
   resetForm(): void {
     this.traCuuBHYTForm.reset();
-    this.ketQuaTraCuu = null;
     this.daTimKiem = false;
     this.loiTraCuu = '';
+    this.ketQuaTraCuu = null;
   }
 
-  // Hiển thị form đăng nhập VNPost
-  showVNPostLogin(): void {
-    this.isVNPostLoginVisible = true;
-    this.getCaptcha();
-  }
-  
-  // Đóng form đăng nhập VNPost
-  closeVNPostLogin(): void {
-    this.isVNPostLoginVisible = false;
-  }
-  
-  // Tải captcha
-  getCaptcha(): void {
-    this.ssmv2Service.getCaptcha().subscribe({
-      next: (res) => {
-        console.log('Captcha response:', res);
-        if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
-        } else {
-          this.message.error('Không nhận được dữ liệu captcha');
-        }
-      },
-      error: (err) => {
-        console.error('Captcha error:', err);
-        this.message.error('Lỗi khi lấy captcha: ' + err.message);
-      }
-    });
-  }
-  
-  // Đăng nhập VNPost
-  handleLogin(): void {
-    if (this.vnpostLoginForm.valid) {
-      this.isLoadingLogin = true;
-      
-      const data = {
-        grant_type: 'password',
-        userName: this.vnpostLoginForm.get('userName')?.value,
-        password: this.vnpostLoginForm.get('password')?.value,
-        text: this.vnpostLoginForm.get('text')?.value,
-        code: this.captchaCode,
-        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-        isWeb: true
-      };
-
-      console.log('Gửi request đăng nhập với data:', { ...data, password: '***' });
-
-      this.ssmv2Service.authenticate(data).subscribe({
-        next: (response) => {
-          this.isLoadingLogin = false;
-          
-          if (response.body?.access_token) {
-            console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
-            this.message.success('Xác thực thành công');
-            this.isVNPostLoginVisible = false;
-            
-            // Đảm bảo token đã được lưu trước khi tìm kiếm
-            setTimeout(() => {
-              this.submitBHYTForm();
-            }, 1000);
-          } else {
-            this.message.error('Không nhận được token');
-            this.getCaptcha();
-          }
-        },
-        error: (err) => {
-          console.error('Login error:', err);
-          this.isLoadingLogin = false;
-          this.vnpostLoginForm.patchValue({ text: '' });
-
-          if (err.error?.error === 'invalid_captcha') {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.error_description?.includes('xác thực')) {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.message) {
-            this.message.error(err.error.message);
-          } else {
-            this.message.error('Xác thực thất bại, vui lòng thử lại');
-          }
-
-          setTimeout(() => {
-            this.getCaptcha();
-          }, 100);
-        }
-      });
-    } else {
-      Object.values(this.vnpostLoginForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-          control.updateValueAndValidity();
-        }
-      });
+  formatMaSoBHXH(event: any): void {
+    const input = event.target;
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 10) {
+      value = value.substring(0, 10);
     }
+    input.value = value;
+    this.traCuuBHYTForm.controls['maSoBHXH'].setValue(value);
   }
 
-  // Chuyển đổi chữ thành chữ hoa
-  convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.toUpperCase();
-    this.vnpostLoginForm.get('text')?.setValue(input.value);
-  }
-
-  // Kiểm tra trạng thái đăng nhập VNPost
-  isVNPostLoggedIn(): boolean {
-    return !!this.ssmv2Service.getToken();
-  }
-
-  // Xem chi tiết BHYT
   xemChiTietBHYT(): void {
     this.chiTietItem = this.ketQuaTraCuu;
     this.isModalVisible = true;
   }
 
-  // Đóng modal chi tiết
   closeModal(): void {
     this.isModalVisible = false;
+  }
+
+  // SSMV2 login handlers
+  getCaptcha(): void {
+    this.ssmv2Service.getCaptcha().subscribe({
+      next: (data: any) => {
+        this.captchaImage = data.captchaBase64;
+        this.captchaCode = data.captchaCode;
+        this.vnpostLoginForm.get('text')?.setValue('');
+      },
+      error: (err: any) => {
+        this.message.error('Không thể tải mã xác nhận');
+      }
+    });
+  }
+
+  handleLogin(): void {
+    if (this.vnpostLoginForm.invalid) {
+      Object.values(this.vnpostLoginForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsDirty();
+          control.updateValueAndValidity({ onlySelf: true });
+        }
+      });
+      return;
+    }
+
+    this.isLoadingLogin = true;
+    this.ssmv2Service.authenticate(this.vnpostLoginForm.value).subscribe({
+      next: (data: any) => {
+        if (data && data.access_token) {
+          localStorage.setItem('ssmv2_token', `Bearer ${data.access_token}`);
+          this.isLoadingLogin = false;
+          this.isVNPostLoginVisible = false;
+          this.message.success('Đăng nhập thành công');
+          // Retry search after login
+          this.submitBHYTForm();
+        } else {
+          this.isLoadingLogin = false;
+          this.message.error('Đăng nhập không thành công');
+          this.getCaptcha();
+        }
+      },
+      error: (err: any) => {
+        this.isLoadingLogin = false;
+        this.message.error('Đăng nhập không thành công');
+        this.getCaptcha();
+      }
+    });
+  }
+
+  closeVNPostLogin(): void {
+    this.isVNPostLoginVisible = false;
+  }
+
+  // Thêm phương thức hiển thị form đăng nhập VNPost
+  showVNPostLogin(): void {
+    this.isVNPostLoginVisible = true;
+    this.getCaptcha();
+  }
+
+  // Phương thức kích hoạt tab
+  activateTab(tabId: string): void {
+    // Ẩn tất cả các tab và bỏ active
+    document.querySelectorAll('.tab-pane').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-header').forEach(header => {
+      header.classList.remove('active');
+    });
+
+    // Kích hoạt tab được chọn
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+      selectedTab.classList.add('active');
+    }
+
+    // Kích hoạt header tương ứng
+    const tabIndex = tabId.replace('tab', '');
+    const tabHeaders = document.querySelectorAll('.tab-header');
+    if (tabHeaders.length >= parseInt(tabIndex)) {
+      tabHeaders[parseInt(tabIndex) - 1].classList.add('active');
+    }
+  }
+
+  convertToUpperCase(event: any): void {
+    const value = event.target.value;
+    this.vnpostLoginForm.get('text')?.setValue(value.toUpperCase());
+  }
+
+  // Helpers for display
+  isTheConHan(denNgay: string): boolean {
+    if (!denNgay) return false;
+
+    // Xử lý chuỗi dạng yyyy-MM-dd
+    if (denNgay.includes('-')) {
+      return new Date(denNgay) > new Date();
+    }
+
+    // Xử lý chuỗi dạng yyyyMMdd
+    if (denNgay.length === 8) {
+      const year = parseInt(denNgay.substring(0, 4));
+      const month = parseInt(denNgay.substring(4, 6)) - 1;
+      const day = parseInt(denNgay.substring(6, 8));
+      return new Date(year, month, day) > new Date();
+    }
+
+    return false;
+  }
+
+  formatTyLeDong(): string {
+    const ketQua = this.ketQuaTraCuu;
+    if (!ketQua) return 'Không có';
+
+    let tyLe = '';
+    if (ketQua.tyLeBhyt > 0) tyLe += `BHYT: ${ketQua.tyLeBhyt}%. `;
+    if (ketQua.tyLeNstw > 0) tyLe += `NSTW: ${ketQua.tyLeNstw}%. `;
+    if (ketQua.tyLeNsnn > 0) tyLe += `NSNN: ${ketQua.tyLeNsnn}%. `;
+    if (ketQua.tyLeNsdp > 0) tyLe += `NSDP: ${ketQua.tyLeNsdp}%. `;
+    if (ketQua.tyLeKhac > 0) tyLe += `Khác: ${ketQua.tyLeKhac}%.`;
+
+    return tyLe || 'Không có';
   }
 
   // Thêm phương thức tự động đăng nhập VNPost
@@ -376,48 +341,5 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
         }
       }
     });
-  }
-
-  // Kiểm tra và định dạng số BHXH
-  formatMaSoBHXH(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    let value = input.value.replace(/\D/g, ''); // Chỉ giữ lại các chữ số
-    
-    if (value.length > 10) {
-      value = value.substring(0, 10); // Giới hạn 10 chữ số
-    }
-    
-    input.value = value;
-    this.traCuuBHYTForm.get('maSoBHXH')?.setValue(value);
-  }
-
-  // Kiểm tra thẻ còn hạn hay không
-  isTheConHan(denNgay: Date | null | undefined): boolean {
-    if (!denNgay) return false;
-    
-    try {
-      // Chuyển về cùng định dạng để so sánh
-      const expireDate = new Date(denNgay);
-      const today = new Date();
-      
-      // Reset giờ, phút, giây để chỉ so sánh ngày
-      expireDate.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      
-      return expireDate > today;
-    } catch (error) {
-      return false;
-    }
-  }
-  
-  // Phân tích chuỗi ngày sinh dạng yyyyMMdd
-  private parseNgaySinhFromNumber(dateNumber: string): Date | null {
-    if (!dateNumber || dateNumber.length !== 8) return null;
-    
-    const year = parseInt(dateNumber.substring(0, 4), 10);
-    const month = parseInt(dateNumber.substring(4, 6), 10) - 1;
-    const day = parseInt(dateNumber.substring(6, 8), 10);
-    
-    return new Date(year, month, day);
   }
 } 

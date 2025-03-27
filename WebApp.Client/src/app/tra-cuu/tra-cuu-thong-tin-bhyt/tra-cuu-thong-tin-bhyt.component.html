@@ -46,29 +46,81 @@
       <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu" class="result-container">
         <h3>Thông tin BHYT</h3>
         
-        <!-- Thông tin thẻ BHYT -->
-        <div class="info-section bhyt-info">
-          <h4>Thông tin thẻ BHYT</h4>
-          <nz-descriptions [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
-            <nz-descriptions-item nzTitle="Số thẻ BHYT">{{ ketQuaTraCuu.soTheBHYT }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Mã số BHXH">{{ ketQuaTraCuu.maSoBHXH }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Họ và tên">{{ ketQuaTraCuu.hoTen }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Ngày sinh">{{ ketQuaTraCuu.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Giới tính">{{ ketQuaTraCuu.gioiTinh || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Nơi đăng ký KCB">{{ ketQuaTraCuu.noiDangKyKCB || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Giá trị sử dụng">
-              {{ ketQuaTraCuu.hanSuDung?.tuNgay | date:'dd/MM/yyyy' }} - 
-              {{ ketQuaTraCuu.hanSuDung?.denNgay | date:'dd/MM/yyyy' }}
-              <nz-tag class="status-tag" 
-                [ngClass]="isTheConHan(ketQuaTraCuu.hanSuDung?.denNgay) ? 'valid-tag' : 'expired-tag'">
-                {{ isTheConHan(ketQuaTraCuu.hanSuDung?.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
-              </nz-tag>
-            </nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Tỷ lệ đóng">{{ ketQuaTraCuu.tyLeDongBHYT || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Phạm vi miễn TB">{{ ketQuaTraCuu.phamViMienTB || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Quyền lợi">{{ ketQuaTraCuu.quyenLoi || 'Không có' }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Nguồn đóng">{{ ketQuaTraCuu.nguonDong || 'Không có' }}</nz-descriptions-item>
-          </nz-descriptions>
+        <div class="custom-tabs">
+          <div class="tab-headers">
+            <div class="tab-header active" (click)="activateTab('tab1')">Thông tin chung</div>
+            <div class="tab-header" (click)="activateTab('tab2')">Thông tin đóng BHYT</div>
+            <div class="tab-header" (click)="activateTab('tab3')">Thông tin khác</div>
+          </div>
+          
+          <div class="tab-content">
+            <!-- Tab 1: Thông tin chung -->
+            <div class="tab-pane active" id="tab1">
+              <div class="info-section bhyt-info">
+                <h4>Thông tin thẻ BHYT</h4>
+                <nz-descriptions [nzColumn]="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }">
+                  <nz-descriptions-item nzTitle="Số thẻ BHYT">{{ ketQuaTraCuu.soTheBhyt }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã số BHXH">{{ ketQuaTraCuu.maSoBhxh }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Họ và tên">{{ ketQuaTraCuu.hoTen }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Ngày sinh">{{ ketQuaTraCuu.ngaySinhHienThi }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Giới tính">{{ ketQuaTraCuu.gioiTinhHienThi }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Dân tộc/Quốc tịch">{{ ketQuaTraCuu.danTocHienThi }} / {{ ketQuaTraCuu.quocTichHienThi }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Số điện thoại">{{ ketQuaTraCuu.soDienThoai || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Số CMND/CCCD">{{ ketQuaTraCuu.soCmnd || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Trạng thái thẻ">
+                    <nz-tag [nzColor]="ketQuaTraCuu.trangThaiThe === 'Thẻ hợp lệ' ? 'success' : 'error'">
+                      {{ ketQuaTraCuu.trangThaiThe }}
+                    </nz-tag>
+                  </nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Thời hạn sử dụng">
+                    {{ ketQuaTraCuu.tuNgayDt | date:'dd/MM/yyyy' }} - {{ ketQuaTraCuu.denNgayDt | date:'dd/MM/yyyy' }}
+                    <nz-tag class="status-tag" 
+                      [ngClass]="isTheConHan(ketQuaTraCuu.denNgay) ? 'valid-tag' : 'expired-tag'">
+                      {{ isTheConHan(ketQuaTraCuu.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
+                    </nz-tag>
+                  </nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Nơi đăng ký KCB">{{ ketQuaTraCuu.tenBenhVien }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã/Tên tỉnh KCB">{{ ketQuaTraCuu.tenTinhKCB }}</nz-descriptions-item>
+                </nz-descriptions>
+              </div>
+            </div>
+
+            <!-- Tab 2: Thông tin đóng BHYT -->
+            <div class="tab-pane" id="tab2">
+              <div class="info-section bhyt-rates">
+                <h4>Thông tin đóng BHYT</h4>
+                <nz-descriptions [nzColumn]="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }">
+                  <nz-descriptions-item nzTitle="Tỷ lệ đóng BHYT">{{ ketQuaTraCuu.tyLeBhyt }}%</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tỷ lệ NSTW">{{ ketQuaTraCuu.tyLeNstw }}%</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tỷ lệ NSNN">{{ ketQuaTraCuu.tyLeNsnn }}%</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tỷ lệ NSDP">{{ ketQuaTraCuu.tyLeNsdp }}%</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tỷ lệ khác">{{ ketQuaTraCuu.tyLeKhac }}%</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mức lương TT">{{ ketQuaTraCuu.mucLuongTt | number:'1.0-0' }} VNĐ</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã đơn vị">{{ ketQuaTraCuu.maDvi }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tên đơn vị">{{ ketQuaTraCuu.tenDvi }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tên CQBH">{{ ketQuaTraCuu.tenCqbh }}</nz-descriptions-item>
+                </nz-descriptions>
+              </div>
+            </div>
+
+            <!-- Tab 3: Thông tin khác -->
+            <div class="tab-pane" id="tab3">
+              <div class="info-section bhyt-extra">
+                <h4>Thông tin bổ sung</h4>
+                <nz-descriptions [nzColumn]="{ xxl: 3, xl: 3, lg: 2, md: 2, sm: 1, xs: 1 }">
+                  <nz-descriptions-item nzTitle="Phương án">{{ ketQuaTraCuu.phuongAn }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Ngày 5 năm">{{ ketQuaTraCuu.ngay5NamDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Địa chỉ liên hệ">{{ ketQuaTraCuu.diaChiLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã tỉnh LH">{{ ketQuaTraCuu.maTinhLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã huyện LH">{{ ketQuaTraCuu.maHuyenLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã xã LH">{{ ketQuaTraCuu.maXaLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Ngày thẻ mới">{{ ketQuaTraCuu.tuNgayTheMoiDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã bệnh viện">{{ ketQuaTraCuu.maBenhVien }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Mã BHXH">{{ ketQuaTraCuu.maBhxh }}</nz-descriptions-item>
+                </nz-descriptions>
+              </div>
+            </div>
+          </div>
         </div>
         
         <!-- Nút xem chi tiết BHYT -->
@@ -92,20 +144,48 @@
 <nz-modal [(nzVisible)]="isModalVisible" nzTitle="Chi tiết thông tin BHYT" (nzOnCancel)="closeModal()" [nzFooter]="null" [nzWidth]="800">
   <ng-container *nzModalContent>
     <nz-descriptions *ngIf="chiTietItem" nzBordered [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
-      <nz-descriptions-item nzTitle="Số thẻ BHYT">{{ chiTietItem.soTheBHYT }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Mã số BHXH">{{ chiTietItem.maSoBHXH }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Họ và tên">{{ chiTietItem.hoTen }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Ngày sinh">{{ chiTietItem.ngaySinh | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Giới tính">{{ chiTietItem.gioiTinh || 'Không có' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Nơi đăng ký KCB">{{ chiTietItem.noiDangKyKCB || 'Không có' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Giá trị sử dụng" [nzSpan]="2">
-        {{ chiTietItem.hanSuDung?.tuNgay | date:'dd/MM/yyyy' }} - 
-        {{ chiTietItem.hanSuDung?.denNgay | date:'dd/MM/yyyy' }}
+      <nz-descriptions-item nzTitle="Số thẻ BHYT" [nzSpan]="1">{{ chiTietItem.soTheBhyt }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Mã số BHXH" [nzSpan]="1">{{ chiTietItem.maSoBhxh }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Họ và tên" [nzSpan]="1">{{ chiTietItem.hoTen }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày sinh" [nzSpan]="1">{{ chiTietItem.ngaySinhHienThi }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Giới tính" [nzSpan]="1">{{ chiTietItem.gioiTinhHienThi }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Dân tộc/Quốc tịch" [nzSpan]="1">{{ chiTietItem.danTocHienThi }} / {{ chiTietItem.quocTichHienThi }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Số CMND/CCCD" [nzSpan]="1">{{ chiTietItem.soCmnd || 'Không có' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Số điện thoại" [nzSpan]="1">{{ chiTietItem.soDienThoai || 'Không có' }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Thời hạn sử dụng" [nzSpan]="2">
+        {{ chiTietItem.tuNgayDt | date:'dd/MM/yyyy' }} - {{ chiTietItem.denNgayDt | date:'dd/MM/yyyy' }}
+        <nz-tag [nzColor]="isTheConHan(chiTietItem.denNgay) ? 'success' : 'error'">
+          {{ isTheConHan(chiTietItem.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
+        </nz-tag>
       </nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Tỷ lệ đóng">{{ chiTietItem.tyLeDongBHYT || 'Không có' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Phạm vi miễn TB">{{ chiTietItem.phamViMienTB || 'Không có' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Quyền lợi">{{ chiTietItem.quyenLoi || 'Không có' }}</nz-descriptions-item>
-      <nz-descriptions-item nzTitle="Nguồn đóng">{{ chiTietItem.nguonDong || 'Không có' }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Ngày thẻ mới" [nzSpan]="1">{{ chiTietItem.tuNgayTheMoiDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày 5 năm" [nzSpan]="1">{{ chiTietItem.ngay5NamDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Nơi đăng ký KCB" [nzSpan]="2">{{ chiTietItem.tenBenhVien }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Địa chỉ liên hệ" [nzSpan]="2">{{ chiTietItem.diaChiLh || 'Không có' }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Đơn vị" [nzSpan]="2">{{ chiTietItem.tenDvi }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Cơ quan BHXH" [nzSpan]="2">{{ chiTietItem.tenCqbh }}</nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Tỷ lệ đóng BHYT" [nzSpan]="2">
+        <div *ngIf="chiTietItem.tyLeBhyt > 0">BHYT: {{ chiTietItem.tyLeBhyt }}%</div>
+        <div *ngIf="chiTietItem.tyLeNstw > 0">NSTW: {{ chiTietItem.tyLeNstw }}%</div>
+        <div *ngIf="chiTietItem.tyLeNsnn > 0">NSNN: {{ chiTietItem.tyLeNsnn }}%</div>
+        <div *ngIf="chiTietItem.tyLeNsdp > 0">NSDP: {{ chiTietItem.tyLeNsdp }}%</div>
+        <div *ngIf="chiTietItem.tyLeKhac > 0">Khác: {{ chiTietItem.tyLeKhac }}%</div>
+      </nz-descriptions-item>
+      
+      <nz-descriptions-item nzTitle="Trạng thái thẻ" [nzSpan]="2">
+        <nz-tag [nzColor]="chiTietItem.trangThaiThe === 'Thẻ hợp lệ' ? 'success' : 'error'">
+          {{ chiTietItem.trangThaiThe }}
+        </nz-tag>
+      </nz-descriptions-item>
     </nz-descriptions>
   </ng-container>
 </nz-modal>

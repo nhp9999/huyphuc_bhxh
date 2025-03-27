@@ -353,85 +353,88 @@
 }
 
 nz-table {
-  ::ng-deep {
-    .ant-table-thead > tr > th {
-      white-space: nowrap;
-      background-color: #f0f2f5;
-      font-weight: 600;
-      padding: 12px 16px;
-    }
-
-    .ant-table-tbody > tr > td {
-      white-space: nowrap;
-      padding: 12px 16px;
-
-      a {
-        cursor: pointer;
-        color: #1890ff;
-        
-        &.urgent {
-          color: #ff4d4f;
-          font-weight: 500;
-        }
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-
-    .ant-table-container {
-      overflow-x: auto;
-    }
-
-    .ant-table {
-      min-width: 100%;
-    }
-
-    .ant-checkbox-wrapper {
-      margin-right: 0;
-    }
+  th, td {
+    white-space: nowrap;
+  }
+  
+  th:nth-child(7), 
+  td:nth-child(7) {
+    white-space: normal;
+    max-width: 250px;
+    min-width: 150px;
+  }
+  
+  .ant-tag {
+    margin-right: 0;
   }
 }
 
-.table-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-
-  .left-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    nz-select {
-      min-width: 180px;
-    }
+.ket-qua-container {
+  margin-top: 20px;
+  overflow-x: auto;
+  
+  h3 {
+    margin-bottom: 16px;
+    font-weight: 500;
   }
 
-  .right-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    span {
-      font-size: 14px;
-      color: rgba(0, 0, 0, 0.85);
-
-      strong {
-        margin-left: 4px;
-        font-weight: 600;
-        
-        &.amount {
-          color: #1890ff;
-        }
+  nz-table {
+    /* Định dạng các cột trong bảng */
+    .ant-table-thead > tr > th {
+      background-color: #f5f7fa !important;
+      font-weight: 600 !important;
+      text-align: center;
+      padding: 12px 8px;
+    }
+    
+    .ant-table-tbody > tr > td {
+      padding: 12px 8px;
+      vertical-align: middle;
+    }
+    
+    /* Đảm bảo cột địa chỉ hiển thị tốt */
+    th:nth-child(7), 
+    td:nth-child(7) {
+      white-space: normal;
+      max-width: 250px;
+      min-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    
+    /* Căn giữa trạng thái */
+    th:nth-child(8), 
+    td:nth-child(8) {
+      text-align: center;
+    }
+    
+    /* Căn giữa cột thao tác */
+    th:nth-child(9), 
+    td:nth-child(9) {
+      text-align: center;
+    }
+    
+    /* Sửa style cho nút áp dụng */
+    button {
+      width: 85px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      
+      .anticon {
+        font-size: 14px;
       }
     }
-
-    .ant-divider {
-      margin: 0;
-      height: 16px;
+    
+    /* Định dạng cho tag trạng thái */
+    .ant-tag {
+      margin-right: 0;
+      width: 80px;
+      text-align: center;
     }
   }
 }
@@ -1016,4 +1019,83 @@ nz-tag {
 // Style cho các input và select
 ::ng-deep .ant-select, ::ng-deep .ant-picker {
   width: 100%;
+}
+
+/* Styles cho modal tra cứu mã số BHXH */
+.tra-cuu-form {
+  margin-bottom: 20px;
+  padding: 16px 0;
+}
+
+.ket-qua-container {
+  margin-top: 20px;
+  overflow-x: auto;
+  
+  h3 {
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+}
+
+.mb-3 {
+  margin-bottom: 15px;
+}
+
+/* Điều chỉnh độ rộng nút tra cứu */
+.custom-input-group {
+  display: flex;
+
+  button.pulse {
+    margin-left: 5px;
+  }
+}
+
+/* Style cho các nút trong modal */
+.btn-row {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mr-8 {
+  margin-right: 8px;
+}
+
+/* Cải thiện hiển thị bảng kết quả tra cứu */
+.ket-qua-container {
+  nz-table {
+    th, td {
+      white-space: nowrap;
+    }
+    
+    th:nth-child(7), 
+    td:nth-child(7) {
+      white-space: normal;
+      max-width: 250px;
+      min-width: 150px;
+    }
+    
+    .ant-tag {
+      margin-right: 0;
+    }
+  }
+}
+
+/* Responsive styles cho modal */
+@media (max-width: 768px) {
+  nz-date-picker {
+    width: 100%;
+  }
+  
+  .text-right {
+    text-align: center;
+  }
+  
+  .mr-8 {
+    margin-right: 5px;
+    margin-bottom: 8px;
+  }
 } 

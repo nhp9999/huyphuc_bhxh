@@ -57,6 +57,9 @@ import { AuthService } from '../../services/auth.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 import { BienLaiService, BienLai } from '../../services/bien-lai.service';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { BHXHService, TraCuuVNPostRequest } from '../../services/tra-cuu-ma-so-bhxh.service';
+import { LocationService, Province, District, Commune } from '../../services/location.service';
+import { finalize } from 'rxjs/operators';
 
 registerLocaleData(vi);
 
@@ -150,6 +153,26 @@ interface CCCDResult {
     ward: string;
     street?: string;
   };
+  // Thêm các thuộc tính phụ trợ để hiển thị
+  ngaySinhFormatted?: string; // Ngày sinh định dạng
+  gioiTinh?: string; // Giới tính dạng chữ (Nam/Nữ)
+}
+
+interface TinhThanh {
+  ma: string;
+  ten: string;
+}
+
+interface QuanHuyen {
+  ma: string;
+  ten: string;
+  maTinh: string;
+}
+
+interface XaPhuong {
+  ma: string;
+  ten: string;
+  maHuyen: string;
 }
 
 @Component({
@@ -343,6 +366,21 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     { ma: 'CA', ten: 'Canada' }
   ];
 
+  // Thêm thuộc tính cho modal tra cứu mã số BHXH
+  isTraCuuMaSoBHXHVisible = false;
+  traCuuVNPostForm!: FormGroup;
+  isLoadingTraCuu = false;
+  ketQuaTraCuu: any[] = [];
+  daTimKiem = false;
+  loiTraCuu = '';
+
+  danhSachTinhTraCuu: TinhThanh[] = [];
+  danhSachHuyenTraCuu: QuanHuyen[] = [];
+  danhSachXaTraCuu: XaPhuong[] = [];
+
+  huyenTheoTinhTraCuu: QuanHuyen[] = [];
+  xaTheoHuyenTraCuu: XaPhuong[] = [];
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -357,7 +395,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     private cccdService: CCCDService,
     private authService: AuthService,
     private ssmv2Service: SSMV2Service,
-    private bienLaiService: BienLaiService
+    private bienLaiService: BienLaiService,
+    private bhxhService: BHXHService,
+    private locationService: LocationService
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -538,6 +578,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.loadDanhMucTinh().then(() => {
       console.log('Đã tải danh sách tỉnh thành công');
     });
+
+    // Khởi tạo form tra cứu VNPost
+    this.traCuuVNPostForm = this.fb.group({
+      maTinh: [null, [Validators.required]],
+      maHuyen: [null, [Validators.required]],
+      maXa: [null],
+      hoTen: [null],
+      ngaySinh: [null],
+      soCMND: [null]
+    });
+
+    // Load danh sách tỉnh cho tra cứu
+    this.loadDanhSachTinhTraCuu();
   }
 
   ngOnDestroy(): void {
@@ -3797,5 +3850,422 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       // Nếu mọi kiểm tra đều thành công, xóa lỗi
       hoTenControl.setErrors(null);
     }
+  }
+
+  // Thêm các phương thức cho tra cứu mã số BHXH
+  showTraCuuMaSoBHXHModal(): void {
+    this.isTraCuuMaSoBHXHVisible = true;
+  }
+
+  handleTraCuuMaSoBHXHCancel(): void {
+    this.isTraCuuMaSoBHXHVisible = false;
+  }
+
+  loadDanhSachTinhTraCuu(): void {
+    this.isLoadingTraCuu = true;
+    this.locationService.getProvinces()
+      .pipe(finalize(() => this.isLoadingTraCuu = false))
+      .subscribe({
+        next: (provinces) => {
+          this.danhSachTinhTraCuu = provinces.map(province => ({
+            ma: province.ma,
+            ten: province.ten
+          }));
+        },
+        error: (err) => {
+          console.error('Lỗi khi lấy danh sách tỉnh/thành phố:', err);
+          this.message.error('Không thể tải danh sách tỉnh/thành phố. Vui lòng thử lại sau.');
+        }
+      });
+  }
+
+  onTinhChangeTraCuu(maTinh: string): void {
+    if (!maTinh) {
+      this.huyenTheoTinhTraCuu = [];
+      this.traCuuVNPostForm.patchValue({ maHuyen: null, maXa: null });
+      this.xaTheoHuyenTraCuu = [];
+      return;
+    }
+
+    this.isLoadingTraCuu = true;
+    this.locationService.getDistricts(maTinh)
+      .pipe(finalize(() => this.isLoadingTraCuu = false))
+      .subscribe({
+        next: (districts) => {
+          this.danhSachHuyenTraCuu = districts.map(district => ({
+            ma: district.ma,
+            ten: district.ten,
+            maTinh: district.ma_tinh
+          }));
+          this.huyenTheoTinhTraCuu = this.danhSachHuyenTraCuu;
+          this.traCuuVNPostForm.patchValue({ maHuyen: null, maXa: null });
+          this.xaTheoHuyenTraCuu = [];
+        },
+        error: (err) => {
+          console.error(`Lỗi khi lấy danh sách quận/huyện cho tỉnh ${maTinh}:`, err);
+          this.message.error('Không thể tải danh sách quận/huyện. Vui lòng thử lại sau.');
+          this.huyenTheoTinhTraCuu = [];
+        }
+      });
+  }
+
+  onHuyenChangeTraCuu(maHuyen: string): void {
+    if (!maHuyen) {
+      this.xaTheoHuyenTraCuu = [];
+      this.traCuuVNPostForm.patchValue({ maXa: null });
+      return;
+    }
+
+    this.isLoadingTraCuu = true;
+    this.locationService.getCommunes(maHuyen)
+      .pipe(finalize(() => this.isLoadingTraCuu = false))
+      .subscribe({
+        next: (response) => {
+          if (response && response.success && response.data) {
+            this.danhSachXaTraCuu = response.data.map((commune: any) => ({
+              ma: commune.ma,
+              ten: commune.ten,
+              maHuyen: commune.ma_huyen
+            }));
+            this.xaTheoHuyenTraCuu = this.danhSachXaTraCuu;
+          } else {
+            this.xaTheoHuyenTraCuu = [];
+          }
+          this.traCuuVNPostForm.patchValue({ maXa: null });
+        },
+        error: (err) => {
+          console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen}:`, err);
+          this.message.error('Không thể tải danh sách xã/phường. Vui lòng thử lại sau.');
+          this.xaTheoHuyenTraCuu = [];
+        }
+      });
+  }
+
+  submitTraCuuVNPostForm(): void {
+    if (this.traCuuVNPostForm.valid) {
+      this.isLoadingTraCuu = true;
+      this.daTimKiem = true;
+      this.loiTraCuu = '';
+      
+      // Kiểm tra token VNPost
+      const token = this.ssmv2Service.getToken();
+      if (!token) {
+        // Tự động đăng nhập VNPost thay vì hiển thị thông báo
+        this.autoLoginVNPost(true);
+        return;
+      }
+      
+      // Lấy dữ liệu từ form
+      const formData: TraCuuVNPostRequest = {
+        maTinh: this.traCuuVNPostForm.value.maTinh,
+        maHuyen: this.traCuuVNPostForm.value.maHuyen,
+        maXa: this.traCuuVNPostForm.value.maXa || '',
+        hoTen: this.traCuuVNPostForm.value.hoTen || '',
+        ngaySinh: this.formatDateTraCuu(this.traCuuVNPostForm.value.ngaySinh),
+        soCMND: this.traCuuVNPostForm.value.soCMND || ''
+      };
+      
+      console.log('Dữ liệu gửi đi:', formData);
+      
+      // Gọi API tra cứu VNPost
+      this.bhxhService.traCuuMaSoBHXHVNPost(formData)
+        .subscribe({
+          next: (res: any) => {
+            this.isLoadingTraCuu = false;
+            
+            // Log response để debug
+            console.log('Response từ API VNPost:', res);
+            
+            // Kiểm tra nếu response có chứa thông báo lỗi xác thực
+            if (res && res.error === 'Lỗi xác thực') {
+              this.ketQuaTraCuu = [];
+              this.loiTraCuu = 'Lỗi xác thực: ' + (res.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
+              this.message.error(this.loiTraCuu);
+              
+              // Hiển thị form đăng nhập lại
+              this.ssmv2Service.clearToken();
+              this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
+              this.isLoginVisible = true;
+              return;
+            }
+            
+            // Kiểm tra nếu response có status khác 200
+            if (res && res.status && res.status !== 200) {
+              this.ketQuaTraCuu = [];
+              this.loiTraCuu = res.message || 'Có lỗi xảy ra khi tra cứu';
+              this.message.error(this.loiTraCuu);
+              return;
+            }
+            
+            // Xử lý dữ liệu trả về
+            if (res && res.success && res.data && res.data.length > 0) {
+              // Xử lý tất cả kết quả thay vì chỉ kết quả đầu tiên
+              this.ketQuaTraCuu = res.data.map((data: any) => {
+                // Xử lý đặc biệt cho ngày sinh
+                let ngaySinh: Date;
+                let ngaySinhFormatted: string | undefined = undefined;
+                
+                if (data.ngaySinhDt) {
+                  ngaySinh = new Date(data.ngaySinhDt);
+                } else if (data.ngaySinh) {
+                  const year = parseInt(data.ngaySinh.substring(0, 4));
+                  
+                  // Kiểm tra nếu chỉ có năm, không có tháng và ngày (hoặc là 0000)
+                  if (data.ngaySinh.substring(4, 8) === "0000") {
+                    ngaySinh = new Date(year, 0, 1);
+                    ngaySinhFormatted = `${year}`;
+                  } else {
+                    const month = parseInt(data.ngaySinh.substring(4, 6)) - 1;
+                    const day = parseInt(data.ngaySinh.substring(6, 8));
+                    
+                    // Kiểm tra tính hợp lệ của tháng và ngày
+                    const validMonth = month >= 0 && month <= 11;
+                    const validDay = day >= 1 && day <= 31;
+                    
+                    if (validMonth && validDay) {
+                      ngaySinh = new Date(year, month, day);
+                    } else {
+                      ngaySinh = new Date(year, 0, 1);
+                      ngaySinhFormatted = `${year}`;
+                    }
+                  }
+                } else {
+                  ngaySinh = new Date();
+                }
+                
+                return {
+                  maSoBHXH: data.maSoBhxh,
+                  hoTen: data.hoTen,
+                  ngaySinh: ngaySinh,
+                  ngaySinhFormatted: ngaySinhFormatted,
+                  gioiTinh: data.gioiTinh,
+                  soCCCD: data.soCmnd || 'N/A',
+                  diaChi: data.diaChi || 'N/A',
+                  trangThai: data.trangThai,
+                  maHo: data.maHo
+                };
+              });
+              
+              this.message.success(`Tra cứu thành công: Tìm thấy ${this.ketQuaTraCuu.length} kết quả`);
+              console.log('Kết quả tra cứu đã xử lý:', this.ketQuaTraCuu);
+            } else {
+              this.ketQuaTraCuu = [];
+              this.loiTraCuu = 'Không tìm thấy thông tin mã số BHXH';
+              this.message.warning(this.loiTraCuu);
+            }
+          },
+          error: (err: any) => {
+            // Xử lý lỗi từ API
+            this.isLoadingTraCuu = false;
+            this.ketQuaTraCuu = [];
+            
+            console.error('Lỗi khi tra cứu:', err);
+            
+            if (err.error === 'Lỗi xác thực') {
+              this.loiTraCuu = 'Lỗi xác thực: ' + (err.error_description || 'Phiên làm việc đã hết hạn');
+              this.message.error(this.loiTraCuu);
+              this.ssmv2Service.clearToken();
+              this.isLoginVisible = true;
+            } else {
+              this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu: ' + (err.error?.message || err.message || 'Vui lòng thử lại sau');
+              this.message.error(this.loiTraCuu);
+            }
+          }
+        });
+    } else {
+      // Xử lý khi form không hợp lệ
+      Object.values(this.traCuuVNPostForm.controls).forEach(control => {
+        if (control.invalid) {
+          control.markAsDirty();
+          control.updateValueAndValidity();
+        }
+      });
+    }
+  }
+
+  resetTraCuuForm(): void {
+    this.traCuuVNPostForm.reset();
+    this.huyenTheoTinhTraCuu = [];
+    this.xaTheoHuyenTraCuu = [];
+    this.ketQuaTraCuu = [];
+    this.daTimKiem = false;
+    this.loiTraCuu = '';
+  }
+
+  private formatDateTraCuu(date: Date | string): string {
+    if (!date) return '';
+    
+    // Nếu là chuỗi có định dạng dd/MM/yyyy
+    if (typeof date === 'string' && date.includes('/')) {
+      // Chuyển đổi từ dd/MM/yyyy sang yyyy-MM-dd
+      const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const match = date.match(datePattern);
+      if (match) {
+        const [_, day, month, year] = match;
+        return `${year}-${month}-${day}`;
+      }
+    }
+    
+    // Nếu là đối tượng Date
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear();
+    
+    // Trả về định dạng yyyy-MM-dd
+    return `${year}-${month}-${day}`;
+  }
+
+  private parseNgaySinhTraCuu(ngaySinhStr: string, ngaySinhDt: string): Date {
+    if (ngaySinhDt) {
+      return new Date(ngaySinhDt);
+    }
+    
+    if (ngaySinhStr) {
+      // Chuyển đổi chuỗi ngày sinh dạng 'YYYYMMDD' thành Date
+      const year = parseInt(ngaySinhStr.substring(0, 4));
+      const month = parseInt(ngaySinhStr.substring(4, 6)) - 1; // Tháng trong JS bắt đầu từ 0
+      const day = parseInt(ngaySinhStr.substring(6, 8));
+      return new Date(year, month, day);
+    }
+    
+    return new Date();
+  }
+
+  // Kiểm tra trạng thái đăng nhập VNPost
+  isVNPostLoggedIn(): boolean {
+    return !!this.ssmv2Service.getToken();
+  }
+
+  // Thêm phương thức tự động đăng nhập VNPost
+  autoLoginVNPost(fromSubmitTraCuu: boolean = false): void {
+    // Lấy captcha
+    this.ssmv2Service.getCaptcha().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.captchaImage = res.data.image;
+          this.captchaCode = res.data.code;
+          
+          // Thực hiện đăng nhập tự động
+          const data = {
+            grant_type: 'password',
+            userName: this.loginForm.get('userName')?.value,
+            password: this.loginForm.get('password')?.value,
+            text: this.captchaCode, // Sử dụng mã captcha làm text
+            code: this.captchaCode,
+            clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
+            isWeb: true
+          };
+
+          this.ssmv2Service.authenticate(data).subscribe({
+            next: (response) => {
+              if (response.body?.access_token) {
+                console.log('Tự động xác thực thành công');
+                
+                // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
+                if (fromSubmitTraCuu) {
+                  setTimeout(() => {
+                    this.submitTraCuuVNPostForm();
+                  }, 1000);
+                }
+              } else {
+                if (fromSubmitTraCuu) {
+                  this.isLoadingTraCuu = false;
+                }
+              }
+            },
+            error: (err) => {
+              console.error('Lỗi tự động đăng nhập:', err);
+              if (fromSubmitTraCuu) {
+                this.isLoadingTraCuu = false;
+                this.isLoginVisible = true; // Hiển thị form đăng nhập nếu tự động đăng nhập thất bại
+              }
+            }
+          });
+        } else {
+          if (fromSubmitTraCuu) {
+            this.isLoadingTraCuu = false;
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Lỗi khi lấy captcha:', err);
+        if (fromSubmitTraCuu) {
+          this.isLoadingTraCuu = false;
+          this.isLoginVisible = true; // Hiển thị form đăng nhập nếu không lấy được captcha
+        }
+      }
+    });
+  }
+
+  // Áp dụng thông tin từ kết quả tra cứu vào form chính
+  apDungThongTinBHXH(item: any): void {
+    this.form.patchValue({
+      ma_so_bhxh: item.maSoBHXH,
+      ho_ten: item.hoTen,
+      ngay_sinh: this.formatDateToString(new Date(item.ngaySinh)),
+      gioi_tinh: item.gioiTinh === 'Nam' ? 'Nam' : 'Nữ',
+      cccd: item.soCCCD || '',
+      so_dien_thoai: item.soDienThoai && item.soDienThoai !== 'N/A' ? item.soDienThoai : ''
+    });
+    
+    // Đóng modal
+    this.handleTraCuuMaSoBHXHCancel();
+    
+    // Thông báo
+    this.message.success('Đã áp dụng thông tin BHXH vào form');
+    
+    // Tự động tìm kiếm thông tin BHYT
+    this.onSearchBHYT();
+  }
+
+  // Thêm phương thức xử lý dữ liệu CCCD
+  processCCCDData(cccdData: any): void {
+    if (Array.isArray(cccdData)) {
+      const processedData = cccdData.map(item => {
+        const result: CCCDResult = {
+          ...item,
+          status: item.id ? 'success' : 'error',
+          message: item.id ? 'Quét thành công' : 'Không quét được thông tin',
+          // Định dạng ngày sinh và giới tính
+          ngaySinhFormatted: this.formatDateFromCCCD(item.dob),
+          gioiTinh: this.formatGenderFromCCCD(item.sex)
+        };
+        return result;
+      });
+      
+      this.danhSachCCCD = processedData;
+    }
+  }
+
+  // Thêm phương thức định dạng ngày sinh từ CCCD
+  formatDateFromCCCD(dateStr: string): string {
+    if (!dateStr) return '';
+    
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return dateStr;
+    }
+  }
+
+  // Thêm phương thức định dạng giới tính từ CCCD
+  formatGenderFromCCCD(gender: string): string {
+    if (!gender) return '';
+    
+    if (gender.toLowerCase() === 'male' || gender === 'nam' || gender === 'Nam') {
+      return 'Nam';
+    } else if (gender.toLowerCase() === 'female' || gender === 'nữ' || gender === 'Nữ') {
+      return 'Nữ';
+    }
+    
+    return gender;
   }
 } 
