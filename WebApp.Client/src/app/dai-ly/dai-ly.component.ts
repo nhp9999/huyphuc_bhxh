@@ -204,6 +204,8 @@ export class DaiLyComponent implements OnInit {
   editingDaiLy: DaiLy | null = null;
   selectedDonVis: number[] = [];
   donVis: any[] = [];
+  // Thêm cache cho danh sách đơn vị theo đại lý
+  private donVisByDaiLyCache = new Map<number, any[]>();
 
   constructor(
     private daiLyService: DaiLyService,
@@ -271,10 +273,19 @@ export class DaiLyComponent implements OnInit {
     this.editingDaiLy = data;
     this.daiLyForm.patchValue(data);
     
-    // Load đơn vị của đại lý
+    // Kiểm tra cache trước khi gọi API
+    if (this.donVisByDaiLyCache.has(data.id)) {
+      this.selectedDonVis = this.donVisByDaiLyCache.get(data.id)!.map(d => d.id);
+      this.isModalVisible = true;
+      return;
+    }
+    
+    // Load đơn vị của đại lý từ API nếu không có trong cache
     this.daiLyDonViService.getDonVisByDaiLy(data.id).subscribe({
       next: (donVis) => {
         this.selectedDonVis = donVis.map(d => d.id);
+        // Lưu vào cache
+        this.donVisByDaiLyCache.set(data.id, donVis);
       },
       error: () => {
         this.message.error('Không thể tải danh sách đơn vị của đại lý');

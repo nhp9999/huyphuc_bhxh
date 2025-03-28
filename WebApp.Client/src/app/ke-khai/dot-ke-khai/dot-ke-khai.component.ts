@@ -144,6 +144,8 @@ export class DotKeKhaiComponent implements OnInit {
   donVis: any[] = [];
   daiLys: DaiLy[] = [];
   checkedSet = new Set<number>();
+  // Cache cho danh sách đơn vị theo đại lý
+  private donVisByDaiLyCache: Map<number, any[]> = new Map();
 
   // Thêm các thuộc tính cho modal xem hóa đơn
   isViewBillModalVisible = false;
@@ -162,6 +164,12 @@ export class DotKeKhaiComponent implements OnInit {
     'hoan_thanh',
     'tu_choi'
   ];
+
+  // Trong phần khai báo các thuộc tính của class DotKeKhaiComponent
+  isLoadingDonVis = false;
+  dotKeKhai: any = null;
+  donViSelected: any = null;
+  dotKeKhaiForm: any = null;
 
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
@@ -666,7 +674,8 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: formValue.nguoi_tao,
         don_vi_id: formValue.don_vi_id,
         ma_ho_so: formValue.ma_ho_so,
-        dai_ly_id: formValue.dai_ly_id
+        dai_ly_id: formValue.dai_ly_id,
+        dich_vu: formValue.dich_vu || 'BHYT' // Thêm trường dich_vu với giá trị mặc định là BHYT
       };
 
       this.dotKeKhaiService.createDotKeKhai(createData).subscribe({
@@ -674,6 +683,15 @@ export class DotKeKhaiComponent implements OnInit {
           this.message.success('Thêm mới đợt kê khai thành công');
           this.isVisible = false;
           this.loadData();
+          
+          // Chuyển hướng dựa trên loại dịch vụ
+          if (response && response.id) {
+            if (response.dich_vu === 'BHYT') {
+              this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhyt']);
+            } else if (response.dich_vu === 'BHXH TN') {
+              this.router.navigate(['/dot-ke-khai', response.id, 'ke-khai-bhxh']);
+            }
+          }
         },
         error: (error) => {
           if (error.status === 400 && error.error?.message?.includes('unique constraint')) {
@@ -1453,41 +1471,42 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   // Thêm hàm loadDonVisByDaiLy
-  loadDonVisByDaiLy(daiLyId: number): void {
+  loadDonVisByDaiLy(daiLyId?: number) {
+    this.isLoadingDonVis = true;
+    
     if (!daiLyId) {
       this.donVis = [];
+      this.isLoadingDonVis = false;
       return;
     }
-    
-    this.loading = true;
+
+    // Gọi service method đã được tối ưu hóa với caching
     this.donViService.getDonVisByDaiLy(daiLyId).subscribe({
-      next: (data) => {
-        // Kiểm tra và log cảnh báo cho các đơn vị không có mã số BHXH
-        data.forEach(donVi => {
-          if (!donVi.maSoBHXH) {
-            console.warn(`Đơn vị ${donVi.tenDonVi} chưa có mã số BHXH`);
-          }
-        });
+      next: (donVis) => {
+        this.donVis = donVis;
         
-        this.donVis = data;
+        // Kiểm tra nếu có đơn vị nào không có mã số BHXH thì hiển thị cảnh báo
+        const donVisWithoutMaSoBHXH = donVis.filter(donVi => !donVi.maSoBHXH);
+        if (donVisWithoutMaSoBHXH.length > 0) {
+          console.warn('Có đơn vị không có mã số BHXH:', donVisWithoutMaSoBHXH);
+        }
         
-        // Nếu đang trong modal thanh toán, kiểm tra lại đơn vị
-        const currentDotKeKhai = this.dotKeKhais.find(d => d.id === this.form.get('id')?.value);
-        if (currentDotKeKhai) {
-          const donVi = data.find(d => d.id === currentDotKeKhai.don_vi_id);
-          if (!donVi) {
-            this.message.warning('Không tìm thấy thông tin đơn vị');
-          } else if (!donVi.maSoBHXH) {
-            this.message.warning('Đơn vị chưa có mã số BHXH');
+        // Nếu đợt kê khai đã có đơn vị, thì chọn đơn vị đó
+        if (this.dotKeKhai && this.dotKeKhai.don_vi_id) {
+          const donVi = this.donVis.find(dv => dv.id === this.dotKeKhai.don_vi_id);
+          if (donVi) {
+            this.donViSelected = donVi;
+            this.dotKeKhaiForm.patchValue({
+              don_vi_id: donVi.id
+            });
           }
         }
         
-        this.loading = false;
+        this.isLoadingDonVis = false;
       },
       error: (error) => {
         console.error('Lỗi khi tải danh sách đơn vị:', error);
-        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
-        this.loading = false;
+        this.isLoadingDonVis = false;
       }
     });
   }
