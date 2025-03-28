@@ -82,6 +82,9 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
   currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   ngay_bien_lai: Date = new Date();
   
+  // Biến để theo dõi dòng đang được chọn
+  selectedRowId: number | null = null;
+  
   locale = {
     lang: {
       placeholder: 'Chọn ngày',
@@ -332,9 +335,34 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.keKhaiBHXHService.getByDotKeKhaiId(this.dotKeKhaiId).subscribe({
       next: (data) => {
-        this.keKhaiBHXHs = data;
-        this.thongKe.tongSoThe = data.length;
-        this.thongKe.tongSoTien = data.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0);
+        console.log('Dữ liệu kê khai BHXH được tải về:', JSON.stringify(data));
+        
+        // Kiểm tra dữ liệu nhận được từ API
+        if (Array.isArray(data)) {
+          // Đảm bảo các trường dữ liệu được hiển thị đúng
+          this.keKhaiBHXHs = data.map(item => {
+            // Log chi tiết từng item để debug
+            console.log(`Chi tiết item ${item.id}:`, JSON.stringify(item));
+            console.log(`Mã hộ gia đình trực tiếp: ${item.ma_hgd || 'không có'}`);
+            
+            // Tạo ra một đối tượng mới với ma_hgd được gán đúng
+            const itemWithMaHGD = {
+              ...item,
+              ma_hgd: item.ma_hgd || '' // Đảm bảo ma_hgd luôn có giá trị để hiển thị
+            };
+            
+            return itemWithMaHGD;
+          });
+          
+          // Log kết quả sau khi xử lý
+          console.log('Danh sách kê khai sau khi xử lý:', this.keKhaiBHXHs);
+        } else {
+          console.error('Dữ liệu API không phải là mảng:', data);
+          this.keKhaiBHXHs = [];
+        }
+        
+        this.thongKe.tongSoThe = this.keKhaiBHXHs.length;
+        this.thongKe.tongSoTien = this.keKhaiBHXHs.reduce((total, item) => total + (item.so_tien_can_dong || 0), 0);
         this.loading = false;
       },
       error: (error) => {
@@ -475,6 +503,160 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       }
     });
     this.refreshCheckedStatus();
+  }
+
+  // Phương thức điền dữ liệu từ bảng vào form
+  fillFormData(data: any): void {
+    if (!data) return;
+    
+    // Cuộn lên đầu trang
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Cập nhật dòng đang được chọn
+    this.selectedRowId = data.id;
+    
+    // Reset form trước khi điền dữ liệu
+    this.form.reset();
+    
+    // In thông tin để debug
+    console.log('Dữ liệu hàng được chọn:', data);
+    
+    // Lấy giá trị mã hộ gia đình từ dữ liệu
+    const maHoGiaDinh = data.ma_hgd || data.thong_tin_the?.ma_hgd || '';
+    console.log('Mã hộ gia đình trong fillFormData:', maHoGiaDinh);
+    
+    // Điền dữ liệu từ bảng vào form
+    const ngaySinh = data.ngay_sinh ? new Date(data.ngay_sinh) : null;
+    const thangBatDau = data.thang_bat_dau ? new Date(data.thang_bat_dau) : null;
+    const ngayBienLai = data.ngay_bien_lai ? new Date(data.ngay_bien_lai) : new Date();
+    
+    // Điền dữ liệu cơ bản (không bao gồm thông tin địa chỉ)
+    this.form.patchValue({
+      id: data.id,
+      dot_ke_khai_id: this.dotKeKhaiId,
+      ma_so_bhxh: data.ma_so_bhxh,
+      cccd: data.cccd,
+      ho_ten: data.ho_ten,
+      ngay_sinh: ngaySinh,
+      gioi_tinh: data.gioi_tinh,
+      so_dien_thoai: data.so_dien_thoai,
+      ma_hgd: maHoGiaDinh,
+      ma_dan_toc: data.ma_dan_toc || data.thong_tin_the?.ma_dan_toc,
+      ma_nhan_vien: data.ma_nhan_vien || this.currentUser?.ma_nhan_vien,
+      dia_chi_nkq: data.dia_chi_nkq,
+      muc_thu_nhap: data.muc_thu_nhap,
+      ty_le_dong: data.ty_le_dong,
+      ty_le_nsnn: data.ty_le_nsnn,
+      loai_nsnn: data.loai_nsnn,
+      tien_ho_tro: data.tien_ho_tro,
+      so_tien_can_dong: data.so_tien_can_dong,
+      phuong_thuc_dong: data.phuong_thuc_dong,
+      thang_bat_dau: thangBatDau,
+      phuong_an: data.phuong_an,
+      loai_khai_bao: data.loai_khai_bao || '1',
+      ngay_bien_lai: ngayBienLai,
+      ghi_chu: data.ghi_chu
+    });
+    
+    // Xử lý dữ liệu địa chỉ
+    // Đảm bảo tải danh mục tỉnh trước
+    this.loadDanhMucTinh();
+    
+    // Lấy thông tin tỉnh, huyện, xã từ API
+    this.diaChiService.getDanhMucTinh().subscribe({
+      next: (tinhs) => {
+        this.danhMucTinhs = tinhs;
+        
+        // Xác định mã tỉnh
+        let maTinh = '';
+        // Nếu có mã tỉnh trong data, sử dụng
+        if (data.ma_tinh) {
+          maTinh = data.ma_tinh;
+        } 
+        // Nếu không tìm thấy mã tỉnh nhưng có tên tỉnh
+        else if (data.tinh_nkq) {
+          const tinh = this.danhMucTinhs.find(t => t.ten.toLowerCase() === data.tinh_nkq.toLowerCase());
+          if (tinh) {
+            maTinh = tinh.ma;
+          }
+        }
+        
+        console.log('Mã tỉnh được xác định:', maTinh);
+        
+        if (maTinh) {
+          // Cập nhật mã tỉnh vào form
+          this.form.patchValue({ ma_tinh: maTinh });
+          
+          // Tải danh sách huyện
+          this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
+            next: (huyens) => {
+              this.danhMucHuyens = huyens;
+              
+              // Xác định mã huyện
+              let maHuyen = '';
+              // Nếu có mã huyện trong data, sử dụng
+              if (data.ma_huyen) {
+                maHuyen = data.ma_huyen;
+              } 
+              // Nếu không tìm thấy mã huyện nhưng có tên huyện
+              else if (data.huyen_nkq) {
+                const huyen = this.danhMucHuyens.find(h => h.ten.toLowerCase() === data.huyen_nkq.toLowerCase());
+                if (huyen) {
+                  maHuyen = huyen.ma;
+                }
+              }
+              
+              console.log('Mã huyện được xác định:', maHuyen);
+              
+              if (maHuyen) {
+                // Cập nhật mã huyện vào form
+                this.form.patchValue({ ma_huyen: maHuyen });
+                
+                // Tải danh sách xã
+                this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+                  next: (xas) => {
+                    this.danhMucXas = xas;
+                    
+                    // Xác định mã xã
+                    let maXa = '';
+                    // Nếu có mã xã trong data, sử dụng
+                    if (data.ma_xa) {
+                      maXa = data.ma_xa;
+                    } 
+                    // Nếu không tìm thấy mã xã nhưng có tên xã
+                    else if (data.xa_nkq) {
+                      const xa = this.danhMucXas.find(x => x.ten.toLowerCase() === data.xa_nkq.toLowerCase());
+                      if (xa) {
+                        maXa = xa.ma;
+                      }
+                    }
+                    
+                    console.log('Mã xã được xác định:', maXa);
+                    
+                    if (maXa) {
+                      // Cập nhật mã xã vào form
+                      this.form.patchValue({ ma_xa: maXa });
+                    }
+                  },
+                  error: (error) => {
+                    console.error('Lỗi khi tải danh mục xã:', error);
+                  }
+                });
+              }
+            },
+            error: (error) => {
+              console.error('Lỗi khi tải danh mục huyện:', error);
+            }
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải danh mục tỉnh:', error);
+      }
+    });
+    
+    // Hiển thị thông báo
+    this.message.success('Đã điền thông tin vào form');
   }
 
   refreshCheckedStatus(): void {
@@ -1421,6 +1603,9 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       // Log để kiểm tra giá trị giới tính từ API
       console.log('Giới tính từ API:', data.gioiTinh);
       
+      // Kiểm tra và ghi log mã hộ gia đình từ API
+      console.log('Mã hộ gia đình từ API:', data.maHoGiaDinh);
+      
       // Xử lý dữ liệu cơ bản
       const processedData = {
         ...data,
@@ -1431,7 +1616,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         mucThuNhap: parseFloat(data.mucThuNhap),
         tongTien: parseFloat(data.tongTien),
         tienHoTro: parseFloat(data.tienHoTro),
-        maHoGiaDinh: data.maHoGiaDinh,
+        maHoGiaDinh: data.maHoGiaDinh || '',
         maDanToc: data.danToc
       };
 
@@ -1466,8 +1651,8 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
         ty_le_dong: 22,
         tien_ho_tro: processedData.tienHoTro,
         so_tien_can_dong: processedData.tongTien,
-        ma_hgd: processedData.maHoGiaDinh,
-        ma_dan_toc: data.danToc
+        ma_hgd: processedData.maHoGiaDinh || '',
+        ma_dan_toc: processedData.maDanToc || ''
       };
 
       console.log('Giới tính sau khi xử lý:', formData.gioi_tinh);

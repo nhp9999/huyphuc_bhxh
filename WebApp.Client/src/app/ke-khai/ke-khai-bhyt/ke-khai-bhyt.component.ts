@@ -1368,6 +1368,20 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           if (response.success) {
             const data = response.data;
             console.log('BHYT search response:', data);
+            
+            // Kiểm tra nếu isThamGiaBb = 1 thì hiển thị thông báo
+            if (data.isThamGiaBb === 1) {
+              this.modal.warning({
+                nzTitle: 'Thông báo BHXH bắt buộc',
+                nzContent: `<div>
+                  <p>Đối tượng đang tham gia BHXH bắt buộc.</p>
+                  <p><strong>Số thẻ BHYT:</strong> ${data.soTheBHYT || 'Chưa có'}</p>
+                </div>`,
+                nzOkText: 'Đã hiểu'
+              });
+              this.loadingSearch = false;
+              return;
+            }
 
             // Kiểm tra hạn thẻ cũ
             if (data.denNgayTheCu) {
@@ -1812,6 +1826,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm hàm mới để tạo kê khai từ dữ liệu API
   private async createKeKhaiFromApiData(data: any): Promise<{ success: boolean; message?: string }> {
     try {
+      // Kiểm tra xem đối tượng có đang tham gia BHXH bắt buộc không
+      if (data.isThamGiaBb === 1) {
+        const theBhyt = data.soTheBHYT ? 
+          `Số thẻ BHYT: ${data.soTheBHYT}` : 
+          'Chưa có thông tin số thẻ BHYT';
+          
+        return {
+          success: false,
+          message: `Đối tượng đang tham gia BHXH bắt buộc.\n${theBhyt}`
+        };
+      }
+      
       // Kiểm tra hạn thẻ cũ
       if (data.denNgayTheCu) {
         const denNgayTheCu = this.parseDate(data.denNgayTheCu);
@@ -1831,278 +1857,97 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           }
         }
       }
-
-      // Kiểm tra và tạo danh sách các trường bị thiếu
-      const missingFields = [];
-      if (!data?.maSoBHXH) missingFields.push('Mã số BHXH');
-      if (!data?.hoTen) missingFields.push('Họ tên');
-      if (!data?.ngaySinh) missingFields.push('Ngày sinh');
-      if (!data?.cmnd) missingFields.push('CCCD');
-      if (!data?.maTinhNkq) missingFields.push('Tỉnh nơi khám bệnh');
-      if (!data?.maHuyenNkq) missingFields.push('Huyện nơi khám bệnh');
-      if (!data?.maXaNkq) missingFields.push('Xã nơi khám bệnh');
-
-      // Nếu có trường bị thiếu (trừ giới tính), trả về thông báo chi tiết
-      if (missingFields.length > 0) {
-        return {
-          success: false,
-          message: `Thiếu thông tin: ${missingFields.join(', ')}`
-        };
-      }
-
-      // Xử lý ngày sinh
-      let ngaySinh: Date;
-      try {
-        // Thử parse theo định dạng dd/MM/yyyy
-        const parts = data.ngaySinh.split('/');
-        if (parts.length === 3) {
-          ngaySinh = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
-        } else {
-          // Nếu không phải dd/MM/yyyy thì thử parse trực tiếp
-          ngaySinh = new Date(data.ngaySinh);
-        }
-
-        if (isNaN(ngaySinh.getTime())) {
-          return {
-            success: false,
-            message: 'Ngày sinh không hợp lệ'
-          };
-        }
-
-      } catch (error) {
-        return {
-          success: false,
-          message: 'Ngày sinh không đúng định dạng (dd/MM/yyyy)'
-        };
-      }
-
-      // Xử lý và kiểm tra giới tính
-      let gioiTinh: GioiTinh;
       
-      // Log để debug
-      console.log('Dữ liệu giới tính từ API:', {
-        gioiTinh: data.gioiTinh,
-        typeOf: typeof data.gioiTinh,
-        sex: data.sex
-      });
-
-      try {
-        if (data.gioiTinh === null || data.gioiTinh === undefined) {
-          // Thử lấy từ trường sex nếu có
-          if (data.sex) {
-            const sexNormalized = data.sex.toString().toLowerCase().trim();
-            if (['nam', 'male', '1', 'm'].includes(sexNormalized)) {
-              gioiTinh = 'Nam';
-            } else if (['nu', 'nữ', 'female', '2', '0', 'f'].includes(sexNormalized)) {
-              gioiTinh = 'Nữ';
-            } else {
-              throw new Error('Không thể xác định giới tính từ trường sex');
-            }
-          } else {
-            throw new Error('Thiếu thông tin giới tính');
-          }
-        } else if (typeof data.gioiTinh === 'number') {
-          if ([0, 2].includes(data.gioiTinh)) {
-            gioiTinh = 'Nữ';
-          } else if (data.gioiTinh === 1) {
-            gioiTinh = 'Nam';
-          } else {
-            throw new Error(`Giá trị giới tính không hợp lệ: ${data.gioiTinh}`);
-          }
-        } else if (typeof data.gioiTinh === 'string') {
-          const gioiTinhNormalized = data.gioiTinh.toLowerCase().trim();
-          if (['nam', 'male', '1', 'm', 'true'].includes(gioiTinhNormalized)) {
-            gioiTinh = 'Nam';
-          } else if (['nu', 'nữ', 'female', '2', '0', 'f', 'false'].includes(gioiTinhNormalized)) {
-            gioiTinh = 'Nữ';
-          } else {
-            throw new Error(`Giá trị giới tính không hợp lệ: ${data.gioiTinh}`);
-          }
-        } else if (typeof data.gioiTinh === 'boolean') {
-          gioiTinh = data.gioiTinh ? 'Nam' : 'Nữ';
-        } else {
-          throw new Error(`Không thể xử lý kiểu dữ liệu giới tính: ${typeof data.gioiTinh}`);
-        }
-      } catch (error: any) {
-        return {
-          success: false,
-          message: error.message || 'Lỗi xử lý giới tính'
-        };
+      // Truy xuất thông tin đợt kê khai
+      const dotKeKhai = await this.dotKeKhaiService.getDotKeKhai(this.dotKeKhaiId).toPromise();
+      if (!dotKeKhai) {
+        return { success: false, message: 'Không tìm thấy thông tin đợt kê khai' };
       }
 
-      // Log kết quả xử lý giới tính
-      console.log('Giới tính sau khi xử lý:', gioiTinh);
+      // Kiểm tra đối tượng đã được kê khai trong đợt này hay chưa
+      const existingKeKhai = await this.keKhaiBHYTService.getByDotKeKhai(this.dotKeKhaiId).toPromise();
+      const isExisting = existingKeKhai?.some(k => k.thongTinThe?.ma_so_bhxh === data.maSoBHXH);
 
-      // Xử lý địa chỉ
-      let diaChiNKQ = '';
-      if (typeof data.noiNhanHoSo === 'string') {
-        diaChiNKQ = data.noiNhanHoSo;
-      } else if (data.noiNhanHoSo?.diaChi) {
-        diaChiNKQ = data.noiNhanHoSo.diaChi;
-      } else {
-        diaChiNKQ = 'Chưa có địa chỉ'; // Giá trị mặc định
+      if (isExisting) {
+        return { success: false, message: 'Mã số BHXH đã được kê khai trong đợt này' };
       }
 
-      // Tối ưu việc tải dữ liệu địa chỉ
-      if (this.danhMucTinhs.length === 0) {
-        await this.loadDanhMucTinh();
-      }
-
-      if (data.maTinhNkq) {
-        await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
-      }
-
-      if (data.maHuyenNkq) {
-        await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
-      }
-
-      // Kiểm tra và log thông tin chuyển đổi
-      const tinhNKQ = this.getTinhTen(data.maTinhNkq || '');
-      const huyenNKQ = this.getHuyenTen(data.maHuyenNkq || '');
-      const xaNKQ = this.getXaTen(data.maXaNkq || '');
-
-      // Kiểm tra thông tin địa chỉ
-      if (!tinhNKQ || !huyenNKQ || !xaNKQ) {
-        const missingAddress = [];
-        if (!tinhNKQ) missingAddress.push('Tỉnh');
-        if (!huyenNKQ) missingAddress.push('Huyện');
-        if (!xaNKQ) missingAddress.push('Xã');
-        
-        return {
-          success: false,
-          message: `Không tìm thấy thông tin ${missingAddress.join(', ')} nơi khám bệnh`
-        };
-      }
-
-      // Sử dụng bệnh viện được chọn từ modal nếu có
-      const maBenhVien = this.multipleSearchBenhVien || data.maBenhVien || '';
-
-      // Tạo ThongTinThe với bệnh viện đã chọn
-      const thongTinTheData: ThongTinThe = {
-        ma_so_bhxh: data.maSoBHXH,
-        cccd: data.cmnd || '',
-        ho_ten: data.hoTen,
-        ngay_sinh: ngaySinh,
-        gioi_tinh: gioiTinh,
-        so_dien_thoai: data.soDienThoai || '',
-        ma_hgd: data.maHoGiaDinh || '',
-        ma_tinh_ks: data.maTinhKS || null,
-        ma_huyen_ks: data.maHuyenKS || null,
-        ma_xa_ks: data.maXaKS || null,
-        ma_tinh_nkq: data.maTinhNkq || '',
-        ma_huyen_nkq: data.maHuyenNkq || '',
-        ma_xa_nkq: data.maXaNkq || '',
-        dia_chi_nkq: diaChiNKQ,
-        benh_vien_kcb: this.getBenhVienTen(maBenhVien),
-        ma_benh_vien: maBenhVien,
-        so_the_bhyt: data.soTheBHYT || '',
-        ma_dan_toc: data.danToc || '',
-        quoc_tich: data.quocTich || 'VN',
-        nguoi_tao: this.currentUser.username,
+      // Trích xuất ngày tháng từ dữ liệu
+      const ngaySinhDate = this.formatNgaySinh(data.ngaySinh);
+      
+      // Xác định hạn thẻ cũ
+      const denNgayTheCu = data.denNgayTheCu ? this.formatNgaySinh(data.denNgayTheCu) : null;
+      
+      // Kiểm tra phương án đóng
+      const phuongAnDong = this.checkPhuongAnDong(denNgayTheCu);
+      
+      // Xác định thông tin đóng phí
+      const nguoiThu = data.nguoiThu || 1;
+      const soThangDong = this.multipleSearchSoThangDong || 3;
+      
+      // Tính hạn thẻ mới
+      const ngayLap = new Date(); // Ngày lập là ngày hiện tại
+      const hanTheMoiTu = this.tinhHanTheMoiTu(ngayLap, denNgayTheCu);
+      const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, soThangDong);
+      
+      // Tính số tiền cần đóng
+      const soTienCanDong = this.tinhSoTienCanDong(nguoiThu, soThangDong);
+      
+      // Tạo đối tượng kê khai mới
+      const keKhaiBHYT: KeKhaiBHYT = {
+        id: 0, // ID sẽ được sinh bởi cơ sở dữ liệu
+        dot_ke_khai_id: this.dotKeKhaiId,
+        thong_tin_the_id: 0, // Sẽ được cấp sau khi tạo ThongTinThe
+        thongTinThe: {
+          ma_so_bhxh: data.maSoBHXH,
+          ho_ten: data.hoTen,
+          ngay_sinh: ngaySinhDate, // Sử dụng Date thay vì string
+          gioi_tinh: data.gioiTinh === 1 ? 'Nam' : 'Nữ',
+          cccd: data.cmnd || '',
+          so_dien_thoai: data.soDienThoai || '',
+          ma_hgd: data.maHoGiaDinh || '',
+          ma_benh_vien: data.maBenhVien || '',
+          benh_vien_kcb: data.maBenhVien || '',
+          so_the_bhyt: data.soTheBHYT || '',
+          ma_dan_toc: data.ma_dan_toc || data.danToc || '',
+          quoc_tich: data.quoc_tich || data.quocTich || 'Việt Nam',
+          nguoi_tao: this.currentUser.userName
+        },
+        nguoi_thu: nguoiThu,
+        so_thang_dong: soThangDong,
+        so_tien_can_dong: soTienCanDong,
+        phuong_an_dong: phuongAnDong,
+        han_the_cu: denNgayTheCu,
+        han_the_moi_tu: hanTheMoiTu,
+        han_the_moi_den: hanTheMoiDen,
+        tinh_nkq: this.getTinhTen(data.maTinhNkq),
+        huyen_nkq: this.getHuyenTen(data.maHuyenNkq),
+        xa_nkq: this.getXaTen(data.maXaNkq),
+        dia_chi_nkq: data.noiNhanHoSo || '',
+        benh_vien_kcb: this.getBenhVienTen(data.maBenhVien || ''),
+        ma_benh_vien: data.maBenhVien || '',
+        nguoi_tao: this.currentUser.userName,
         ngay_tao: new Date(),
-        noiNhanHoSo: {
-          tinh: tinhNKQ,
-          huyen: huyenNKQ,
-          xa: xaNKQ,
-          diaChi: diaChiNKQ
-        }
+        ngay_bien_lai: ngayLap,
+        is_urgent: false,
+        trang_thai: 'chua_gui'
       };
-
+      
+      // Lưu kê khai mới vào cơ sở dữ liệu
       try {
-        // Tạo mới ThongTinThe và lấy kết quả trả về
-        const createdThongTinThe = await this.keKhaiBHYTService.createThongTinThe(thongTinTheData).toPromise();
-
-        if (!createdThongTinThe || !createdThongTinThe.id) {
-          return { 
-            success: false, 
-            message: 'Không thể tạo thông tin thẻ' 
-          };
-        }
-
-        // Tính toán các ngày tháng
-        const ngayBienLai = new Date();
-        
-        // Xử lý hạn thẻ cũ
-        let hanTheCu: Date | null = null;
-        if (data.denNgayTheCu) {
-          // Chuyển đổi chuỗi ngày thành Date object
-          const parts = data.denNgayTheCu.split('/');
-          if (parts.length === 3) {
-            // Nếu ngày ở định dạng dd/MM/yyyy
-            hanTheCu = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
-          } else {
-            // Thử parse trực tiếp nếu là định dạng ISO
-            hanTheCu = new Date(data.denNgayTheCu);
-          }
-
-          // Kiểm tra tính hợp lệ của ngày
-          if (isNaN(hanTheCu.getTime())) {
-            console.warn('Hạn thẻ cũ không hợp lệ:', data.denNgayTheCu);
-            hanTheCu = null; // Reset về null nếu không hợp lệ
-          }
-        }
-
-        // Tính toán hạn thẻ mới
-        const hanTheMoiTu = this.tinhHanTheMoiTu(ngayBienLai, hanTheCu);
-        const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, this.multipleSearchSoThangDong);
-        const soTienCanDong = this.tinhSoTienCanDong(data.nguoiThu, this.multipleSearchSoThangDong);
-
-        // Log để debug
-        console.log('Thông tin ngày tháng:', {
-          ngayBienLai,
-          hanTheCu,
-          hanTheMoiTu,
-          hanTheMoiDen,
-          rawDenNgayTheCu: data.denNgayTheCu
-        });
-
-        // Tạo KeKhaiBHYT
-        const keKhaiBHYTData: KeKhaiBHYT = {
-          dot_ke_khai_id: this.dotKeKhaiId,
-          thong_tin_the_id: createdThongTinThe.id,
-          dotKeKhai: this.dotKeKhai || undefined,
-          thongTinThe: createdThongTinThe,
-          nguoi_thu: data.nguoiThu,
-          so_thang_dong: this.multipleSearchSoThangDong,
-          phuong_an_dong: this.checkPhuongAnDong(hanTheCu),
-          han_the_cu: hanTheCu,
-          han_the_moi_tu: hanTheMoiTu,
-          han_the_moi_den: hanTheMoiDen,
-          tinh_nkq: tinhNKQ,
-          huyen_nkq: huyenNKQ,
-          xa_nkq: xaNKQ,
-          dia_chi_nkq: diaChiNKQ,
-          benh_vien_kcb: this.getBenhVienTen(maBenhVien),
-          ma_benh_vien: maBenhVien,
-          nguoi_tao: this.currentUser.username,
-          ngay_tao: new Date(),
-          ngay_bien_lai: ngayBienLai,
-          so_tien_can_dong: soTienCanDong,
-          is_urgent: false, // Thêm trường này
-          so_bien_lai: data.soBienLai || null, // Thêm trường so_bien_lai
-          quyen_bien_lai_id: data.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
-          trang_thai: 'chua_gui' // Thêm trường trang_thai với giá trị mặc định
-        };
-
-        // Tạo mới kê khai
-        await this.keKhaiBHYTService.create(this.dotKeKhaiId, keKhaiBHYTData).toPromise();
+        await this.keKhaiBHYTService.create(this.dotKeKhaiId, keKhaiBHYT).toPromise();
         return { success: true };
-
       } catch (error: any) {
-        if (error?.status === 400) {
-          return {
-            success: false,
-            message: error?.error?.message || 'Vui lòng kiểm tra lại thông tin'
-          };
-        }
-        throw error; // Ném lỗi để xử lý ở catch bên ngoài
+        return { 
+          success: false, 
+          message: error?.error?.message || 'Không thể tạo kê khai BHYT' 
+        };
       }
-
     } catch (error) {
-      console.error('Lỗi khi xử lý dữ liệu:', error);
-      return {
-        success: false,
-        message: 'Có lỗi xảy ra khi xử lý dữ liệu'
+      console.error('Lỗi tạo kê khai từ dữ liệu API:', error);
+      return { 
+        success: false, 
+        message: 'Có lỗi xảy ra khi tạo kê khai BHYT' 
       };
     }
   }
@@ -2170,6 +2015,22 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
           const response = await this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).toPromise();
           if (response && response.success) {
+            // Kiểm tra isThamGiaBb
+            if (response.data.isThamGiaBb === 1) {
+              failedCount++;
+              
+              const theBhyt = response.data.soTheBHYT ? 
+                `Số thẻ BHYT: ${response.data.soTheBHYT}` : 
+                'Chưa có thông tin số thẻ BHYT';
+                
+              this.searchResults.push({
+                maSoBHXH,
+                status: 'error',
+                message: `Đối tượng đang tham gia BHXH bắt buộc.\n${theBhyt}`
+              });
+              continue;
+            }
+            
             let nguoiThu: number;
             
             if (this.isHoGiaDinh) {

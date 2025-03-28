@@ -48,6 +48,9 @@ namespace WebApp.API.Controllers
                         cccd = k.ThongTinThe.cccd,
                         ngay_sinh = k.ThongTinThe.ngay_sinh,
                         gioi_tinh = k.ThongTinThe.gioi_tinh,
+                        ma_hgd = k.ThongTinThe.ma_hgd,
+                        ma_dan_toc = k.ThongTinThe.ma_dan_toc,
+                        so_dien_thoai = k.ThongTinThe.so_dien_thoai,
                         k.muc_thu_nhap,
                         k.ty_le_dong,
                         k.ty_le_nsnn,
@@ -64,7 +67,10 @@ namespace WebApp.API.Controllers
                         k.trang_thai,
                         k.nguoi_tao,
                         k.ngay_tao,
-                        k.ghi_chu
+                        k.ghi_chu,
+                        k.tinh_nkq,
+                        k.huyen_nkq,
+                        k.xa_nkq
                     })
                     .ToListAsync();
 
