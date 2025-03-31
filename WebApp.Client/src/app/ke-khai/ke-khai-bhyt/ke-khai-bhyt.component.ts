@@ -1680,41 +1680,44 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       return result;
     }
     
-    // Trường hợp HGD và NLNN
-    if (this.donViName.includes('NLNN') || !this.donViName.includes('DTTS')) {
-      if (!hanTheCu) {
-        // Nếu không có hạn thẻ cũ, cộng 30 ngày
-        const result = new Date(ngayBL.getTime());
-        result.setDate(result.getDate() + 30);
-        console.log('Không có hạn thẻ cũ - Hạn thẻ mới từ:', result);
-        return result;
-      }
-
-      // Đảm bảo hanTheCu là Date object và reset time về 00:00:00
-      const hanTC = new Date(hanTheCu);
-      hanTC.setHours(0, 0, 0, 0);
-
-      // Nếu ngày biên lai lớn hơn hạn thẻ cũ
-      if (ngayBL.getTime() > hanTC.getTime()) {
-        const result = new Date(ngayBL.getTime());
-        result.setDate(result.getDate() + 1);
-        console.log('Ngày biên lai lớn hơn hạn thẻ cũ - Hạn thẻ mới từ:', result);
-        return result;
-      }
-
-      // Nếu hạn thẻ cũ lớn hơn ngày biên lai
-      if (hanTC.getTime() > ngayBL.getTime()) {
-        const result = new Date(hanTC.getTime());
-        result.setDate(result.getDate() + 1);
-        console.log('Hạn thẻ cũ lớn hơn ngày biên lai - Hạn thẻ mới từ:', result);
-        return result;
-      }
+    // Trường hợp HGD, NLNN và các đơn vị khác (mặc định)
+    // Nếu không có hạn thẻ cũ, cộng 30 ngày
+    if (!hanTheCu) {
+      const result = new Date(ngayBL.getTime());
+      result.setDate(result.getDate() + 30);
+      console.log('Không có hạn thẻ cũ - Hạn thẻ mới từ:', result);
+      return result;
     }
 
-    // Mặc định cộng 30 ngày nếu không rơi vào các trường hợp trên
+    // Đảm bảo hanTheCu là Date object và reset time về 00:00:00
+    const hanTC = new Date(hanTheCu);
+    hanTC.setHours(0, 0, 0, 0);
+
+    // Nếu ngày biên lai lớn hơn hạn thẻ cũ
+    if (ngayBL.getTime() > hanTC.getTime()) {
+      const result = new Date(ngayBL.getTime());
+      result.setDate(result.getDate() + 1);
+      console.log('Ngày biên lai lớn hơn hạn thẻ cũ - Hạn thẻ mới từ:', result);
+      return result;
+    }
+
+    // Nếu hạn thẻ cũ lớn hơn ngày biên lai
+    if (hanTC.getTime() > ngayBL.getTime()) {
+      // Tạo một ngày mới là hạn thẻ cũ + 1 ngày
+      const result = new Date(hanTC);
+      result.setDate(result.getDate() + 1);
+      
+      // Log để debug
+      console.log('Hạn thẻ cũ:', hanTC);
+      console.log('Hạn thẻ mới từ (cộng 1 ngày):', result);
+      
+      return result;
+    }
+
+    // Nếu không thuộc các trường hợp trên (hiếm gặp, ngày bằng nhau), mặc định cộng 1 ngày vào ngày biên lai
     const result = new Date(ngayBL.getTime());
-    result.setDate(result.getDate() + 30);
-    console.log('Mặc định - Hạn thẻ mới từ:', result);
+    result.setDate(result.getDate() + 1);
+    console.log('Ngày biên lai bằng hạn thẻ cũ - Hạn thẻ mới từ:', result);
     return result;
   }
 

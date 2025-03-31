@@ -165,6 +165,14 @@
                 <i nz-icon nzType="export"></i>
               </button>
               <button 
+                *ngIf="data.dich_vu === 'BHXH TN'"
+                nz-button 
+                nzType="default"
+                nz-tooltip="Xuất BHXH VNPT"
+                (click)="$event.stopPropagation(); exportBHXHVNPT(data)">
+                <i nz-icon nzType="file-excel"></i>
+              </button>
+              <button 
                 *ngIf="data.trang_thai === 'chua_gui'" 
                 nz-button
                 nzType="primary"

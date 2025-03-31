@@ -11,6 +11,8 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Npgsql;
+using System.IO;
+using OfficeOpenXml;
 
 namespace WebApp.API.Controllers
 {
@@ -340,6 +342,326 @@ namespace WebApp.API.Controllers
         private bool KeKhaiBHXHExists(int id)
         {
             return _context.KeKhaiBHXHs.Any(e => e.id == id);
+        }
+
+        // GET: api/dot-ke-khai/{dotKeKhaiId}/ke-khai-bhxh-export-vnpt
+        [HttpGet]
+        [Route("{dotKeKhaiId}/ke-khai-bhxh-export-vnpt")]
+        public async Task<IActionResult> ExportBHXHVNPT(int dotKeKhaiId)
+        {
+            try
+            {
+                // Kiểm tra đợt kê khai tồn tại
+                var dotKeKhai = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
+                    .FirstOrDefaultAsync(d => d.id == dotKeKhaiId);
+                
+                if (dotKeKhai == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {dotKeKhaiId}" });
+                }
+
+                // Lấy danh sách kê khai BHXH theo đợt kê khai
+                var keKhaiBHXHs = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .Where(k => k.dot_ke_khai_id == dotKeKhaiId)
+                    .ToListAsync();
+
+                if (keKhaiBHXHs.Count == 0)
+                {
+                    return NotFound(new { message = "Không có dữ liệu kê khai BHXH trong đợt này" });
+                }
+
+                // Tạo bộ nhớ để chứa file Excel
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var package = new OfficeOpenXml.ExcelPackage(memoryStream))
+                    {
+                        // Tạo worksheet
+                        var worksheet = package.Workbook.Worksheets.Add("Dữ Liệu");
+
+                        // Header
+                        var headers = new List<string>
+                        {
+                            "STT",
+                            "HoTen",
+                            "MasoBHXH",
+                            "Loai",
+                            "PA",
+                            "MucTien",
+                            "Tuthang",
+                            "Sothang",
+                            "Tyle",
+                            "TyleNSNN",
+                            "TienHotro",
+                            "TyleNSDP",
+                            "TienNSDP",
+                            "TyleHotroKhac",
+                            "TienHotroKhac",
+                            "TienTuDong",
+                            "TongTien",
+                            "TenTinhDangSS",
+                            "Matinh_DangSS",
+                            "TenhuyenDangSS",
+                            "Mahuyen_DangSS",
+                            "TenxaDangSS",
+                            "Maxa_DangSS",
+                            "Diachi_DangSS",
+                            "GhiChu",
+                            "PhuongPhuc",
+                            "Heso",
+                            "SoCCCD",
+                            "SoBienLai",
+                            "NgayBienLai",
+                            "MaNhanvienThu",
+                            "Tk1_Save",
+                            "CMND",
+                            "Maho_Giadinh",
+                            "NgaySinh",
+                            "GioiTinh",
+                            "TenQuocTich",
+                            "QuocTich",
+                            "TenDanToc",
+                            "DanToc",
+                            "TenTinhBenhVien",
+                            "MaTinhBenhVien",
+                            "TenBenhVien",
+                            "MaBenhVien",
+                            "TenTinhKS",
+                            "Matinh_KS",
+                            "TenHuyenKS",
+                            "Mahuyen_KS",
+                            "TenXaKS",
+                            "Maxa_KS",
+                            "TenTinhNN",
+                            "Matinh_NN",
+                            "TenHuyenNN",
+                            "TenXaNN",
+                            "Maxa_NN",
+                            "Diachi_NN"
+                        };
+
+                        // Set header style và nội dung
+                        for (int i = 0; i < headers.Count; i++)
+                        {
+                            worksheet.Cells[1, i + 1].Value = headers[i];
+                            worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                            worksheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                            worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                            worksheet.Cells[1, i + 1].Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                        }
+
+                        // Fill data
+                        for (int i = 0; i < keKhaiBHXHs.Count; i++)
+                        {
+                            var item = keKhaiBHXHs[i];
+                            int row = i + 2; // Dòng 1 là header
+                            
+                            // Xác định loại đóng (1 = TM, 2 = DC)
+                            int loai = item.phuong_an == "TM" ? 1 : 2;
+                            
+                            // Phương án
+                            string phuongAn = item.phuong_an;
+                            
+                            // Tính tiền hỗ trợ (NSNN)
+                            decimal tienHoTro = Math.Round(item.muc_thu_nhap * (item.ty_le_dong / 100) * ((item.ty_le_nsnn ?? 0) / 100));
+                            
+                            // Tính tiền tự đóng
+                            decimal tienTuDong = item.so_tien_can_dong - tienHoTro;
+                            
+                            // Định dạng tháng bắt đầu thành mm/yyyy
+                            string thangBatDau = "";
+                            if (!string.IsNullOrEmpty(item.thang_bat_dau))
+                            {
+                                try
+                                {
+                                    // Nếu tháng bắt đầu có định dạng yyyy-MM hoặc yyyy/MM
+                                    if (item.thang_bat_dau.Length >= 7 && 
+                                        (item.thang_bat_dau.Contains("-") || item.thang_bat_dau.Contains("/")))
+                                    {
+                                        var parts = item.thang_bat_dau.Split(new char[] { '-', '/' });
+                                        if (parts.Length >= 2)
+                                        {
+                                            // Chuyển từ yyyy-MM hoặc yyyy/MM thành MM/yyyy
+                                            thangBatDau = $"{parts[1]}/{parts[0]}";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Nếu là định dạng khác, thử chuyển sang DateTime và định dạng lại
+                                        var date = DateTime.Parse(item.thang_bat_dau);
+                                        thangBatDau = date.ToString("MM/yyyy");
+                                    }
+                                }
+                                catch
+                                {
+                                    // Nếu không chuyển đổi được, giữ nguyên giá trị
+                                    thangBatDau = item.thang_bat_dau;
+                                }
+                            }
+                            
+                            // Lấy thông tin tỉnh, huyện, xã
+                            string tenTinh = item.tinh_nkq ?? "";
+                            string tenHuyen = item.huyen_nkq ?? "";
+                            string tenXa = item.xa_nkq ?? "";
+                            
+                            // Xác định hệ số từ giá trị phuong_thuc_dong
+                            int heSo = item.phuong_thuc_dong;
+                            
+                            // Định dạng ngày biên lai
+                            string ngayBienLai = item.ngay_bien_lai.HasValue ? item.ngay_bien_lai.Value.ToString("dd/MM/yyyy") : "";
+                            
+                            // Xác định giới tính dạng số (1 = nam, 0 = nữ)
+                            int gioiTinh = item.ThongTinThe.gioi_tinh?.ToLower() == "nam" ? 1 : 0;
+                            
+                            // Định dạng ngày sinh
+                            string ngaySinh = "";
+                            if (!string.IsNullOrEmpty(item.ThongTinThe.ngay_sinh))
+                            {
+                                try
+                                {
+                                    ngaySinh = DateTime.Parse(item.ThongTinThe.ngay_sinh).Year.ToString();
+                                }
+                                catch
+                                {
+                                    ngaySinh = item.ThongTinThe.ngay_sinh;
+                                }
+                            }
+
+                            // Quốc tịch
+                            string tenQuocTich = "Việt Nam";
+                            string quocTich = item.ThongTinThe.quoc_tich ?? "VN";
+
+                            // Dân tộc
+                            string tenDanToc = "";
+                            string danToc = item.ThongTinThe.ma_dan_toc ?? "";
+                            
+                            // Phương phúc - Giá trị cho cột Z
+                            string phuongPhuc = item.phuong_an == "TM" ? "TM" : "DC";
+                            
+                            // Thông tin KCB
+                            string maNhanVienThu = item.ma_nhan_vien;
+                            string tenTinhKS = "";
+                            string maTinhKS = item.ThongTinThe.ma_tinh_ks ?? "";
+                            string tenHuyenKS = "";
+                            string maHuyenKS = item.ThongTinThe.ma_huyen_ks ?? "";
+                            string tenXaKS = "";
+                            string maXaKS = item.ThongTinThe.ma_xa_ks ?? "";
+                            
+                            // Thông tin nơi ở
+                            string tenTinhNN = "";
+                            string maTinhNN = item.ThongTinThe.ma_tinh_nkq ?? "";
+                            string tenHuyenNN = "";
+                            string maHuyenNN = item.ThongTinThe.ma_huyen_nkq ?? "";
+                            string tenXaNN = "";
+                            string maXaNN = item.ThongTinThe.ma_xa_nkq ?? "";
+                            string diaChiNN = "";
+                            
+                            // Thông tin bệnh viện
+                            string tenTinhBenhVien = "";
+                            string maTinhBenhVien = "";
+                            string tenBenhVien = "";
+                            string maBenhVien = "";
+
+                            // Các cột cũ
+                            worksheet.Cells[row, 1].Value = i + 1; // STT
+                            worksheet.Cells[row, 2].Value = item.ThongTinThe.ho_ten; // HoTen
+                            worksheet.Cells[row, 3].Value = item.ThongTinThe.ma_so_bhxh; // MaSoBHXH
+                            worksheet.Cells[row, 4].Value = loai; // Loai
+                            worksheet.Cells[row, 5].Value = phuongAn; // PA
+                            worksheet.Cells[row, 6].Value = item.muc_thu_nhap; // MucTien
+                            worksheet.Cells[row, 7].Value = thangBatDau; // Tuthang
+                            worksheet.Cells[row, 8].Value = item.phuong_thuc_dong; // Sothang
+                            worksheet.Cells[row, 9].Value = item.ty_le_dong; // Tyle
+                            worksheet.Cells[row, 10].Value = item.ty_le_nsnn; // TyleNSNN
+                            worksheet.Cells[row, 11].Value = tienHoTro; // TienHotro
+                            worksheet.Cells[row, 12].Value = 0; // TyleNSDP
+                            worksheet.Cells[row, 13].Value = 0; // TienNSDP
+                            worksheet.Cells[row, 14].Value = 0; // TyleHotroKhac
+                            worksheet.Cells[row, 15].Value = 0; // TienHotroKhac
+                            worksheet.Cells[row, 16].Value = tienTuDong; // TienTuDong
+                            
+                            // Các cột vừa thêm
+                            worksheet.Cells[row, 17].Value = item.muc_thu_nhap; // TongTien
+                            worksheet.Cells[row, 18].Value = tenTinh; // TenTinhDangSS
+                            worksheet.Cells[row, 19].Value = maTinhNN; // Matinh_DangSS
+                            worksheet.Cells[row, 20].Value = tenHuyen; // TenhuyenDangSS
+                            worksheet.Cells[row, 21].Value = maHuyenNN; // Mahuyen_DangSS
+                            worksheet.Cells[row, 22].Value = tenXa; // TenxaDangSS
+                            worksheet.Cells[row, 23].Value = maXaNN; // Maxa_DangSS
+                            worksheet.Cells[row, 24].Value = ""; // Diachi_DangSS
+                            worksheet.Cells[row, 25].Value = item.ghi_chu; // GhiChu
+                            worksheet.Cells[row, 26].Value = phuongPhuc; // PhuongPhuc
+                            worksheet.Cells[row, 27].Value = heSo; // Heso
+                            worksheet.Cells[row, 28].Value = item.ThongTinThe.cccd; // SoCCCD
+                            worksheet.Cells[row, 29].Value = item.so_bien_lai; // SoBienLai
+                            
+                            // Các cột mới được thêm theo ảnh trước
+                            worksheet.Cells[row, 30].Value = ngayBienLai; // NgayBienLai
+                            worksheet.Cells[row, 31].Value = maNhanVienThu; // MaNhanvienThu
+                            worksheet.Cells[row, 32].Value = ""; // Tk1_Save
+                            worksheet.Cells[row, 33].Value = item.ThongTinThe.cccd; // CMND
+                            worksheet.Cells[row, 34].Value = item.ThongTinThe.ma_hgd; // Maho_Giadinh
+                            worksheet.Cells[row, 35].Value = ngaySinh; // NgaySinh
+                            worksheet.Cells[row, 36].Value = gioiTinh; // GioiTinh
+                            worksheet.Cells[row, 37].Value = tenQuocTich; // TenQuocTich
+                            worksheet.Cells[row, 38].Value = quocTich; // QuocTich
+                            worksheet.Cells[row, 39].Value = tenDanToc; // TenDanToc
+                            worksheet.Cells[row, 40].Value = danToc; // DanToc
+                            
+                            // Các cột mới thêm từ ảnh mới về bệnh viện và KS
+                            worksheet.Cells[row, 41].Value = tenTinhBenhVien; // TenTinhBenhVien
+                            worksheet.Cells[row, 42].Value = maTinhBenhVien; // MaTinhBenhVien
+                            worksheet.Cells[row, 43].Value = tenBenhVien; // TenBenhVien
+                            worksheet.Cells[row, 44].Value = maBenhVien; // MaBenhVien
+                            worksheet.Cells[row, 45].Value = tenTinhKS; // TenTinhKS
+                            worksheet.Cells[row, 46].Value = maTinhKS; // Matinh_KS
+                            worksheet.Cells[row, 47].Value = tenHuyenKS; // TenHuyenKS
+                            worksheet.Cells[row, 48].Value = maHuyenKS; // Mahuyen_KS
+                            worksheet.Cells[row, 49].Value = tenXaKS; // TenXaKS
+                            worksheet.Cells[row, 50].Value = maXaKS; // Maxa_KS
+                            worksheet.Cells[row, 51].Value = tenTinhNN; // TenTinhNN
+                            worksheet.Cells[row, 52].Value = maTinhNN; // Matinh_NN
+                            worksheet.Cells[row, 53].Value = tenHuyenNN; // TenHuyenNN
+                            
+                            // Các cột mới thêm từ ảnh mới nhất về xã nơi ở
+                            worksheet.Cells[row, 54].Value = tenXaNN; // TenXaNN
+                            worksheet.Cells[row, 55].Value = maXaNN; // Maxa_NN
+                            worksheet.Cells[row, 56].Value = diaChiNN; // Diachi_NN
+
+                            // Format các ô số
+                            worksheet.Cells[row, 6].Style.Numberformat.Format = "#,##0"; // MucTien
+                            worksheet.Cells[row, 11].Style.Numberformat.Format = "#,##0"; // TienHotro
+                            worksheet.Cells[row, 13].Style.Numberformat.Format = "#,##0"; // TienNSDP
+                            worksheet.Cells[row, 15].Style.Numberformat.Format = "#,##0"; // TienHotroKhac
+                            worksheet.Cells[row, 16].Style.Numberformat.Format = "#,##0"; // TienTuDong
+                            worksheet.Cells[row, 17].Style.Numberformat.Format = "#,##0"; // TongTien
+
+                            // Thêm border cho các ô
+                            for (int j = 1; j <= headers.Count; j++)
+                            {
+                                worksheet.Cells[row, j].Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                            }
+                        }
+
+                        // Tự động điều chỉnh độ rộng cột
+                        worksheet.Cells.AutoFitColumns();
+
+                        // Lưu workbook
+                        package.Save();
+                    }
+
+                    // Trả về file Excel
+                    memoryStream.Position = 0;
+                    string fileName = $"BHXH_VNPT_{dotKeKhai.ten_dot?.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.xlsx";
+                    return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi xuất BHXH VNPT: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi xuất dữ liệu BHXH VNPT", error = ex.Message });
+            }
         }
     }
 } 

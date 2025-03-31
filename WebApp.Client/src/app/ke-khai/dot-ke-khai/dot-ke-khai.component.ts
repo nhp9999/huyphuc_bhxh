@@ -52,6 +52,8 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface QuyenBienLai {
   id: number;
@@ -144,6 +146,8 @@ export class DotKeKhaiComponent implements OnInit {
   donVis: any[] = [];
   daiLys: DaiLy[] = [];
   checkedSet = new Set<number>();
+  // API Url từ environment
+  private apiUrl = `${environment.apiUrl}/dot-ke-khai`;
   // Cache cho danh sách đơn vị theo đại lý
   private donVisByDaiLyCache: Map<number, any[]> = new Map();
 
@@ -179,7 +183,8 @@ export class DotKeKhaiComponent implements OnInit {
     private router: Router,
     private iconService: NzIconService,
     private donViService: DonViService,
-    private userService: UserService
+    private userService: UserService,
+    private http: HttpClient
   ) {
     // Đăng ký các icons
     this.iconService.addIcon(
@@ -1536,5 +1541,39 @@ export class DotKeKhaiComponent implements OnInit {
     if (daiLyId) {
       this.loadDonVisByDaiLy(daiLyId);
     }
+  }
+
+  // Hàm xuất BHXH VNPT
+  exportBHXHVNPT(data: DotKeKhai): void {
+    if (!data || !data.id) {
+      this.message.error('Không tìm thấy thông tin đợt kê khai');
+      return;
+    }
+    
+    this.loading = true;
+    this.message.loading('Đang xuất dữ liệu BHXH VNPT...', { nzDuration: 0 });
+    
+    // Gọi API để lấy dữ liệu BHXH của đợt kê khai này
+    this.http.get(`${this.apiUrl}/${data.id}/ke-khai-bhxh-export-vnpt`, { 
+      responseType: 'blob' 
+    }).subscribe({
+      next: (blob: Blob) => {
+        // Tạo tên file dựa trên thông tin đợt kê khai
+        const fileName = `BHXH_VNPT_${data.ten_dot?.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`;
+        
+        // Sử dụng file-saver để lưu file
+        saveAs(blob, fileName);
+        
+        this.message.remove();
+        this.message.success('Đã xuất dữ liệu BHXH VNPT thành công');
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Lỗi khi xuất dữ liệu BHXH VNPT:', error);
+        this.message.remove();
+        this.message.error('Có lỗi xảy ra khi xuất dữ liệu BHXH VNPT');
+        this.loading = false;
+      }
+    });
   }
 } 
