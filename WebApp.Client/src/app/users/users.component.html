@@ -137,7 +137,9 @@
             <nz-form-item>
               <nz-form-label>Đơn vị công tác</nz-form-label>
               <nz-form-control>
-                <input nz-input formControlName="donViCongTac" placeholder="Nhập đơn vị công tác"/>
+                <nz-select formControlName="donViCongTac" nzShowSearch nzAllowClear style="width: 100%" nzPlaceHolder="Chọn đại lý">
+                  <nz-option *ngFor="let daiLy of daiLys" [nzValue]="daiLy.ten" [nzLabel]="daiLy.ten"></nz-option>
+                </nz-select>
               </nz-form-control>
             </nz-form-item>
           </div>

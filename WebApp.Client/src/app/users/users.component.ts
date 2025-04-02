@@ -17,6 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NguoiDung, UserService } from '../services/user.service';
+import { DaiLy, DaiLyService } from '../services/dai-ly.service';
 import { 
   LockOutline,
   UnlockOutline,
@@ -64,6 +65,7 @@ import { AuthService } from '../services/auth.service';
 })
 export class UsersComponent implements OnInit {
   nguoiDungs: NguoiDung[] = [];
+  daiLys: DaiLy[] = [];
   displayData: NguoiDung[] = [];
   filteredNguoiDungs: NguoiDung[] = [];
   isModalVisible = false;
@@ -79,7 +81,6 @@ export class UsersComponent implements OnInit {
   showDaiLySelect = false;
   filterStatus: number | null = null;
   isSuperAdmin = false;
-  daiLys: any[] = [];
   daiLyMap = new Map<string, string>();
   passwordVisible = false;
 
@@ -106,6 +107,7 @@ export class UsersComponent implements OnInit {
 
   constructor(
     private userService: UserService,
+    private daiLyService: DaiLyService,
     private message: NzMessageService,
     private modal: NzModalService,
     private fb: FormBuilder,
@@ -143,6 +145,7 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadNguoiDungs();
+    this.loadDaiLys();
   }
 
   loadNguoiDungs(): void {
@@ -166,6 +169,17 @@ export class UsersComponent implements OnInit {
         this.message.error('Không thể tải danh sách người dùng');
         this.isLoading = false;
         console.error('Error loading users:', error);
+      }
+    });
+  }
+
+  loadDaiLys(): void {
+    this.daiLyService.getDaiLys().subscribe({
+      next: (daiLys) => {
+        this.daiLys = daiLys;
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải danh sách đại lý:', error);
       }
     });
   }
