@@ -437,7 +437,7 @@
               <div class="chart-placeholder">
                 <div class="bar-chart-placeholder">
                   <div *ngFor="let item of bieuDoTheoNgay.slice(0, 10)" class="bar-item">
-                    <div class="bar-value" [style.height.%]="item.value / (bieuDoTheoNgay[0]?.value || 1) * 100"></div>
+                    <div class="bar-value" [style.height.%]="item.value / (bieuDoTheoNgay[0].value || 1) * 100"></div>
                     <div class="bar-label">{{ item.name | date:'dd/MM' }}</div>
                   </div>
                 </div>
