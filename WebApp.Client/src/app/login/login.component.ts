@@ -65,7 +65,7 @@ export class LoginComponent implements OnInit {
             }));
             this.authService.setSession(response);
             this.isLoading = false;
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/dot-ke-khai']);
           },
           error: (error: HttpErrorResponse) => {
             this.isLoading = false;
@@ -92,7 +92,7 @@ export class LoginComponent implements OnInit {
             }));
             this.authService.setSession(response);
             this.isLoading = false;
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/dot-ke-khai']);
           },
           error: (error: HttpErrorResponse) => {
             this.isLoading = false;

@@ -16,7 +16,7 @@
       </a>
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <li nz-menu-item nzMatchRouter routerLink="/dashboard">
+      <li nz-menu-item nzMatchRouter routerLink="/dashboard" *ngIf="false">
         <span nz-icon nzType="dashboard"></span>
         <span>Trang chủ</span>
       </li>
@@ -95,7 +95,7 @@
           </li>
         </ul>
       </li>
-      <li nz-submenu nzTitle="Báo cáo" nzIcon="bar-chart">
+      <li nz-submenu nzTitle="Báo cáo" nzIcon="bar-chart" *ngIf="false">
         <ul>
           <li nz-menu-item nzMatchRouter routerLink="/reports/monthly">
             <span nz-icon nzType="file-text"></span>
@@ -107,7 +107,7 @@
           </li>
         </ul>
       </li>
-      <li nz-menu-item nzMatchRouter routerLink="/settings">
+      <li nz-menu-item nzMatchRouter routerLink="/settings" *ngIf="false">
         <span nz-icon nzType="setting"></span>
         <span>Cài đặt</span>
       </li>
@@ -131,7 +131,6 @@
           </span>
           <nz-divider nzType="vertical"></nz-divider>
           <a class="header-item" nz-dropdown [nzDropdownMenu]="userMenu">
-            <nz-avatar [nzSrc]="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + currentUser?.username" [nzSize]="32"></nz-avatar>
             <span class="username">{{ currentUser?.hoTen || currentUser?.username }}</span>
           </a>
           <nz-dropdown-menu #userMenu="nzDropdownMenu">

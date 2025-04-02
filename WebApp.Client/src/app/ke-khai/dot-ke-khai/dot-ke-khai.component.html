@@ -141,7 +141,7 @@
                      nz-tooltip="Xem hóa đơn" />
               </button>
             </ng-container>
-            <button *ngIf="!data.url_bill && data.trang_thai === 'cho_thanh_toan'" 
+            <button *ngIf="!data.url_bill && (data.trang_thai === 'cho_thanh_toan' || data.trang_thai === 'chua_gui')" 
                     nz-button nzType="link" 
                     (click)="$event.stopPropagation(); showThanhToanModal(data)">
               <i nz-icon nzType="upload"></i>
@@ -244,6 +244,13 @@
           <nz-form-label [nzSpan]="5">Mã hồ sơ</nz-form-label>
           <nz-form-control [nzSpan]="19">
             <input nz-input formControlName="ma_ho_so" placeholder="Nhập mã hồ sơ" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSpan]="5">Biên lai điện tử</nz-form-label>
+          <nz-form-control [nzSpan]="19">
+            <label nz-checkbox formControlName="bien_lai_dien_tu">Sử dụng biên lai điện tử</label>
           </nz-form-control>
         </nz-form-item>
       </form>

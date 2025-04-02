@@ -221,6 +221,7 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
       don_vi_id: [null, [Validators.required]],
       ma_ho_so: [null],
+      bien_lai_dien_tu: [false],
       dai_ly_id: [null, [Validators.required]]
     });
 
@@ -500,6 +501,7 @@ export class DotKeKhaiComponent implements OnInit {
             nguoi_tao: this.currentUser.username || '',
             don_vi_id: null,
             ma_ho_so: '',
+            bien_lai_dien_tu: false,
             dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
           }, { emitEvent: false });
           
@@ -551,6 +553,7 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
       ma_ho_so: '',
+      bien_lai_dien_tu: false,
       dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
     }, { emitEvent: false });
 
@@ -654,6 +657,7 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: formValue.nguoi_tao,
         don_vi_id: formValue.don_vi_id,
         ma_ho_so: formValue.ma_ho_so,
+        bien_lai_dien_tu: formValue.bien_lai_dien_tu,
         dai_ly_id: formValue.dai_ly_id
       };
 
@@ -679,6 +683,7 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: formValue.nguoi_tao,
         don_vi_id: formValue.don_vi_id,
         ma_ho_so: formValue.ma_ho_so,
+        bien_lai_dien_tu: formValue.bien_lai_dien_tu,
         dai_ly_id: formValue.dai_ly_id,
         dich_vu: formValue.dich_vu || 'BHYT' // Thêm trường dich_vu với giá trị mặc định là BHYT
       };
