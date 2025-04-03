@@ -131,6 +131,7 @@ export class QuyenBienLaiComponent implements OnInit {
   selectedQuyenBienLai: QuyenBienLai | null = null;
   suggestedQuyenSo: string = '';
   quyenSoStatus: string = '';
+  private debounceTimer: any;
 
   constructor(
     private fb: FormBuilder,
@@ -149,39 +150,37 @@ export class QuyenBienLaiComponent implements OnInit {
       so_hien_tai: ['']
     });
 
-    // Thêm subscription để theo dõi thay đổi của tu_so
+    // Giảm tần suất xử lý khi nhập liệu bằng cách gom nhóm các subscription
+    // và thêm debounce time
+    this.form.valueChanges.subscribe(() => {
+      this.debounce(() => {
+        this.validateSoHienTai();
+      }, 300);
+    });
+
+    // Thêm subscription để theo dõi thay đổi của tu_so và tính toán den_so
     this.form.get('tu_so')?.valueChanges.subscribe(value => {
       if (value) {
         const tuSo = parseInt(value);
         if (!isNaN(tuSo)) {
-          const denSo = (tuSo + 49).toString().padStart(value.length, '0');
-          this.form.patchValue({
-            den_so: denSo
-          }, { emitEvent: false }); // Không trigger valueChanges của den_so
-          
-          // Nếu là thêm mới và chưa có số hiện tại, đặt số hiện tại = từ số
-          if (!this.editingQuyenBienLai && !this.form.get('so_hien_tai')?.value) {
-            this.form.patchValue({
-              so_hien_tai: value
-            }, { emitEvent: false });
-          }
+          this.debounce(() => {
+            const denSo = (tuSo + 49).toString().padStart(value.length, '0');
+            if (!this.editingQuyenBienLai && !this.form.get('so_hien_tai')?.value) {
+              this.form.patchValue({
+                den_so: denSo,
+                so_hien_tai: value
+              }, { emitEvent: false });
+            } else {
+              this.form.patchValue({
+                den_so: denSo
+              }, { emitEvent: false });
+            }
+          }, 300);
         }
       }
     });
 
-    // Thêm validator cho số hiện tại
-    this.form.get('so_hien_tai')?.valueChanges.subscribe(() => {
-      this.validateSoHienTai();
-    });
-
-    // Khi từ số hoặc đến số thay đổi, cũng cần validate lại số hiện tại
-    this.form.get('tu_so')?.valueChanges.subscribe(() => {
-      this.validateSoHienTai();
-    });
-
-    this.form.get('den_so')?.valueChanges.subscribe(() => {
-      this.validateSoHienTai();
-    });
+    // Bỏ các subscription không cần thiết vì đã được gom vào form.valueChanges
   }
 
   ngOnInit(): void {
@@ -236,11 +235,22 @@ export class QuyenBienLaiComponent implements OnInit {
     this.editingQuyenBienLai = null;
     this.form.reset({
       trang_thai: 'dang_su_dung',
-      so_hien_tai: '' // Số hiện tại sẽ được thiết lập sau khi chọn từ số
+      so_hien_tai: '' // Số hiện tại sẽ được thiết lập tự động khi nhập từ số
     });
     this.modalTitle = 'Thêm quyển biên lai';
     this.isVisible = true;
     this.calculateSuggestedQuyenSo();
+    
+    // Một mẹo nhỏ để đảm bảo số hiện tại sẽ tự động được cập nhật 
+    // với giá trị từ số khi người dùng nhập từ số
+    setTimeout(() => {
+      const tuSoValue = this.form.get('tu_so')?.value;
+      if (tuSoValue) {
+        this.form.patchValue({
+          so_hien_tai: tuSoValue
+        }, { emitEvent: false });
+      }
+    }, 500);
   }
 
   handleOk(): void {
@@ -414,16 +424,32 @@ export class QuyenBienLaiComponent implements OnInit {
     if (controlName) {
       const control = this.form.get(controlName);
       if (control) {
-        control.setValue(value, { emitEvent: true });
+        // Không gọi emitEvent để tránh trigger các validators liên tục
+        control.setValue(value, { emitEvent: false });
         
-        // Nếu đang nhập tu_so, tự động tính den_so
+        // Nếu đang nhập tu_so, tự động cập nhật den_so và so_hien_tai
         if (controlName === 'tu_so' && value) {
           const tuSo = parseInt(value);
           if (!isNaN(tuSo)) {
-            const denSo = (tuSo + 49).toString().padStart(value.length, '0');
-            this.form.patchValue({
-              den_so: denSo
-            }, { emitEvent: false });
+            // Tạo một timeout để giảm lag khi nhập liệu
+            setTimeout(() => {
+              const denSo = (tuSo + 49).toString().padStart(value.length, '0');
+              
+              // Luôn thiết lập số hiện tại = từ số khi thay đổi từ số (trừ khi đang chỉnh sửa)
+              // Nếu đang ở trạng thái "đã sử dụng" thì số hiện tại = đến số
+              const trangThai = this.form.get('trang_thai')?.value;
+              if (trangThai === 'da_su_dung') {
+                this.form.patchValue({
+                  den_so: denSo,
+                  so_hien_tai: denSo
+                }, { emitEvent: false });
+              } else {
+                this.form.patchValue({
+                  den_so: denSo,
+                  so_hien_tai: value
+                }, { emitEvent: false });
+              }
+            }, 100);
           }
         }
       }
@@ -431,22 +457,18 @@ export class QuyenBienLaiComponent implements OnInit {
   }
 
   // Phương thức mới để xử lý nhập quyển số (cho phép nhập chữ và ký tự đặc biệt)
-  onQuyenSoInput(event: Event, maxLength: number) {
+  onQuyenSoInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    let value = input.value;
+    const value = input.value;
     
-    // Chỉ giới hạn độ dài, cho phép mọi ký tự
-    if (value.length > maxLength) {
-      value = value.slice(0, maxLength);
-    }
-    
-    // Cập nhật giá trị vào input và form control
-    input.value = value;
+    // Cập nhật giá trị vào form control mà không gọi sự kiện phức tạp
     const controlName = input.getAttribute('formControlName');
     if (controlName) {
       const control = this.form.get(controlName);
       if (control) {
-        control.setValue(value, { emitEvent: true });
+        control.setValue(value, { emitEvent: false });
+        // Chỉ kích hoạt valueChanges khi người dùng ngừng nhập
+        // Không gọi checkDuplicateQuyenSo ở đây nữa - sẽ gọi khi blur
       }
     }
   }
@@ -504,14 +526,14 @@ export class QuyenBienLaiComponent implements OnInit {
     const soHienTaiControl = this.form.get('so_hien_tai');
     const tuSoControl = this.form.get('tu_so');
     const denSoControl = this.form.get('den_so');
-    const trangThaiControl = this.form.get('trang_thai');
 
-    if (soHienTaiControl && tuSoControl && denSoControl && 
-        soHienTaiControl.value && tuSoControl.value && denSoControl.value) {
+    if (!soHienTaiControl?.value || !tuSoControl?.value || !denSoControl?.value) {
+      return; // Không validate nếu thiếu giá trị
+    }
+
+    try {
       // Thêm validator pattern
-      const currentValidators = soHienTaiControl.validator ? [soHienTaiControl.validator] : [];
-      soHienTaiControl.setValidators([...currentValidators, Validators.pattern(/^\d+$/)]);
-      soHienTaiControl.updateValueAndValidity();
+      soHienTaiControl.setValidators([Validators.required, Validators.pattern(/^\d+$/)]);
       
       const soHienTai = parseInt(soHienTaiControl.value);
       const tuSo = parseInt(tuSoControl.value);
@@ -528,6 +550,8 @@ export class QuyenBienLaiComponent implements OnInit {
           soHienTaiControl.setErrors(Object.keys(errors).length ? errors : null);
         }
       }
+    } catch (error) {
+      console.error('Lỗi khi validate số hiện tại:', error);
     }
   }
 
@@ -706,26 +730,30 @@ export class QuyenBienLaiComponent implements OnInit {
       return;
     }
 
-    // Kiểm tra xem quyển số đã tồn tại chưa
-    const isDuplicate = this.listQuyenBienLai.some(item => 
-      item.quyen_so === quyenSoValue && 
-      (!this.editingQuyenBienLai || item.id !== this.editingQuyenBienLai.id)
-    );
+    try {
+      // Kiểm tra xem quyển số đã tồn tại chưa - chỉ tìm kiếm trong danh sách đã lọc
+      const isDuplicate = this.listQuyenBienLai.some(item => 
+        item.quyen_so === quyenSoValue && 
+        (!this.editingQuyenBienLai || item.id !== this.editingQuyenBienLai.id)
+      );
 
-    if (isDuplicate) {
-      quyenSoControl?.setErrors({ ...quyenSoControl.errors, duplicate: true });
-      this.quyenSoStatus = 'error';
-    } else {
-      // Xóa lỗi duplicate nếu có
-      if (quyenSoControl?.hasError('duplicate')) {
-        const errors = { ...quyenSoControl.errors };
-        delete errors['duplicate'];
+      if (isDuplicate) {
+        quyenSoControl?.setErrors({ ...quyenSoControl.errors, duplicate: true });
+        this.quyenSoStatus = 'error';
+      } else {
+        // Xóa lỗi duplicate nếu có
+        if (quyenSoControl?.hasError('duplicate')) {
+          const errors = { ...quyenSoControl.errors };
+          delete errors['duplicate'];
+          
+          // Nếu không còn lỗi nào khác, set errors = null
+          quyenSoControl.setErrors(Object.keys(errors).length ? errors : null);
+        }
         
-        // Nếu không còn lỗi nào khác, set errors = null
-        quyenSoControl.setErrors(Object.keys(errors).length ? errors : null);
+        this.quyenSoStatus = quyenSoControl?.invalid ? 'error' : 'success';
       }
-      
-      this.quyenSoStatus = quyenSoControl?.invalid ? 'error' : 'success';
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra trùng lặp quyển số:', error);
     }
   }
 
@@ -791,5 +819,13 @@ export class QuyenBienLaiComponent implements OnInit {
         }
       });
     }
+  }
+
+  // Phương thức debounce để tránh gọi hàm quá nhiều lần
+  debounce(func: Function, wait: number) {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      func();
+    }, wait);
   }
 } 

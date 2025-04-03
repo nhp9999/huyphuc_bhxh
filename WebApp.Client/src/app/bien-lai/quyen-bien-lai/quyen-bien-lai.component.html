@@ -213,9 +213,8 @@
               <nz-input-group [nzPrefix]="quyenSoPrefix" [nzSuffix]="quyenSoSuffix">
                 <input nz-input 
                   formControlName="quyen_so" 
-                  placeholder="Nhập quyển số (tối đa 5 ký tự)" 
-                  maxlength="5"
-                  (input)="onQuyenSoInput($event, 5)"
+                  placeholder="Nhập quyển số (cho phép ký tự, số, -, /)" 
+                  (input)="onQuyenSoInput($event)"
                   (blur)="checkDuplicateQuyenSo()" />
               </nz-input-group>
               <ng-template #quyenSoPrefix>
