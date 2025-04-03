@@ -44,57 +44,35 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                _logger.LogInformation($"Login attempt for user: {loginDto.Username}");
-
+                // Xác thực người dùng và mật khẩu
                 var user = await _context.NguoiDungs
                     .Where(u => u.user_name == loginDto.Username && u.status == 1)
                     .FirstOrDefaultAsync();
 
                 if (user == null)
                 {
-                    _logger.LogWarning($"Login failed: User not found - {loginDto.Username}");
+                    _logger.LogWarning($"Đăng nhập thất bại: Không tìm thấy người dùng - {loginDto.Username}");
                     return Unauthorized(new { message = "Tên đăng nhập hoặc mật khẩu không đúng" });
                 }
-
-                _logger.LogInformation($"Stored password hash: {user.password}");
-                _logger.LogInformation($"Provided password: {loginDto.Password}");
 
                 bool isValidPassword = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.password);
 
                 if (!isValidPassword)
                 {
-                    _logger.LogWarning($"Login failed: Invalid password for user - {loginDto.Username}");
+                    _logger.LogWarning($"Đăng nhập thất bại: Mật khẩu không đúng - {loginDto.Username}");
                     return Unauthorized(new { message = "Tên đăng nhập hoặc mật khẩu không đúng" });
                 }
 
+                // Sinh token JWT
                 var token = GenerateJwtToken(user);
 
-                // Update last login time
+                // Cập nhật thời gian đăng nhập cuối
                 user.updated_at = DateTime.UtcNow;
-                
-                // Lấy vị trí từ IP
-                try {
-                    using (var client = new HttpClient())
-                    {
-                        var response = await client.GetAsync($"https://open.oapi.vn/ip/me");
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var locationData = await response.Content.ReadFromJsonAsync<OpenApiLocationResponse>();
-                            if (locationData != null && locationData.code == "success")
-                            {
-                                user.client_id = $"{locationData.data.city}, {locationData.data.region}, {locationData.data.country}";
-                                _logger.LogInformation($"Location found: {user.client_id}");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"Error getting location from IP: {ex.Message}");
-                }
-
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation($"Đăng nhập thành công: {loginDto.Username}");
+
+                // Trả về thông tin người dùng và token
                 return Ok(new
                 {
                     token,
@@ -117,7 +95,7 @@ namespace WebApp.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Login error: {ex.Message}");
+                _logger.LogError($"Lỗi đăng nhập: {ex.Message}");
                 return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình đăng nhập" });
             }
         }
@@ -162,7 +140,7 @@ namespace WebApp.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Get current user error: {ex.Message}");
+                _logger.LogError($"Lỗi lấy thông tin người dùng: {ex.Message}");
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy thông tin người dùng" });
             }
         }
@@ -176,6 +154,7 @@ namespace WebApp.API.Controllers
                 new Claim("hoTen", user.ho_ten)
             };
 
+            // Thêm roles vào claims
             if (user.roles != null)
             {
                 foreach (var role in user.roles)
@@ -189,6 +168,7 @@ namespace WebApp.API.Controllers
                 claims.Add(new Claim("IsSuperAdmin", "true"));
             }
 
+            // Tạo token
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "your-256-bit-secret"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expires = DateTime.Now.AddDays(Convert.ToDouble(_configuration["Jwt:ExpireDays"] ?? "1"));
@@ -220,7 +200,7 @@ namespace WebApp.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Database connection check error: {ex.Message}");
+                _logger.LogError($"Lỗi kiểm tra kết nối CSDL: {ex.Message}");
                 return StatusCode(503, new { message = "Lỗi khi kiểm tra kết nối đến cơ sở dữ liệu" });
             }
         }
