@@ -213,9 +213,9 @@
               <nz-input-group [nzPrefix]="quyenSoPrefix" [nzSuffix]="quyenSoSuffix">
                 <input nz-input 
                   formControlName="quyen_so" 
-                  placeholder="Nhập quyển số (tối đa 5 số)" 
+                  placeholder="Nhập quyển số (tối đa 5 ký tự)" 
                   maxlength="5"
-                  (input)="onNumberInput($event, 5)"
+                  (input)="onQuyenSoInput($event, 5)"
                   (blur)="checkDuplicateQuyenSo()" />
               </nz-input-group>
               <ng-template #quyenSoPrefix>
@@ -234,7 +234,7 @@
                 <span nz-icon nzType="exclamation-circle"></span> Vui lòng nhập quyển số!
               </ng-container>
               <ng-container *ngIf="control.hasError('pattern')">
-                <span nz-icon nzType="warning"></span> Quyển số chỉ được nhập số và tối đa 5 chữ số!
+                <span nz-icon nzType="warning"></span> Quyển số không hợp lệ!
               </ng-container>
               <ng-container *ngIf="control.hasError('duplicate')">
                 <span nz-icon nzType="stop"></span> Quyển số đã tồn tại! Vui lòng chọn quyển số khác.

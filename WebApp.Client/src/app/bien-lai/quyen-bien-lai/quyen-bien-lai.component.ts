@@ -430,6 +430,27 @@ export class QuyenBienLaiComponent implements OnInit {
     }
   }
 
+  // Phương thức mới để xử lý nhập quyển số (cho phép nhập chữ và ký tự đặc biệt)
+  onQuyenSoInput(event: Event, maxLength: number) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+    
+    // Chỉ giới hạn độ dài, cho phép mọi ký tự
+    if (value.length > maxLength) {
+      value = value.slice(0, maxLength);
+    }
+    
+    // Cập nhật giá trị vào input và form control
+    input.value = value;
+    const controlName = input.getAttribute('formControlName');
+    if (controlName) {
+      const control = this.form.get(controlName);
+      if (control) {
+        control.setValue(value, { emitEvent: true });
+      }
+    }
+  }
+
   updateCheckedSet(id: number, checked: boolean): void {
     if (checked) {
       this.setOfCheckedId.add(id);
@@ -646,18 +667,27 @@ export class QuyenBienLaiComponent implements OnInit {
   // Định dạng hiển thị tiến độ
   progressFormatFn = (percent: number): string => {
     return `${percent}%`;
-  };
+  }
 
-  // Tính toán gợi ý quyển số (quyển số tiếp theo)
+  // Kiểm tra quyển số có phải là dạng số không
+  isNumericQuyenSo(quyenSo: string): boolean {
+    return /^\d+$/.test(quyenSo);
+  }
+
+  // Tính toán giá trị gợi ý cho quyển số
   calculateSuggestedQuyenSo(): void {
-    if (this.listQuyenBienLai.length === 0) {
+    // Tìm quyển số lớn nhất trong danh sách
+    const numericQuyenSo = this.listQuyenBienLai
+      .map(q => q.quyen_so)
+      .filter(qs => /^\d+$/.test(qs.toString())) // Chỉ lấy quyển số dạng số
+      .map(qs => parseInt(qs.toString()));
+      
+    if (numericQuyenSo.length > 0) {
+      const maxQuyenSo = Math.max(...numericQuyenSo);
+      this.suggestedQuyenSo = (maxQuyenSo + 1).toString();
+    } else {
       this.suggestedQuyenSo = '1';
-      return;
     }
-
-    // Tìm quyển số lớn nhất
-    const maxQuyenSo = Math.max(...this.listQuyenBienLai.map(item => parseInt(item.quyen_so)));
-    this.suggestedQuyenSo = (maxQuyenSo + 1).toString();
   }
 
   // Áp dụng gợi ý quyển số
