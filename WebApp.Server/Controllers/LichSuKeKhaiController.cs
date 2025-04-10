@@ -38,10 +38,30 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var userName = User.Identity?.Name;
+                if (string.IsNullOrEmpty(userName))
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Kiểm tra vai trò của người dùng
+                var currentUser = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.user_name == userName);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
                     .AsQueryable();
+
+                // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(k => k.nguoi_tao == userName);
+                }
 
                 // Áp dụng các điều kiện tìm kiếm
                 if (!string.IsNullOrEmpty(maSoBHXH))
@@ -89,6 +109,7 @@ namespace WebApp.API.Controllers
                         k.so_tien_can_dong,
                         k.is_urgent,
                         k.ma_ho_so,
+                        k.nguoi_tao,
                         ThongTinThe = new
                         {
                             k.ThongTinThe.ma_so_bhxh,
@@ -127,10 +148,30 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var userName = User.Identity?.Name;
+                if (string.IsNullOrEmpty(userName))
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Kiểm tra vai trò của người dùng
+                var currentUser = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.user_name == userName);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
                     .AsQueryable();
+
+                // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(k => k.nguoi_tao == userName);
+                }
 
                 // Áp dụng các điều kiện tìm kiếm
                 if (!string.IsNullOrEmpty(maSoBHXH))
@@ -227,10 +268,30 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var userName = User.Identity?.Name;
+                if (string.IsNullOrEmpty(userName))
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Kiểm tra vai trò của người dùng
+                var currentUser = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.user_name == userName);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.KeKhaiBHXHs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
                     .AsQueryable();
+
+                // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(k => k.nguoi_tao == userName);
+                }
 
                 // Áp dụng các điều kiện tìm kiếm
                 if (!string.IsNullOrEmpty(maSoBHXH))
@@ -278,6 +339,7 @@ namespace WebApp.API.Controllers
                         k.so_bien_lai,
                         k.ngay_tao,
                         k.ma_ho_so,
+                        k.nguoi_tao,
                         ThongTinThe = new {
                             k.ThongTinThe.ma_so_bhxh,
                             k.ThongTinThe.ho_ten,
@@ -314,10 +376,30 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var userName = User.Identity?.Name;
+                if (string.IsNullOrEmpty(userName))
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Kiểm tra vai trò của người dùng
+                var currentUser = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.user_name == userName);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { success = false, message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 var query = _context.KeKhaiBHXHs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
                     .AsQueryable();
+
+                // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
+                if (!currentUser.roles.Contains("admin") && !currentUser.roles.Contains("super_admin"))
+                {
+                    query = query.Where(k => k.nguoi_tao == userName);
+                }
 
                 // Áp dụng các điều kiện tìm kiếm
                 if (!string.IsNullOrEmpty(maSoBHXH))

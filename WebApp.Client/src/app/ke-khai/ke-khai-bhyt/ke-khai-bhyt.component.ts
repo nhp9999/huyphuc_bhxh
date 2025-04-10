@@ -219,7 +219,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   isVisible = false;
   isEdit = false;
   form!: FormGroup;
-  currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  currentUser: any = {};
   selectedIds: number[] = [];
   dotKeKhaiId: number = 0;
   isAllChecked = false;
@@ -428,14 +428,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Lấy thông tin user từ localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      this.currentUser = JSON.parse(userStr);
+      console.log('currentUser trong component:', this.currentUser);
+    }
+    
+    // Các phần khởi tạo khác
+    this.loadingTable = true;
     this.route.params.subscribe(params => {
       this.dotKeKhaiId = +params['id'];
       this.loadDotKeKhai();
       this.loadData();
-      
-      // Tải trước tất cả dữ liệu địa chính
-      this.preloadAddressData();
     });
+
+    // Khởi tạo form
+    this.initForm();
 
     // Load danh mục CSKCB một lần duy nhất ở đây
     this.loadDanhMucCSKCB();
@@ -978,7 +987,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               dia_chi_nkq: formValue.dia_chi_nkq,
               benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
               ma_benh_vien: formValue.benh_vien_kcb || '',
-              nguoi_tao: this.currentUser.username,
+              nguoi_tao: this.currentUser.userName,
               ngay_tao: new Date(),
               so_the_bhyt: formValue.so_the_bhyt || '',
               ma_dan_toc: formValue.ma_dan_toc || '',
@@ -1016,7 +1025,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                       dia_chi_nkq: formValue.dia_chi_nkq,
                       benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
                       ma_benh_vien: formValue.benh_vien_kcb || '',
-                      nguoi_tao: this.currentUser.username,
+                      nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
                       ngay_tao: new Date(),
                       ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
                       so_tien_can_dong: formValue.so_tien_can_dong || 0,
@@ -1080,7 +1089,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           so_dien_thoai: formValue.so_dien_thoai || '',
           ma_hgd: formValue.ma_hgd || '',
           ma_tinh_ks: formValue.ma_tinh_ks || null,
-          nguoi_tao: this.currentUser.username,
+          nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user', // Đảm bảo có giá trị
           ngay_tao: new Date(),
           noiNhanHoSo: {
             tinh: this.getTinhTen(formValue.tinh_nkq),
@@ -1101,12 +1110,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
         // Tạo đối tượng KeKhaiBHYT
         const data: KeKhaiBHYT = {
+          id: 0,
           dot_ke_khai_id: this.dotKeKhaiId,
-          thong_tin_the_id: thongTinTheData.id!,
-          dotKeKhai: this.dotKeKhai || undefined,
+          thong_tin_the_id: 0,
           thongTinThe: thongTinTheData,
           nguoi_thu: formValue.nguoi_thu,
           so_thang_dong: formValue.so_thang_dong,
+          so_tien_can_dong: formValue.so_tien_can_dong || 0,
           phuong_an_dong: formValue.phuong_an_dong,
           han_the_cu: formValue.han_the_cu ? new Date(formValue.han_the_cu) : null,
           han_the_moi_tu: formValue.han_the_moi_tu ? new Date(formValue.han_the_moi_tu) : new Date(),
@@ -1117,14 +1127,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           dia_chi_nkq: formValue.dia_chi_nkq,
           benh_vien_kcb: this.getBenhVienTen(formValue.benh_vien_kcb),
           ma_benh_vien: formValue.benh_vien_kcb || '',
-          nguoi_tao: this.currentUser.username,
+          nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
           ngay_tao: new Date(),
-          ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : new Date(),
-          so_tien_can_dong: formValue.so_tien_can_dong || 0,
-          is_urgent: false, // Thêm trường này
-          so_bien_lai: formValue.so_bien_lai, // Thêm trường so_bien_lai
-          quyen_bien_lai_id: formValue.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
-          trang_thai: 'chua_gui' // Thêm trường trang_thai với giá trị mặc định
+          ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
+          is_urgent: false,
+          trang_thai: 'chua_gui'
         };
 
         // Tạo mới KeKhaiBHYT
@@ -1137,6 +1144,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             this.initForm(); // Thêm dòng này để làm mới form
           },
           error: (error) => {
+            console.error('Lỗi khi gọi API create:', error);
+            console.log('Dữ liệu gửi đi:', JSON.stringify(data));
             if (error.error && error.error.message) {
               this.message.error(error.error.message);
             } else {
@@ -1374,8 +1383,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               this.modal.warning({
                 nzTitle: 'Thông báo BHXH bắt buộc',
                 nzContent: `<div>
-                  <p>Đối tượng đang tham gia BHXH bắt buộc.</p>
+                  <p><strong>Họ tên:</strong> ${data.hoTen || 'Không có'}</p>
+                  <p><strong>Mã số BHXH:</strong> ${data.maSoBHXH || 'Không có'}</p>
                   <p><strong>Số thẻ BHYT:</strong> ${data.soTheBHYT || 'Chưa có'}</p>
+                  <p>Đối tượng đang tham gia BHXH bắt buộc.</p>
                 </div>`,
                 nzOkText: 'Đã hiểu'
               });
@@ -1914,7 +1925,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           so_the_bhyt: data.soTheBHYT || '',
           ma_dan_toc: data.ma_dan_toc || data.danToc || '',
           quoc_tich: data.quoc_tich || data.quocTich || 'Việt Nam',
-          nguoi_tao: this.currentUser.userName
+          nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user'
         },
         nguoi_thu: nguoiThu,
         so_thang_dong: soThangDong,
@@ -1929,7 +1940,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         dia_chi_nkq: data.noiNhanHoSo || '',
         benh_vien_kcb: this.getBenhVienTen(data.maBenhVien || ''),
         ma_benh_vien: data.maBenhVien || '',
-        nguoi_tao: this.currentUser.userName,
+        nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
         ngay_tao: new Date(),
         ngay_bien_lai: ngayLap,
         is_urgent: false,
@@ -2029,7 +2040,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               this.searchResults.push({
                 maSoBHXH,
                 status: 'error',
-                message: `Đối tượng đang tham gia BHXH bắt buộc.\n${theBhyt}`
+                message: `Họ tên: ${response.data.hoTen || 'Không có'}\nMã số BHXH: ${maSoBHXH}\n${theBhyt}\nĐối tượng đang tham gia BHXH bắt buộc.`
               });
               continue;
             }

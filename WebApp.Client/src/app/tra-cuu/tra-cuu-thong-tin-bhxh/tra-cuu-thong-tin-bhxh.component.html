@@ -60,7 +60,11 @@
             <nz-descriptions-item nzTitle="Quốc tịch">{{ ketQuaTraCuu.quocTich || 'Không có' }}</nz-descriptions-item>
             <nz-descriptions-item nzTitle="Nơi đăng ký khai sinh" *ngIf="ketQuaTraCuu.noiDangKyKhaiSinh" [nzSpan]="2">{{ ketQuaTraCuu.noiDangKyKhaiSinh }}</nz-descriptions-item>
             <nz-descriptions-item nzTitle="Nơi cư trú" *ngIf="ketQuaTraCuu.noiCuTru" [nzSpan]="2">{{ ketQuaTraCuu.noiCuTru }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Tham gia BHXH bắt buộc">{{ ketQuaTraCuu.thamGiaBB }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tham gia BHXH bắt buộc">
+              <span [ngClass]="ketQuaTraCuu.thamGiaBB === 'Có' ? 'status-active' : 'status-inactive'">
+                {{ ketQuaTraCuu.thamGiaBB || 'Không' }}
+              </span>
+            </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Trạng thái" *ngIf="ketQuaTraCuu.trangThai">
               <nz-tag [nzColor]="ketQuaTraCuu.trangThai === 'Đã duyệt' ? 'green' : 'red'">
                 {{ ketQuaTraCuu.trangThai || 'Chưa xác định' }}
@@ -124,7 +128,11 @@
           <nz-descriptions-item nzTitle="Số điện thoại">{{ chiTietItem.dienThoai || 'Không có' }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Dân tộc">{{ chiTietItem.danToc || 'Không có' }}</nz-descriptions-item>
           <nz-descriptions-item nzTitle="Quốc tịch">{{ chiTietItem.quocTich || 'Không có' }}</nz-descriptions-item>
-          <nz-descriptions-item nzTitle="Tham gia BHXH bắt buộc">{{ chiTietItem.thamGiaBB }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Tham gia BHXH bắt buộc">
+            <span [ngClass]="chiTietItem.thamGiaBB === 'Có' ? 'status-active' : 'status-inactive'">
+              {{ chiTietItem.thamGiaBB || 'Không' }}
+            </span>
+          </nz-descriptions-item>
           <nz-descriptions-item nzTitle="Trạng thái" *ngIf="chiTietItem.trangThai">
             <nz-tag [nzColor]="chiTietItem.trangThai === 'Đã duyệt' ? 'green' : 'red'">
               {{ chiTietItem.trangThai || 'Chưa xác định' }}

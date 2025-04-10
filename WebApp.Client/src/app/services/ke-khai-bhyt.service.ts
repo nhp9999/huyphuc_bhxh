@@ -187,14 +187,21 @@ export class KeKhaiBHYTService {
   private apiUrl = `${environment.apiUrl}/dot-ke-khai`;
   private thongTinTheUrl = `${environment.apiUrl}/thong-tin-the`;
   private danhMucCSKCBUrl = `${environment.apiUrl}/danh-muc-cskcb`;
-  private currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  private currentUser: any = {};
   private apiToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiODg0MDAwX3hhX3RsaV9waHVvY2x0IiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoidXNlciIsInN1YiI6IjEwMDkxNyIsInNpZCI6Im5NemstdmRPa2xhcE1oeE9PQ1JrR3NjZGZGME5wTkU2NUVNTU9XcFpXcmsiLCJuYW1lIjoiTMOqIFRo4buLIFBoxrDhu5tjIiwibmlja25hbWUiOiI4ODQwMDBfeGFfdGxpX3BodW9jbHQiLCJjbGllbnRfaWQiOiJaalJpWW1JNVpUZ3RaRGN5T0MwME9EUmtMVGt5T1RZdE1ETmpZbVV6TTJVNFlqYzUiLCJtYW5nTHVvaSI6Ijc2MjU1IiwiZG9uVmlDb25nVGFjIjoixJBp4buDbSB0aHUgeMOjIFTDom4gTOG7o2kiLCJjaHVjRGFuaCI6IkPhu5luZyB0w6FjIHZpw6puIHRodSIsImVtYWlsIjoibmd1eWVudGFuZHVuZzI3MTE4OUBnbWFpbC5jb20iLCJzb0RpZW5UaG9haSI6IiIsImlzU3VwZXJBZG1pbiI6IkZhbHNlIiwiaXNDYXMiOiJGYWxzZSIsIm5iZiI6MTczNzkzODE0NywiZXhwIjoxNzM3OTU2MTQ3LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjQyMDAifQ.bmD-4c3M8BUCQ_ovcJdnwDBCNMGaZ6qcu_A_Z4P39Oc';
   private baseUrl = 'https://ssmv2.vnpost.vn/connect/tracuu';
 
   constructor(
     private http: HttpClient,
     private ssmv2Service: SSMV2Service
-  ) {}
+  ) {
+    // Lấy thông tin user từ localStorage khi service được khởi tạo
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      this.currentUser = JSON.parse(userStr);
+      console.log('currentUser trong service:', this.currentUser);
+    }
+  }
 
   getByDotKeKhai(dotKeKhaiId: number): Observable<KeKhaiBHYT[]> {
     return this.http.get<KeKhaiBHYT[]>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`).pipe(
@@ -267,10 +274,19 @@ export class KeKhaiBHYTService {
 
   create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
     // Tạo bản sao của dữ liệu để tránh thay đổi dữ liệu gốc
+    console.log('Dữ liệu gốc trước khi format:', JSON.stringify(data));
+    console.log('currentUser:', JSON.stringify(this.currentUser));
+    
+    // Xử lý trường hợp userName không tồn tại
+    const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
+    console.log('userName được sử dụng:', userName);
+    
     const formattedData = {
       ...data,
+      nguoi_tao: data.nguoi_tao || userName,
       thongTinThe: {
         ...data.thongTinThe,
+        nguoi_tao: data.thongTinThe.nguoi_tao || userName,
         ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
       },
       han_the_cu: data.han_the_cu ? this.formatDateISO(data.han_the_cu) : null,
@@ -280,14 +296,21 @@ export class KeKhaiBHYTService {
       ngay_bien_lai: data.ngay_bien_lai ? this.formatDateISO(data.ngay_bien_lai) : null
     };
     
+    console.log('Dữ liệu đã format trước khi gửi:', JSON.stringify(formattedData));
+    
     return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
   }
 
   update(dotKeKhaiId: number, id: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
+    // Xử lý trường hợp userName không tồn tại
+    const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
+    
     const formattedData = {
       ...data,
+      nguoi_tao: data.nguoi_tao || userName,
       thongTinThe: {
         ...data.thongTinThe,
+        nguoi_tao: data.thongTinThe.nguoi_tao || userName,
         ngay_sinh: this.formatDateISO(data.thongTinThe.ngay_sinh)
       },
       han_the_cu: data.han_the_cu ? this.formatDateISO(data.han_the_cu) : null,
@@ -325,11 +348,25 @@ export class KeKhaiBHYTService {
   }
 
   createThongTinThe(data: ThongTinThe): Observable<ThongTinThe> {
-    return this.http.post<ThongTinThe>(this.thongTinTheUrl, data);
+    // Xử lý trường hợp userName không tồn tại
+    const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
+    
+    const formattedData = {
+      ...data,
+      nguoi_tao: data.nguoi_tao || userName
+    };
+    return this.http.post<ThongTinThe>(this.thongTinTheUrl, formattedData);
   }
 
   updateThongTinThe(id: number, data: ThongTinThe): Observable<ThongTinThe> {
-    return this.http.put<ThongTinThe>(`${this.thongTinTheUrl}/${id}`, data);
+    // Xử lý trường hợp userName không tồn tại
+    const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
+    
+    const formattedData = {
+      ...data,
+      nguoi_tao: data.nguoi_tao || userName
+    };
+    return this.http.put<ThongTinThe>(`${this.thongTinTheUrl}/${id}`, formattedData);
   }
 
   // Thêm method để lấy thông tin đợt kê khai
