@@ -10,6 +10,7 @@ using WebApp.API.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
+using WebApp.API.Models.BienlaiDienTu;
 
 namespace WebApp.API.Controllers
 {
@@ -562,7 +563,7 @@ namespace WebApp.API.Controllers
         }
 
         [HttpPatch("{id}/gui")]
-        public async Task<IActionResult> GuiDotKeKhai(int id)
+        public async Task<IActionResult> GuiDotKeKhai(int id, [FromBody] GuiDotKeKhaiDto? dto = null)
         {
             // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -577,12 +578,34 @@ namespace WebApp.API.Controllers
                 {
                     return NotFound(new { message = "Không tìm thấy đợt kê khai" });
                 }
+                
+                // Log giá trị ban đầu
+                _logger.LogInformation($"Trước khi cập nhật: id={id}, bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
 
                 // Kiểm tra trạng thái hiện tại
                 if (dotKeKhai.trang_thai != "chua_gui")
                 {
                     return BadRequest(new { message = "Đợt kê khai không ở trạng thái chưa gửi" });
                 }
+                
+                // Xác định xem có sử dụng biên lai điện tử hay không
+                // Ưu tiên kiểm tra is_bien_lai_dien_tu của đợt kê khai trước, nếu true thì luôn sử dụng biên lai điện tử
+                bool useBienLaiDienTu = dotKeKhai.is_bien_lai_dien_tu;
+
+                // Nếu is_bien_lai_dien_tu không true, mới xem xét đến dto
+                if (!useBienLaiDienTu)
+                {
+                    useBienLaiDienTu = dto?.bien_lai_dien_tu ?? false;
+                }
+                
+                _logger.LogInformation($"GuiDotKeKhai: id={id}, useBienLaiDienTu={useBienLaiDienTu}, dto={dto != null}, dotKeKhai.is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
+
+                // Cập nhật biên lai điện tử 
+                dotKeKhai.bien_lai_dien_tu = useBienLaiDienTu;
+                dotKeKhai.is_bien_lai_dien_tu = useBienLaiDienTu;
+                
+                // Log giá trị sau khi cập nhật
+                _logger.LogInformation($"Sau khi cập nhật: id={id}, bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
 
                 // Lấy thông tin người dùng đăng nhập
                 var userName = User.Identity != null ? User.Identity.Name : null;
@@ -599,16 +622,26 @@ namespace WebApp.API.Controllers
                     return BadRequest(new { message = "Không tìm thấy thông tin người thu" });
                 }
 
-                // Lấy quyển biên lai đang sử dụng
-                var quyenBienLai = await _context.QuyenBienLais
-                    .Where(q => q.nhan_vien_thu == nguoiThu.id && 
-                           q.trang_thai == "dang_su_dung")
-                    .OrderBy(q => q.ngay_cap)
-                    .FirstOrDefaultAsync();
-
-                if (quyenBienLai == null)
+                // Chỉ kiểm tra biên lai thông thường nếu không sử dụng biên lai điện tử
+                QuyenBienLai? quyenBienLai = null;
+                if (!useBienLaiDienTu)
                 {
-                    return BadRequest(new { message = "Người thu chưa được cấp quyển biên lai hoặc đã hết số" });
+                    // Lấy quyển biên lai đang sử dụng
+                    quyenBienLai = await _context.QuyenBienLais
+                        .Where(q => q.nhan_vien_thu == nguoiThu.id && 
+                               q.trang_thai == "dang_su_dung")
+                        .OrderBy(q => q.ngay_cap)
+                        .FirstOrDefaultAsync();
+
+                    if (quyenBienLai == null)
+                    {
+                        _logger.LogWarning($"Không tìm thấy quyển biên lai thông thường cho người dùng {userName}. Chuyển sang sử dụng biên lai điện tử.");
+                        // Khi không tìm thấy quyển biên lai thông thường, tự động chuyển sang sử dụng biên lai điện tử
+                        useBienLaiDienTu = true;
+                        dotKeKhai.bien_lai_dien_tu = true;
+                        dotKeKhai.is_bien_lai_dien_tu = true;
+                        _logger.LogInformation($"Đã chuyển sang sử dụng biên lai điện tử do không tìm thấy quyển biên lai thông thường: bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
+                    }
                 }
 
                 // Cập nhật trạng thái đợt kê khai sang chờ thanh toán
@@ -626,81 +659,164 @@ namespace WebApp.API.Controllers
                     // Cập nhật trạng thái
                     keKhai.trang_thai = "cho_thanh_toan";
                     
-                    // Gán quyển biên lai cho kê khai
-                    keKhai.quyen_bien_lai_id = quyenBienLai.id;
-
-                    if (quyenBienLai.so_hien_tai == null)
+                    // Chỉ xử lý biên lai thông thường nếu không sử dụng biên lai điện tử
+                    if (!useBienLaiDienTu && quyenBienLai != null)
                     {
-                        await transaction.RollbackAsync();
-                        return BadRequest(new { message = "Số hiện tại không hợp lệ" });
-                    }
+                        // Gán quyển biên lai cho kê khai
+                        keKhai.quyen_bien_lai_id = quyenBienLai.id;
 
-                    try
-                    {
-                        var soHienTai = int.Parse(quyenBienLai.so_hien_tai);
-                        var denSo = int.Parse(quyenBienLai.den_so);
-                        
-                        _logger.LogInformation($"Số hiện tại: {soHienTai}, Đến số: {denSo}");
-
-                        if (soHienTai > denSo)
+                        if (quyenBienLai.so_hien_tai == null)
                         {
-                            quyenBienLai.trang_thai = "da_su_dung";
-                            await _context.SaveChangesAsync();
-                            
-                            // Tìm quyển biên lai mới
-                            quyenBienLai = await _context.QuyenBienLais
-                                .Where(q => q.nhan_vien_thu == nguoiThu.id && 
-                                       q.trang_thai == "chua_su_dung")
-                                .OrderBy(q => q.ngay_cap)
-                                .FirstOrDefaultAsync();
-                                
-                            if (quyenBienLai == null)
-                            {
-                                await transaction.RollbackAsync();
-                                return BadRequest(new { message = "Đã hết số biên lai, vui lòng cấp thêm quyển biên lai mới" });
-                            }
-                            
-                            // Cập nhật trạng thái quyển mới
-                            quyenBienLai.trang_thai = "dang_su_dung";
-                            quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
-                            await _context.SaveChangesAsync();
-                            
-                            // Cập nhật lại số hiện tại
-                            soHienTai = int.Parse(quyenBienLai.so_hien_tai);
-                            denSo = int.Parse(quyenBienLai.den_so);
+                            await transaction.RollbackAsync();
+                            return BadRequest(new { message = "Số hiện tại không hợp lệ" });
                         }
 
-                        keKhai.so_bien_lai = soHienTai.ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
-                        quyenBienLai.so_hien_tai = (soHienTai + 1).ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
-
-                        _logger.LogInformation($"Cấp số biên lai: {keKhai.so_bien_lai}, Số tiếp theo: {quyenBienLai.so_hien_tai}");
-                        
-                        // Tạo biên lai
-                        var bienLai = new BienLai
+                        try
                         {
-                            quyen_so = quyenBienLai.quyen_so,
-                            so_bien_lai = keKhai.so_bien_lai,
+                            var soHienTai = int.Parse(quyenBienLai.so_hien_tai);
+                            var denSo = int.Parse(quyenBienLai.den_so);
+                            
+                            _logger.LogInformation($"Số hiện tại: {soHienTai}, Đến số: {denSo}");
+
+                            if (soHienTai > denSo)
+                            {
+                                quyenBienLai.trang_thai = "da_su_dung";
+                                await _context.SaveChangesAsync();
+                                
+                                // Tìm quyển biên lai mới
+                                quyenBienLai = await _context.QuyenBienLais
+                                    .Where(q => q.nhan_vien_thu == nguoiThu.id && 
+                                           q.trang_thai == "chua_su_dung")
+                                    .OrderBy(q => q.ngay_cap)
+                                    .FirstOrDefaultAsync();
+                                    
+                                    if (quyenBienLai == null)
+                                    {
+                                        await transaction.RollbackAsync();
+                                        return BadRequest(new { message = "Đã hết số biên lai, vui lòng cấp thêm quyển biên lai mới" });
+                                    }
+                                    
+                                    // Cập nhật trạng thái quyển mới
+                                    quyenBienLai.trang_thai = "dang_su_dung";
+                                    quyenBienLai.so_hien_tai = quyenBienLai.tu_so;
+                                    await _context.SaveChangesAsync();
+                                    
+                                    // Cập nhật lại số hiện tại
+                                    soHienTai = int.Parse(quyenBienLai.so_hien_tai);
+                                    denSo = int.Parse(quyenBienLai.den_so);
+                            }
+
+                            keKhai.so_bien_lai = soHienTai.ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
+                            quyenBienLai.so_hien_tai = (soHienTai + 1).ToString().PadLeft(quyenBienLai.so_hien_tai.Length, '0');
+
+                            _logger.LogInformation($"Cấp số biên lai: {keKhai.so_bien_lai}, Số tiếp theo: {quyenBienLai.so_hien_tai}");
+                            
+                            // Tạo biên lai
+                            var bienLai = new BienLai
+                            {
+                                quyen_so = quyenBienLai.quyen_so,
+                                so_bien_lai = keKhai.so_bien_lai,
+                                ten_nguoi_dong = keKhai.ThongTinThe.ho_ten,
+                                so_tien = keKhai.so_tien_can_dong,
+                                ke_khai_bhyt_id = keKhai.id,
+                                ma_so_bhxh = keKhai.ThongTinThe.ma_so_bhxh,
+                                ma_nhan_vien = nguoiThu.ma_nhan_vien,
+                                ngay_bien_lai = keKhai.ngay_bien_lai ?? DateTime.Now,
+                                ma_co_quan_bhxh = dotKeKhai.DonVi?.MaCoQuanBHXH ?? "",
+                                ma_so_bhxh_don_vi = dotKeKhai.DonVi?.MaSoBHXH ?? "",
+                                tinh_chat = "bien_lai_goc",
+                                is_bhyt = dotKeKhai.dich_vu == "BHYT",
+                                is_bhxh = dotKeKhai.dich_vu == "BHXH TN"
+                            };
+
+                            _context.BienLais.Add(bienLai);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Lỗi xử lý số biên lai: {ex.Message}");
+                            await transaction.RollbackAsync();
+                            throw;
+                        }
+                    }
+                }
+
+                if (useBienLaiDienTu)
+                {
+                    // Lấy mã cơ quan BHXH từ đơn vị của đợt kê khai
+                    string maCoQuanBHXH = dotKeKhai.DonVi?.MaCoQuanBHXH ?? "";
+                    
+                    // Lấy quyển biên lai điện tử đang active dựa vào mã cơ quan BHXH
+                    var quyenBienLaiDienTu = await _context.QuyenBienLaiDienTus
+                        .Where(q => q.trang_thai == "active" && 
+                               (string.IsNullOrEmpty(q.ma_co_quan_bhxh) || q.ma_co_quan_bhxh == maCoQuanBHXH))
+                        .OrderBy(q => q.id)
+                        .FirstOrDefaultAsync();
+                        
+                    // Nếu không tìm thấy quyển biên lai điện tử với mã cơ quan BHXH cụ thể, tìm quyển mặc định
+                    if (quyenBienLaiDienTu == null)
+                    {
+                        quyenBienLaiDienTu = await _context.QuyenBienLaiDienTus
+                            .Where(q => q.trang_thai == "active")
+                            .OrderBy(q => q.id)
+                            .FirstOrDefaultAsync();
+                    }
+                        
+                    if (quyenBienLaiDienTu == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = "Không tìm thấy quyển biên lai điện tử khả dụng" });
+                    }
+                    
+                    _logger.LogInformation($"Sử dụng quyển biên lai điện tử ID: {quyenBienLaiDienTu.id}, Mã cơ quan BHXH: {quyenBienLaiDienTu.ma_co_quan_bhxh}");
+                    
+                    foreach (var keKhai in keKhaiBHYTs)
+                    {
+                        // Tăng số biên lai điện tử
+                        int soHienTai = int.Parse(quyenBienLaiDienTu.so_hien_tai ?? "0000001");
+                        int denSo = int.Parse(quyenBienLaiDienTu.den_so);
+                        
+                        // Kiểm tra nếu vượt quá số cuối cùng
+                        if (soHienTai > denSo)
+                        {
+                            await transaction.RollbackAsync();
+                            return BadRequest(new { message = "Quyển biên lai điện tử đã hết" });
+                        }
+                        
+                        string soBienLaiDienTu = soHienTai.ToString("D7");
+                        
+                        // Tạo biên lai điện tử
+                        var bienLaiDienTu = new BienLaiDienTu
+                        {
+                            quyen_bien_lai_dien_tu_id = quyenBienLaiDienTu.id,
+                            ky_hieu = quyenBienLaiDienTu.ky_hieu,
+                            so_bien_lai = soBienLaiDienTu,
                             ten_nguoi_dong = keKhai.ThongTinThe.ho_ten,
                             so_tien = keKhai.so_tien_can_dong,
-                            ke_khai_bhyt_id = keKhai.id,
-                            ma_so_bhxh = keKhai.ThongTinThe.ma_so_bhxh,
-                            ma_nhan_vien = nguoiThu.ma_nhan_vien,
-                            ngay_bien_lai = keKhai.ngay_bien_lai ?? DateTime.Now,
-                            ma_co_quan_bhxh = dotKeKhai.DonVi?.MaCoQuanBHXH ?? "",
+                            ghi_chu = $"Biên lai điện tử cho kê khai id {keKhai.id}",
+                            ma_so_bhxh = keKhai.ThongTinThe.ma_so_bhxh ?? "",
+                            ma_nhan_vien = nguoiThu.ma_nhan_vien ?? "",
+                            // Ưu tiên lấy mã cơ quan BHXH từ đơn vị, nếu không có thì lấy từ quyển biên lai
+                            ma_co_quan_bhxh = !string.IsNullOrEmpty(dotKeKhai.DonVi?.MaCoQuanBHXH) 
+                                ? dotKeKhai.DonVi.MaCoQuanBHXH 
+                                : quyenBienLaiDienTu.ma_co_quan_bhxh,
                             ma_so_bhxh_don_vi = dotKeKhai.DonVi?.MaSoBHXH ?? "",
-                            tinh_chat = "bien_lai_goc",
                             is_bhyt = dotKeKhai.dich_vu == "BHYT",
-                            is_bhxh = dotKeKhai.dich_vu == "BHXH TN"
+                            is_bhxh = dotKeKhai.dich_vu != "BHYT",
+                            ngay_tao = DateTime.Now,
+                            ngay_bien_lai = DateTime.Now,
+                            ke_khai_bhyt_id = keKhai.id
                         };
-
-                        _context.BienLais.Add(bienLai);
+                        
+                        _context.BienLaiDienTus.Add(bienLaiDienTu);
+                        
+                        // Cập nhật số biên lai vào bảng ke_khai_bhyt
+                        keKhai.so_bien_lai = soBienLaiDienTu;
+                        
+                        // Cập nhật số hiện tại trong quyển biên lai
+                        quyenBienLaiDienTu.so_hien_tai = (soHienTai + 1).ToString("D7");
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError($"Lỗi xử lý số biên lai: {ex.Message}");
-                        await transaction.RollbackAsync();
-                        throw;
-                    }
+                    
+                    await _context.SaveChangesAsync();
                 }
 
                 await _context.SaveChangesAsync();
@@ -766,6 +882,11 @@ namespace WebApp.API.Controllers
         public class UpdateMaHoSoDto
         {
             public string? ma_ho_so { get; set; }
+        }
+
+        public class GuiDotKeKhaiDto
+        {
+            public bool bien_lai_dien_tu { get; set; } = false;
         }
 
         private bool DotKeKhaiExists(int id)

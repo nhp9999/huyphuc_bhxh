@@ -1,4 +1,4 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DotKeKhai, CreateDotKeKhai, UpdateDotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -157,6 +157,7 @@ export class DotKeKhaiComponent implements OnInit {
   selectedDotKeKhai: DotKeKhai | null = null;
   zoomLevel: number = 1;
   rotationDegree: number = 0;
+  bienLaiDienTu: boolean = false;
 
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
@@ -174,6 +175,8 @@ export class DotKeKhaiComponent implements OnInit {
   dotKeKhai: any = null;
   donViSelected: any = null;
   dotKeKhaiForm: any = null;
+
+  @ViewChild('modalGuiDotKeKhai') modalGuiDotKeKhaiTpl!: TemplateRef<any>;
 
   constructor(
     private dotKeKhaiService: DotKeKhaiService,
@@ -1458,21 +1461,63 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   guiDotKeKhai(data: DotKeKhai): void {
+    // Kiểm tra cả hai thuộc tính liên quan đến biên lai điện tử
+    console.log('Đợt kê khai cần gửi:', data);
+    const useBienLaiDienTu = !!(data.is_bien_lai_dien_tu || data.bien_lai_dien_tu);
+    console.log('Sử dụng biên lai điện tử:', useBienLaiDienTu);
+    
+    // Nếu đợt kê khai đã được đánh dấu sử dụng biên lai điện tử, tự động gửi
+    if (useBienLaiDienTu) {
+      this.loading = true;
+      this.dotKeKhaiService.guiDotKeKhai(data.id!, true).subscribe({
+        next: () => {
+          this.message.success('Gửi đợt kê khai thành công với biên lai điện tử');
+          this.loading = false;
+          this.loadData(); // Tải lại dữ liệu sau khi gửi thành công
+        },
+        error: (error) => {
+          console.error('Lỗi khi gửi đợt kê khai:', error);
+          // Hiển thị thông báo lỗi từ server nếu có
+          if (error.error && error.error.message) {
+            this.message.error(error.error.message);
+          } else {
+            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+          }
+          this.loading = false;
+        }
+      });
+      return;
+    }
+    
+    // Nếu không sử dụng biên lai điện tử, hiển thị modal xác nhận
+    // Reset giá trị biên lai điện tử
+    this.bienLaiDienTu = false;
+    
     this.modal.confirm({
       nzTitle: 'Xác nhận gửi',
-      nzContent: 'Bạn có chắc chắn muốn gửi đợt kê khai này?',
+      nzContent: this.modalGuiDotKeKhaiTpl,
       nzOkText: 'Gửi',
       nzOkType: 'primary',
       nzOnOk: () => {
         this.loading = true;
-        this.dotKeKhaiService.guiDotKeKhai(data.id!).subscribe({
+        this.dotKeKhaiService.guiDotKeKhai(data.id!, this.bienLaiDienTu).subscribe({
           next: () => {
-            this.message.success('Gửi đợt kê khai thành công');
+            if (this.bienLaiDienTu) {
+              this.message.success('Gửi đợt kê khai thành công với biên lai điện tử');
+            } else {
+              this.message.success('Gửi đợt kê khai thành công');
+            }
             this.loading = false;
+            this.loadData(); // Tải lại dữ liệu sau khi gửi thành công
           },
           error: (error) => {
             console.error('Lỗi khi gửi đợt kê khai:', error);
-            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+            // Hiển thị thông báo lỗi từ server nếu có
+            if (error.error && error.error.message) {
+              this.message.error(error.error.message);
+            } else {
+              this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+            }
             this.loading = false;
           }
         });

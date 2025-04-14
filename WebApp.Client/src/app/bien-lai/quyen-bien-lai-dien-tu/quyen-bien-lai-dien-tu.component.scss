@@ -1,0 +1,57 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.container {
+  padding: 24px;
+}
+
+:host ::ng-deep {
+  .status-pending {
+    background-color: #faad14;
+    color: white;
+  }
+
+  .status-active {
+    background-color: #52c41a;
+    color: white;
+  }
+
+  .status-completed {
+    background-color: #1890ff;
+    color: white;
+  }
+  
+  /* Sửa lỗi hiển thị form trong modal */
+  .ant-modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .ant-form-item {
+    margin-bottom: 16px !important;
+    display: flex;
+  }
+
+  .ant-form-item-control {
+    flex: 1;
+  }
+
+  nz-form-label {
+    display: inline-block !important;
+  }
+
+  .ant-form-item-label {
+    line-height: 32px;
+  }
+
+  small {
+    color: #999;
+    font-size: 12px;
+    display: block;
+    margin-top: 5px;
+  }
+} 

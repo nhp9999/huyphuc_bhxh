@@ -1,0 +1,164 @@
+<div class="container">
+  <div class="page-header">
+    <h2>Quản lý quyển biên lai điện tử</h2>
+    <button nz-button nzType="primary" (click)="showAddModal()">
+      <i nz-icon nzType="plus"></i> Thêm quyển biên lai
+    </button>
+  </div>
+
+  <nz-table #basicTable [nzData]="quyenBienLais" [nzLoading]="isLoading" [nzBordered]="true">
+    <thead>
+      <tr>
+        <th>STT</th>
+        <th>Ký hiệu</th>
+        <th>Từ số</th>
+        <th>Đến số</th>
+        <th>Số hiện tại</th>
+        <th>Mã cơ quan BHXH</th>
+        <th>Người cấp</th>
+        <th>Ngày cấp</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of basicTable.data; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ item.ky_hieu }}</td>
+        <td>{{ item.tu_so }}</td>
+        <td>{{ item.den_so }}</td>
+        <td>{{ item.so_hien_tai || item.tu_so }}</td>
+        <td>{{ item.ma_co_quan_bhxh }}</td>
+        <td>{{ item.nguoi_cap }}</td>
+        <td>{{ item.ngay_cap | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <nz-tag [nzColor]="getTrangThaiClass(item.trang_thai!)">
+            {{ getTrangThaiText(item.trang_thai!) }}
+          </nz-tag>
+        </td>
+        <td>
+          <button nz-button nzType="primary" nzSize="small" (click)="showEditModal(item.id!)" 
+            [disabled]="item.trang_thai === 'da_su_dung_het'" nzTooltip="Chỉnh sửa">
+            <i nz-icon nzType="edit"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteQuyenBienLai(item.id!)" 
+            [disabled]="item.trang_thai !== 'chua_su_dung'" nzTooltip="Xóa">
+            <i nz-icon nzType="delete"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <nz-modal
+    [(nzVisible)]="isVisible"
+    [nzTitle]="editingId ? 'Chỉnh sửa quyển biên lai điện tử' : 'Thêm quyển biên lai điện tử'"
+    [nzOkText]="editingId ? 'Cập nhật' : 'Thêm'"
+    nzCancelText="Hủy"
+    (nzOnCancel)="handleCancel()"
+    (nzOnOk)="handleSubmit()"
+    [nzOkLoading]="isSubmitting"
+    [nzBodyStyle]="{ maxHeight: '400px', overflow: 'auto' }"
+  >
+    <div *nzModalContent>
+      <form nz-form [formGroup]="form">
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Ký hiệu</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập ký hiệu">
+            <input nz-input formControlName="ky_hieu" readonly />
+            <div class="ant-form-item-explain">Ký hiệu cố định: BH25-AG/08907/E</div>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Từ số</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập số bắt đầu hợp lệ">
+            <input nz-input formControlName="tu_so" />
+            <div class="ant-form-item-explain">Mặc định: 0000001</div>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Đến số</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập số kết thúc hợp lệ">
+            <input nz-input formControlName="den_so" />
+            <div class="ant-form-item-explain">Mặc định: 9999999</div>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item *ngIf="editingId">
+          <nz-form-label [nzSm]="6" [nzXs]="24">Số hiện tại</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Số hiện tại phải nằm trong khoảng từ số đến số">
+            <input nz-input formControlName="so_hien_tai" />
+            <div class="ant-form-item-explain">Số biên lai tiếp theo sẽ được sử dụng</div>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Trạng thái</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng chọn trạng thái">
+            <nz-select formControlName="trang_thai">
+              <nz-option nzValue="chua_su_dung" nzLabel="Chưa sử dụng"></nz-option>
+              <nz-option nzValue="active" nzLabel="Đang active"></nz-option>
+              <nz-option nzValue="inactive" nzLabel="Không active"></nz-option>
+              <nz-option nzValue="da_su_dung_het" nzLabel="Đã sử dụng hết"></nz-option>
+            </nz-select>
+            <div *ngIf="form.get('trang_thai')?.value === 'da_su_dung_het'" class="ant-form-item-explain ant-form-item-explain-warning">
+              <i nz-icon nzType="warning" nzTheme="fill"></i> Cảnh báo: Khi đặt trạng thái là "Đã sử dụng hết", hệ thống sẽ không sử dụng quyển biên lai này nữa!
+            </div>
+          </nz-form-control>
+        </nz-form-item>
+        
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã cơ quan BHXH</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã cơ quan BHXH">
+            <input nz-input formControlName="ma_co_quan_bhxh" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- Ẩn trường người cấp vì sẽ tự động lấy từ người đăng nhập -->
+        <input type="hidden" formControlName="nguoi_cap" />
+        
+        <!-- Hiển thị thông tin cho người dùng biết -->
+        <nz-form-item *ngIf="editingId">
+          <nz-form-label [nzSm]="6" [nzXs]="24">Người cấp</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24">
+            <input nz-input [value]="currentQuyenBienLai?.nguoi_cap" disabled />
+          </nz-form-control>
+        </nz-form-item>
+        
+        <nz-form-item *ngIf="!editingId">
+          <nz-form-label [nzSm]="6" [nzXs]="24">Người cấp</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24">
+            <div class="ant-form-item-explain">Sẽ tự động lấy theo tài khoản đăng nhập</div>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </div>
+  </nz-modal>
+</div>
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .status-pending {
+    background-color: #faad14;
+    color: white;
+  }
+
+  .status-active {
+    background-color: #52c41a;
+    color: white;
+  }
+
+  .status-completed {
+    background-color: #1890ff;
+    color: white;
+  }
+</style>

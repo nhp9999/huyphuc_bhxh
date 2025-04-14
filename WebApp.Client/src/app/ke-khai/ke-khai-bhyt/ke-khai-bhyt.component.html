@@ -48,6 +48,14 @@
       nzShowIcon
       class="bien-lai-alert">
     </nz-alert> -->
+    
+    <!-- Thông báo về biên lai điện tử -->
+    <nz-alert *ngIf="dotKeKhai && dotKeKhai.trang_thai === 'chua_gui' && willUseBienLaiDienTu"
+      nzType="info"
+      nzMessage="Đợt kê khai này sẽ tự động sử dụng biên lai điện tử khi gửi"
+      nzShowIcon
+      class="bien-lai-alert">
+    </nz-alert>
 
     <form nz-form [formGroup]="form">
       <div nz-row [nzGutter]="{ xs: 8, sm: 16, md: 24 }">

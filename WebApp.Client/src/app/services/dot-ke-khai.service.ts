@@ -63,6 +63,7 @@ export interface DotKeKhai {
   tong_so_the?: number;
   ma_ho_so?: string;
   bien_lai_dien_tu?: boolean;
+  is_bien_lai_dien_tu?: boolean;
   url_bill?: string;
   dai_ly_id: number;
   KeKhaiBHYTs?: any[];
@@ -359,13 +360,16 @@ export class DotKeKhaiService {
       );
   }
 
-  guiDotKeKhai(id: number): Observable<any> {
+  guiDotKeKhai(id: number, bienLaiDienTu: boolean = false): Observable<any> {
     // Xóa tất cả cache liên quan
     this.clearCacheByPrefix('dotKeKhai');
     
+    console.log(`Gửi đợt kê khai ${id} với biên lai điện tử:`, bienLaiDienTu);
+    
     // Cập nhật trạng thái đợt kê khai và các kê khai BHYT sang chờ thanh toán
-    return this.http.patch(`${this.apiUrl}/${id}/gui`, {}).pipe(
-      tap(() => {
+    return this.http.patch(`${this.apiUrl}/${id}/gui`, { bien_lai_dien_tu: bienLaiDienTu }).pipe(
+      tap((response) => {
+        console.log('Kết quả gửi đợt kê khai:', response);
         // Cập nhật lại danh sách đợt kê khai
         const username = this.getCurrentUsername();
         this.getDotKeKhais().subscribe({

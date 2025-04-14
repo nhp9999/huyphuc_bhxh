@@ -327,6 +327,20 @@
       </button>
     </ng-template>
   </nz-modal>
+
+  <!-- Thêm template này ở cuối file -->
+  <ng-template #modalGuiDotKeKhai>
+    <div>
+      <p>Bạn có chắc chắn muốn gửi đợt kê khai này?</p>
+      <div style="margin-top: 15px;">
+        <label nz-checkbox [(ngModel)]="bienLaiDienTu">
+          Cấp số biên lai điện tử
+        </label>
+        <br />
+        <small style="color: #888;">Biên lai điện tử sẽ được cấp tự động cho tất cả kê khai trong đợt này</small>
+      </div>
+    </div>
+  </ng-template>
 </div>
 
 <style>

@@ -1,0 +1,146 @@
+<div class="container">
+  <div class="page-header">
+    <h2>Quản lý biên lai điện tử</h2>
+    <button nz-button nzType="primary" (click)="showAddModal()">
+      <i nz-icon nzType="plus"></i> Thêm biên lai điện tử
+    </button>
+  </div>
+
+  <nz-table #basicTable [nzData]="bienLais" [nzLoading]="isLoading" [nzBordered]="true">
+    <thead>
+      <tr>
+        <th>STT</th>
+        <th>Ký hiệu</th>
+        <th>Số biên lai</th>
+        <th>Người đóng</th>
+        <th>Mã số BHXH</th>
+        <th>Số tiền</th>
+        <th>Ngày tạo</th>
+        <th>Tính chất</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of basicTable.data; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ item.ky_hieu }}</td>
+        <td>{{ item.so_bien_lai }}</td>
+        <td>{{ item.ten_nguoi_dong }}</td>
+        <td>{{ item.ma_so_bhxh }}</td>
+        <td>{{ item.so_tien | number:'1.0-0' }} đ</td>
+        <td>{{ item.ngay_tao | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <nz-tag [nzColor]="item.tinh_chat === 'bien_lai_goc' ? 'green' : 'red'">
+            {{ getTinhChatText(item.tinh_chat) }}
+          </nz-tag>
+        </td>
+        <td>
+          <button nz-button nzType="primary" nzSize="small" (click)="showEditModal(item.id!)">
+            <i nz-icon nzType="edit"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteBienLai(item.id!)">
+            <i nz-icon nzType="delete"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <nz-modal
+    [(nzVisible)]="isVisible"
+    [nzTitle]="editingId ? 'Chỉnh sửa biên lai điện tử' : 'Thêm biên lai điện tử'"
+    [nzOkText]="editingId ? 'Cập nhật' : 'Thêm'"
+    nzCancelText="Hủy"
+    (nzOnCancel)="handleCancel()"
+    (nzOnOk)="handleSubmit()"
+    [nzOkLoading]="isSubmitting"
+    [nzBodyStyle]="{ maxHeight: '400px', overflow: 'auto' }"
+  >
+    <div *nzModalContent>
+      <form nz-form [formGroup]="form">
+        <nz-form-item *ngIf="!editingId">
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Quyển biên lai</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng chọn quyển biên lai">
+            <nz-select formControlName="quyen_bien_lai_dien_tu_id" nzPlaceHolder="Chọn quyển biên lai">
+              <nz-option 
+                *ngFor="let quyen of quyenBienLais" 
+                [nzValue]="quyen.id" 
+                [nzLabel]="quyen.ky_hieu + ' (' + quyen.so_hien_tai + ')'">
+              </nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Người đóng</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập tên người đóng">
+            <input nz-input formControlName="ten_nguoi_dong" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Số tiền</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập số tiền">
+            <nz-input-number formControlName="so_tien" [nzMin]="0" [nzStep]="1000" [nzFormatter]="formatterVND" style="width: 100%;"></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24">Ghi chú</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24">
+            <textarea nz-input formControlName="ghi_chu" rows="4"></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã số BHXH</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã số BHXH">
+            <input nz-input formControlName="ma_so_bhxh" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã nhân viên</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã nhân viên">
+            <input nz-input formControlName="ma_nhan_vien" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã cơ quan BHXH</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã cơ quan BHXH">
+            <input nz-input formControlName="ma_co_quan_bhxh" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã số BHXH đơn vị</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã số BHXH đơn vị">
+            <input nz-input formControlName="ma_so_bhxh_don_vi" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24">Loại</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24">
+            <nz-checkbox-group>
+              <label nz-checkbox formControlName="is_bhyt">BHYT</label>
+              <label nz-checkbox formControlName="is_bhxh">BHXH</label>
+            </nz-checkbox-group>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label [nzSm]="6" [nzXs]="24">Tính chất</nz-form-label>
+          <nz-form-control [nzSm]="14" [nzXs]="24">
+            <nz-radio-group formControlName="tinh_chat">
+              <label nz-radio value="bien_lai_goc">Biên lai gốc</label>
+              <label nz-radio value="bien_lai_huy_bo">Biên lai hủy bỏ</label>
+            </nz-radio-group>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </div>
+  </nz-modal>
+</div> 

@@ -381,6 +381,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   huyenTheoTinhTraCuu: QuanHuyen[] = [];
   xaTheoHuyenTraCuu: XaPhuong[] = [];
 
+  // Thêm biến class thành viên mới
+  willUseBienLaiDienTu = false;
+  
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -686,6 +689,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.dotKeKhaiService.getDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
         this.dotKeKhai = data;
+        // Log để kiểm tra giá trị
+        console.log('Đợt kê khai:', data);
+        console.log('is_bien_lai_dien_tu:', data.is_bien_lai_dien_tu);
+        console.log('bien_lai_dien_tu:', data.bien_lai_dien_tu);
+        
+        // Lưu lại giá trị cho việc sử dụng biên lai điện tử
+        this.willUseBienLaiDienTu = !!(data.is_bien_lai_dien_tu || data.bien_lai_dien_tu);
+        
         // Kiểm tra cache trước khi gọi API
         if (data.don_vi_id) {
           if (this.donViCache.length > 0) {
@@ -919,7 +930,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ngay_bien_lai: data.ngay_bien_lai || new Date(),
           so_bien_lai: data.so_bien_lai, // Thêm trường so_bien_lai
           quyen_bien_lai_id: data.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
-          trang_thai: data.trang_thai // Thêm trường trang_thai
+          trang_thai: data.trang_thai // Thêm trường trang_thai với giá trị mặc định
         });
 
         // Log để kiểm tra
@@ -3623,21 +3634,68 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Tạo nội dung thông báo với thông tin về biên lai điện tử
+    let confirmMessage = 'Bạn có chắc chắn muốn gửi đợt kê khai này? Sau khi gửi sẽ không thể chỉnh sửa.';
+    
+    if (this.willUseBienLaiDienTu) {
+      confirmMessage += '\n\nĐợt kê khai này sẽ tự động sử dụng biên lai điện tử.';
+    }
+    
     this.modal.confirm({
       nzTitle: 'Xác nhận gửi',
-      nzContent: 'Bạn có chắc chắn muốn gửi đợt kê khai này? Sau khi gửi sẽ không thể chỉnh sửa.',
+      nzContent: confirmMessage,
       nzOkText: 'Gửi',
       nzOkType: 'primary',
       nzOnOk: () => {
         this.loadingGui = true;
-        this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId).subscribe({
+        console.log('Gửi đợt kê khai với biên lai điện tử:', this.willUseBienLaiDienTu);
+        
+        // Sử dụng giá trị đã được xác định từ đợt kê khai
+        this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId, this.willUseBienLaiDienTu).subscribe({
           next: () => {
-            this.message.success('Gửi đợt kê khai thành công.');
+            if (this.willUseBienLaiDienTu) {
+              this.message.success('Gửi đợt kê khai thành công với biên lai điện tử.');
+            } else {
+              this.message.success('Gửi đợt kê khai thành công.');
+            }
             this.loadDotKeKhai();
           },
           error: (error) => {
             console.error('Lỗi khi gửi đợt kê khai:', error);
-            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+            
+            // Hiển thị thông báo lỗi từ server nếu có
+            if (error.error && error.error.message) {
+              this.message.error(error.error.message);
+              
+              // Nếu lỗi liên quan đến biên lai, hiển thị hướng dẫn thêm
+              if (error.error.message.includes('Người thu chưa được cấp quyển biên lai') || 
+                  error.error.message.includes('hết số')) {
+                this.modal.confirm({
+                  nzTitle: 'Lỗi quyển biên lai',
+                  nzContent: 'Bạn chưa được cấp quyển biên lai hoặc đã hết số. Bạn có muốn sử dụng biên lai điện tử không?',
+                  nzOkText: 'Sử dụng biên lai điện tử',
+                  nzCancelText: 'Hủy',
+                  nzOnOk: () => {
+                    // Gửi lại với biên lai điện tử = true
+                    this.loadingGui = true;
+                    this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId, true).subscribe({
+                      next: () => {
+                        this.message.success('Gửi đợt kê khai thành công với biên lai điện tử.');
+                        this.loadDotKeKhai();
+                        this.loadingGui = false;
+                      },
+                      error: (err) => {
+                        console.error('Lỗi khi gửi đợt kê khai với biên lai điện tử:', err);
+                        this.message.error(err.error?.message || 'Có lỗi xảy ra khi gửi đợt kê khai');
+                        this.loadingGui = false;
+                      }
+                    });
+                  }
+                });
+              }
+            } else {
+              this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
+            }
           },
           complete: () => {
             this.loadingGui = false;

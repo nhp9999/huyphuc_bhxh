@@ -1,0 +1,34 @@
+.container {
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.status-pending {
+  background-color: #faad14;
+  color: white;
+}
+
+.status-active {
+  background-color: #52c41a;
+  color: white;
+}
+
+.status-completed {
+  background-color: #1890ff;
+  color: white;
+}
+
+nz-input-number {
+  width: 100%;
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 20px;
+} 

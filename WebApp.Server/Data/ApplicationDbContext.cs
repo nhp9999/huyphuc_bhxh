@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApp.API.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using WebApp.Server.Models;
+using WebApp.API.Models.BienlaiDienTu;
 
 namespace WebApp.API.Data
 {
@@ -29,6 +30,8 @@ namespace WebApp.API.Data
         public DbSet<QuyenBienLai> QuyenBienLais { get; set; }
         public DbSet<BienLai> BienLais { get; set; }
         public DbSet<KeKhaiBHXH> KeKhaiBHXHs { get; set; }
+        public DbSet<QuyenBienLaiDienTu> QuyenBienLaiDienTus { get; set; }
+        public DbSet<BienLaiDienTu> BienLaiDienTus { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -280,6 +283,51 @@ namespace WebApp.API.Data
                       .WithOne(k => k.BienLai)
                       .HasForeignKey<BienLai>(b => b.ke_khai_bhyt_id)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // QuyenBienLaiDienTu configuration
+            modelBuilder.Entity<QuyenBienLaiDienTu>(entity =>
+            {
+                entity.ToTable("quyen_bien_lai_dien_tu");
+                entity.HasKey(e => e.id);
+
+                entity.Property(e => e.ky_hieu).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.tu_so).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.den_so).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.nguoi_cap).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.trang_thai).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.so_hien_tai).HasMaxLength(20);
+                entity.Property(e => e.ngay_cap).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // BienLaiDienTu configuration
+            modelBuilder.Entity<BienLaiDienTu>(entity =>
+            {
+                entity.ToTable("bien_lai_dien_tu");
+                entity.HasKey(e => e.id);
+
+                entity.Property(e => e.ky_hieu).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.so_bien_lai).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.ten_nguoi_dong).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.so_tien).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ghi_chu).HasMaxLength(500);
+                entity.Property(e => e.trang_thai).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.ngay_bien_lai).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.ma_so_bhxh).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.ma_nhan_vien).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ma_co_quan_bhxh).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.ma_so_bhxh_don_vi).IsRequired().HasMaxLength(10);
+
+                entity.HasOne(b => b.KeKhaiBHYT)
+                    .WithMany()
+                    .HasForeignKey(b => b.ke_khai_bhyt_id)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(b => b.QuyenBienLaiDienTu)
+                    .WithMany()
+                    .HasForeignKey(b => b.quyen_bien_lai_dien_tu_id)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

@@ -76,6 +76,11 @@ export const routes: Routes = [
             path: 'bao-cao',
             loadComponent: () => import('./bien-lai/bao-cao-bien-lai/bao-cao-bien-lai.component').then(m => m.BaoCaoBienLaiComponent)
           },
+          {
+            path: 'dien-tu',
+            loadChildren: () => import('./bien-lai/bien-lai-dien-tu/bien-lai-dien-tu.module').then(m => m.BienLaiDienTuModule),
+            canActivate: [AdminGuard]
+          },
           { path: '', redirectTo: 'danh-sach', pathMatch: 'full' }
         ]
       },
