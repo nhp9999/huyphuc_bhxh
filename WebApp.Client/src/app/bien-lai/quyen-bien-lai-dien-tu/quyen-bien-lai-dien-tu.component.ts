@@ -15,6 +15,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { catchError, of } from 'rxjs';
 
 // Cập nhật interface cho phù hợp với dữ liệu API trả về
@@ -42,7 +43,8 @@ interface NguoiDung {
     NzModalModule,
     NzTagModule,
     NzIconModule,
-    NzDividerModule
+    NzDividerModule,
+    NzAlertModule
   ],
   templateUrl: './quyen-bien-lai-dien-tu.component.html',
   styleUrls: ['./quyen-bien-lai-dien-tu.component.scss']
@@ -56,6 +58,19 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
   form!: FormGroup;
   editingId: number | null = null;
   currentQuyenBienLai: QuyenBienLaiDienTu | null = null;
+
+  // Định nghĩa các trạng thái
+  readonly TRANG_THAI = {
+    CHUA_SU_DUNG: 'chua_su_dung',
+    ACTIVE: 'active',
+    INACTIVE: 'inactive',
+    DA_SU_DUNG_HET: 'da_su_dung_het'
+  };
+
+  // Hàm helper để sử dụng trong template
+  parseInt(value: string): number {
+    return parseInt(value || '0');
+  }
 
   constructor(
     private bienLaiDienTuService: BienLaiDienTuService,
@@ -77,9 +92,16 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
       tu_so: ['0000001', [Validators.required, Validators.pattern('^[0-9]+$')]],
       den_so: ['9999999', [Validators.required, Validators.pattern('^[0-9]+$')]],
       so_hien_tai: ['', [Validators.pattern('^[0-9]+$')]],
-      trang_thai: ['chua_su_dung', [Validators.required]],
+      trang_thai: [this.TRANG_THAI.CHUA_SU_DUNG, [Validators.required]],
       nguoi_cap: [''],
       ma_co_quan_bhxh: ['', [Validators.required, Validators.maxLength(20)]]
+    });
+
+    // Theo dõi thay đổi số hiện tại để tự động cập nhật trạng thái khi cần
+    this.form.get('so_hien_tai')?.valueChanges.subscribe(value => {
+      if (this.editingId && value) {
+        this.checkSoHienTaiAndUpdateTrangThai();
+      }
     });
   }
 
@@ -122,8 +144,6 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
             roles: item.roles,
             maNhanVien: item.maNhanVien
           }));
-          
-          console.log('Danh sách người dùng:', this.users);
         }
       });
   }
@@ -137,7 +157,7 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
       den_so: '9999999',
       ma_co_quan_bhxh: '',
       nguoi_cap: '',
-      trang_thai: 'chua_su_dung'
+      trang_thai: this.TRANG_THAI.CHUA_SU_DUNG
     });
     this.isVisible = true;
   }
@@ -166,7 +186,7 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
               so_hien_tai: data.so_hien_tai,
               nguoi_cap: data.nguoi_cap,
               ma_co_quan_bhxh: data.ma_co_quan_bhxh,
-              trang_thai: data.trang_thai
+              trang_thai: data.trang_thai || this.TRANG_THAI.CHUA_SU_DUNG
             });
             this.isVisible = true;
           }
@@ -177,6 +197,25 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
 
   handleCancel(): void {
     this.isVisible = false;
+  }
+
+  // Kiểm tra số hiện tại và cập nhật trạng thái nếu cần
+  checkSoHienTaiAndUpdateTrangThai(): void {
+    const tuSo = parseInt(this.form.get('tu_so')?.value || '0');
+    const denSo = parseInt(this.form.get('den_so')?.value || '0');
+    const soHienTai = parseInt(this.form.get('so_hien_tai')?.value || '0');
+    const trangThaiControl = this.form.get('trang_thai');
+    
+    if (!trangThaiControl) return;
+    
+    // Nếu số hiện tại đạt đến số cuối cùng hoặc vượt quá
+    if (soHienTai >= denSo) {
+      // Hiển thị thông báo gợi ý cho người dùng
+      if (trangThaiControl.value !== this.TRANG_THAI.DA_SU_DUNG_HET) {
+        this.message.warning('Số hiện tại đã đạt tới số cuối. Bạn có thể đánh dấu quyển này là "Đã sử dụng hết".');
+        // Không tự động thay đổi trạng thái, chỉ gợi ý
+      }
+    }
   }
 
   handleSubmit(): void {
@@ -205,15 +244,48 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
     const formData = this.form.value;
     const trangThai = formData.trang_thai;
     const oldTrangThai = this.currentQuyenBienLai?.trang_thai;
+    const soHienTai = parseInt(formData.so_hien_tai || '0');
+    const denSo = parseInt(formData.den_so || '0');
+
+    // Hiển thị cảnh báo khi số hiện tại gần đạt đến số cuối
+    if (soHienTai > 0 && denSo > 0 && (denSo - soHienTai <= 10) && trangThai !== this.TRANG_THAI.DA_SU_DUNG_HET) {
+      this.modal.confirm({
+        nzTitle: 'Cảnh báo số biên lai còn lại',
+        nzContent: `Quyển biên lai này chỉ còn ${denSo - soHienTai + 1} số biên lai có thể sử dụng. Bạn có muốn đánh dấu trạng thái là "Đã sử dụng hết" không?`,
+        nzOkText: 'Đánh dấu đã sử dụng hết',
+        nzCancelText: 'Giữ nguyên trạng thái',
+        nzOnOk: () => {
+          formData.trang_thai = this.TRANG_THAI.DA_SU_DUNG_HET;
+          this.submitForm(formData);
+        },
+        nzOnCancel: () => {
+          this.submitForm(formData);
+        }
+      });
+      return;
+    }
 
     // Hiển thị hộp thoại xác nhận khi thay đổi thành trạng thái "đã sử dụng hết"
-    if (trangThai === 'da_su_dung_het' && oldTrangThai !== 'da_su_dung_het') {
+    if (trangThai === this.TRANG_THAI.DA_SU_DUNG_HET && oldTrangThai !== this.TRANG_THAI.DA_SU_DUNG_HET) {
       this.modal.confirm({
         nzTitle: 'Xác nhận thay đổi trạng thái',
         nzContent: 'Khi đặt trạng thái là "Đã sử dụng hết", hệ thống sẽ không sử dụng quyển biên lai này nữa. Bạn có chắc chắn muốn tiếp tục?',
         nzOkText: 'Đồng ý',
         nzOkType: 'primary',
         nzOkDanger: true,
+        nzOnOk: () => this.submitForm(formData),
+        nzCancelText: 'Hủy',
+        nzOnCancel: () => {
+          this.isSubmitting = false;
+        }
+      });
+    } 
+    // Hiển thị xác nhận khi chuyển từ trạng thái inactive sang active
+    else if (trangThai === this.TRANG_THAI.ACTIVE && oldTrangThai === this.TRANG_THAI.INACTIVE) {
+      this.modal.confirm({
+        nzTitle: 'Xác nhận kích hoạt',
+        nzContent: 'Khi chuyển quyển biên lai sang trạng thái active, hệ thống sẽ sử dụng quyển này để cấp biên lai mới. Bạn có chắc chắn?',
+        nzOkText: 'Đồng ý',
         nzOnOk: () => this.submitForm(formData),
         nzCancelText: 'Hủy',
         nzOnCancel: () => {
@@ -309,13 +381,13 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
   // Hiển thị trạng thái dạng text
   getTrangThaiText(trangThai: string): string {
     switch (trangThai) {
-      case 'chua_su_dung':
+      case this.TRANG_THAI.CHUA_SU_DUNG:
         return 'Chưa sử dụng';
-      case 'active':
+      case this.TRANG_THAI.ACTIVE:
         return 'Đang active';
-      case 'inactive':
+      case this.TRANG_THAI.INACTIVE:
         return 'Không active';
-      case 'da_su_dung_het':
+      case this.TRANG_THAI.DA_SU_DUNG_HET:
         return 'Đã sử dụng hết';
       default:
         return trangThai || 'Không xác định';
@@ -325,16 +397,64 @@ export class QuyenBienLaiDienTuComponent implements OnInit {
   // Lấy class CSS cho tag trạng thái
   getTrangThaiClass(trangThai: string): string {
     switch (trangThai) {
-      case 'chua_su_dung':
+      case this.TRANG_THAI.CHUA_SU_DUNG:
         return 'processing';
-      case 'active':
+      case this.TRANG_THAI.ACTIVE:
         return 'success';
-      case 'inactive':
+      case this.TRANG_THAI.INACTIVE:
         return 'warning';
-      case 'da_su_dung_het':
+      case this.TRANG_THAI.DA_SU_DUNG_HET:
         return 'error';
       default:
         return 'default';
     }
+  }
+
+  // Kiểm tra nếu có quyển biên lai nào đang active và sắp hết số
+  hasQuyenSapHet(): boolean {
+    if (!this.quyenBienLais || this.quyenBienLais.length === 0) return false;
+    
+    return this.quyenBienLais.some(item => 
+      item.trang_thai === this.TRANG_THAI.ACTIVE && 
+      this.getSoConLai(item) < 20
+    );
+  }
+
+  // Kiểm tra nếu quyển biên lai cụ thể đang sắp hết số
+  isQuyenSapHet(quyen: QuyenBienLaiDienTu): boolean {
+    return quyen.trang_thai === this.TRANG_THAI.ACTIVE && 
+           this.getSoConLai(quyen) < 20;
+  }
+
+  // Tính số biên lai còn lại của một quyển
+  getSoConLai(quyen: QuyenBienLaiDienTu): number {
+    if (!quyen) return 0;
+    if (quyen.trang_thai === this.TRANG_THAI.DA_SU_DUNG_HET) return 0;
+    
+    const denSo = parseInt(quyen.den_so || '0');
+    const soHienTai = parseInt(quyen.so_hien_tai || quyen.tu_so || '0');
+    
+    return denSo - soHienTai + 1;
+  }
+
+  // Kiểm tra nếu số hiện tại trong form đang gần đến số cuối
+  isSoHienTaiGanHet(): boolean {
+    const soHienTaiValue = this.form.get('so_hien_tai')?.value;
+    const denSoValue = this.form.get('den_so')?.value;
+    
+    if (!soHienTaiValue || !denSoValue) return false;
+    
+    const soHienTai = parseInt(soHienTaiValue);
+    const denSo = parseInt(denSoValue);
+    
+    return (denSo - soHienTai) < 20;
+  }
+
+  // Tính số biên lai còn lại từ dữ liệu form
+  getSoConLaiFromForm(): number {
+    const soHienTai = parseInt(this.form.get('so_hien_tai')?.value || '0');
+    const denSo = parseInt(this.form.get('den_so')?.value || '0');
+    
+    return denSo - soHienTai + 1;
   }
 } 

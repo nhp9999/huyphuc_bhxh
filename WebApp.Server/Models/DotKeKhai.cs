@@ -111,9 +111,6 @@ namespace WebApp.API.Models
         [StringLength(50)]
         public string? ma_ho_so { get; set; }
 
-        [Column("bien_lai_dien_tu")]
-        public bool bien_lai_dien_tu { get; set; } = false;
-
         [Column("is_bien_lai_dien_tu")]
         public bool is_bien_lai_dien_tu { get; set; } = false;
 

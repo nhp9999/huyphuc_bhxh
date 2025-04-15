@@ -243,14 +243,16 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="5">Mã hồ sơ</nz-form-label>
           <nz-form-control [nzSpan]="19">
-            <input nz-input formControlName="ma_ho_so" placeholder="Nhập mã hồ sơ" />
+            <input nz-input formControlName="ma_ho_so" placeholder="Nhập mã hồ sơ (nếu có)" />
           </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label [nzSpan]="5">Biên lai điện tử</nz-form-label>
+          <nz-form-label [nzSpan]="5">Biên lai</nz-form-label>
           <nz-form-control [nzSpan]="19">
-            <label nz-checkbox formControlName="bien_lai_dien_tu">Sử dụng biên lai điện tử</label>
+            <label nz-checkbox formControlName="is_bien_lai_dien_tu">
+              Sử dụng biên lai điện tử
+            </label>
           </nz-form-control>
         </nz-form-item>
       </form>
@@ -332,12 +334,13 @@
   <ng-template #modalGuiDotKeKhai>
     <div>
       <p>Bạn có chắc chắn muốn gửi đợt kê khai này?</p>
-      <div style="margin-top: 15px;">
-        <label nz-checkbox [(ngModel)]="bienLaiDienTu">
-          Cấp số biên lai điện tử
-        </label>
-        <br />
-        <small style="color: #888;">Biên lai điện tử sẽ được cấp tự động cho tất cả kê khai trong đợt này</small>
+      <div *ngIf="willUseBienLaiDienTu" style="margin-top: 15px;">
+        <nz-alert
+          nzType="info"
+          nzMessage="Thông báo"
+          nzDescription="Đợt kê khai này sẽ tự động sử dụng biên lai điện tử khi gửi."
+          nzShowIcon
+        ></nz-alert>
       </div>
     </div>
   </ng-template>

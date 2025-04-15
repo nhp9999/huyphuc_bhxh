@@ -580,7 +580,7 @@ namespace WebApp.API.Controllers
                 }
                 
                 // Log giá trị ban đầu
-                _logger.LogInformation($"Trước khi cập nhật: id={id}, bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
+                _logger.LogInformation($"Trước khi cập nhật: id={id}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
 
                 // Kiểm tra trạng thái hiện tại
                 if (dotKeKhai.trang_thai != "chua_gui")
@@ -589,23 +589,22 @@ namespace WebApp.API.Controllers
                 }
                 
                 // Xác định xem có sử dụng biên lai điện tử hay không
-                // Ưu tiên kiểm tra is_bien_lai_dien_tu của đợt kê khai trước, nếu true thì luôn sử dụng biên lai điện tử
+                // Kiểm tra is_bien_lai_dien_tu của đợt kê khai trước
                 bool useBienLaiDienTu = dotKeKhai.is_bien_lai_dien_tu;
 
                 // Nếu is_bien_lai_dien_tu không true, mới xem xét đến dto
-                if (!useBienLaiDienTu)
+                if (!useBienLaiDienTu && dto != null)
                 {
-                    useBienLaiDienTu = dto?.bien_lai_dien_tu ?? false;
+                    useBienLaiDienTu = dto.is_bien_lai_dien_tu;
                 }
                 
                 _logger.LogInformation($"GuiDotKeKhai: id={id}, useBienLaiDienTu={useBienLaiDienTu}, dto={dto != null}, dotKeKhai.is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
 
                 // Cập nhật biên lai điện tử 
-                dotKeKhai.bien_lai_dien_tu = useBienLaiDienTu;
                 dotKeKhai.is_bien_lai_dien_tu = useBienLaiDienTu;
                 
                 // Log giá trị sau khi cập nhật
-                _logger.LogInformation($"Sau khi cập nhật: id={id}, bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
+                _logger.LogInformation($"Sau khi cập nhật: id={id}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
 
                 // Lấy thông tin người dùng đăng nhập
                 var userName = User.Identity != null ? User.Identity.Name : null;
@@ -638,9 +637,8 @@ namespace WebApp.API.Controllers
                         _logger.LogWarning($"Không tìm thấy quyển biên lai thông thường cho người dùng {userName}. Chuyển sang sử dụng biên lai điện tử.");
                         // Khi không tìm thấy quyển biên lai thông thường, tự động chuyển sang sử dụng biên lai điện tử
                         useBienLaiDienTu = true;
-                        dotKeKhai.bien_lai_dien_tu = true;
                         dotKeKhai.is_bien_lai_dien_tu = true;
-                        _logger.LogInformation($"Đã chuyển sang sử dụng biên lai điện tử do không tìm thấy quyển biên lai thông thường: bien_lai_dien_tu={dotKeKhai.bien_lai_dien_tu}, is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
+                        _logger.LogInformation($"Đã chuyển sang sử dụng biên lai điện tử do không tìm thấy quyển biên lai thông thường: is_bien_lai_dien_tu={dotKeKhai.is_bien_lai_dien_tu}");
                     }
                 }
 
@@ -648,11 +646,21 @@ namespace WebApp.API.Controllers
                 dotKeKhai.trang_thai = "cho_thanh_toan";
                 
                 // Cập nhật trạng thái các kê khai BHYT trong đợt và cấp số biên lai
-                var keKhaiBHYTs = await _context.KeKhaiBHYTs
+                // Nếu đang cập nhật từ không sử dụng biên lai điện tử sang sử dụng, lấy tất cả các kê khai
+                // bao gồm cả những kê khai đã có số biên lai (biên lai thông thường)
+                var keKhaiBHYTsQuery = _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
-                    .Where(k => k.dot_ke_khai_id == id && k.so_bien_lai == null)
-                    .OrderBy(k => k.id)
-                    .ToListAsync();
+                    .Where(k => k.dot_ke_khai_id == id);
+                
+                // Nếu không phải chuyển từ biên lai thường sang biên lai điện tử, chỉ lấy các kê khai chưa có số biên lai
+                if (!useBienLaiDienTu || !dotKeKhai.is_bien_lai_dien_tu)
+                {
+                    keKhaiBHYTsQuery = keKhaiBHYTsQuery.Where(k => k.so_bien_lai == null);
+                }
+                
+                var keKhaiBHYTs = await keKhaiBHYTsQuery.OrderBy(k => k.id).ToListAsync();
+                
+                _logger.LogInformation($"Số lượng kê khai BHYT cần xử lý: {keKhaiBHYTs.Count}, useBienLaiDienTu: {useBienLaiDienTu}");
 
                 foreach (var keKhai in keKhaiBHYTs)
                 {
@@ -745,6 +753,9 @@ namespace WebApp.API.Controllers
                     // Lấy mã cơ quan BHXH từ đơn vị của đợt kê khai
                     string maCoQuanBHXH = dotKeKhai.DonVi?.MaCoQuanBHXH ?? "";
                     
+                    // Log thông tin về việc sử dụng biên lai điện tử
+                    _logger.LogInformation($"Xử lý biên lai điện tử cho đợt kê khai {id}, mã cơ quan BHXH: {maCoQuanBHXH}");
+                    
                     // Lấy quyển biên lai điện tử đang active dựa vào mã cơ quan BHXH
                     var quyenBienLaiDienTu = await _context.QuyenBienLaiDienTus
                         .Where(q => q.trang_thai == "active" && 
@@ -771,6 +782,18 @@ namespace WebApp.API.Controllers
                     
                     foreach (var keKhai in keKhaiBHYTs)
                     {
+                        // Kiểm tra xem kê khai đã có số biên lai điện tử chưa
+                        var existingBienLaiDienTu = await _context.BienLaiDienTus
+                            .Where(b => b.ke_khai_bhyt_id == keKhai.id)
+                            .FirstOrDefaultAsync();
+                            
+                        // Nếu đã có biên lai điện tử, bỏ qua kê khai này
+                        if (existingBienLaiDienTu != null)
+                        {
+                            _logger.LogInformation($"Kê khai {keKhai.id} đã có biên lai điện tử {existingBienLaiDienTu.so_bien_lai}, bỏ qua");
+                            continue;
+                        }
+                        
                         // Tăng số biên lai điện tử
                         int soHienTai = int.Parse(quyenBienLaiDienTu.so_hien_tai ?? "0000001");
                         int denSo = int.Parse(quyenBienLaiDienTu.den_so);
@@ -886,7 +909,7 @@ namespace WebApp.API.Controllers
 
         public class GuiDotKeKhaiDto
         {
-            public bool bien_lai_dien_tu { get; set; } = false;
+            public bool is_bien_lai_dien_tu { get; set; } = false;
         }
 
         private bool DotKeKhaiExists(int id)

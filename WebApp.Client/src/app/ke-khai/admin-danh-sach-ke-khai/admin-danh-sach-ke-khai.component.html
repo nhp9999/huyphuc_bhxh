@@ -178,6 +178,13 @@
           <nz-option *ngFor="let option of danhSachDonVi" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
         </nz-select>
 
+        <nz-input-group class="filter-item" [nzSuffix]="suffixTemplateUser">
+          <input type="text" nz-input placeholder="Mã nhân viên" [(ngModel)]="danhSachFilters.maNhanVien" />
+        </nz-input-group>
+        <ng-template #suffixTemplateUser>
+          <span nz-icon nzType="user" nzTheme="outline"></span>
+        </ng-template>
+
         <nz-select class="filter-item" nzPlaceHolder="Tháng" [(ngModel)]="danhSachFilters.thang" nzAllowClear>
           <nz-option *ngFor="let option of danhSachThang" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
         </nz-select>

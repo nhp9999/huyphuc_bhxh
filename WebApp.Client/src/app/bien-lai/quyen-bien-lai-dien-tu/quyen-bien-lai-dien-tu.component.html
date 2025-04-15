@@ -1,9 +1,26 @@
 <div class="container">
   <div class="page-header">
     <h2>Quản lý quyển biên lai điện tử</h2>
-    <button nz-button nzType="primary" (click)="showAddModal()">
-      <i nz-icon nzType="plus"></i> Thêm quyển biên lai
-    </button>
+    <div class="action-buttons">
+      <button nz-button nzType="primary" (click)="showAddModal()">
+        <i nz-icon nzType="plus"></i> Thêm quyển biên lai
+      </button>
+      <button nz-button nzType="default" (click)="loadQuyenBienLais()">
+        <i nz-icon nzType="reload"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="filters" *ngIf="quyenBienLais.length > 0">
+    <nz-alert 
+      *ngIf="hasQuyenSapHet()"
+      nzType="warning" 
+      nzMessage="Cảnh báo: Có quyển biên lai sắp hết số"
+      nzDescription="Một số quyển biên lai đang active sắp hết. Hãy kiểm tra và chuẩn bị quyển mới."
+      nzShowIcon
+      [nzCloseable]="true"
+      class="margin-bottom"
+    ></nz-alert>
   </div>
 
   <nz-table #basicTable [nzData]="quyenBienLais" [nzLoading]="isLoading" [nzBordered]="true">
@@ -14,6 +31,7 @@
         <th>Từ số</th>
         <th>Đến số</th>
         <th>Số hiện tại</th>
+        <th>Còn lại</th>
         <th>Mã cơ quan BHXH</th>
         <th>Người cấp</th>
         <th>Ngày cấp</th>
@@ -22,12 +40,23 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of basicTable.data; let i = index">
+      <tr *ngFor="let item of basicTable.data; let i = index" [ngClass]="{'near-end': isQuyenSapHet(item)}">
         <td>{{ i + 1 }}</td>
         <td>{{ item.ky_hieu }}</td>
         <td>{{ item.tu_so }}</td>
         <td>{{ item.den_so }}</td>
         <td>{{ item.so_hien_tai || item.tu_so }}</td>
+        <td>
+          <ng-container *ngIf="item.trang_thai !== TRANG_THAI.DA_SU_DUNG_HET">
+            {{ getSoConLai(item) }}
+            <nz-tag *ngIf="getSoConLai(item) < 20" nzColor="warning">
+              Sắp hết
+            </nz-tag>
+          </ng-container>
+          <ng-container *ngIf="item.trang_thai === TRANG_THAI.DA_SU_DUNG_HET">
+            0
+          </ng-container>
+        </td>
         <td>{{ item.ma_co_quan_bhxh }}</td>
         <td>{{ item.nguoi_cap }}</td>
         <td>{{ item.ngay_cap | date:'dd/MM/yyyy' }}</td>
@@ -38,12 +67,12 @@
         </td>
         <td>
           <button nz-button nzType="primary" nzSize="small" (click)="showEditModal(item.id!)" 
-            [disabled]="item.trang_thai === 'da_su_dung_het'" nzTooltip="Chỉnh sửa">
+            [disabled]="item.trang_thai === TRANG_THAI.DA_SU_DUNG_HET" nzTooltip="Chỉnh sửa">
             <i nz-icon nzType="edit"></i>
           </button>
           <nz-divider nzType="vertical"></nz-divider>
           <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteQuyenBienLai(item.id!)" 
-            [disabled]="item.trang_thai !== 'chua_su_dung'" nzTooltip="Xóa">
+            [disabled]="item.trang_thai !== TRANG_THAI.CHUA_SU_DUNG" nzTooltip="Xóa">
             <i nz-icon nzType="delete"></i>
           </button>
         </td>
@@ -92,6 +121,11 @@
           <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Số hiện tại phải nằm trong khoảng từ số đến số">
             <input nz-input formControlName="so_hien_tai" />
             <div class="ant-form-item-explain">Số biên lai tiếp theo sẽ được sử dụng</div>
+            <div *ngIf="isSoHienTaiGanHet()" 
+                 class="ant-form-item-explain ant-form-item-explain-warning">
+              <i nz-icon nzType="warning" nzTheme="fill"></i> 
+              Số biên lai còn lại: {{ getSoConLaiFromForm() }}
+            </div>
           </nz-form-control>
         </nz-form-item>
 
@@ -99,13 +133,16 @@
           <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Trạng thái</nz-form-label>
           <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng chọn trạng thái">
             <nz-select formControlName="trang_thai">
-              <nz-option nzValue="chua_su_dung" nzLabel="Chưa sử dụng"></nz-option>
-              <nz-option nzValue="active" nzLabel="Đang active"></nz-option>
-              <nz-option nzValue="inactive" nzLabel="Không active"></nz-option>
-              <nz-option nzValue="da_su_dung_het" nzLabel="Đã sử dụng hết"></nz-option>
+              <nz-option [nzValue]="TRANG_THAI.CHUA_SU_DUNG" nzLabel="Chưa sử dụng"></nz-option>
+              <nz-option [nzValue]="TRANG_THAI.ACTIVE" nzLabel="Đang active"></nz-option>
+              <nz-option [nzValue]="TRANG_THAI.INACTIVE" nzLabel="Không active"></nz-option>
+              <nz-option [nzValue]="TRANG_THAI.DA_SU_DUNG_HET" nzLabel="Đã sử dụng hết"></nz-option>
             </nz-select>
-            <div *ngIf="form.get('trang_thai')?.value === 'da_su_dung_het'" class="ant-form-item-explain ant-form-item-explain-warning">
+            <div *ngIf="form.get('trang_thai')?.value === TRANG_THAI.DA_SU_DUNG_HET" class="ant-form-item-explain ant-form-item-explain-warning">
               <i nz-icon nzType="warning" nzTheme="fill"></i> Cảnh báo: Khi đặt trạng thái là "Đã sử dụng hết", hệ thống sẽ không sử dụng quyển biên lai này nữa!
+            </div>
+            <div *ngIf="form.get('trang_thai')?.value === TRANG_THAI.ACTIVE" class="ant-form-item-explain ant-form-item-explain-info">
+              <i nz-icon nzType="info-circle" nzTheme="fill"></i> Hệ thống sẽ sử dụng quyển biên lai này để cấp biên lai mới.
             </div>
           </nz-form-control>
         </nz-form-item>
@@ -147,6 +184,11 @@
     margin-bottom: 16px;
   }
 
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
   .status-pending {
     background-color: #faad14;
     color: white;
@@ -160,5 +202,17 @@
   .status-completed {
     background-color: #1890ff;
     color: white;
+  }
+
+  .margin-bottom {
+    margin-bottom: 16px;
+  }
+
+  tr.near-end {
+    background-color: #fff7e6;
+  }
+
+  .filters {
+    margin-bottom: 16px;
   }
 </style>

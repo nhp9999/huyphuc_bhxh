@@ -34,7 +34,7 @@ export interface CreateDotKeKhai {
   nguoi_tao: string;
   don_vi_id: number;
   ma_ho_so?: string;
-  bien_lai_dien_tu?: boolean;
+  is_bien_lai_dien_tu?: boolean;
   dai_ly_id: number;
   KeKhaiBHYTs?: any[];
 }

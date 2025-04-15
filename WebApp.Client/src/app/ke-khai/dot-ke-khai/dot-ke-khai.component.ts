@@ -158,6 +158,7 @@ export class DotKeKhaiComponent implements OnInit {
   zoomLevel: number = 1;
   rotationDegree: number = 0;
   bienLaiDienTu: boolean = false;
+  willUseBienLaiDienTu: boolean = false;
 
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
@@ -224,7 +225,7 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: [this.currentUser.username || '', [Validators.required]],
       don_vi_id: [null, [Validators.required]],
       ma_ho_so: [null],
-      bien_lai_dien_tu: [false],
+      is_bien_lai_dien_tu: [false],
       dai_ly_id: [null, [Validators.required]]
     });
 
@@ -418,7 +419,7 @@ export class DotKeKhaiComponent implements OnInit {
   showModal(data?: DotKeKhai): void {
     this.isEdit = !!data;
     
-    // Tạm thời hủy đăng ký sự kiện valueChanges của dai_ly_id để tránh gọi API nhiều lần
+    // Tạm thởi hủy đăng ký sự kiện valueChanges của dai_ly_id để tránh gọi API nhiều lần
     const subscription = this.form.get('dai_ly_id')?.valueChanges.subscribe();
     if (subscription) {
       subscription.unsubscribe();
@@ -465,6 +466,7 @@ export class DotKeKhaiComponent implements OnInit {
                 nguoi_tao: data.nguoi_tao,
                 don_vi_id: data.don_vi_id,
                 ma_ho_so: data.ma_ho_so,
+                is_bien_lai_dien_tu: data.is_bien_lai_dien_tu,
                 dai_ly_id: data.dai_ly_id
               }, { emitEvent: false });
               
@@ -504,7 +506,7 @@ export class DotKeKhaiComponent implements OnInit {
             nguoi_tao: this.currentUser.username || '',
             don_vi_id: null,
             ma_ho_so: '',
-            bien_lai_dien_tu: false,
+            is_bien_lai_dien_tu: true, // Tự động chọn sử dụng biên lai điện tử
             dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
           }, { emitEvent: false });
           
@@ -556,7 +558,7 @@ export class DotKeKhaiComponent implements OnInit {
       nguoi_tao: this.currentUser.username || '',
       don_vi_id: null,
       ma_ho_so: '',
-      bien_lai_dien_tu: false,
+      is_bien_lai_dien_tu: false,
       dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
     }, { emitEvent: false });
 
@@ -660,7 +662,7 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: formValue.nguoi_tao,
         don_vi_id: formValue.don_vi_id,
         ma_ho_so: formValue.ma_ho_so,
-        bien_lai_dien_tu: formValue.bien_lai_dien_tu,
+        is_bien_lai_dien_tu: formValue.is_bien_lai_dien_tu,
         dai_ly_id: formValue.dai_ly_id
       };
 
@@ -686,7 +688,7 @@ export class DotKeKhaiComponent implements OnInit {
         nguoi_tao: formValue.nguoi_tao,
         don_vi_id: formValue.don_vi_id,
         ma_ho_so: formValue.ma_ho_so,
-        bien_lai_dien_tu: formValue.bien_lai_dien_tu,
+        is_bien_lai_dien_tu: formValue.is_bien_lai_dien_tu,
         dai_ly_id: formValue.dai_ly_id,
         dich_vu: formValue.dich_vu || 'BHYT' // Thêm trường dich_vu với giá trị mặc định là BHYT
       };
@@ -1466,33 +1468,10 @@ export class DotKeKhaiComponent implements OnInit {
     const useBienLaiDienTu = !!(data.is_bien_lai_dien_tu || data.bien_lai_dien_tu);
     console.log('Sử dụng biên lai điện tử:', useBienLaiDienTu);
     
-    // Nếu đợt kê khai đã được đánh dấu sử dụng biên lai điện tử, tự động gửi
-    if (useBienLaiDienTu) {
-      this.loading = true;
-      this.dotKeKhaiService.guiDotKeKhai(data.id!, true).subscribe({
-        next: () => {
-          this.message.success('Gửi đợt kê khai thành công với biên lai điện tử');
-          this.loading = false;
-          this.loadData(); // Tải lại dữ liệu sau khi gửi thành công
-        },
-        error: (error) => {
-          console.error('Lỗi khi gửi đợt kê khai:', error);
-          // Hiển thị thông báo lỗi từ server nếu có
-          if (error.error && error.error.message) {
-            this.message.error(error.error.message);
-          } else {
-            this.message.error('Có lỗi xảy ra khi gửi đợt kê khai');
-          }
-          this.loading = false;
-        }
-      });
-      return;
-    }
+    // Cập nhật biến willUseBienLaiDienTu để hiển thị thông báo trong modal
+    this.willUseBienLaiDienTu = useBienLaiDienTu;
     
-    // Nếu không sử dụng biên lai điện tử, hiển thị modal xác nhận
-    // Reset giá trị biên lai điện tử
-    this.bienLaiDienTu = false;
-    
+    // Hiển thị modal xác nhận gửi đợt kê khai
     this.modal.confirm({
       nzTitle: 'Xác nhận gửi',
       nzContent: this.modalGuiDotKeKhaiTpl,
@@ -1500,9 +1479,9 @@ export class DotKeKhaiComponent implements OnInit {
       nzOkType: 'primary',
       nzOnOk: () => {
         this.loading = true;
-        this.dotKeKhaiService.guiDotKeKhai(data.id!, this.bienLaiDienTu).subscribe({
+        this.dotKeKhaiService.guiDotKeKhai(data.id!, useBienLaiDienTu).subscribe({
           next: () => {
-            if (this.bienLaiDienTu) {
+            if (useBienLaiDienTu) {
               this.message.success('Gửi đợt kê khai thành công với biên lai điện tử');
             } else {
               this.message.success('Gửi đợt kê khai thành công');
@@ -1526,7 +1505,7 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   // Thêm hàm loadDonVisByDaiLy
-  loadDonVisByDaiLy(daiLyId?: number) {
+  loadDonVisByDaiLy(daiLyId?: number): void {
     this.isLoadingDonVis = true;
     
     if (!daiLyId) {

@@ -120,7 +120,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     trangThai: null as string | null,
     donVi: null as number | null,
     nam: null as number | null,
-    thang: null as number | null
+    thang: null as number | null,
+    maNhanVien: null as string | null
   };
   danhSachDichVu = [
     { text: 'BHYT', value: 'BHYT' },
@@ -345,7 +346,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       trangThai: null,
       donVi: null,
       nam: null,
-      thang: null
+      thang: null,
+      maNhanVien: null
     };
     this.tabTrangThaiIndex = 0;
     this.loadDotKeKhaiList();
@@ -390,6 +392,14 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     // Lọc theo đơn vị
     if (this.danhSachFilters.donVi) {
       filteredData = filteredData.filter(item => item.don_vi_id === this.danhSachFilters.donVi);
+    }
+    
+    // Lọc theo mã nhân viên
+    if (this.danhSachFilters.maNhanVien && this.danhSachFilters.maNhanVien.trim() !== '') {
+      const maNhanVienLower = this.danhSachFilters.maNhanVien.toLowerCase().trim();
+      filteredData = filteredData.filter(item => 
+        item.nguoi_tao && item.nguoi_tao.toLowerCase().includes(maNhanVienLower)
+      );
     }
     
     this.dotKeKhaiList = filteredData;

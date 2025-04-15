@@ -695,7 +695,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         console.log('bien_lai_dien_tu:', data.bien_lai_dien_tu);
         
         // Lưu lại giá trị cho việc sử dụng biên lai điện tử
-        this.willUseBienLaiDienTu = !!(data.is_bien_lai_dien_tu || data.bien_lai_dien_tu);
+        this.willUseBienLaiDienTu = !!data.is_bien_lai_dien_tu;
         
         // Kiểm tra cache trước khi gọi API
         if (data.don_vi_id) {
