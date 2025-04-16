@@ -173,6 +173,14 @@
                 <i nz-icon nzType="file-excel"></i>
               </button>
               <button 
+                *ngIf="data.dich_vu === 'BHYT'"
+                nz-button 
+                nzType="default"
+                nz-tooltip="Xuất D03-TS"
+                (click)="$event.stopPropagation(); exportD03TS(data)">
+                <i nz-icon nzType="file-excel"></i>
+              </button>
+              <button 
                 *ngIf="data.trang_thai === 'chua_gui'" 
                 nz-button
                 nzType="primary"

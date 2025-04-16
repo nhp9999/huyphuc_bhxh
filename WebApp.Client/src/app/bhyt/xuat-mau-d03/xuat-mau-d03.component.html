@@ -1,0 +1,90 @@
+<div class="container">
+  <nz-card nzTitle="Xuất Excel Mẫu D03-TS" [nzLoading]="isLoading">
+    <form [formGroup]="xuatForm" (ngSubmit)="exportExcel()">
+      <div class="form-row">
+        <div class="form-col">
+          <nz-form-item>
+            <nz-form-label nzRequired>Đợt kê khai</nz-form-label>
+            <nz-form-control nzErrorTip="Vui lòng chọn đợt kê khai">
+              <nz-select formControlName="dotKeKhaiId" nzPlaceHolder="Chọn đợt kê khai">
+                <nz-option *ngFor="let dot of dotKeKhaiList" [nzValue]="dot.id" [nzLabel]="dot.ten_dot"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </div>
+
+      <div class="options-section">
+        <h3>Thông tin đơn vị</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Tên công ty</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="tenCongTy" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Mã đơn vị</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="maDonVi" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Địa chỉ</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="diaChi" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Số điện thoại</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="soDienThoai" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Email</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="email" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <nz-form-item>
+              <nz-form-label>Người lập</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="nguoiLap" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-section">
+        <button nz-button nzType="primary" [disabled]="isLoading" type="submit">
+          <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+          Xuất Excel
+        </button>
+      </div>
+    </form>
+  </nz-card>
+</div>

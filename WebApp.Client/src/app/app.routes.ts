@@ -106,6 +106,16 @@ export const routes: Routes = [
           { path: '', redirectTo: 'ma-so-bhxh', pathMatch: 'full' }
         ]
       },
+      {
+        path: 'bhyt',
+        children: [
+          {
+            path: 'xuat-mau-d03',
+            loadComponent: () => import('./bhyt/xuat-mau-d03/xuat-mau-d03.component').then(m => m.XuatMauD03Component)
+          },
+          { path: '', redirectTo: 'xuat-mau-d03', pathMatch: 'full' }
+        ]
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   }

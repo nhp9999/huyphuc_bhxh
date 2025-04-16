@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DotKeKhai, CreateDotKeKhai, UpdateDotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
+import { D03Service } from '../../bhyt/services/d03.service';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -188,7 +189,8 @@ export class DotKeKhaiComponent implements OnInit {
     private iconService: NzIconService,
     private donViService: DonViService,
     private userService: UserService,
-    private http: HttpClient
+    private http: HttpClient,
+    private d03Service: D03Service
   ) {
     // Đăng ký các icons
     this.iconService.addIcon(
@@ -1605,4 +1607,122 @@ export class DotKeKhaiComponent implements OnInit {
       }
     });
   }
-} 
+
+  // Hàm xuất D03-TS
+  exportD03TS(data: DotKeKhai): void {
+    // Kiểm tra data và ID
+    if (!data) {
+      this.message.error('Không có dữ liệu đợt kê khai');
+      return;
+    }
+
+    if (!data.id) {
+      this.message.error('Không tìm thấy ID của đợt kê khai');
+      return;
+    }
+
+    // Kiểm tra trạng thái đợt kê khai
+    if (['chua_gui', 'tu_choi'].includes(data.trang_thai)) {
+      this.modal.confirm({
+        nzTitle: 'Thông báo',
+        nzContent: `Đợt kê khai này có trạng thái "${this.getTagText(data.trang_thai)}". Bạn có chắc chắn muốn xuất dữ liệu D03-TS không?`,
+        nzOkText: 'Đồng ý',
+        nzCancelText: 'Hủy',
+        nzOnOk: () => this.processExportD03TS(data)
+      });
+      return;
+    }
+
+    // Tiến hành xuất bình thường cho các trạng thái khác
+    this.processExportD03TS(data);
+  }
+
+  // Hàm xử lý xuất D03-TS sau khi kiểm tra
+  private processExportD03TS(data: DotKeKhai): void {
+    // Chỉ cho phép xuất D03-TS đối với dịch vụ BHYT
+    if (data.dich_vu !== 'BHYT') {
+      this.message.warning('Chức năng xuất D03-TS chỉ áp dụng cho đợt kê khai BHYT');
+      return;
+    }
+    
+    try {
+      this.loading = true;
+      const messageId = this.message.loading('Đang chuẩn bị xuất D03-TS...', { nzDuration: 0 }).messageId;
+      
+      // Kiểm tra thông tin đơn vị
+      const donVi = this.donVis.find(d => d.id === data.don_vi_id);
+      if (!donVi) {
+        this.message.remove(messageId);
+        this.message.error('Không tìm thấy thông tin đơn vị');
+        this.loading = false;
+        return;
+      }
+
+      // Kiểm tra mã số BHXH của đơn vị
+      if (!donVi.maSoBHXH) {
+        this.message.remove(messageId);
+        this.message.warning('Đơn vị chưa có mã số BHXH, dữ liệu xuất có thể không đầy đủ');
+      }
+      
+      // Lấy thông tin đại lý
+      const daiLy = this.daiLys.find(d => d.id === data.dai_ly_id);
+      
+      // Chuẩn bị options cho D03
+      const options = {
+        tenCongTy: donVi.tenDonVi || '',
+        maDonVi: donVi.maSoBHXH || '',
+        diaChi: donVi.diaChi || '',
+        nguoiLap: this.currentUser?.username || data.nguoi_tao || '',
+        ngayLap: new Date(),
+        tenDaiLy: daiLy?.ten || '',
+        dotKeKhaiId: data.id,
+        tenDotKeKhai: data.ten_dot || ''
+      };
+      
+      // Gọi service để xuất D03-TS và xử lý kết quả
+      this.d03Service.getD03Data(data.id!).subscribe({
+        next: (d03Data) => {
+          if (!d03Data || (Array.isArray(d03Data) && d03Data.length === 0)) {
+            this.message.remove(messageId);
+            this.message.warning('Không tìm thấy dữ liệu D03-TS cho đợt kê khai này');
+            this.loading = false;
+            return;
+          }
+          
+          try {
+            // Xuất dữ liệu ra Excel
+            this.d03Service.xuatExcelMauD03TS(d03Data, options);
+            this.message.remove(messageId);
+            // Thông báo thành công đã được xử lý trong d03.service.ts
+          } catch (error) {
+            console.error('Lỗi khi xuất Excel D03-TS:', error);
+            this.message.remove(messageId);
+            this.message.error('Lỗi khi tạo file Excel D03-TS');
+          } finally {
+            this.loading = false;
+          }
+        },
+        error: (error) => {
+          console.error('Lỗi khi lấy dữ liệu D03-TS:', error);
+          this.message.remove(messageId);
+          
+          if (error.status === 404) {
+            this.message.error(`Không tìm thấy dữ liệu D03-TS cho đợt kê khai ID: ${data.id}`);
+          } else if (error.status === 403) {
+            this.message.error('Bạn không có quyền truy cập dữ liệu D03-TS');
+          } else if (error.status === 0) {
+            this.message.error('Không thể kết nối đến máy chủ, vui lòng kiểm tra kết nối mạng');
+          } else {
+            this.message.error('Có lỗi xảy ra khi lấy dữ liệu D03-TS: ' + (error.message || 'Lỗi không xác định'));
+          }
+          
+          this.loading = false;
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi khi xuất D03-TS:', error);
+      this.message.error('Có lỗi không xác định xảy ra khi xuất D03-TS');
+      this.loading = false;
+    }
+  }
+}
