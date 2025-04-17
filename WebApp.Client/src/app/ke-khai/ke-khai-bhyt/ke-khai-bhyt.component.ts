@@ -753,9 +753,25 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           }))
           .sort((a, b) => (b.id || 0) - (a.id || 0));
         
-        this.applyFilters();
-        this.tinhThongKe();
-        this.loadingTable = false; // Sử dụng loadingTable
+        // Tải trước dữ liệu xã và huyện cho tất cả dữ liệu trong danh sách
+        Promise.all([
+          this.preloadXaData(this.keKhaiBHYTs),
+          this.preloadHuyenData(this.keKhaiBHYTs)
+        ]).then(() => {
+          // Thêm tên xã và tên huyện vào dữ liệu để hiển thị
+          this.keKhaiBHYTs = this.keKhaiBHYTs.map(item => ({
+            ...item,
+            xa_nkq_ten: this.getXaTen(item.xa_nkq),
+            huyen_nkq_ten: this.getHuyenTen(item.huyen_nkq)
+          }));
+          
+          this.applyFilters();
+          this.tinhThongKe();
+          this.loadingTable = false; // Sử dụng loadingTable
+        }).catch(error => {
+          console.error('Lỗi khi tải dữ liệu địa chỉ:', error);
+          this.loadingTable = false;
+        });
       },
       error: (error) => {
         this.message.error('Có lỗi xảy ra khi tải dữ liệu');
@@ -1373,95 +1389,139 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     if (maSoBHXH && maSoBHXH.length === 10) {
-      // Kiểm tra token trước khi tìm kiếm
-      if (!this.ssmv2Service.getToken()) {
-        // Bỏ dòng hiển thị thông báo
-        // this.message.warning('Vui lòng xác thực lại để lấy token mới');
-        this.getAccessToken(); // Chỉ hiển thị modal xác thực
-        return;
-      }
-
-      this.loadingSearch = true; // Sử dụng loadingSearch
-      
-      this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
-        next: async (response) => {
-          if (response.success) {
-            const data = response.data;
-            console.log('BHYT search response:', data);
+      // Đầu tiên kiểm tra xem mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa
+      this.loadingSearch = true;
+      this.keKhaiBHYTService.checkMaSoBHXH(maSoBHXH).subscribe({
+        next: (result) => {
+          if (result.success && result.exists) {
+            // Nếu mã số BHXH đã được kê khai trong 7 ngày gần đây
+            const latestRecord = result.data;
+            const allRecords = result.data.all_records || [];
+            const recordsHtml = allRecords.map((record: {ngay_tao: string; dot_ke_khai_name?: string}) => {
+              const date = new Date(record.ngay_tao);
+              const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+              return `<li>Đợt: <strong>${record.dot_ke_khai_name || 'Không xác định'}</strong> - Ngày: <strong>${formattedDate}</strong></li>`;
+            }).join('');
             
-            // Kiểm tra nếu isThamGiaBb = 1 thì hiển thị thông báo
-            if (data.isThamGiaBb === 1) {
-              this.modal.warning({
-                nzTitle: 'Thông báo BHXH bắt buộc',
-                nzContent: `<div>
-                  <p><strong>Họ tên:</strong> ${data.hoTen || 'Không có'}</p>
-                  <p><strong>Mã số BHXH:</strong> ${data.maSoBHXH || 'Không có'}</p>
-                  <p><strong>Số thẻ BHYT:</strong> ${data.soTheBHYT || 'Chưa có'}</p>
-                  <p>Đối tượng đang tham gia BHXH bắt buộc.</p>
-                </div>`,
-                nzOkText: 'Đã hiểu'
-              });
-              this.loadingSearch = false;
-              return;
-            }
-
-            // Kiểm tra hạn thẻ cũ
-            if (data.denNgayTheCu) {
-              const denNgayTheCu = this.parseDate(data.denNgayTheCu);
-              if (denNgayTheCu) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                const timeDiff = denNgayTheCu.getTime() - today.getTime();
-                const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-                
-                if (daysDiff > 30) {
-                  return new Promise((resolve) => {
-                    this.modal.warning({
-                      nzTitle: 'Cảnh báo',
-                      nzContent: `Thẻ BHYT hiện tại còn ${daysDiff} ngày sử dụng. Bạn có muốn tiếp tục kê khai không?`,
-                      nzOkText: 'Tiếp tục',
-                      nzCancelText: 'Hủy',
-                      nzOnOk: () => {
-                        resolve(true);
-                      },
-                      nzOnCancel: () => {
-                        this.form.reset();
-                        this.loadingSearch = false;
-                        resolve(false);
-                      }
-                    });
-                  }).then((shouldContinue) => {
-                    if (!shouldContinue) return;
-                    this.processSearchResult(data);
-                  });
-                }
+            this.modal.confirm({
+              nzTitle: 'Mã số BHXH đã được kê khai gần đây',
+              nzContent: `<div>
+                <p>Mã số BHXH <strong>${latestRecord.ma_so_bhxh}</strong> của <strong>${latestRecord.ho_ten}</strong> đã được kê khai trong 7 ngày gần đây.</p>
+                <p>Danh sách kê khai:</p>
+                <ul>${recordsHtml}</ul>
+                <p>Bạn vẫn muốn tiếp tục kê khai với mã số BHXH này?</p>
+              </div>`,
+              nzOkText: 'Tiếp tục kê khai',
+              nzCancelText: 'Hủy',
+              nzOnOk: () => {
+                // Tiếp tục quá trình tìm kiếm thông tin BHXH
+                this.continueSearchBHXH(maSoBHXH);
+              },
+              nzOnCancel: () => {
+                this.loadingSearch = false;
+                // Reset form nếu người dùng không muốn tiếp tục
+                this.form.reset();
               }
-            }
-
-            await this.processSearchResult(data);
+            });
           } else {
-            this.message.error(response.message || 'Lỗi không xác định');
+            // Nếu mã số BHXH chưa được kê khai trong 7 ngày gần đây, tiếp tục quá trình tìm kiếm
+            this.continueSearchBHXH(maSoBHXH);
           }
         },
         error: (err) => {
-          console.error('Search error:', err);
-          if (err.error?.error === 'Lỗi xác thực') {
-            this.ssmv2Service.clearToken();
-            // Bỏ dòng hiển thị thông báo
-            // this.message.warning('Phiên làm việc hết hạn, vui lòng xác thực lại');
-            this.getAccessToken();
-          } else {
-            this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || 'Lỗi không xác định'));
-          }
-        },
-        complete: () => {
-          this.loadingSearch = false; // Sử dụng loadingSearch
+          console.error('Lỗi kiểm tra mã số BHXH:', err);
+          this.message.error('Lỗi kiểm tra mã số BHXH: ' + (err.error?.message || 'Lỗi không xác định'));
+          this.loadingSearch = false;
         }
       });
     } else {
       this.message.warning('Vui lòng nhập đủ 10 số BHXH');
     }
+  }
+
+  // Tách phần tìm kiếm thông tin BHXH thành một phương thức riêng
+  private continueSearchBHXH(maSoBHXH: string): void {
+    // Kiểm tra token trước khi tìm kiếm
+    if (!this.ssmv2Service.getToken()) {
+      this.getAccessToken(); // Hiển thị modal xác thực
+      this.loadingSearch = false;
+      return;
+    }
+    
+    this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
+      next: async (response) => {
+        if (response.success) {
+          const data = response.data;
+          console.log('BHYT search response:', data);
+          
+          // Kiểm tra nếu isThamGiaBb = 1 thì hiển thị thông báo
+          if (data.isThamGiaBb === 1) {
+            this.modal.warning({
+              nzTitle: 'Thông báo BHXH bắt buộc',
+              nzContent: `<div>
+                <p><strong>Họ tên:</strong> ${data.hoTen || 'Không có'}</p>
+                <p><strong>Mã số BHXH:</strong> ${data.maSoBHXH || 'Không có'}</p>
+                <p><strong>Số thẻ BHYT:</strong> ${data.soTheBHYT || 'Chưa có'}</p>
+                <p>Đối tượng đang tham gia BHXH bắt buộc.</p>
+              </div>`,
+              nzOkText: 'Đã hiểu'
+            });
+            this.loadingSearch = false;
+            return;
+          }
+
+          // Kiểm tra hạn thẻ cũ
+          if (data.denNgayTheCu) {
+            const denNgayTheCu = this.parseDate(data.denNgayTheCu);
+            if (denNgayTheCu) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const timeDiff = denNgayTheCu.getTime() - today.getTime();
+              const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+              
+              if (daysDiff > 30) {
+                return new Promise((resolve) => {
+                  this.modal.warning({
+                    nzTitle: 'Cảnh báo',
+                    nzContent: `Thẻ BHYT hiện tại còn ${daysDiff} ngày sử dụng. Bạn có muốn tiếp tục kê khai không?`,
+                    nzOkText: 'Tiếp tục',
+                    nzCancelText: 'Hủy',
+                    nzOnOk: () => {
+                      resolve(true);
+                    },
+                    nzOnCancel: () => {
+                      this.form.reset();
+                      this.loadingSearch = false;
+                      resolve(false);
+                    }
+                  });
+                }).then((shouldContinue) => {
+                  if (!shouldContinue) return;
+                  this.processSearchResult(data);
+                });
+              }
+            }
+          }
+
+          await this.processSearchResult(data);
+        } else {
+          this.message.error(response.message || 'Lỗi không xác định');
+        }
+      },
+      error: (err) => {
+        console.error('Search error:', err);
+        if (err.error?.error === 'Lỗi xác thực') {
+          this.ssmv2Service.clearToken();
+          this.getAccessToken();
+        } else {
+          this.message.error('Lỗi tìm kiếm: ' + (err.error?.message || 'Lỗi không xác định'));
+        }
+      },
+      complete: () => {
+        this.loadingSearch = false;
+      }
+    });
   }
 
   // Thêm lại phương thức processSearchResult
@@ -1605,24 +1665,103 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   getHuyenTen(maHuyen: string): string {
-    console.log('getHuyenTen được gọi với mã:', maHuyen);
-    console.log('Danh mục huyện hiện tại:', this.danhMucHuyens);
+    if (!maHuyen) return '';
     
-    const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
-    if (!huyen) {
-      console.warn(`Không tìm thấy huyện với mã: ${maHuyen}`);
+    // Tải trực tiếp từ API nếu không có trong cache
+    if (!this.huyenCache || this.huyenCache.size === 0) {
+      // Nếu không có cache, trả về mã và tải dữ liệu sau
+      this.loadDanhMucHuyenByMaTinh('01'); // Tải dữ liệu mặc định cho Hà Nội
       return maHuyen;
     }
-    return huyen.ten;
+    
+    // Tìm trong tất cả các huyện đã tải (không chỉ trong danhMucHuyens hiện tại)
+    for (const [tinhKey, huyenList] of this.huyenCache.entries()) {
+      const huyen = huyenList.find(h => h.ma === maHuyen);
+      if (huyen) return huyen.ten;
+    }
+    
+    // Nếu không tìm thấy trong cache, tìm trong danhMucHuyens hiện tại
+    const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
+    if (huyen) return huyen.ten;
+    
+    // Nếu vẫn không tìm thấy, tải dữ liệu từ API
+    this.diaChiService.getDanhMucHuyenByMa(maHuyen).subscribe({
+      next: (huyen) => {
+        if (huyen && huyen.ten) {
+          // Cập nhật cache
+          // Sử dụng mã tỉnh mặc định nếu không có
+          const tinhMa = '01'; // Mã tỉnh mặc định (Hà Nội)
+          if (!this.huyenCache.has(tinhMa)) {
+            this.huyenCache.set(tinhMa, []);
+          }
+          const huyenList = this.huyenCache.get(tinhMa) || [];
+          if (!huyenList.find(h => h.ma === huyen.ma)) {
+            huyenList.push(huyen);
+          }
+        }
+      },
+      error: (error) => console.error('Lỗi khi tải thông tin huyện:', error)
+    });
+    
+    return maHuyen; // Trả về mã nếu không tìm thấy tên
   }
 
   getXaTen(maXa: string): string {
-    const xa = this.danhMucXas.find(x => x.ma === maXa);
-    if (!xa) {
-      console.warn(`Không tìm thấy xã với mã: ${maXa}`);
-      return maXa; // Trả về mã nếu không tìm thấy tên
+    if (!maXa) return '';
+    
+    // Tìm trong tất cả các xã đã tải (không chỉ trong danhMucXas hiện tại)
+    for (const [huyenKey, xaList] of this.xaCache.entries()) {
+      const xa = xaList.find(x => x.ma === maXa);
+      if (xa) return xa.ten;
     }
-    return xa.ten;
+    
+    // Nếu không tìm thấy trong cache, tìm trong danhMucXas hiện tại
+    const xa = this.danhMucXas.find(x => x.ma === maXa);
+    if (xa) return xa.ten;
+    
+    console.warn(`Không tìm thấy xã với mã: ${maXa}`);
+    return maXa; // Trả về mã nếu không tìm thấy tên
+  }
+
+  // Hàm tải trước dữ liệu xã cho tất cả các huyện trong danh sách
+  async preloadXaData(keKhaiBHYTs: any[]): Promise<void> {
+    if (!keKhaiBHYTs || keKhaiBHYTs.length === 0) return;
+    
+    // Lấy danh sách các mã huyện duy nhất từ dữ liệu
+    const uniqueHuyenCodes = [...new Set(keKhaiBHYTs
+      .filter(item => item.huyen_nkq) // Lọc các item có mã huyện
+      .map(item => item.huyen_nkq))];
+    
+    // Tải dữ liệu xã cho từng huyện
+    const promises = uniqueHuyenCodes.map(huyenCode => 
+      this.loadDanhMucXaByMaHuyen(huyenCode)
+    );
+    
+    await Promise.all(promises);
+  }
+
+  // Hàm tải trước dữ liệu huyện cho tất cả các tỉnh trong danh sách
+  async preloadHuyenData(keKhaiBHYTs: any[]): Promise<void> {
+    if (!keKhaiBHYTs || keKhaiBHYTs.length === 0) return;
+    
+    console.log('Preloading huyen data for:', keKhaiBHYTs.length, 'items');
+    
+    // Lấy danh sách các mã tỉnh duy nhất từ dữ liệu
+    const uniqueTinhCodes = [...new Set(keKhaiBHYTs
+      .filter(item => item.tinh_nkq) // Lọc các item có mã tỉnh
+      .map(item => item.tinh_nkq))];
+    
+    console.log('Unique tinh codes:', uniqueTinhCodes);
+    
+    // Tải dữ liệu huyện cho từng tỉnh
+    const promises = uniqueTinhCodes.map(tinhCode => 
+      this.loadDanhMucHuyenByMaTinh(tinhCode)
+    );
+    
+    await Promise.all(promises);
+    
+    // Kiểm tra xem dữ liệu huyện đã được tải chưa
+    console.log('Huyen cache after preloading:', this.huyenCache);
   }
 
   refresh(): void {
@@ -2013,7 +2152,77 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         this.message.warning('Không tìm thấy mã số BHXH hợp lệ (phải có 10 số)');
         return;
       }
+      
+      // Kiểm tra các mã số BHXH đã kê khai trong 7 ngày gần đây
+      const recentlyDeclaredMaSoBHXH: {maSoBHXH: string; data: any}[] = [];
+      
+      // Kiểm tra từng mã số BHXH
+      for (const maSoBHXH of maSoBHXHList) {
+        try {
+          const checkResult = await this.keKhaiBHYTService.checkMaSoBHXH(maSoBHXH).toPromise();
+          if (checkResult && checkResult.success && checkResult.exists) {
+            recentlyDeclaredMaSoBHXH.push({
+              maSoBHXH: maSoBHXH,
+              data: checkResult.data
+            });
+          }
+        } catch (error) {
+          console.error(`Lỗi khi kiểm tra mã số BHXH ${maSoBHXH}:`, error);
+        }
+      }
+      
+      // Nếu có mã số BHXH đã kê khai gần đây, hiển thị cảnh báo
+      if (recentlyDeclaredMaSoBHXH.length > 0) {
+        const maSoBHXHListHtml = recentlyDeclaredMaSoBHXH.map(item => {
+          const allRecords = item.data.all_records || [];
+          const recordsHtml = allRecords.map((record: {ngay_tao: string; dot_ke_khai_name?: string}) => {
+            const date = new Date(record.ngay_tao);
+            const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            return `<li>Đợt: <strong>${record.dot_ke_khai_name || 'Không xác định'}</strong> - Ngày: <strong>${formattedDate}</strong></li>`;
+          }).join('');
+          
+          return `<div><strong>Mã số BHXH: ${item.maSoBHXH}</strong><ul>${recordsHtml}</ul></div>`;
+        }).join('');
+        
+        return new Promise<void>((resolve) => {
+          this.modal.confirm({
+            nzTitle: 'Một số mã số BHXH đã được kê khai gần đây',
+            nzContent: `<div>
+              <p>Các mã số BHXH sau đã được kê khai trong 7 ngày gần đây:</p>
+              ${maSoBHXHListHtml}
+              <p>Bạn có muốn tiếp tục kê khai không?</p>
+            </div>`,
+            nzOnOk: () => {
+              this.continueMultipleSearch(maSoBHXHList);
+              resolve();
+            },
+            nzOnCancel: () => {
+              this.isSearchingMultiple = false;
+              if (loadingMessageId) {
+                this.message.remove(loadingMessageId);
+              }
+              resolve();
+            }
+          });
+        });
+      }
 
+      // Tiếp tục xử lý các mã số BHXH
+      return this.continueMultipleSearch(maSoBHXHList);
+    } catch (error) {
+      this.isSearchingMultiple = false;
+      if (loadingMessageId) {
+        this.message.remove(loadingMessageId);
+      }
+      this.message.error('Đã xảy ra lỗi khi xử lý danh sách mã số BHXH');
+      console.error('Error processing multiple BHXH numbers:', error);
+    }
+  }
+  
+  // Phương thức mới để tiếp tục xử lý danh sách mã số BHXH
+  async continueMultipleSearch(maSoBHXHList: string[]): Promise<void> {
+    let loadingMessageId: string | undefined;
+    try {
       const totalCount = maSoBHXHList.length;
       let successCount = 0;
       let failedCount = 0;
@@ -2120,9 +2329,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       this.message.success(`Đã xử lý ${successCount}/${totalCount} mã số BHXH thành công`);
       this.isSearchMultipleVisible = false;
+      this.isSearchingMultiple = false;
       this.isSearchResultVisible = true;
       this.loadData();
     } catch (error) {
+      if (loadingMessageId) {
+        this.message.remove(loadingMessageId);
+      }
       this.message.error('Có lỗi xảy ra khi xử lý danh sách mã số BHXH');
     } finally {
       this.isSearchingMultiple = false;

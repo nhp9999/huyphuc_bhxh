@@ -464,6 +464,68 @@ namespace WebApp.API.Controllers
                 return StatusCode(500, new { message = "Có lỗi xảy ra khi tạo biên lai" });
             }
         }
+
+        /// <summary>
+        /// Kiểm tra xem mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa
+        /// </summary>
+        /// <param name="dto">Đối tượng chứa mã số BHXH cần kiểm tra</param>
+        /// <returns>Thông tin về việc mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa</returns>
+        [HttpPost("check-ma-so-bhxh")]
+        public async Task<IActionResult> CheckMaSoBHXH([FromBody] CheckMaSoBHXHDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dto.ma_so_bhxh))
+                {
+                    return BadRequest(new { success = false, message = "Mã số BHXH không được để trống" });
+                }
+
+                // Lấy ngày 7 ngày trước
+                var sevenDaysAgo = DateTime.Now.AddDays(-7);
+
+                // Tìm tất cả các kê khai có mã số BHXH tương ứng trong 7 ngày gần đây
+                var recentKeKhai = await _context.KeKhaiBHYTs
+                    .Include(k => k.ThongTinThe)
+                    .Include(k => k.DotKeKhai)
+                    .Where(k => k.ThongTinThe.ma_so_bhxh == dto.ma_so_bhxh && k.ngay_tao >= sevenDaysAgo)
+                    .OrderByDescending(k => k.ngay_tao)
+                    .ToListAsync();
+
+                if (recentKeKhai.Any())
+                {
+                    // Nếu có kê khai trong 7 ngày gần đây, trả về thông tin chi tiết
+                    var latestKeKhai = recentKeKhai.First();
+                    return Ok(new { 
+                        success = true, 
+                        exists = true, 
+                        message = "Mã số BHXH đã được kê khai trong 7 ngày gần đây",
+                        data = new {
+                            id = latestKeKhai.id,
+                            dot_ke_khai_id = latestKeKhai.dot_ke_khai_id,
+                            dot_ke_khai_name = latestKeKhai.DotKeKhai?.ten_dot,
+                            ngay_tao = latestKeKhai.ngay_tao,
+                            ho_ten = latestKeKhai.ThongTinThe?.ho_ten,
+                            ma_so_bhxh = latestKeKhai.ThongTinThe?.ma_so_bhxh,
+                            all_records = recentKeKhai.Select(k => new {
+                                id = k.id,
+                                dot_ke_khai_id = k.dot_ke_khai_id,
+                                dot_ke_khai_name = k.DotKeKhai?.ten_dot,
+                                ngay_tao = k.ngay_tao,
+                                ho_ten = k.ThongTinThe?.ho_ten
+                            }).ToList()
+                        }
+                    });
+                }
+
+                // Nếu không có kê khai nào trong 7 ngày gần đây
+                return Ok(new { success = true, exists = false, message = "Mã số BHXH chưa được kê khai trong 7 ngày gần đây" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi kiểm tra mã số BHXH: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "Lỗi khi kiểm tra mã số BHXH", error = ex.Message });
+            }
+        }
     }
 
     public class DeleteMultipleDto
@@ -489,5 +551,11 @@ namespace WebApp.API.Controllers
         [Required]
         public decimal so_tien { get; set; }
         public string ghi_chu { get; set; }
+    }
+
+    public class CheckMaSoBHXHDto
+    {
+        [Required]
+        public string ma_so_bhxh { get; set; }
     }
 } 

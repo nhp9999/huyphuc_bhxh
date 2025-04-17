@@ -512,8 +512,8 @@
           <td nzAlign="center">{{ getPhuongAnDongText(data.phuong_an_dong) }}</td>
           <td nzAlign="center">{{ data.so_thang_dong }} tháng</td>
           <td nzEllipsis>{{ data.dia_chi_nkq }}</td>
-          <td nzEllipsis>{{ data.xa_nkq }}</td>
-          <td nzEllipsis>{{ data.huyen_nkq }}</td>
+          <td nzEllipsis>{{ data.xa_nkq_ten || getXaTen(data.xa_nkq) || data.xa_nkq }}</td>
+          <td nzEllipsis>{{ data.huyen_nkq_ten || getHuyenTen(data.huyen_nkq) || data.huyen_nkq }}</td>
           <td nzEllipsis>{{ data.tinh_nkq }}</td>
           <td nzEllipsis>{{ data.benh_vien_kcb }}</td>
           <td nzAlign="right" nzRight>{{ data.so_tien_can_dong | number:'1.0-0' }} đ</td>

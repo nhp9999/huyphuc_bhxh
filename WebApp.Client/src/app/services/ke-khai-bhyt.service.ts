@@ -67,7 +67,9 @@ export interface KeKhaiBHYT {
   han_the_moi_den: Date;
   tinh_nkq: string;
   huyen_nkq: string;
+  huyen_nkq_ten?: string;
   xa_nkq: string;
+  xa_nkq_ten?: string;
   dia_chi_nkq: string;
   benh_vien_kcb: string;
   ma_benh_vien: string;
@@ -322,12 +324,21 @@ export class KeKhaiBHYTService {
     return this.http.put<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`, formattedData);
   }
 
-  delete(dotKeKhaiId: number, id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`);
+  delete(dotKeKhaiId: number, id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}`);
   }
 
   deleteMultiple(dotKeKhaiId: number, ids: number[]): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/delete-multiple`, { ids });
+  }
+
+  /**
+   * Kiểm tra xem mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa
+   * @param maSoBHXH Mã số BHXH cần kiểm tra
+   * @returns Thông tin về việc mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa
+   */
+  checkMaSoBHXH(maSoBHXH: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/check-ma-so-bhxh`, { ma_so_bhxh: maSoBHXH });
   }
 
   // Thêm các phương thức cho ThongTinThe

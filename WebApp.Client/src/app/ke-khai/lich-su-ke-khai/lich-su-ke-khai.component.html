@@ -17,6 +17,10 @@
         <i nz-icon nzType="download"></i>
         Xuất Excel
       </button>
+      <button nz-button nzType="primary" [disabled]="getTotalSelectedCount() === 0" (click)="xuatD03TuHeaderButton()">
+        <i nz-icon nzType="file-excel"></i>
+        Xuất D03 ({{ getTotalSelectedCount() }} bản ghi)
+      </button>
     </div>
   </div>
 
@@ -99,7 +103,6 @@
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
-            <th nzWidth="100px">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -137,11 +140,6 @@
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
               </nz-tag>
-            </td>
-            <td>
-              <button nz-button nzType="primary" nzSize="small" (click)="xuatD03TuBangGhi(item.id, 'bhyt')">
-                <i nz-icon nzType="file-excel"></i> D03
-              </button>
             </td>
           </tr>
         </tbody>
@@ -183,7 +181,6 @@
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
-            <th nzWidth="100px">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -221,11 +218,6 @@
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
               </nz-tag>
-            </td>
-            <td>
-              <button nz-button nzType="primary" nzSize="small" (click)="xuatD03TuBangGhi(item.id, 'bhxh')">
-                <i nz-icon nzType="file-excel"></i> D03
-              </button>
             </td>
           </tr>
         </tbody>

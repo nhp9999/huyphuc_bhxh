@@ -377,7 +377,6 @@ export class D03Service {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             saveAs(blob, fileName);
 
-            this.message.success('Xuất Excel mẫu D03-TS thành công!');
           } catch (error: any) {
             console.error('Lỗi khi xử lý template Excel:', error);
             this.message.error('Có lỗi xảy ra khi xử lý template Excel mẫu D03-TS');

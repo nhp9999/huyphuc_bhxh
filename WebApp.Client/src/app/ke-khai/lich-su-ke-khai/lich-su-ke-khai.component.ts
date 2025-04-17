@@ -131,6 +131,21 @@ export class LichSuKeKhaiComponent implements OnInit {
     return this.keKhaiBHXHs.filter(item => item.checked).length;
   }
 
+  getTotalSelectedCount(): number {
+    return this.getSelectedBHYTCount() + this.getSelectedBHXHCount();
+  }
+
+  xuatD03TuHeaderButton(): void {
+    // Xác định tab hiện tại và gọi phương thức xuất tương ứng
+    if (this.selectedTabIndex === 0 && this.getSelectedBHYTCount() > 0) {
+      this.xuatD03TuNhieuBangGhi('bhyt');
+    } else if (this.selectedTabIndex === 1 && this.getSelectedBHXHCount() > 0) {
+      this.xuatD03TuNhieuBangGhi('bhxh');
+    } else {
+      this.message.warning('Vui lòng chọn ít nhất một bảng ghi để xuất D03');
+    }
+  }
+
   // Phương thức xuất D03 cho nhiều bảng ghi đã chọn
   xuatD03TuNhieuBangGhi(loaiKeKhai: 'bhyt' | 'bhxh'): void {
     const selectedItems = loaiKeKhai === 'bhyt' 
