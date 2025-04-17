@@ -56,8 +56,9 @@
             <nz-form-label>Thời gian:</nz-form-label>
             <nz-form-control>
               <nz-range-picker
-                [(ngModel)]="searchForm.tuNgay"
+                [(ngModel)]="dateRange"
                 [nzFormat]="'dd/MM/yyyy'"
+                (ngModelChange)="onDateRangeChange($event)"
                 name="dateRange">
               </nz-range-picker>
             </nz-form-control>
@@ -78,10 +79,13 @@
         [nzPageSizeOptions]="[10, 20, 30, 40, 50]"
         [nzShowTotal]="totalTemplate"
         [nzShowPagination]="true"
-        [nzScroll]="{ x: '1200px' }"
+        [nzScroll]="{ x: '1300px' }"
         class="mt-4">
         <thead>
           <tr>
+            <th nzWidth="60px">
+              <label nz-checkbox [(ngModel)]="isAllBHYTChecked" [nzIndeterminate]="isIndeterminateBHYT" (ngModelChange)="checkAllBHYT($event)"></label>
+            </th>
             <th nzWidth="180px">Đợt kê khai</th>
             <th nzWidth="120px">Mã số BHXH</th>
             <th nzWidth="150px">Họ tên</th>
@@ -95,10 +99,14 @@
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
+            <th nzWidth="100px">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of bhytTable.data">
+            <td>
+              <label nz-checkbox [(ngModel)]="item.checked" (ngModelChange)="refreshBHYTCheckedStatus()"></label>
+            </td>
             <td>{{ item.dotKeKhaiInfo }}</td>
             <td>
               <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ma_so_bhxh }}</ng-container>
@@ -130,9 +138,20 @@
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
               </nz-tag>
             </td>
+            <td>
+              <button nz-button nzType="primary" nzSize="small" (click)="xuatD03TuBangGhi(item.id, 'bhyt')">
+                <i nz-icon nzType="file-excel"></i> D03
+              </button>
+            </td>
           </tr>
         </tbody>
       </nz-table>
+      
+      <div class="mt-3" *ngIf="getSelectedBHYTCount() > 0">
+        <button nz-button nzType="primary" (click)="xuatD03TuNhieuBangGhi('bhyt')">
+          <i nz-icon nzType="file-excel"></i> Xuất D03 ({{ getSelectedBHYTCount() }} bản ghi đã chọn)
+        </button>
+      </div>
     </nz-tab>
 
     <nz-tab nzTitle="Kê khai BHXH">
@@ -144,10 +163,13 @@
         [nzPageSizeOptions]="[10, 20, 30, 40, 50]"
         [nzShowTotal]="totalTemplate"
         [nzShowPagination]="true"
-        [nzScroll]="{ x: '1200px' }"
+        [nzScroll]="{ x: '1300px' }"
         class="mt-4">
         <thead>
           <tr>
+            <th nzWidth="60px">
+              <label nz-checkbox [(ngModel)]="isAllBHXHChecked" [nzIndeterminate]="isIndeterminateBHXH" (ngModelChange)="checkAllBHXH($event)"></label>
+            </th>
             <th nzWidth="180px">Đợt kê khai</th>
             <th nzWidth="120px">Mã số BHXH</th>
             <th nzWidth="150px">Họ tên</th>
@@ -161,10 +183,14 @@
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
             <th nzWidth="100px">Trạng thái</th>
+            <th nzWidth="100px">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of bhxhTable.data">
+            <td>
+              <label nz-checkbox [(ngModel)]="item.checked" (ngModelChange)="refreshBHXHCheckedStatus()"></label>
+            </td>
             <td>{{ item.dotKeKhaiInfo }}</td>
             <td>
               <ng-container *ngIf="item.thongTinThe">{{ item.thongTinThe.ma_so_bhxh }}</ng-container>
@@ -196,9 +222,20 @@
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
               </nz-tag>
             </td>
+            <td>
+              <button nz-button nzType="primary" nzSize="small" (click)="xuatD03TuBangGhi(item.id, 'bhxh')">
+                <i nz-icon nzType="file-excel"></i> D03
+              </button>
+            </td>
           </tr>
         </tbody>
       </nz-table>
+      
+      <div class="mt-3" *ngIf="getSelectedBHXHCount() > 0">
+        <button nz-button nzType="primary" (click)="xuatD03TuNhieuBangGhi('bhxh')">
+          <i nz-icon nzType="file-excel"></i> Xuất D03 ({{ getSelectedBHXHCount() }} bản ghi đã chọn)
+        </button>
+      </div>
     </nz-tab>
   </nz-tabset>
 

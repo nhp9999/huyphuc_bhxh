@@ -53,6 +53,10 @@ export class D03Service {
     return this.http.get<D03TSData[]>(`${this.apiUrl}/data/${dotKeKhaiId}`);
   }
 
+  getD03DataForRecord(keKhaiId: number, loaiKeKhai: 'bhyt' | 'bhxh'): Observable<D03TSData> {
+    return this.http.get<D03TSData>(`${this.apiUrl}/record/${loaiKeKhai}/${keKhaiId}`);
+  }
+
   xuatExcelMauD03TS(data: D03TSData[], options: D03TSOptions = {}): void {
     console.log('Bắt đầu xuất Excel từ template...');
     const templatePath = '/assets/templates/FileMau_D03_TS.xlsx';
@@ -140,47 +144,30 @@ export class D03Service {
               
               // Xử lý ngày sinh với định dạng dd/mm/yyyy
               let ngaySinh = item.ngaySinh;
-              if (ngaySinh instanceof Date) {
-                // Sử dụng Date để ExcelJS có thể định dạng
-                setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh);
-                worksheet.getCell(`E${row}`).numFmt = 'dd/mm/yyyy';
-              } else if (typeof ngaySinh === 'string') {
-                // Nếu là chuỗi, thử chuyển thành Date
-                try {
-                  // Kiểm tra các định dạng ngày tháng phổ biến
-                  const dateParts = ngaySinh.split(/[\/\-\.]/); // Tách theo dấu /, - hoặc .
-                  if (dateParts.length === 3) {
-                    // Giả sử ngày/tháng/năm hoặc năm-tháng-ngày
-                    let day, month, year;
-                    
-                    // Nếu phần đầu tiên có 4 chữ số, có thể là năm-tháng-ngày
-                    if (dateParts[0].length === 4) {
-                      // Định dạng năm-tháng-ngày
-                      year = parseInt(dateParts[0]);
-                      month = parseInt(dateParts[1]);
-                      day = parseInt(dateParts[2]);
-                    } else {
-                      // Định dạng ngày/tháng/năm
-                      day = parseInt(dateParts[0]);
-                      month = parseInt(dateParts[1]);
-                      year = parseInt(dateParts[2]);
-                      // Nếu năm chỉ có 2 chữ số, thêm 2000 (hoặc 1900 nếu < 30)
-                      if (year < 100) {
-                        year = year < 30 ? 2000 + year : 1900 + year;
-                      }
-                    }
-                    
-                    const dateObj = new Date(year, month - 1, day);
-                    setValueWithFont(worksheet.getCell(`E${row}`), dateObj);
-                    worksheet.getCell(`E${row}`).numFmt = 'dd/mm/yyyy';
-                  } else {
-                    // Nếu không chuyển được, giữ nguyên chuỗi
-                    setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh);
-                  }
-                } catch (e) {
-                  // Nếu có lỗi khi chuyển đổi, giữ nguyên chuỗi
+              if (typeof ngaySinh === 'string') {
+                // Nếu ngày sinh đã là chuỗi, kiểm tra xem nó có phải là định dạng dd/mm/yyyy không
+                const dateRegex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/;
+                if (dateRegex.test(ngaySinh)) {
+                  // Nếu đã đúng định dạng dd/mm/yyyy, sử dụng trực tiếp
                   setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh);
+                } else {
+                  // Thử chuyển đổi sang định dạng dd/mm/yyyy
+                  try {
+                    const dateObj = new Date(ngaySinh);
+                    if (!isNaN(dateObj.getTime())) {
+                      const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+                      setValueWithFont(worksheet.getCell(`E${row}`), formattedDate);
+                    } else {
+                      setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh);
+                    }
+                  } catch (e) {
+                    setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh || '');
+                  }
                 }
+              } else if (ngaySinh instanceof Date) {
+                // Nếu là Date, định dạng thành dd/mm/yyyy
+                const formattedDate = `${ngaySinh.getDate().toString().padStart(2, '0')}/${(ngaySinh.getMonth() + 1).toString().padStart(2, '0')}/${ngaySinh.getFullYear()}`;
+                setValueWithFont(worksheet.getCell(`E${row}`), formattedDate);
               } else {
                 // Trường hợp khác, giữ nguyên giá trị
                 setValueWithFont(worksheet.getCell(`E${row}`), ngaySinh || '');
@@ -261,8 +248,12 @@ export class D03Service {
             // Tìm dòng "Cộng tăng" trong toàn bộ worksheet
             let tongFound = false;
             
-            // Kiểm tra từ dòng 1 đến dòng 60
-            for (let i = 1; i <= 60; i++) {
+            // Đối với số lượng bản ghi lớn, dòng tổng cộng sẽ nằm sau dòng dữ liệu cuối cùng
+            // Tính dòng dữ liệu cuối cùng
+            const lastDataRow = startRow + data.length - 1;
+            
+            // Kiểm tra từ dòng cuối dữ liệu đến dòng cuối dữ liệu + 10
+            for (let i = lastDataRow + 1; i <= lastDataRow + 10; i++) {
               // Kiểm tra cả cột A và cột B
               let cellA = worksheet.getCell(`A${i}`);
               let cellB = worksheet.getCell(`B${i}`);
@@ -295,6 +286,61 @@ export class D03Service {
               }
             }
             
+            // Nếu không tìm thấy, kiểm tra toàn bộ worksheet
+            if (!tongFound) {
+              // Kiểm tra từ dòng 1 đến dòng cuối của worksheet
+              for (let i = 1; i <= worksheet.rowCount; i++) {
+                for (let j = 1; j <= 20; j++) {
+                  const colLetter = String.fromCharCode(64 + j);
+                  const cell = worksheet.getCell(`${colLetter}${i}`);
+                  
+                  if (cell.value && typeof cell.value === 'string') {
+                    const cellText = cell.value.toLowerCase();
+                    
+                    // Tìm ô có text "tổng cộng" hoặc "tổng số tiền"
+                    if ((cellText.includes('tổng cộng') || cellText.includes('tổng số tiền')) && 
+                        j < 20) {
+                      
+                      console.log('Tìm thấy ô tổng cộng tại ô ' + colLetter + i);
+                      
+                      // Điền tổng số tiền vào cột K của dòng đó
+                      const tongSoTienStr = tongSoTien.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                      setValueWithFont(worksheet.getCell(`K${i}`), tongSoTienStr);
+                      
+                      tongFound = true;
+                      break;
+                    }
+                  }
+                }
+                if (tongFound) break;
+              }
+            }
+            
+            // Nếu vẫn không tìm thấy, thêm dòng tổng cộng mới vào cuối
+            if (!tongFound) {
+              const totalRow = lastDataRow + 2;
+              
+              // Chèn dòng mới
+              worksheet.insertRow(totalRow, []);
+              
+              // Đặt giá trị "Tổng cộng" vào cột B
+              setValueWithFont(worksheet.getCell(`B${totalRow}`), 'Tổng cộng');
+              worksheet.getCell(`B${totalRow}`).font = {
+                name: 'Times New Roman',
+                size: 11,
+                bold: true
+              };
+              
+              // Đặt tổng số tiền vào cột K
+              const tongSoTienStr = tongSoTien.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+              setValueWithFont(worksheet.getCell(`K${totalRow}`), tongSoTienStr);
+              worksheet.getCell(`K${totalRow}`).font = {
+                name: 'Times New Roman',
+                size: 11,
+                bold: true
+              };
+            }
+            
             // Tìm và thay thế ngày tháng năm thành ngày hiện tại
             const now = new Date();
             const ngay = now.getDate();
@@ -303,7 +349,7 @@ export class D03Service {
             const ngayThangNamStr = `An Giang, ngày ${ngay} tháng ${thang} năm ${nam}`;
             
             // Tìm kiếm và thay thế ngày tháng trong file
-            for (let i = 1; i <= 60; i++) {
+            for (let i = 1; i <= worksheet.rowCount; i++) {
               for (let col = 1; col <= 20; col++) {
                 const colLetter = String.fromCharCode(64 + col); // Chuyển số cột thành chữ cái (1 -> A, 2 -> B, ...)
                 const cell = worksheet.getCell(`${colLetter}${i}`);
@@ -354,6 +400,19 @@ export class D03Service {
       error: (err: any) => {
         console.error('Lỗi khi lấy dữ liệu D03-TS:', err);
         this.message.error('Không thể lấy dữ liệu cho mẫu D03-TS');
+      }
+    });
+  }
+
+  xuatExcelMauD03TSTuBangGhi(keKhaiId: number, loaiKeKhai: 'bhyt' | 'bhxh', options: D03TSOptions = {}): void {
+    this.getD03DataForRecord(keKhaiId, loaiKeKhai).subscribe({
+      next: (data) => {
+        // Chuyển đổi dữ liệu đơn lẻ thành mảng để sử dụng lại phương thức xuatExcelMauD03TS
+        this.xuatExcelMauD03TS([data], options);
+      },
+      error: (err: any) => {
+        console.error(`Lỗi khi lấy dữ liệu D03-TS cho bảng ghi ${loaiKeKhai}:`, err);
+        this.message.error(`Không thể lấy dữ liệu cho mẫu D03-TS từ bảng ghi ${loaiKeKhai}`);
       }
     });
   }

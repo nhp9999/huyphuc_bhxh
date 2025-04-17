@@ -93,6 +93,111 @@ namespace WebApp.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy dữ liệu cho biểu mẫu D03-TS từ một bảng ghi kê khai cụ thể
+        /// </summary>
+        /// <param name="keKhaiId">ID của bảng ghi kê khai</param>
+        /// <param name="loaiKeKhai">Loại kê khai: 'bhyt' hoặc 'bhxh'</param>
+        /// <returns>Dữ liệu D03 cho bảng ghi</returns>
+        [HttpGet("record/{loaiKeKhai}/{keKhaiId}")]
+        public async Task<ActionResult<D03TSData>> GetD03DataForRecord(string loaiKeKhai, int keKhaiId)
+        {
+            try
+            {
+                if (loaiKeKhai.ToLower() != "bhyt" && loaiKeKhai.ToLower() != "bhxh")
+                {
+                    return BadRequest("Loại kê khai không hợp lệ. Chỉ chấp nhận 'bhyt' hoặc 'bhxh'.");
+                }
+
+                if (loaiKeKhai.ToLower() == "bhyt")
+                {
+                    // Lấy thông tin kê khai BHYT
+                    var keKhaiBHYT = await _context.KeKhaiBHYTs
+                        .Include(kk => kk.ThongTinThe)
+                        .FirstOrDefaultAsync(kk => kk.id == keKhaiId);
+
+                    if (keKhaiBHYT == null)
+                    {
+                        return NotFound($"Không tìm thấy kê khai BHYT có ID = {keKhaiId}");
+                    }
+
+                    var diaChi = await GetFullAddress(keKhaiBHYT.ThongTinThe, keKhaiBHYT);
+
+                    var result = new D03TSData
+                    {
+                        STT = 1,
+                        HoTen = keKhaiBHYT.ThongTinThe.ho_ten,
+                        NgaySinh = keKhaiBHYT.ThongTinThe.ngay_sinh,
+                        GioiTinh = keKhaiBHYT.ThongTinThe.gioi_tinh,
+                        CCCD = keKhaiBHYT.ThongTinThe.cccd,
+                        DiaChi = diaChi,
+                        NoiDangKyKCBBD = keKhaiBHYT.benh_vien_kcb,
+                        NgayBienLai = keKhaiBHYT.ngay_bien_lai,
+                        SoBienLai = keKhaiBHYT.so_bien_lai,
+                        MaSoBHXH = keKhaiBHYT.ThongTinThe.ma_so_bhxh,
+                        SoTheBHYT = keKhaiBHYT.ThongTinThe.so_the_bhyt ?? "",
+                        GhiChu = keKhaiBHYT.ma_ho_so ?? "",
+                        MaHoGD = keKhaiBHYT.ThongTinThe.ma_hgd,
+                        SoDT = keKhaiBHYT.ThongTinThe.so_dien_thoai,
+                        SoTien = keKhaiBHYT.so_tien_can_dong,
+                        TuThang = keKhaiBHYT.han_the_moi_tu,
+                        SoThangDong = keKhaiBHYT.so_thang_dong,
+                        MaNhanVien = keKhaiBHYT.nguoi_tao,
+                        MaTinh = keKhaiBHYT.ThongTinThe.ma_tinh_nkq,
+                        MaHuyen = keKhaiBHYT.ThongTinThe.ma_huyen_nkq,
+                        MaXa = keKhaiBHYT.ThongTinThe.ma_xa_nkq
+                    };
+
+                    return Ok(result);
+                }
+                else // BHXH
+                {
+                    // Lấy thông tin kê khai BHXH
+                    var keKhaiBHXH = await _context.KeKhaiBHXHs
+                        .Include(kk => kk.ThongTinThe)
+                        .FirstOrDefaultAsync(kk => kk.id == keKhaiId);
+
+                    if (keKhaiBHXH == null)
+                    {
+                        return NotFound($"Không tìm thấy kê khai BHXH có ID = {keKhaiId}");
+                    }
+
+                    var diaChi = await GetFullAddress(keKhaiBHXH.ThongTinThe ?? new ThongTinThe());
+
+                    var result = new D03TSData
+                    {
+                        STT = 1,
+                        HoTen = keKhaiBHXH.ThongTinThe.ho_ten,
+                        NgaySinh = keKhaiBHXH.ThongTinThe.ngay_sinh,
+                        GioiTinh = keKhaiBHXH.ThongTinThe.gioi_tinh,
+                        CCCD = keKhaiBHXH.ThongTinThe.cccd,
+                        DiaChi = diaChi,
+                        NoiDangKyKCBBD = "",
+                        NgayBienLai = keKhaiBHXH.ngay_bien_lai,
+                        SoBienLai = keKhaiBHXH.so_bien_lai,
+                        MaSoBHXH = keKhaiBHXH.ThongTinThe.ma_so_bhxh,
+                        SoTheBHYT = keKhaiBHXH.ThongTinThe.so_the_bhyt ?? "",
+                        GhiChu = keKhaiBHXH.ma_ho_so ?? "",
+                        MaHoGD = keKhaiBHXH.ThongTinThe.ma_hgd,
+                        SoDT = keKhaiBHXH.ThongTinThe.so_dien_thoai,
+                        SoTien = keKhaiBHXH.so_tien_can_dong,
+                        TuThang = keKhaiBHXH.thang_bat_dau != null ? DateTime.TryParse(keKhaiBHXH.thang_bat_dau, out var date) ? date : DateTime.Now : DateTime.Now,
+                        SoThangDong = keKhaiBHXH.so_thang_dong,
+                        MaNhanVien = keKhaiBHXH.nguoi_tao,
+                        MaTinh = keKhaiBHXH.ThongTinThe.ma_tinh_nkq,
+                        MaHuyen = keKhaiBHXH.ThongTinThe.ma_huyen_nkq,
+                        MaXa = keKhaiBHXH.ThongTinThe.ma_xa_nkq
+                    };
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi lấy dữ liệu D03-TS cho bảng ghi: {ex.Message}");
+            }
+        }
+
         // Hàm hỗ trợ để tạo địa chỉ đầy đủ từ ThongTinThe và KeKhaiBHYT
         private async Task<string> GetFullAddress(ThongTinThe thongTinThe, KeKhaiBHYT keKhaiBHYT = null)
         {
