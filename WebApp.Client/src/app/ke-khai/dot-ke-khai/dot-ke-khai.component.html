@@ -16,6 +16,10 @@
         <i nz-icon nzType="download"></i>
         Tải tất cả hóa đơn <span *ngIf="getSelectedBillCount() > 0">({{ getSelectedBillCount() }})</span>
       </button>
+      <button nz-button nzType="default" [disabled]="selectedIds.length === 0 || !hasBHYTSelected()" (click)="exportD03TSForSelected()" nz-tooltip="Xuất D03-TS cho các đợt kê khai BHYT đã chọn">
+        <i nz-icon nzType="file-excel"></i>
+        Xuất D03-TS <span *ngIf="getSelectedBHYTCount() > 0">({{ getSelectedBHYTCount() }})</span>
+      </button>
     </div>
   </div>
 

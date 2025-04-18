@@ -1725,4 +1725,146 @@ export class DotKeKhaiComponent implements OnInit {
       this.loading = false;
     }
   }
+
+  // Hàm kiểm tra xem có đợt kê khai BHYT nào được chọn không
+  hasBHYTSelected(): boolean {
+    if (this.selectedIds.length === 0) return false;
+    
+    // Kiểm tra xem có ít nhất một đợt kê khai BHYT được chọn
+    return this.dotKeKhais.some(dot => 
+      this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
+    );
+  }
+
+  // Hàm đếm số lượng đợt kê khai BHYT đã chọn
+  getSelectedBHYTCount(): number {
+    return this.dotKeKhais.filter(dot => 
+      this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
+    ).length;
+  }
+
+  // Hàm xuất D03-TS cho nhiều đợt kê khai đã chọn
+  exportD03TSForSelected(): void {
+    // Lọc ra các đợt kê khai BHYT đã chọn
+    const selectedBHYTDots = this.dotKeKhais.filter(dot => 
+      this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
+    );
+
+    if (selectedBHYTDots.length === 0) {
+      this.message.warning('Không có đợt kê khai BHYT nào được chọn');
+      return;
+    }
+
+    // Hiển thị modal xác nhận nếu có đợt kê khai không phải trạng thái hoàn thành
+    const nonCompletedDots = selectedBHYTDots.filter(dot => dot.trang_thai !== 'hoan_thanh');
+    if (nonCompletedDots.length > 0) {
+      this.modal.confirm({
+        nzTitle: 'Thông báo',
+        nzContent: `Có ${nonCompletedDots.length} đợt kê khai chưa hoàn thành. Bạn có chắc chắn muốn xuất dữ liệu D03-TS không?`,
+        nzOkText: 'Đồng ý',
+        nzCancelText: 'Hủy',
+        nzOnOk: () => this.processExportD03TSForSelected(selectedBHYTDots)
+      });
+      return;
+    }
+
+    // Nếu tất cả đều hoàn thành, tiến hành xuất luôn
+    this.processExportD03TSForSelected(selectedBHYTDots);
+  }
+
+  // Hàm xử lý xuất D03-TS cho nhiều đợt kê khai
+  private processExportD03TSForSelected(selectedDots: DotKeKhai[]): void {
+    if (selectedDots.length === 0) return;
+
+    this.loading = true;
+    const messageId = this.message.loading(`Đang chuẩn bị xuất D03-TS cho ${selectedDots.length} đợt kê khai...`, { nzDuration: 0 }).messageId;
+    
+    // Tạo mảng các Observable để lấy dữ liệu D03 cho từng đợt kê khai
+    const observables = selectedDots.map(dot => {
+      return this.d03Service.getD03Data(dot.id!);
+    });
+
+    // Sử dụng forkJoin để chờ tất cả các request hoàn thành
+    import('rxjs').then(({ forkJoin }) => {
+      forkJoin(observables).subscribe({
+        next: (results) => {
+          // Gộp tất cả dữ liệu từ các đợt kê khai
+          let allD03Data: any[] = [];
+          let hasData = false;
+
+          results.forEach((d03Data, index) => {
+            if (d03Data && Array.isArray(d03Data) && d03Data.length > 0) {
+              hasData = true;
+              // Thêm thông tin đợt kê khai vào mỗi bản ghi
+              const dotKeKhai = selectedDots[index];
+              const donVi = this.donVis.find(d => d.id === dotKeKhai.don_vi_id);
+              const daiLy = this.daiLys.find(d => d.id === dotKeKhai.dai_ly_id);
+              
+              // Thêm thông tin đợt kê khai vào ghi chú của mỗi bản ghi
+              const enhancedData = d03Data.map(item => ({
+                ...item,
+                ghiChu: `${item.ghiChu || ''} - Đợt: ${dotKeKhai.ten_dot}`.trim()
+              }));
+              
+              allD03Data = [...allD03Data, ...enhancedData];
+            }
+          });
+
+          if (!hasData || allD03Data.length === 0) {
+            this.message.remove(messageId);
+            this.message.warning('Không tìm thấy dữ liệu D03-TS cho các đợt kê khai đã chọn');
+            this.loading = false;
+            return;
+          }
+
+          try {
+            // Lấy thông tin đơn vị từ đợt kê khai đầu tiên để làm thông tin chung
+            const firstDot = selectedDots[0];
+            const donVi = this.donVis.find(d => d.id === firstDot.don_vi_id);
+            const daiLy = this.daiLys.find(d => d.id === firstDot.dai_ly_id);
+            
+            if (!donVi) {
+              this.message.remove(messageId);
+              this.message.error('Không tìm thấy thông tin đơn vị');
+              this.loading = false;
+              return;
+            }
+
+            // Chuẩn bị options cho D03
+            const options = {
+              tenCongTy: donVi.tenDonVi || '',
+              maDonVi: donVi.maSoBHXH || '',
+              diaChi: donVi.diaChi || '',
+              nguoiLap: this.currentUser?.username || '',
+              ngayLap: new Date(),
+              tenDaiLy: daiLy?.ten || '',
+              tenDotKeKhai: `Nhiều đợt kê khai (${selectedDots.length})`
+            };
+            
+            // Xuất dữ liệu ra Excel
+            this.d03Service.xuatExcelMauD03TS(allD03Data, options);
+            this.message.remove(messageId);
+            this.message.success(`Đã xuất D03-TS cho ${selectedDots.length} đợt kê khai thành công`);
+          } catch (error) {
+            console.error('Lỗi khi xuất Excel D03-TS:', error);
+            this.message.remove(messageId);
+            this.message.error('Lỗi khi tạo file Excel D03-TS');
+          } finally {
+            this.loading = false;
+          }
+        },
+        error: (error) => {
+          console.error('Lỗi khi lấy dữ liệu D03-TS:', error);
+          this.message.remove(messageId);
+          this.message.error('Có lỗi xảy ra khi lấy dữ liệu D03-TS: ' + (error.message || 'Lỗi không xác định'));
+          this.loading = false;
+        }
+      });
+    }).catch(error => {
+      console.error('Lỗi khi import rxjs:', error);
+      this.message.remove(messageId);
+      this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
+      this.loading = false;
+    });
+  }
 }
