@@ -25,6 +25,7 @@ import { QuanLyBienLaiDienTuComponent } from './quan-ly-bien-lai-dien-tu/quan-ly
 const routes: Routes = [
   { path: 'quan-ly', component: QuanLyBienLaiDienTuComponent },
   { path: 'quyen-bien-lai', component: QuyenBienLaiDienTuComponent },
+  { path: 'tao-bien-lai-vnpt', loadComponent: () => import('./tao-bien-lai-vnpt/tao-bien-lai-vnpt.component').then(m => m.TaoBienLaiVNPTComponent) },
   { path: '', redirectTo: 'quan-ly', pathMatch: 'full' }
 ];
 

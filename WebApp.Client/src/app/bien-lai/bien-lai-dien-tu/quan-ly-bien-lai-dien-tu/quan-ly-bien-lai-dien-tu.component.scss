@@ -7,6 +7,11 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+
+  .button-group {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .status-pending {
@@ -31,4 +36,4 @@ nz-input-number {
 .checkbox-group {
   display: flex;
   gap: 20px;
-} 
+}

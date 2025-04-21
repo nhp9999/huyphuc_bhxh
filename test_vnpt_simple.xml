@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoices>
+  <Inv>
+    <key>8925326963_123456789</key>
+    <Invoice>
+      <CusCode>8925326963</CusCode>
+      <ArisingDate>21/04/2025</ArisingDate>
+      <CusName>Lê Thị Kiều Oanh</CusName>
+      <Total>1263600</Total>
+      <Amount>1263600</Amount>
+      <AmountInWords>Một triệu hai trăm sáu mươi ba nghìn sáu trăm đồng</AmountInWords>
+      <VATAmount>0</VATAmount>
+      <VATRate>0</VATRate>
+      <CusAddress>BHXH Việt Nam</CusAddress>
+      <PaymentMethod>TM</PaymentMethod>
+      <Extra>Phí BHYT</Extra>
+      <Products>
+        <Product>
+          <Code>BL001</Code>
+          <ProdName>Phí BHYT</ProdName>
+          <ProdUnit>Lần</ProdUnit>
+          <ProdQuantity>1</ProdQuantity>
+          <ProdPrice>1263600</ProdPrice>
+          <Total>1263600</Total>
+          <Amount>1263600</Amount>
+        </Product>
+      </Products>
+    </Invoice>
+  </Inv>
+</Invoices>

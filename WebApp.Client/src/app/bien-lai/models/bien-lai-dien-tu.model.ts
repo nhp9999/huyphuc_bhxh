@@ -41,6 +41,14 @@ export interface BienLaiDienTu {
   tinh_chat: string;
   ngay_tao?: string;
   nguoi_tao_id?: number;
+  // VNPT Biên lai điện tử integration fields
+  vnpt_key?: string;
+  vnpt_response?: string;
+  vnpt_pattern?: string;
+  vnpt_serial?: string;
+  vnpt_invoice_no?: string;
+  is_published_to_vnpt?: boolean;
+  vnpt_publish_date?: string;
 }
 
 export interface BienLaiDienTuResponse {
@@ -60,4 +68,12 @@ export interface BienLaiDienTuResponse {
   tinh_chat: string;
   ngay_tao: string;
   nguoi_tao_id: number;
-} 
+  // VNPT Biên lai điện tử integration fields
+  vnpt_key: string;
+  vnpt_response: string;
+  vnpt_pattern: string;
+  vnpt_serial: string;
+  vnpt_invoice_no: string;
+  is_published_to_vnpt: boolean;
+  vnpt_publish_date: string;
+}

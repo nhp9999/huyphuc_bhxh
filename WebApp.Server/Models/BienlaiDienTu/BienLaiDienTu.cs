@@ -18,30 +18,30 @@ namespace WebApp.API.Models.BienlaiDienTu
     {
         [Key]
         public int id { get; set; }
-        
+
         [Required]
         [StringLength(20)]
         public string ky_hieu { get; set; } = "BH25-AG/08907/E";
-        
+
         [Required]
-        [StringLength(20)] 
+        [StringLength(20)]
         public string so_bien_lai { get; set; } = string.Empty;
-        
+
         [Required]
         [StringLength(200)]
         public string ten_nguoi_dong { get; set; } = string.Empty;
-        
+
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal so_tien { get; set; }
-        
+
         [StringLength(500)]
         public string? ghi_chu { get; set; }
-        
+
         [Required]
         [StringLength(20)]
         public string trang_thai { get; set; } = "active";
-        
+
         [Required]
         public DateTime ngay_tao { get; set; } = DateTime.Now;
 
@@ -80,10 +80,30 @@ namespace WebApp.API.Models.BienlaiDienTu
         [StringLength(10)]
         public string ma_so_bhxh_don_vi { get; set; } = string.Empty;
 
-        [Required] 
+        [Required]
         public bool is_bhyt { get; set; }
 
-        [Required] 
+        [Required]
         public bool is_bhxh { get; set; }
+
+        // VNPT Biên lai điện tử integration fields
+        [StringLength(100)]
+        public string? vnpt_key { get; set; }
+
+        [StringLength(255)]
+        public string? vnpt_response { get; set; }
+
+        [StringLength(20)]
+        public string? vnpt_pattern { get; set; }
+
+        [StringLength(20)]
+        public string? vnpt_serial { get; set; }
+
+        [StringLength(20)]
+        public string? vnpt_invoice_no { get; set; }
+
+        public bool is_published_to_vnpt { get; set; } = false;
+
+        public DateTime? vnpt_publish_date { get; set; }
     }
-} 
+}

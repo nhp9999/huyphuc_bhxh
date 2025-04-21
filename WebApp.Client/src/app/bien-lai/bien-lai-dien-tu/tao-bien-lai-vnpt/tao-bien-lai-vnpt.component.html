@@ -1,0 +1,60 @@
+<div class="container">
+  <nz-card nzTitle="Tạo biên lai điện tử">
+    <form nz-form [formGroup]="form" (ngSubmit)="submitForm()">
+      <nz-form-item>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="tenNguoiDong">Tên người đóng</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập tên người đóng!">
+          <input nz-input formControlName="tenNguoiDong" id="tenNguoiDong" placeholder="Nhập tên người đóng" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="maSoBHXH">Mã số BHXH</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã số BHXH!">
+          <input nz-input formControlName="maSoBHXH" id="maSoBHXH" placeholder="Nhập mã số BHXH" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="soTien">Số tiền</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập số tiền hợp lệ (tối thiểu 1,000 đồng)!">
+          <nz-input-number
+            formControlName="soTien"
+            id="soTien"
+            [nzMin]="1000"
+            [nzStep]="1000"
+            [nzFormatter]="formatterVND"
+            [nzParser]="parserVND"
+            style="width: 100%;"
+          ></nz-input-number>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzFor="ghiChu">Ghi chú</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24">
+          <textarea nz-input formControlName="ghiChu" id="ghiChu" rows="4" placeholder="Nhập ghi chú (nếu có)"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzFor="loaiBienLai">Loại biên lai</nz-form-label>
+        <nz-form-control [nzSm]="14" [nzXs]="24">
+          <label nz-checkbox formControlName="isBHYT">BHYT</label>
+          <label nz-checkbox formControlName="isBHXH" style="margin-left: 16px;">BHXH</label>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-control [nzOffset]="6" [nzSm]="14" [nzXs]="24">
+          <button nz-button nzType="primary" [disabled]="form.invalid || isLoading" [nzLoading]="isLoading">
+            Tạo biên lai
+          </button>
+          <button nz-button nzType="default" style="margin-left: 8px;" [routerLink]="['/bien-lai/bien-lai-dien-tu/quan-ly']">
+            Quay lại
+          </button>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </nz-card>
+</div>

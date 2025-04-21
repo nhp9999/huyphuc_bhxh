@@ -4,8 +4,10 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { BienLaiDienTuService } from '../../../services/bien-lai-dien-tu.service';
 import { BienLaiDienTu, QuyenBienLaiDienTu } from '../../models/bien-lai-dien-tu.model';
+import { VNPTBienLaiService } from '../../../services/vnpt-bien-lai.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -18,15 +20,16 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
-import { catchError, of } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 
 @Component({
   selector: 'app-quan-ly-bien-lai-dien-tu',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
+    RouterModule,
     NzTableModule,
     NzButtonModule,
     NzFormModule,
@@ -55,6 +58,7 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
 
   constructor(
     private bienLaiDienTuService: BienLaiDienTuService,
+    private vnptBienLaiService: VNPTBienLaiService,
     private fb: FormBuilder,
     private message: NzMessageService,
     private modal: NzModalService
@@ -258,4 +262,76 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
         return tinhChat || 'Không xác định';
     }
   }
-} 
+
+  // Tạo biên lai điện tử
+  publishToVNPT(id: number): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận tạo',
+      nzContent: 'Bạn có chắc chắn muốn tạo biên lai điện tử này?',
+      nzOkText: 'Tạo',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        const loadingId = this.message.loading('Đang tạo biên lai điện tử...', { nzDuration: 0 }).messageId;
+
+        this.vnptBienLaiService.publishBienLaiToVNPT(id)
+          .pipe(
+            finalize(() => {
+              this.message.remove(loadingId);
+            }),
+            catchError(error => {
+              console.error('Lỗi khi tạo biên lai điện tử:', error);
+              this.message.error(error.error?.message || 'Có lỗi khi tạo biên lai điện tử');
+              return of(null);
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (response && response.success) {
+                this.message.success('Tạo biên lai điện tử thành công');
+                // Hiển thị thông báo khi phát hành thành công
+                this.modal.success({
+                  nzTitle: 'Tạo biên lai điện tử thành công',
+                  nzContent: 'Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.'
+                });
+                this.loadBienLais();
+              }
+            }
+          });
+      }
+    });
+  }
+
+  // Hủy biên lai trên VNPT
+  cancelVNPT(id: number): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận hủy',
+      nzContent: 'Bạn có chắc chắn muốn hủy biên lai điện tử này trên VNPT?',
+      nzOkText: 'Hủy',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: () => {
+        const loadingId = this.message.loading('Đang hủy biên lai trên VNPT...', { nzDuration: 0 }).messageId;
+
+        this.vnptBienLaiService.cancelBienLaiVNPT(id)
+          .pipe(
+            finalize(() => {
+              this.message.remove(loadingId);
+            }),
+            catchError(error => {
+              console.error('Lỗi khi hủy biên lai trên VNPT:', error);
+              this.message.error(error.error?.message || 'Có lỗi khi hủy biên lai trên VNPT');
+              return of(null);
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (response && response.success) {
+                this.message.success('Hủy biên lai trên VNPT thành công');
+                this.loadBienLais();
+              }
+            }
+          });
+      }
+    });
+  }
+}
