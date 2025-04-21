@@ -27,7 +27,7 @@
     </div>
 
     <nz-divider></nz-divider>
-    
+
     <!-- Thông báo hướng dẫn -->
     <div *ngIf="dotKeKhaiList.length > 0 && getSoDotKeKhaiDaChon() > 0" class="selected-summary">
       Đã chọn {{ getSoDotKeKhaiDaChon() }} / {{ dotKeKhaiList.length }} đợt kê khai
@@ -193,6 +193,10 @@
           <nz-option *ngFor="let option of danhSachNam" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
         </nz-select>
 
+        <nz-date-picker class="filter-item" nzPlaceHolder="Từ ngày tạo" [(ngModel)]="danhSachFilters.ngayGuiTu" nzFormat="dd/MM/yyyy"></nz-date-picker>
+
+        <nz-date-picker class="filter-item" nzPlaceHolder="Đến ngày tạo" [(ngModel)]="danhSachFilters.ngayGuiDen" nzFormat="dd/MM/yyyy"></nz-date-picker>
+
         <button nz-button nzType="primary" (click)="searchData()">
           <span nz-icon nzType="filter" nzTheme="outline"></span>
           Lọc
@@ -237,12 +241,12 @@
                 <span nz-icon nzType="edit" nzTheme="outline" class="edit-icon"></span>
               </div>
               <div *ngIf="editingId === data.id" class="editable-cell-input">
-                <input 
-                  nz-input 
-                  [(ngModel)]="maHoSoTemp" 
-                  (blur)="saveEdit(data)" 
-                  (keydown.enter)="saveEdit(data)" 
-                  (keydown.esc)="cancelEdit()" 
+                <input
+                  nz-input
+                  [(ngModel)]="maHoSoTemp"
+                  (blur)="saveEdit(data)"
+                  (keydown.enter)="saveEdit(data)"
+                  (keydown.esc)="cancelEdit()"
                   placeholder="Nhập mã hồ sơ"/>
               </div>
             </div>
@@ -265,16 +269,16 @@
                 <span nz-icon nzType="edit" nzTheme="outline" class="edit-icon"></span>
               </div>
               <div *ngIf="editingTrangThaiId === data.id" class="editable-cell-input">
-                <nz-select 
+                <nz-select
                   #trangThaiSelect
-                  [(ngModel)]="trangThaiTemp" 
+                  [(ngModel)]="trangThaiTemp"
                   (ngModelChange)="saveTrangThai(data)"
                   (blur)="cancelEditTrangThai()"
                   nzOpen
                   style="width: 100%">
-                  <nz-option 
-                    *ngFor="let tt of danhSachTrangThai" 
-                    [nzValue]="tt.value" 
+                  <nz-option
+                    *ngFor="let tt of danhSachTrangThai"
+                    [nzValue]="tt.value"
                     [nzLabel]="tt.text">
                   </nz-option>
                 </nz-select>
@@ -282,13 +286,13 @@
             </div>
           </td>
           <td>
-            <button 
-              *ngIf="data.url_bill" 
-              nz-button 
-              nzType="default" 
-              nzShape="circle" 
-              (click)="xemHoaDon(data)" 
-              nz-tooltip 
+            <button
+              *ngIf="data.url_bill"
+              nz-button
+              nzType="default"
+              nzShape="circle"
+              (click)="xemHoaDon(data)"
+              nz-tooltip
               nzTooltipTitle="Xem hóa đơn">
               <span nz-icon nzType="file-image" nzTheme="outline"></span>
             </button>
@@ -299,7 +303,7 @@
               <button nz-button nzType="primary" (click)="xemChiTiet(data)" nz-tooltip nzTooltipTitle="Xem chi tiết">
                 <span nz-icon nzType="eye" nzTheme="outline"></span>
               </button>
-              
+
               <a nz-dropdown [nzDropdownMenu]="menu" nzTrigger="click" nzPlacement="bottomRight">
                 <button nz-button nzType="default">
                   <span nz-icon nzType="more" nzTheme="outline"></span>
@@ -311,24 +315,24 @@
                     <span nz-icon nzType="edit" nzTheme="outline"></span>
                     Chỉnh sửa
                   </li>
-                  
+
                   <li nz-menu-item (click)="xuatExcelDotKeKhai(data)">
                     <span nz-icon nzType="file-excel" nzTheme="outline"></span>
                     Xuất Excel
                   </li>
-                  
+
                   <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="duyetDotKeKhai(data)">
                     <span nz-icon nzType="check-circle" nzTheme="outline"></span>
                     Duyệt
                   </li>
-                  
+
                   <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="tuChoiDotKeKhai(data)">
                     <span nz-icon nzType="close-circle" nzTheme="outline"></span>
                     Từ chối
                   </li>
 
                   <li nz-menu-divider></li>
-                  
+
                   <li nz-menu-item nzDanger (click)="xoaDotKeKhai(data)">
                     <span nz-icon nzType="delete" nzTheme="outline"></span>
                     Xóa
@@ -421,7 +425,7 @@
       <span *ngIf="selectedDotKeKhai">{{ selectedDotKeKhai.ten_dot }}</span>
     </div>
   </ng-template>
-  
+
   <ng-container *nzModalContent>
     <nz-spin [nzSpinning]="loading">
       <div class="chi-tiet-container">
@@ -430,10 +434,10 @@
             <span nz-icon nzType="reload" nzTheme="outline"></span>
             Tải danh sách
           </button>
-          
-          <nz-table 
-            #keKhaiTable 
-            [nzData]="danhSachKeKhai" 
+
+          <nz-table
+            #keKhaiTable
+            [nzData]="danhSachKeKhai"
             [nzLoading]="loadingKeKhai"
             [nzPageSize]="10"
             nzBordered>
@@ -464,7 +468,7 @@
               </tr>
             </tfoot>
           </nz-table>
-          
+
           <div *ngIf="danhSachKeKhai.length === 0 && !loadingKeKhai" class="empty-data">
             <span nz-icon nzType="inbox" nzTheme="outline"></span>
             <p>Không có dữ liệu kê khai</p>
@@ -473,7 +477,7 @@
       </div>
     </nz-spin>
   </ng-container>
-  
+
   <ng-template #chiTietModalFooter>
     <button nz-button nzType="default" (click)="handleModalChiTietCancel()">Đóng</button>
     <button nz-button nzType="primary" *ngIf="selectedDotKeKhai" (click)="chinhSuaDotKeKhai(selectedDotKeKhai)">
@@ -485,4 +489,4 @@
       Xuất Excel
     </button>
   </ng-template>
-</nz-modal> 
+</nz-modal>

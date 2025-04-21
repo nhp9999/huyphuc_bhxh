@@ -645,6 +645,9 @@ namespace WebApp.API.Controllers
                 // Cập nhật trạng thái đợt kê khai sang chờ thanh toán
                 dotKeKhai.trang_thai = "cho_thanh_toan";
                 
+                // Cập nhật ngày gửi đợt kê khai
+                dotKeKhai.ngay_gui = DateTime.Now;
+                
                 // Cập nhật trạng thái các kê khai BHYT trong đợt và cấp số biên lai
                 // Nếu đang cập nhật từ không sử dụng biên lai điện tử sang sử dụng, lấy tất cả các kê khai
                 // bao gồm cả những kê khai đã có số biên lai (biên lai thông thường)

@@ -28,11 +28,11 @@ import { UserService } from '../../services/user.service';
 import { DonViService, DonVi } from '../../services/don-vi.service';
 import { ExportVnptService } from '../../services/export-vnpt.service';
 import * as XLSX from 'xlsx';
-import { 
-  ExportOutline, 
-  EyeOutline, 
-  EditOutline, 
-  DeleteOutline, 
+import {
+  ExportOutline,
+  EyeOutline,
+  EditOutline,
+  DeleteOutline,
   FileExcelOutline,
   CheckCircleOutline,
   CloseCircleOutline,
@@ -92,36 +92,38 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   originalDotKeKhaiList: DotKeKhai[] = []; // Lưu trữ dữ liệu gốc
   loading = false;
   searchText = '';
-  
+
   // Biến cho modal chi tiết
   isModalChiTietVisible = false;
   danhSachKeKhai: any[] = [];
   loadingKeKhai = false;
-  
+
   // Biến lưu danh sách id đợt kê khai đã được chọn
   danhSachDaChon = new Set<number>();
-  
+
   // Biến cho modal hiển thị hóa đơn
   isModalVisible = false;
   selectedDotKeKhai: DotKeKhai | null = null;
   selectedHoaDonUrl: string | null = null;
-  
+
   // Cache hóa đơn đã tải
   private imageCache: Map<string, string> = new Map();
-  
+
   // Cache số lượng theo trạng thái
   private statusCountCache: Map<string, number> = new Map();
-  
+
   // Biến cho tab
   tabTrangThaiIndex = 0;
-  
+
   danhSachFilters = {
     dichVu: null as string | null,
     trangThai: null as string | null,
     donVi: null as number | null,
     nam: null as number | null,
     thang: null as number | null,
-    maNhanVien: null as string | null
+    maNhanVien: null as string | null,
+    ngayGuiTu: null as Date | null, // Đã đổi ý nghĩa thành ngày tạo từ
+    ngayGuiDen: null as Date | null // Đã đổi ý nghĩa thành ngày tạo đến
   };
   danhSachDichVu = [
     { text: 'BHYT', value: 'BHYT' },
@@ -149,7 +151,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Form và modal nhập mã nhân viên
   maNhanVienForm!: FormGroup;
   isModalNhapMaNhanVienVisible = false;
-  
+
   // Biến cho modal xác nhận xóa đợt kê khai
   isModalXoaVisible = false;
   dotKeKhaiToDelete: DotKeKhai | null = null;
@@ -179,10 +181,10 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     private http: HttpClient
   ) {
     this.iconService.addIcon(...[
-      ExportOutline, 
-      EyeOutline, 
-      EditOutline, 
-      DeleteOutline, 
+      ExportOutline,
+      EyeOutline,
+      EditOutline,
+      DeleteOutline,
       FileExcelOutline,
       CheckCircleOutline,
       CloseCircleOutline,
@@ -207,7 +209,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   ngOnInit(): void {
     this.loadDotKeKhaiList();
     this.loadDonViList();
-    
+
     // Tải mã nhân viên từ localStorage nếu có
     const savedMaNhanVien = localStorage.getItem('maNhanVienThu');
     if (savedMaNhanVien) {
@@ -223,9 +225,9 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     if (this.statusCountCache.has(status)) {
       return this.statusCountCache.get(status) || 0;
     }
-    
+
     if (!this.originalDotKeKhaiList || this.originalDotKeKhaiList.length === 0) return 0;
-    
+
     // Tính và cache kết quả từ dữ liệu gốc
     const count = this.originalDotKeKhaiList.filter(item => item.trang_thai === status).length;
     this.statusCountCache.set(status, count);
@@ -244,7 +246,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Filter theo trạng thái khi click vào thẻ thống kê
   filterByStatus(status: string): void {
     this.danhSachFilters.trangThai = status;
-    
+
     // Cập nhật tab tương ứng với trạng thái
     switch (status) {
       case 'chua_gui':
@@ -272,33 +274,33 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
         this.tabTrangThaiIndex = 0;
         break;
     }
-    
+
     this.applyFilters();
   }
 
   loadDotKeKhaiList(): void {
     this.loading = true;
     this.danhSachDaChon.clear(); // Xóa danh sách đã chọn khi tải dữ liệu mới
-    
+
     // Hiển thị thông báo đang tải
     const loadingMsg = this.message.loading('Đang tải danh sách đợt kê khai...', { nzDuration: 0 });
-    
+
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data: DotKeKhai[]) => {
         // Đóng thông báo loading
         this.message.remove(loadingMsg.messageId);
-        
+
         // Sắp xếp danh sách theo ngày tạo mới nhất
         const sortedData = [...data].sort((a, b) => {
           const dateA = new Date(a.ngay_tao || '');
           const dateB = new Date(b.ngay_tao || '');
           return dateB.getTime() - dateA.getTime();
         });
-        
+
         this.originalDotKeKhaiList = sortedData; // Lưu bản sao của dữ liệu gốc đã sắp xếp
         this.dotKeKhaiList = sortedData;
         this.updateStatusCountCache(); // Cập nhật cache khi có dữ liệu mới
-        
+
         // Debug: Kiểm tra cấu trúc dữ liệu
         if (data && data.length > 0) {
           console.log('Dữ liệu DotKeKhai từ API:', data[0]);
@@ -306,13 +308,13 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           console.log('Thuộc tính don_vi:', data[0].don_vi);
           console.log('Tất cả các thuộc tính:', Object.keys(data[0]));
         }
-        
+
         this.loading = false;
       },
       error: (error: any) => {
         // Đóng thông báo loading
         this.message.remove(loadingMsg.messageId);
-        
+
         console.error('Lỗi khi tải danh sách đợt kê khai:', error);
         this.message.error('Có lỗi xảy ra khi tải danh sách đợt kê khai');
         this.loading = false;
@@ -347,7 +349,9 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       donVi: null,
       nam: null,
       thang: null,
-      maNhanVien: null
+      maNhanVien: null,
+      ngayGuiTu: null, // Đặt lại bộ lọc ngày tạo từ
+      ngayGuiDen: null  // Đặt lại bộ lọc ngày tạo đến
     };
     this.tabTrangThaiIndex = 0;
     this.loadDotKeKhaiList();
@@ -356,57 +360,75 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Áp dụng bộ lọc vào dữ liệu gốc
   applyFilters(): void {
     this.loading = true;
-    
+
     let filteredData = [...this.originalDotKeKhaiList];
-    
+
     // Lọc theo từ khóa tìm kiếm
     if (this.searchText && this.searchText.trim() !== '') {
       const searchLower = this.searchText.toLowerCase().trim();
-      filteredData = filteredData.filter(item => 
-        item.ten_dot.toLowerCase().includes(searchLower) || 
+      filteredData = filteredData.filter(item =>
+        item.ten_dot.toLowerCase().includes(searchLower) ||
         (item.ma_ho_so && item.ma_ho_so.toLowerCase().includes(searchLower)) ||
         (item.ghi_chu && item.ghi_chu.toLowerCase().includes(searchLower))
       );
     }
-    
+
     // Lọc theo loại dịch vụ
     if (this.danhSachFilters.dichVu) {
       filteredData = filteredData.filter(item => item.dich_vu === this.danhSachFilters.dichVu);
     }
-    
+
     // Lọc theo trạng thái
     if (this.danhSachFilters.trangThai) {
       filteredData = filteredData.filter(item => item.trang_thai === this.danhSachFilters.trangThai);
     }
-    
+
     // Lọc theo tháng
     if (this.danhSachFilters.thang) {
       filteredData = filteredData.filter(item => item.thang === this.danhSachFilters.thang);
     }
-    
+
     // Lọc theo năm
     if (this.danhSachFilters.nam) {
       filteredData = filteredData.filter(item => item.nam === this.danhSachFilters.nam);
     }
-    
+
     // Lọc theo đơn vị
     if (this.danhSachFilters.donVi) {
       filteredData = filteredData.filter(item => item.don_vi_id === this.danhSachFilters.donVi);
     }
-    
+
     // Lọc theo mã nhân viên
     if (this.danhSachFilters.maNhanVien && this.danhSachFilters.maNhanVien.trim() !== '') {
       const maNhanVienLower = this.danhSachFilters.maNhanVien.toLowerCase().trim();
-      filteredData = filteredData.filter(item => 
+      filteredData = filteredData.filter(item =>
         item.nguoi_tao && item.nguoi_tao.toLowerCase().includes(maNhanVienLower)
       );
     }
-    
+
+    // Lọc theo ngày tạo từ
+    if (this.danhSachFilters.ngayGuiTu) {
+      filteredData = filteredData.filter(item => {
+        if (!item.ngay_tao) return false;
+        const ngayTao = new Date(item.ngay_tao);
+        return ngayTao >= (this.danhSachFilters.ngayGuiTu as Date);
+      });
+    }
+
+    // Lọc theo ngày tạo đến
+    if (this.danhSachFilters.ngayGuiDen) {
+      filteredData = filteredData.filter(item => {
+        if (!item.ngay_tao) return false;
+        const ngayTao = new Date(item.ngay_tao);
+        return ngayTao <= (this.danhSachFilters.ngayGuiDen as Date);
+      });
+    }
+
     this.dotKeKhaiList = filteredData;
     // Không cập nhật cache số lượng sau khi lọc vì chúng ta muốn hiển thị thống kê theo dữ liệu gốc
-    
+
     this.loading = false;
-    
+
     // Hiển thị thông báo kết quả tìm kiếm
     if (filteredData.length === 0) {
       this.message.info('Không tìm thấy kết quả phù hợp');
@@ -426,25 +448,25 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       this.message.warning('Không tìm thấy thông tin đợt kê khai');
       return;
     }
-    
+
     this.selectedDotKeKhai = dotKeKhai;
     this.isModalChiTietVisible = true;
-    
+
     // Tải danh sách kê khai
     this.loadDanhSachKeKhai(dotKeKhai.id);
   }
-  
+
   // Xử lý khi đóng modal chi tiết
   handleModalChiTietCancel(): void {
     this.isModalChiTietVisible = false;
     this.danhSachKeKhai = [];
   }
-  
+
   // Tải danh sách kê khai
   loadDanhSachKeKhai(dotKeKhaiId: number): void {
     this.loadingKeKhai = true;
     this.danhSachKeKhai = [];
-    
+
     this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
       next: (data: any[]) => {
         this.danhSachKeKhai = data;
@@ -457,7 +479,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       }
     });
   }
-  
+
   // Tính tổng tiền từ danh sách kê khai
   tinhTongTien(): number {
     return this.danhSachKeKhai.reduce((sum, item) => sum + item.so_tien, 0);
@@ -472,7 +494,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       nzOnOk: () => {
         // Hiển thị loading
         const loadingMsg = this.message.loading('Đang duyệt đợt kê khai...', { nzDuration: 0 });
-        
+
         // Gọi API để duyệt đợt kê khai
         if (dotKeKhai.id) {
           this.dotKeKhaiService.duyetDotKeKhai(dotKeKhai.id).subscribe({
@@ -574,7 +596,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Phương thức lấy tên file từ URL
   getFileName(): string {
     if (!this.selectedHoaDonUrl) return 'Không có file';
-    
+
     try {
       const url = new URL(this.selectedHoaDonUrl);
       const pathSegments = url.pathname.split('/');
@@ -591,20 +613,20 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       this.message.warning('Không có thông tin kê khai BHYT');
       return;
     }
-    
+
     // Hiển thị loading
     const loadingMsg = this.message.loading('Đang tải thông tin kê khai BHYT...', { nzDuration: 0 });
-    
+
     // Gọi service để lấy dữ liệu
     this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).subscribe({
       next: (data: any[]) => {
         this.message.remove(loadingMsg.messageId);
-        
+
         if (!data || data.length === 0) {
           this.message.info('Không có thông tin kê khai BHYT');
           return;
         }
-        
+
         // Mở modal hiển thị bản kê
         this.modalService.create({
           nzTitle: `Bản kê BHYT - ${this.selectedDotKeKhai?.ten_dot}`,
@@ -651,7 +673,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       }
     });
   }
-  
+
   // Phương thức tải hóa đơn cho nhiều đợt kê khai
   taiHoaDonNhieuDot(): void {
     if (this.danhSachDaChon.size === 0) {
@@ -701,7 +723,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     Promise.allSettled(downloadPromises)
       .then(results => {
         this.message.remove(loadingMsg.messageId);
-        
+
         const successCount = results.filter(r => r.status === 'fulfilled').length;
         const failureCount = results.filter(r => r.status === 'rejected').length;
 
@@ -766,7 +788,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       this.message.warning('Không thể tải lại hóa đơn');
       return;
     }
-    
+
     // Mở modal tải lên hóa đơn mới
     this.modalService.confirm({
       nzTitle: 'Tải lại hóa đơn',
@@ -779,32 +801,32 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
         fileInput.style.display = 'none';
-        
+
         fileInput.onchange = (event: any) => {
           const file = event.target.files[0];
           if (!file) return;
-          
+
           // Kiểm tra kích thước file (tối đa 5MB)
           if (file.size > 5 * 1024 * 1024) {
             this.message.error('Kích thước file quá lớn, tối đa 5MB');
             return;
           }
-          
+
           // Hiển thị loading
           const loadingMessage = this.message.loading('Đang tải lên hóa đơn mới...', { nzDuration: 0 });
-          
+
           // Tạo FormData
           const formData = new FormData();
           formData.append('file', file);
           formData.append('dotKeKhaiId', this.selectedDotKeKhai!.id!.toString());
-          
+
           // Gọi API upload hóa đơn
           this.http.post(`${environment.apiUrl}/DotKeKhai/${this.selectedDotKeKhai!.id}/upload-bill`, formData)
             .subscribe({
               next: (response: any) => {
                 this.message.remove(loadingMessage.messageId);
                 this.message.success('Tải lên hóa đơn thành công');
-                
+
                 // Cập nhật URL hóa đơn mới nếu có
                 if (response && response.url) {
                   this.selectedHoaDonUrl = response.url;
@@ -812,7 +834,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
                     this.selectedDotKeKhai.url_bill = response.url;
                   }
                 }
-                
+
                 // Cập nhật trạng thái sang "đang xử lý"
                 if (this.selectedDotKeKhai && this.selectedDotKeKhai.id) {
                   this.dotKeKhaiService.updateTrangThai(this.selectedDotKeKhai.id, 'dang_xu_ly')
@@ -840,7 +862,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
               }
             });
         };
-        
+
         // Kích hoạt sự kiện click
         document.body.appendChild(fileInput);
         fileInput.click();
@@ -877,7 +899,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       default:
         this.danhSachFilters.trangThai = null;
     }
-    
+
     this.tabTrangThaiIndex = index;
     this.applyFilters();
   }
@@ -902,18 +924,18 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Thêm hàm kiểm tra tuổi
   isUnder18(ngaySinh: string | Date | null | undefined): boolean {
     if (!ngaySinh) return false;
-    
+
     const birthDate = new Date(ngaySinh);
     const today = new Date();
-    
+
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     // Nếu chưa tới tháng sinh nhật hoặc tới tháng sinh nhật nhưng chưa tới ngày sinh nhật
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
+
     return age < 18;
   }
 
@@ -946,7 +968,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
 
     // Hiển thị loading
     this.loading = true;
-    
+
     // Gọi service để xuất file, truyền danh sách đợt kê khai đã chọn
     // Mã nhân viên sẽ được lấy trực tiếp từ mỗi đợt kê khai (nguoi_tao)
     this.exportVnptService.xuatVNPTNhieuDot(dotKeKhaiDaChonList)
@@ -975,7 +997,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
 
     // Lấy mã nhân viên từ form
     const maNhanVien = this.maNhanVienForm.get('maNhanVien')?.value;
-    
+
     // Lưu mã nhân viên vào localStorage nếu đã chọn
     if (this.maNhanVienForm.get('luuMaNhanVien')?.value) {
       localStorage.setItem('maNhanVienThu', maNhanVien);
@@ -1009,30 +1031,30 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   }
 
   // PHƯƠNG THỨC XỬ LÝ CHECKBOX
-  
+
   // Kiểm tra xem tất cả các đợt kê khai hiện tại đã được chọn hết chưa
   isTatCaDaChon(): boolean {
     if (this.dotKeKhaiList.length === 0) return false;
     return this.dotKeKhaiList.every(item => item.id && this.danhSachDaChon.has(item.id));
   }
-  
+
   // Kiểm tra trạng thái indeterminate (khi chỉ chọn một số, không phải tất cả)
   isIndeterminate(): boolean {
     const checkedCount = this.dotKeKhaiList.filter(item => item.id && this.danhSachDaChon.has(item.id)).length;
     return checkedCount > 0 && checkedCount < this.dotKeKhaiList.length;
   }
-  
+
   // Xử lý khi checkbox của một đợt kê khai được chọn/bỏ chọn
   onCheckDotKeKhai(id: number | undefined, checked: boolean): void {
     if (!id) return; // Bỏ qua nếu id không tồn tại
-    
+
     if (checked) {
       this.danhSachDaChon.add(id);
     } else {
       this.danhSachDaChon.delete(id);
     }
   }
-  
+
   // Xử lý khi checkbox "Chọn tất cả" được chọn/bỏ chọn
   onCheckTatCa(checked: boolean): void {
     if (checked) {
@@ -1047,12 +1069,12 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       this.danhSachDaChon.clear();
     }
   }
-  
+
   // Lấy số lượng đợt kê khai đã chọn
   getSoDotKeKhaiDaChon(): number {
     return this.danhSachDaChon.size;
   }
-  
+
   // Lấy danh sách các đợt kê khai đã chọn
   getDanhSachDotKeKhaiDaChon(): DotKeKhai[] {
     return this.dotKeKhaiList.filter(item => item.id && this.danhSachDaChon.has(item.id));
@@ -1080,21 +1102,21 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     this.selectedDotKeKhai = dotKeKhai;
     this.isModalXoaVisible = true;
   }
-  
+
   // Phương thức hủy xóa
   handleModalXoaCancel(): void {
     this.isModalXoaVisible = false;
     this.dotKeKhaiToDelete = null;
   }
-  
+
   // Phương thức xác nhận xóa
   confirmXoaDotKeKhai(): void {
     if (!this.dotKeKhaiToDelete || !this.dotKeKhaiToDelete.id) {
       return;
     }
-    
+
     this.loading = true;
-    
+
     this.dotKeKhaiService.deleteDotKeKhai(this.dotKeKhaiToDelete.id).subscribe({
       next: () => {
         this.message.success('Xóa đợt kê khai thành công');
@@ -1115,28 +1137,28 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     this.editingId = data.id || null;
     this.maHoSoTemp = data.ma_ho_so || '';
   }
-  
+
   // Hủy chỉnh sửa
   cancelEdit(): void {
     this.editingId = null;
   }
-  
+
   // Lưu nội dung chỉnh sửa
   saveEdit(data: DotKeKhai): void {
     if (!data.id || this.editingId !== data.id) {
       return;
     }
-    
+
     // Hiển thị loading
     const loadingMsg = this.message.loading('Đang cập nhật mã hồ sơ...', { nzDuration: 0 });
-    
+
     // Gọi API cập nhật mã hồ sơ
     const apiUrl = `${environment.apiUrl}/DotKeKhai/${data.id}/update-ma-ho-so`;
     this.http.post(apiUrl, { ma_ho_so: this.maHoSoTemp }).subscribe({
       next: (_response: any) => {
         this.message.remove(loadingMsg.messageId);
         this.message.success('Cập nhật mã hồ sơ thành công');
-        
+
         // Cập nhật lại dữ liệu trong danh sách
         this.dotKeKhaiList = this.dotKeKhaiList.map(d => {
           if (d.id === data.id) {
@@ -1144,7 +1166,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           }
           return d;
         });
-        
+
         // Cập nhật trong danh sách gốc
         this.originalDotKeKhaiList = this.originalDotKeKhaiList.map(d => {
           if (d.id === data.id) {
@@ -1152,7 +1174,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           }
           return d;
         });
-        
+
         // Kết thúc chế độ chỉnh sửa
         this.editingId = null;
       },
@@ -1191,28 +1213,28 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     this.editingTrangThaiId = data.id || null;
     this.trangThaiTemp = data.trang_thai;
   }
-  
+
   // Hủy chỉnh sửa trạng thái
   cancelEditTrangThai(): void {
     this.editingTrangThaiId = null;
   }
-  
+
   // Lưu trạng thái mới
   saveTrangThai(data: DotKeKhai): void {
     if (!data.id || this.editingTrangThaiId !== data.id) {
       return;
     }
-    
+
     // Hiển thị loading
     const loadingMsg = this.message.loading('Đang cập nhật trạng thái...', { nzDuration: 0 });
-    
+
     // Gọi API cập nhật trạng thái
     const apiUrl = `${environment.apiUrl}/DotKeKhai/${data.id}/trang-thai`;
     this.http.patch(apiUrl, { trang_thai: this.trangThaiTemp }).subscribe({
       next: (_response: any) => {
         this.message.remove(loadingMsg.messageId);
         this.message.success('Cập nhật trạng thái thành công');
-        
+
         // Cập nhật lại dữ liệu trong danh sách
         this.dotKeKhaiList = this.dotKeKhaiList.map(d => {
           if (d.id === data.id) {
@@ -1220,7 +1242,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           }
           return d;
         });
-        
+
         // Cập nhật trong danh sách gốc
         this.originalDotKeKhaiList = this.originalDotKeKhaiList.map(d => {
           if (d.id === data.id) {
@@ -1228,10 +1250,10 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           }
           return d;
         });
-        
+
         // Cập nhật cache số lượng
         this.updateStatusCountCache();
-        
+
         // Kết thúc chế độ chỉnh sửa
         this.editingTrangThaiId = null;
       },
@@ -1254,15 +1276,15 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
 
     // Lấy danh sách đợt kê khai đã chọn
     const dotKeKhaiDaChonList = this.dotKeKhaiList.filter(d => this.danhSachDaChon.has(d.id!));
-    
+
     // Lọc ra những đợt có trạng thái "đã gửi"
     const dotKeKhaiDaGuiList = dotKeKhaiDaChonList.filter(d => d.trang_thai === 'da_gui');
-    
+
     if (dotKeKhaiDaGuiList.length === 0) {
       this.message.warning('Không có đợt kê khai nào ở trạng thái "Đã gửi" để duyệt');
       return;
     }
-    
+
     // Hiển thị modal xác nhận
     this.modalService.confirm({
       nzTitle: 'Xác nhận duyệt nhiều đợt kê khai',
@@ -1273,12 +1295,12 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
         // Hiển thị loading
         this.loading = true;
         const loadingMsg = this.message.loading('Đang duyệt đợt kê khai...', { nzDuration: 0 });
-        
+
         // Tạo một mảng Observable để duyệt tất cả đợt kê khai
-        const duyetObservables = dotKeKhaiDaGuiList.map(dotKeKhai => 
+        const duyetObservables = dotKeKhaiDaGuiList.map(dotKeKhai =>
           this.dotKeKhaiService.duyetDotKeKhai(dotKeKhai.id!)
         );
-        
+
         // Import và sử dụng forkJoin
         import('rxjs').then(rxjs => {
           if (duyetObservables.length === 0) {
@@ -1287,7 +1309,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
             this.message.info('Không có đợt kê khai nào để duyệt');
             return;
           }
-          
+
           rxjs.forkJoin(duyetObservables).subscribe({
             next: () => {
               this.message.remove(loadingMsg.messageId);
@@ -1309,4 +1331,4 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       }
     });
   }
-} 
+}

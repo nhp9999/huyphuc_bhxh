@@ -1,5 +1,5 @@
 - When user starts a new conversation:
-  1. Read @long_term.md to get the context of the project.
+  1. Read long_term.md to get the context of the project.
   2. Generate a workflow name (under 10 words, snake case).
   3. Then, create file `memory_bank/wf_{workflow_name}`. The content must have the following sections:
    - Current tasks from user prompt.

@@ -75,6 +75,12 @@ namespace WebApp.API.Models
         public DateTime ngay_tao { get; set; } = DateTime.UtcNow;
 
         /// <summary>
+        /// Ngày gửi đợt kê khai
+        /// </summary>
+        [Column("ngay_gui")]
+        public DateTime? ngay_gui { get; set; }
+
+        /// <summary>
         /// Người tạo đợt kê khai
         /// </summary>
         [Required(ErrorMessage = "Người tạo không được để trống")]
