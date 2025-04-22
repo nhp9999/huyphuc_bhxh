@@ -88,4 +88,12 @@ export class VNPTBienLaiService {
   cancelBienLaiVNPT(bienLaiId: number): Observable<VNPTBienLaiResponse> {
     return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/cancel-vnpt`, {});
   }
+
+  publishBienLaiToVNPTWithLink(bienLaiId: number): Observable<VNPTBienLaiResponse> {
+    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/publish-to-vnpt-with-link`, {});
+  }
+
+  publishBienLaiToVNPTDirect(bienLaiId: number): Observable<VNPTBienLaiResponse> {
+    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/publish-to-vnpt-direct`, {});
+  }
 }

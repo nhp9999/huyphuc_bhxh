@@ -105,5 +105,11 @@ namespace WebApp.API.Models.BienlaiDienTu
         public bool is_published_to_vnpt { get; set; } = false;
 
         public DateTime? vnpt_publish_date { get; set; }
+
+        [StringLength(500)]
+        public string? vnpt_link { get; set; }
+
+        [StringLength(100)]
+        public string? vnpt_transaction_id { get; set; }
     }
 }

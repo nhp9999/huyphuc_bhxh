@@ -18,6 +18,8 @@ namespace WebApp.API.Services
         private readonly string _serviceUrl;
         private readonly string _username;
         private readonly string _password;
+        private readonly string _account;
+        private readonly string _acpass;
         private readonly string _pattern;
         private readonly string _serial;
 
@@ -30,8 +32,10 @@ namespace WebApp.API.Services
             _serviceUrl = _configuration["VNPTBienLai:ServiceUrl"] ?? "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PublishService.asmx";
             _username = _configuration["VNPTBienLai:Username"] ?? "ctyhuyphucpws";
             _password = _configuration["VNPTBienLai:Password"] ?? "Vnpt@1234";
-            _pattern = _configuration["VNPTBienLai:Pattern"] ?? "";
-            _serial = _configuration["VNPTBienLai:Serial"] ?? "";
+            _account = _configuration["VNPTBienLai:Account"] ?? "NV089182025056";
+            _acpass = _configuration["VNPTBienLai:ACPass"] ?? "Dinh@56789";
+            _pattern = _configuration["VNPTBienLai:Pattern"] ?? "C45-BB0/002";
+            _serial = _configuration["VNPTBienLai:Serial"] ?? "BH25-AG/08907/E";
         }
 
         /// <summary>
@@ -69,8 +73,8 @@ namespace WebApp.API.Services
   <soap:Body>
     <UpdateCus xmlns=""http://tempuri.org/"">
       <XMLCusData><![CDATA[{xmlCusData}]]></XMLCusData>
-      <username>NV089182025056</username>
-      <pass>Dinh@56789</pass>
+      <username>{_account}</username>
+      <pass>{_acpass}</pass>
       <convert>0</convert>
     </UpdateCus>
   </soap:Body>
@@ -101,10 +105,11 @@ namespace WebApp.API.Services
         }
 
         /// <summary>
-        /// Phát hành biên lai
+        /// Tạo biên lai (ImportInv)
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
-        /// <returns>Kết quả phát hành</returns>
+        /// <param name="serial">Serial biên lai (tùy chọn)</param>
+        /// <returns>Kết quả tạo biên lai</returns>
         public async Task<string> PublishInvoice(string xmlInvData, string? serial = null)
         {
             try
@@ -120,10 +125,10 @@ namespace WebApp.API.Services
   <soap:Body>
     <ImportInv xmlns=""http://tempuri.org/"">
       <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
-      <username>ctyhuyphucpws</username>
-      <password>Vnpt@1234</password>
+      <username>{_username}</username>
+      <password>{_password}</password>
       <convert>0</convert>
-      <tkTao>NV089182025056</tkTao>
+      <tkTao>{_account}</tkTao>
       <pattern>{_pattern}</pattern>
       <serial>{serialToUse}</serial>
     </ImportInv>
@@ -173,8 +178,8 @@ namespace WebApp.API.Services
                 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
                   <soap:Body>
                     <AdjustInvoiceAction xmlns=""http://tempuri.org/"">
-                      <Account>NV089182025056</Account>
-                      <ACpass>Dinh@56789</ACpass>
+                      <Account>{_account}</Account>
+                      <ACpass>{_acpass}</ACpass>
                       <xmlInvData>{xmlInvData}</xmlInvData>
                       <username>{_username}</username>
                       <pass>{_password}</pass>
@@ -226,8 +231,8 @@ namespace WebApp.API.Services
                 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
                   <soap:Body>
                     <ReplaceInvoiceAction xmlns=""http://tempuri.org/"">
-                      <Account>NV089182025056</Account>
-                      <Acpass>Dinh@56789</Acpass>
+                      <Account>{_account}</Account>
+                      <Acpass>{_acpass}</Acpass>
                       <xmlInvData>{xmlInvData}</xmlInvData>
                       <username>{_username}</username>
                       <pass>{_password}</pass>
@@ -282,8 +287,8 @@ namespace WebApp.API.Services
       <invIDs>
         {invIDsXml}
       </invIDs>
-      <username>ctyhuyphucpws</username>
-      <password>Vnpt@1234</password>
+      <username>{_username}</username>
+      <password>{_password}</password>
       <pattern>{_pattern}</pattern>
       <serial>{_serial}</serial>
     </publishInv>
@@ -315,6 +320,273 @@ namespace WebApp.API.Services
         }
 
         /// <summary>
+        /// Tạo và phát hành biên lai (ImportAndPublishInv)
+        /// </summary>
+        /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="serial">Serial biên lai (tùy chọn)</param>
+        /// <returns>Kết quả tạo và phát hành biên lai</returns>
+        public async Task<string> ImportAndPublishInv(string xmlInvData, string? serial = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API ImportAndPublishInv với dữ liệu: {xmlInvData}");
+
+                // Sử dụng serial từ tham số hoặc từ cấu hình
+                string serialToUse = serial ?? _serial;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <ImportAndPublishInv xmlns=""http://tempuri.org/"">
+      <Account>{_account}</Account>
+      <ACpass>{_acpass}</ACpass>
+      <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
+      <username>{_username}</username>
+      <password>{_password}</password>
+      <pattern>{_pattern}</pattern>
+      <serial>{serialToUse}</serial>
+      <convert>0</convert>
+    </ImportAndPublishInv>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"Pattern: {_pattern}, Serial: {serialToUse}");
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/ImportAndPublishInv", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:ImportAndPublishInvResult", nsManager)?.InnerText ?? "";
+                _logger.LogInformation($"Kết quả ImportAndPublishInv: {result}");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API ImportAndPublishInv");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Tạo và phát hành biên lai với link
+        /// </summary>
+        /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="serial">Serial biên lai (tùy chọn)</param>
+        /// <returns>Kết quả phát hành với link</returns>
+        public async Task<ImportAndPublishInvWithLinkResult> ImportAndPublishInvWithLink(string xmlInvData, string? serial = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API ImportAndPublishInvWithLink với dữ liệu: {xmlInvData}");
+
+                // Sử dụng serial từ tham số hoặc từ cấu hình
+                string serialToUse = serial ?? _serial;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <ImportAndPublishInvWithLink xmlns=""http://tempuri.org/"">
+      <Account>{_account}</Account>
+      <ACpass>{_acpass}</ACpass>
+      <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
+      <username>{_username}</username>
+      <password>{_password}</password>
+      <pattern>{_pattern}</pattern>
+      <serial>{serialToUse}</serial>
+      <convert>0</convert>
+    </ImportAndPublishInvWithLink>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"Pattern: {_pattern}, Serial: {serialToUse}");
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/ImportAndPublishInvWithLink", soapRequest);
+
+                // Kiểm tra xem phản hồi có phải là XML hợp lệ không
+                if (response.StartsWith("Error:") || !response.Contains("<"))
+                {
+                    _logger.LogError($"Phản hồi không phải là XML hợp lệ: {response}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = response
+                    };
+                }
+
+                // Xử lý response
+                XmlDocument xmlDoc;
+                XmlNode resultNode;
+
+                try
+                {
+                    xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(response);
+                    XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                    nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                    // Lấy nội dung XML của kết quả
+                    resultNode = xmlDoc.SelectSingleNode("//ns:ImportAndPublishInvWithLinkResult", nsManager);
+                    if (resultNode == null)
+                    {
+                        _logger.LogError("Không tìm thấy nút ImportAndPublishInvWithLinkResult trong phản hồi");
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "ERROR",
+                            Message = "Không tìm thấy kết quả trong phản hồi"
+                        };
+                    }
+                }
+                catch (XmlException ex)
+                {
+                    _logger.LogError(ex, $"Lỗi khi xử lý XML: {response}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = $"Lỗi khi xử lý XML: {ex.Message}"
+                    };
+                }
+
+                try
+                {
+                    // Ghi log nội dung XML để debug
+                    _logger.LogInformation($"Nội dung XML kết quả: {resultNode.OuterXml}");
+
+                    // Kiểm tra xem kết quả có phải là chuỗi lỗi hoặc chuỗi thành công không
+                    string innerText = resultNode.InnerText;
+                    if (innerText.StartsWith("ERR:"))
+                    {
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "ERROR",
+                            Message = innerText
+                        };
+                    }
+                    else if (innerText.StartsWith("OK:"))
+                    {
+                        // Xử lý kết quả thành công dạng chuỗi
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "OK",
+                            Message = innerText
+                        };
+                    }
+
+                    // Thử phân tích kết quả trực tiếp từ XML
+                    string status = "OK"; // Mặc định là OK nếu không có lỗi
+                    string message = "";
+
+                    // Kiểm tra xem có trường Status và Message không
+                    XmlNode statusNode = resultNode.SelectSingleNode("Status");
+                    XmlNode messageNode = resultNode.SelectSingleNode("Message");
+
+                    if (statusNode != null)
+                    {
+                        status = statusNode.InnerText;
+                    }
+
+                    if (messageNode != null)
+                    {
+                        message = messageNode.InnerText;
+                    }
+
+                    var result = new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = status,
+                        Message = message,
+                        LstResult = new ResultDetailList()
+                    };
+
+                    // Phân tích danh sách kết quả chi tiết
+                    XmlNodeList detailNodes = resultNode.SelectNodes("LstResult/ResultDetail");
+                    if (detailNodes != null && detailNodes.Count > 0)
+                    {
+                        foreach (XmlNode detailNode in detailNodes)
+                        {
+                            var detail = new ResultDetail
+                            {
+                                Pattern = detailNode.SelectSingleNode("pattern")?.InnerText ?? "",
+                                Serial = detailNode.SelectSingleNode("serial")?.InnerText ?? "",
+                                Link = detailNode.SelectSingleNode("link")?.InnerText ?? "",
+                                XmlDownload = detailNode.SelectSingleNode("xmlDownload")?.InnerText ?? "",
+                                Fkey = detailNode.SelectSingleNode("fkey")?.InnerText ?? "",
+                                XmlContent = detailNode.SelectSingleNode("xmlContent")?.InnerText ?? ""
+                            };
+
+                            // Xử lý số biên lai
+                            string noStr = detailNode.SelectSingleNode("no")?.InnerText ?? "0";
+                            if (decimal.TryParse(noStr, out decimal no))
+                            {
+                                detail.No = no;
+                            }
+
+                            result.LstResult.Results.Add(detail);
+                        }
+                    }
+                    else
+                    {
+                        // Nếu không có ResultDetail, có thể là kết quả dạng chuỗi
+                        // Kiểm tra xem có phải là kết quả dạng OK:pattern;serial;invoiceNo không
+                        if (innerText.StartsWith("OK:"))
+                        {
+                            string[] parts = innerText.Replace("OK:", "").Split(';');
+                            if (parts.Length >= 3)
+                            {
+                                var detail = new ResultDetail
+                                {
+                                    Pattern = parts[0],
+                                    Serial = parts[1]
+                                };
+
+                                if (decimal.TryParse(parts[2], out decimal no))
+                                {
+                                    detail.No = no;
+                                }
+
+                                result.LstResult.Results.Add(detail);
+                            }
+                        }
+                    }
+
+                    _logger.LogInformation($"Kết quả ImportAndPublishInvWithLink: {result.Status}, Message: {result.Message}");
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi khi phân tích kết quả XML");
+
+                    // Trả về kết quả lỗi
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = $"Lỗi khi phân tích kết quả XML: {ex.Message}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API ImportAndPublishInvWithLink");
+                return new ImportAndPublishInvWithLinkResult
+                {
+                    Status = "ERROR",
+                    Message = ex.Message
+                };
+            }
+        }
+
+        /// <summary>
         /// Hủy biên lai
         /// </summary>
         /// <param name="fkey">Chuỗi xác định biên lai cần hủy</param>
@@ -330,8 +602,8 @@ namespace WebApp.API.Services
                 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
                   <soap:Body>
                     <cancelInv xmlns=""http://tempuri.org/"">
-                      <Account>NV089182025056</Account>
-                      <ACpass>Dinh@56789</ACpass>
+                      <Account>{_account}</Account>
+                      <ACpass>{_acpass}</ACpass>
                       <fkey>{fkey}</fkey>
                       <userName>{_username}</userName>
                       <userPass>{_password}</userPass>

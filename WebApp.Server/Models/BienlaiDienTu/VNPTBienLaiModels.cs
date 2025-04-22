@@ -361,5 +361,59 @@ namespace WebApp.API.Models.BienlaiDienTu
         public string Data { get; set; } = string.Empty;
     }
 
+    #region ImportAndPublishInvWithLink Response Models
+
+    public class VNPTBienLaiWithLinkResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public ImportAndPublishInvWithLinkResult Data { get; set; } = new ImportAndPublishInvWithLinkResult();
+    }
+
+    [XmlRoot("ImportAndPublishInvWithLinkResult")]
+    public class ImportAndPublishInvWithLinkResult
+    {
+        [XmlElement("Status")]
+        public string Status { get; set; } = string.Empty;
+
+        [XmlElement("LstResult")]
+        public ResultDetailList LstResult { get; set; } = new ResultDetailList();
+
+        [XmlElement("Message")]
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ResultDetailList
+    {
+        [XmlElement("ResultDetail")]
+        public List<ResultDetail> Results { get; set; } = new List<ResultDetail>();
+    }
+
+    public class ResultDetail
+    {
+        [XmlElement("pattern")]
+        public string Pattern { get; set; } = string.Empty;
+
+        [XmlElement("serial")]
+        public string Serial { get; set; } = string.Empty;
+
+        [XmlElement("no")]
+        public decimal No { get; set; }
+
+        [XmlElement("link")]
+        public string Link { get; set; } = string.Empty;
+
+        [XmlElement("xmlDownload")]
+        public string XmlDownload { get; set; } = string.Empty;
+
+        [XmlElement("fkey")]
+        public string Fkey { get; set; } = string.Empty;
+
+        [XmlElement("xmlContent")]
+        public string XmlContent { get; set; } = string.Empty;
+    }
+
+    #endregion
+
     #endregion
 }

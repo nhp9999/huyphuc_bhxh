@@ -49,6 +49,8 @@ export interface BienLaiDienTu {
   vnpt_invoice_no?: string;
   is_published_to_vnpt?: boolean;
   vnpt_publish_date?: string;
+  vnpt_link?: string;
+  vnpt_transaction_id?: string;
 }
 
 export interface BienLaiDienTuResponse {
@@ -76,4 +78,6 @@ export interface BienLaiDienTuResponse {
   vnpt_invoice_no: string;
   is_published_to_vnpt: boolean;
   vnpt_publish_date: string;
+  vnpt_link: string;
+  vnpt_transaction_id: string;
 }

@@ -306,6 +306,394 @@ namespace WebApp.API.Controllers
             }
         }
 
+        [HttpPost("{id}/publish-to-vnpt-direct")]
+        public async Task<IActionResult> PublishToVNPTDirect(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"Nhận yêu cầu phát hành biên lai điện tử lên VNPT trực tiếp: {id}");
+
+                var bienLai = await _context.BienLaiDienTus
+                    .Include(b => b.KeKhaiBHYT)
+                    .FirstOrDefaultAsync(b => b.id == id);
+                if (bienLai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                }
+
+                if (bienLai.is_published_to_vnpt)
+                {
+                    return BadRequest(new { message = "Biên lai điện tử đã được phát hành lên VNPT" });
+                }
+
+                // Phát hành biên lai trên VNPT trực tiếp
+                string invoiceXml = _vnptBienLaiService.CreateInvoiceXml(bienLai);
+                _logger.LogInformation($"Invoice XML: {invoiceXml}");
+
+                // Lưu key vào biên lai
+                string key = $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+                bienLai.vnpt_key = key;
+                _logger.LogInformation($"Generated key: {key}");
+
+                // Sử dụng ImportAndPublishInv
+                string result = await _vnptBienLaiService.ImportAndPublishInv(invoiceXml);
+                _logger.LogInformation($"Pattern: {_vnptBienLaiService.GetPattern()}, Serial: {_vnptBienLaiService.GetSerial()}");
+                _logger.LogInformation($"ImportAndPublishInv Result: {result}");
+
+                if (result.StartsWith("ERR:"))
+                {
+                    // Xử lý các mã lỗi cụ thể từ VNPT
+                    string errorMessage = $"Lỗi khi phát hành biên lai trên VNPT: {result}";
+
+                    switch (result)
+                    {
+                        case "ERR:1":
+                            errorMessage = "Tài khoản đăng nhập sai hoặc không có quyền thêm khách hàng";
+                            break;
+                        case "ERR:3":
+                            errorMessage = "Dữ liệu xml đầu vào không đúng quy định";
+                            break;
+                        case "ERR:7":
+                            errorMessage = "User name không phù hợp, không tìm thấy company tương ứng cho user";
+                            break;
+                        case "ERR:20":
+                            errorMessage = "Pattern và serial không phù hợp, hoặc không tồn tại biên lai đã đăng kí có sử dụng Pattern và serial truyền vào";
+                            break;
+                        case "ERR:5":
+                            errorMessage = "Không phát hành được biên lai";
+                            break;
+                    }
+
+                    return BadRequest(new { message = errorMessage, error = result });
+                }
+                else if (result.StartsWith("Error:"))
+                {
+                    // Xử lý lỗi hệ thống
+                    return BadRequest(new { message = $"Lỗi hệ thống khi phát hành biên lai: {result}", error = "SYSTEM_ERROR" });
+                }
+                else if (result.StartsWith("OK:"))
+                {
+                    // Xử lý kết quả thành công
+                    string[] parts = result.Replace("OK:", "").Split(';');
+                    _logger.LogInformation($"Phân tích kết quả VNPT: {result}, số phần: {parts.Length}");
+
+                    if (parts.Length >= 2)
+                    {
+                        if (parts.Length >= 3)
+                        {
+                            // Định dạng chuẩn: OK:pattern;serial;invoiceNo
+                            bienLai.vnpt_pattern = parts[0];
+                            bienLai.vnpt_serial = parts[1];
+                            bienLai.vnpt_invoice_no = parts[2];
+                        }
+                        else
+                        {
+                            // Định dạng khác: OK:pattern;serial-key
+                            bienLai.vnpt_pattern = parts[0];
+
+                            // Tách serial và key nếu có dấu '-'
+                            string[] serialParts = parts[1].Split('-');
+                            if (serialParts.Length >= 1)
+                            {
+                                bienLai.vnpt_serial = serialParts[0];
+                            }
+                            if (serialParts.Length >= 2)
+                            {
+                                bienLai.vnpt_key = serialParts[1];
+                                bienLai.vnpt_transaction_id = serialParts[1];
+                                // Lấy số biên lai từ key nếu có thể
+                                bienLai.vnpt_invoice_no = serialParts[1];
+                            }
+                        }
+
+                        // Cập nhật trạng thái biên lai
+                        bienLai.is_published_to_vnpt = true;
+                        bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                        bienLai.vnpt_response = result;
+                        bienLai.trang_thai = "da_phat_hanh";
+
+                        await _context.SaveChangesAsync();
+
+                        return Ok(new
+                        {
+                            message = "Phát hành biên lai điện tử lên VNPT thành công",
+                            data = new
+                            {
+                                id = bienLai.id,
+                                pattern = bienLai.vnpt_pattern,
+                                serial = bienLai.vnpt_serial,
+                                invoiceNo = bienLai.vnpt_invoice_no,
+                                publishDate = bienLai.vnpt_publish_date,
+                                transactionId = bienLai.vnpt_transaction_id
+                            }
+                        });
+                    }
+                }
+
+                return BadRequest(new { message = "Không nhận được kết quả hợp lệ từ VNPT", error = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi phát hành biên lai điện tử lên VNPT trực tiếp");
+                return StatusCode(500, new { message = "Lỗi khi phát hành biên lai điện tử lên VNPT trực tiếp", error = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/publish-to-vnpt-with-link")]
+        public async Task<IActionResult> PublishToVNPTWithLink(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"Nhận yêu cầu phát hành biên lai điện tử lên VNPT với link: {id}");
+
+                var bienLai = await _context.BienLaiDienTus
+                    .Include(b => b.KeKhaiBHYT)
+                    .FirstOrDefaultAsync(b => b.id == id);
+                if (bienLai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                }
+
+                if (bienLai.is_published_to_vnpt)
+                {
+                    return BadRequest(new { message = "Biên lai điện tử đã được phát hành lên VNPT" });
+                }
+
+                // Phát hành biên lai trên VNPT với link
+                string invoiceXml = _vnptBienLaiService.CreateInvoiceXml(bienLai);
+                _logger.LogInformation($"Invoice XML: {invoiceXml}");
+
+                // Lưu key vào biên lai
+                string key = $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+                bienLai.vnpt_key = key;
+                _logger.LogInformation($"Generated key: {key}");
+
+                // Sử dụng serial mặc định từ cấu hình
+                var result = await _vnptBienLaiService.ImportAndPublishInvWithLink(invoiceXml);
+                _logger.LogInformation($"Pattern: {_vnptBienLaiService.GetPattern()}, Serial: {_vnptBienLaiService.GetSerial()}");
+                _logger.LogInformation($"ImportAndPublishInvWithLink Result: {result.Status}, Message: {result.Message}");
+
+                if (result.Status != "OK")
+                {
+                    // Xử lý các mã lỗi cụ thể từ VNPT
+                    string errorMessage = $"Lỗi khi phát hành biên lai trên VNPT: {result.Message}";
+
+                    if (result.Message.StartsWith("ERR:"))
+                    {
+                        switch (result.Message)
+                        {
+                            case "ERR:1":
+                                errorMessage = "Tài khoản đăng nhập sai hoặc không có quyền thêm khách hàng";
+                                break;
+                            case "ERR:3":
+                                errorMessage = "Dữ liệu xml đầu vào không đúng quy định";
+                                break;
+                            case "ERR:7":
+                                errorMessage = "User name không phù hợp, không tìm thấy company tương ứng cho user";
+                                break;
+                            case "ERR:20":
+                                errorMessage = "Pattern và serial không phù hợp, hoặc không tồn tại biên lai đã đăng kí có sử dụng Pattern và serial truyền vào";
+                                break;
+                            case "ERR:5":
+                                errorMessage = "Không phát hành được biên lai";
+                                break;
+                        }
+                    }
+                    else if (result.Message.Contains("Internal Server Error") || result.Message.Contains("Newtonsoft.Json"))
+                    {
+                        // Xử lý lỗi máy chủ VNPT
+                        _logger.LogWarning($"Gặp lỗi máy chủ VNPT với ImportAndPublishInvWithLink: {result.Message}");
+                        _logger.LogWarning("Thử sử dụng ImportInv thay thế...");
+
+                        // Thử sử dụng ImportInv thay thế
+                        try
+                        {
+                            string importResult = await _vnptBienLaiService.PublishInvoice(invoiceXml);
+                            _logger.LogInformation($"Kết quả ImportInv: {importResult}");
+
+                            if (importResult.StartsWith("OK:"))
+                            {
+                                // Phân tích kết quả
+                                string[] parts = importResult.Replace("OK:", "").Split(';');
+                                _logger.LogInformation($"Phân tích kết quả VNPT: {importResult}, số phần: {parts.Length}");
+
+                                // Xử lý cả trường hợp có 2 hoặc 3 phần
+                                if (parts.Length >= 2)
+                                {
+                                    // Cập nhật thông tin biên lai
+                                    if (parts.Length >= 3)
+                                    {
+                                        // Định dạng chuẩn: OK:pattern;serial;invoiceNo
+                                        bienLai.vnpt_pattern = parts[0];
+                                        bienLai.vnpt_serial = parts[1];
+                                        bienLai.vnpt_invoice_no = parts[2];
+                                    }
+                                    else
+                                    {
+                                        // Định dạng khác: OK:pattern;serial-key
+                                        bienLai.vnpt_pattern = parts[0];
+
+                                        // Tách serial và key nếu có dấu '-'
+                                        string[] serialParts = parts[1].Split('-');
+                                        if (serialParts.Length >= 1)
+                                        {
+                                            bienLai.vnpt_serial = serialParts[0];
+                                        }
+                                        if (serialParts.Length >= 2)
+                                        {
+                                            bienLai.vnpt_key = serialParts[1];
+                                            // Lấy số biên lai từ key nếu có thể
+                                            bienLai.vnpt_invoice_no = serialParts[1];
+                                        }
+                                    }
+
+                                    bienLai.is_published_to_vnpt = true;
+                                    bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                                    bienLai.vnpt_response = importResult;
+                                    bienLai.trang_thai = "da_phat_hanh";
+
+                                    await _context.SaveChangesAsync();
+
+                                    return Ok(new
+                                    {
+                                        message = "Phát hành biên lai điện tử lên VNPT thành công (sử dụng ImportInv)",
+                                        data = new
+                                        {
+                                            id = bienLai.id,
+                                            pattern = bienLai.vnpt_pattern,
+                                            serial = bienLai.vnpt_serial,
+                                            invoiceNo = bienLai.vnpt_invoice_no,
+                                            publishDate = bienLai.vnpt_publish_date
+                                        }
+                                    });
+                                }
+                            }
+
+                            // Nếu ImportInv cũng lỗi, hiển thị thông báo lỗi
+                            if (importResult.StartsWith("ERR:"))
+                            {
+                                switch (importResult)
+                                {
+                                    case "ERR:1":
+                                        errorMessage = "Tài khoản đăng nhập sai hoặc không có quyền thêm khách hàng";
+                                        break;
+                                    case "ERR:3":
+                                        errorMessage = "Dữ liệu xml đầu vào không đúng quy định";
+                                        break;
+                                    case "ERR:7":
+                                        errorMessage = "User name không phù hợp, không tìm thấy company tương ứng cho user";
+                                        break;
+                                    case "ERR:20":
+                                        errorMessage = "Pattern và serial không phù hợp, hoặc không tồn tại biên lai đã đăng kí có sử dụng Pattern và serial truyền vào";
+                                        break;
+                                    case "ERR:5":
+                                        errorMessage = "Không phát hành được biên lai";
+                                        break;
+                                    default:
+                                        errorMessage = $"Lỗi khi phát hành biên lai trên VNPT: {importResult}";
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                errorMessage = $"Lỗi không xác định khi phát hành biên lai trên VNPT: {importResult}";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Lỗi khi thử sử dụng ImportInv thay thế");
+                            errorMessage = "Máy chủ VNPT đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ với bộ phận hỗ trợ kỹ thuật của VNPT.";
+                        }
+                    }
+
+                    return BadRequest(new { message = errorMessage, error = result.Status });
+                }
+
+                // Cập nhật thông tin biên lai
+                if (result.Status == "OK")
+                {
+                    // Kiểm tra xem có kết quả chi tiết không
+                    if (result.LstResult != null && result.LstResult.Results.Count > 0)
+                    {
+                        // Xử lý kết quả dạng XML phức tạp
+                        var firstResult = result.LstResult.Results[0];
+
+                        bienLai.vnpt_pattern = firstResult.Pattern;
+                        bienLai.vnpt_serial = firstResult.Serial;
+                        bienLai.vnpt_invoice_no = firstResult.No.ToString();
+                        bienLai.vnpt_link = firstResult.Link;
+                        bienLai.vnpt_transaction_id = firstResult.Fkey;
+                    }
+                    else if (!string.IsNullOrEmpty(result.Message) && result.Message.StartsWith("OK:"))
+                    {
+                        // Xử lý kết quả dạng chuỗi
+                        string[] parts = result.Message.Replace("OK:", "").Split(';');
+                        _logger.LogInformation($"Phân tích kết quả VNPT: {result.Message}, số phần: {parts.Length}");
+
+                        if (parts.Length >= 2)
+                        {
+                            if (parts.Length >= 3)
+                            {
+                                // Định dạng chuẩn: OK:pattern;serial;invoiceNo
+                                bienLai.vnpt_pattern = parts[0];
+                                bienLai.vnpt_serial = parts[1];
+                                bienLai.vnpt_invoice_no = parts[2];
+                            }
+                            else
+                            {
+                                // Định dạng khác: OK:pattern;serial-key
+                                bienLai.vnpt_pattern = parts[0];
+
+                                // Tách serial và key nếu có dấu '-'
+                                string[] serialParts = parts[1].Split('-');
+                                if (serialParts.Length >= 1)
+                                {
+                                    bienLai.vnpt_serial = serialParts[0];
+                                }
+                                if (serialParts.Length >= 2)
+                                {
+                                    bienLai.vnpt_key = serialParts[1];
+                                    bienLai.vnpt_transaction_id = serialParts[1];
+                                    // Lấy số biên lai từ key nếu có thể
+                                    bienLai.vnpt_invoice_no = serialParts[1];
+                                }
+                            }
+                        }
+                    }
+
+                    // Cập nhật trạng thái biên lai
+                    bienLai.is_published_to_vnpt = true;
+                    bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                    bienLai.vnpt_response = JsonSerializer.Serialize(result);
+                    bienLai.trang_thai = "da_phat_hanh";
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new
+                    {
+                        message = "Phát hành biên lai điện tử lên VNPT thành công",
+                        data = new
+                        {
+                            id = bienLai.id,
+                            pattern = bienLai.vnpt_pattern,
+                            serial = bienLai.vnpt_serial,
+                            invoiceNo = bienLai.vnpt_invoice_no,
+                            publishDate = bienLai.vnpt_publish_date,
+                            link = bienLai.vnpt_link,
+                            transactionId = bienLai.vnpt_transaction_id
+                        }
+                    });
+                }
+
+                return BadRequest(new { message = "Không nhận được kết quả chi tiết từ VNPT" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi phát hành biên lai điện tử lên VNPT với link");
+                return StatusCode(500, new { message = "Lỗi khi phát hành biên lai điện tử lên VNPT với link", error = ex.Message });
+            }
+        }
+
         [HttpPost("{id}/cancel-vnpt")]
         public async Task<IActionResult> CancelVNPT(int id)
         {

@@ -301,6 +301,100 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
     });
   }
 
+  // Tạo và phát hành biên lai trực tiếp
+  publishToVNPTDirect(id: number): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận tạo và phát hành',
+      nzContent: 'Bạn có chắc chắn muốn tạo và phát hành biên lai điện tử này trực tiếp?',
+      nzOkText: 'Tạo và phát hành',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        const loadingId = this.message.loading('Đang tạo và phát hành biên lai điện tử...', { nzDuration: 0 }).messageId;
+
+        this.vnptBienLaiService.publishBienLaiToVNPTDirect(id)
+          .pipe(
+            finalize(() => {
+              this.message.remove(loadingId);
+            }),
+            catchError(error => {
+              console.error('Lỗi khi tạo và phát hành biên lai điện tử:', error);
+              this.message.error(error.error?.message || 'Có lỗi khi tạo và phát hành biên lai điện tử');
+              return of(null);
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (response && response.success) {
+                this.message.success('Tạo và phát hành biên lai điện tử thành công');
+                this.modal.success({
+                  nzTitle: 'Tạo và phát hành biên lai điện tử thành công',
+                  nzContent: `
+                    <p>Biên lai điện tử đã được tạo và phát hành thành công.</p>
+                    <p>Mẫu số: ${response.data.pattern}</p>
+                    <p>Ký hiệu: ${response.data.serial}</p>
+                    <p>Số biên lai: ${response.data.invoiceNo}</p>
+                  `,
+                  nzOkText: 'Đóng'
+                });
+                this.loadBienLais();
+              }
+            }
+          });
+      }
+    });
+  }
+
+  // Tạo biên lai điện tử với link
+  publishToVNPTWithLink(id: number): void {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận tạo',
+      nzContent: 'Bạn có chắc chắn muốn tạo biên lai điện tử này với link?',
+      nzOkText: 'Tạo',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        const loadingId = this.message.loading('Đang tạo biên lai điện tử với link...', { nzDuration: 0 }).messageId;
+
+        this.vnptBienLaiService.publishBienLaiToVNPTWithLink(id)
+          .pipe(
+            finalize(() => {
+              this.message.remove(loadingId);
+            }),
+            catchError(error => {
+              console.error('Lỗi khi tạo biên lai điện tử với link:', error);
+              this.message.error(error.error?.message || 'Có lỗi khi tạo biên lai điện tử với link');
+              return of(null);
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (response && response.success) {
+                this.message.success('Tạo biên lai điện tử với link thành công');
+
+                // Hiển thị thông báo khi phát hành thành công với link
+                if (response.data && response.data.link) {
+                  this.modal.success({
+                    nzTitle: 'Tạo biên lai điện tử thành công',
+                    nzContent: `
+                      <p>Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.</p>
+                      <p>Link biên lai: <a href="${response.data.link}" target="_blank">${response.data.link}</a></p>
+                    `,
+                    nzOkText: 'Đóng'
+                  });
+                } else {
+                  this.modal.success({
+                    nzTitle: 'Tạo biên lai điện tử thành công',
+                    nzContent: 'Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.'
+                  });
+                }
+
+                this.loadBienLais();
+              }
+            }
+          });
+      }
+    });
+  }
+
   // Hủy biên lai trên VNPT
   cancelVNPT(id: number): void {
     this.modal.confirm({

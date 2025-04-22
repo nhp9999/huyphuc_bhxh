@@ -60,8 +60,32 @@
             nzType="primary"
             nzSize="small"
             [disabled]="item.is_published_to_vnpt"
-            (click)="publishToVNPT(item.id!)">
+            (click)="publishToVNPT(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Tạo biên lai">
             <i nz-icon nzType="cloud-upload"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="small"
+            [disabled]="item.is_published_to_vnpt"
+            (click)="publishToVNPTDirect(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Tạo và phát hành trực tiếp">
+            <i nz-icon nzType="thunderbolt"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="small"
+            [disabled]="item.is_published_to_vnpt"
+            (click)="publishToVNPTWithLink(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Tạo biên lai với link">
+            <i nz-icon nzType="link"></i>
           </button>
           <nz-divider nzType="vertical"></nz-divider>
           <button
@@ -70,7 +94,9 @@
             nzDanger
             nzSize="small"
             [disabled]="!item.is_published_to_vnpt"
-            (click)="cancelVNPT(item.id!)">
+            (click)="cancelVNPT(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Hủy biên lai">
             <i nz-icon nzType="stop"></i>
           </button>
         </td>
