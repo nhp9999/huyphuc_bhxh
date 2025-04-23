@@ -381,6 +381,9 @@ namespace WebApp.API.Models.BienlaiDienTu
 
         [XmlElement("Message")]
         public string Message { get; set; } = string.Empty;
+
+        [XmlIgnore]
+        public string ResultXml { get; set; } = string.Empty;
     }
 
     public class ResultDetailList

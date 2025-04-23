@@ -32,6 +32,7 @@ namespace WebApp.API.Data
         public DbSet<KeKhaiBHXH> KeKhaiBHXHs { get; set; }
         public DbSet<QuyenBienLaiDienTu> QuyenBienLaiDienTus { get; set; }
         public DbSet<BienLaiDienTu> BienLaiDienTus { get; set; }
+        public DbSet<VNPTAccount> VNPTAccounts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,7 +107,7 @@ namespace WebApp.API.Data
             modelBuilder.Entity<DotKeKhai>(entity =>
             {
                 entity.ToTable("dot_ke_khai");
-                
+
                 entity.HasKey(e => e.id);
 
                 // Cấu hình quan hệ với DaiLy
@@ -115,7 +116,7 @@ namespace WebApp.API.Data
                     .HasForeignKey(d => d.dai_ly_id)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Cấu hình quan hệ với DonVi  
+                // Cấu hình quan hệ với DonVi
                 entity.HasOne(d => d.DonVi)
                     .WithMany()
                     .HasForeignKey(d => d.don_vi_id)
@@ -162,7 +163,7 @@ namespace WebApp.API.Data
 
                 entity.Property(e => e.nguoi_tao).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ngay_tao).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                
+
                 // Cấu hình cho ma_tinh_ks không bắt buộc
                 entity.Property(e => e.ma_tinh_ks).IsRequired(false);
             });
@@ -263,7 +264,7 @@ namespace WebApp.API.Data
                 entity.Property(e => e.nguoi_cap).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.trang_thai).HasMaxLength(20);
                 entity.Property(e => e.so_hien_tai).HasMaxLength(20);
-                
+
                 entity.Property(e => e.ngay_cap)
                     .HasColumnType("timestamp without time zone")
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -278,7 +279,7 @@ namespace WebApp.API.Data
             modelBuilder.Entity<BienLai>(entity =>
             {
                 entity.ToTable("bien_lai");
-                
+
                 entity.HasOne(b => b.KeKhaiBHYT)
                       .WithOne(k => k.BienLai)
                       .HasForeignKey<BienLai>(b => b.ke_khai_bhyt_id)
@@ -329,6 +330,25 @@ namespace WebApp.API.Data
                     .HasForeignKey(b => b.quyen_bien_lai_dien_tu_id)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+
+            // VNPTAccount configuration
+            modelBuilder.Entity<VNPTAccount>(entity =>
+            {
+                entity.ToTable("vnpt_accounts");
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.MaNhanVien).IsUnique();
+                entity.Property(e => e.MaNhanVien).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Account).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ACPass).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Password).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Pattern).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Serial).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.ServiceUrl).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
         }
     }
-} 
+}

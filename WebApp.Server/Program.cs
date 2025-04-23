@@ -59,8 +59,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add VNPTBienLaiService
+// Add Services
 builder.Services.AddScoped<WebApp.API.Services.VNPTBienLaiService>();
+builder.Services.AddScoped<WebApp.API.Services.VNPTAccountService>();
 
 var app = builder.Build();
 

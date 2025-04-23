@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Xml;
 using WebApp.API.Data;
 using WebApp.API.Models;
 using WebApp.API.Models.BienlaiDienTu;
@@ -202,6 +203,139 @@ namespace WebApp.API.Controllers
             return await _context.BienLaiDienTus.AnyAsync(e => e.id == id);
         }
 
+        [HttpPost("{id}/publish-to-vnpt-with-employee-account")]
+        public async Task<IActionResult> PublishToVNPTWithEmployeeAccount(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"Nhận yêu cầu phát hành biên lai điện tử lên VNPT với tài khoản nhân viên: {id}");
+
+                var bienLai = await _context.BienLaiDienTus
+                    .Include(b => b.KeKhaiBHYT)
+                    .FirstOrDefaultAsync(b => b.id == id);
+                if (bienLai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                }
+
+                if (bienLai.is_published_to_vnpt)
+                {
+                    return BadRequest(new { message = "Biên lai điện tử đã được phát hành lên VNPT" });
+                }
+
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Phát hành biên lai trên VNPT với tài khoản nhân viên
+                string invoiceXml = _vnptBienLaiService.CreateInvoiceXml(bienLai);
+                _logger.LogInformation($"Invoice XML: {invoiceXml}");
+
+                // Lưu key vào biên lai
+                string key = $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+                bienLai.vnpt_key = key;
+                _logger.LogInformation($"Generated key: {key}");
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var result = await _vnptBienLaiService.ImportAndPublishInvWithLinkByMaNhanVien(invoiceXml, bienLai.ma_nhan_vien);
+                _logger.LogInformation($"ImportAndPublishInvWithLinkByMaNhanVien Result: {result.Status}, Message: {result.Message}");
+
+                if (result.Status != "OK")
+                {
+                    // Xử lý các mã lỗi cụ thể từ VNPT
+                    string errorMessage = $"Lỗi khi phát hành biên lai trên VNPT: {result.Message}";
+
+                    if (result.Message.StartsWith("ERR:"))
+                    {
+                        switch (result.Message)
+                        {
+                            case "ERR:1":
+                                errorMessage = "Tài khoản đăng nhập sai hoặc không có quyền thêm khách hàng";
+                                break;
+                            case "ERR:3":
+                                errorMessage = "Dữ liệu xml đầu vào không đúng quy định";
+                                break;
+                            case "ERR:7":
+                                errorMessage = "User name không phù hợp, không tìm thấy company tương ứng cho user";
+                                break;
+                            case "ERR:20":
+                                errorMessage = "Pattern và serial không phù hợp, hoặc không tồn tại biên lai đã đăng kí có sử dụng Pattern và serial truyền vào";
+                                break;
+                            case "ERR:5":
+                                errorMessage = "Không phát hành được biên lai";
+                                break;
+                        }
+                    }
+
+                    return BadRequest(new { message = errorMessage, error = result.Message });
+                }
+
+                // Xử lý kết quả thành công
+                if (result.Message.StartsWith("OK:"))
+                {
+                    // Phân tích kết quả để lấy thông tin pattern, serial và số biên lai
+                    // Ví dụ: OK:01GTKT3/001;AA/12E;0000001
+                    string[] parts = result.Message.Replace("OK:", "").Split(';');
+                    if (parts.Length >= 3)
+                    {
+                        bienLai.vnpt_pattern = parts[0];
+                        bienLai.vnpt_serial = parts[1];
+                        bienLai.vnpt_invoice_no = parts[2];
+                    }
+
+                    // Cập nhật thông tin biên lai
+                    bienLai.is_published_to_vnpt = true;
+                    bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                    bienLai.vnpt_response = result.Message;
+                    bienLai.trang_thai = "da_phat_hanh";
+
+                    // Lưu link nếu có
+                    if (!string.IsNullOrEmpty(result.ResultXml))
+                    {
+                        try
+                        {
+                            XmlDocument xmlDoc = new XmlDocument();
+                            xmlDoc.LoadXml(result.ResultXml);
+                            XmlNode linkNode = xmlDoc.SelectSingleNode("//link");
+                            if (linkNode != null)
+                            {
+                                bienLai.vnpt_link = linkNode.InnerText;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Không thể phân tích link từ kết quả XML");
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new
+                    {
+                        message = "Phát hành biên lai điện tử lên VNPT thành công",
+                        data = new
+                        {
+                            id = bienLai.id,
+                            pattern = bienLai.vnpt_pattern,
+                            serial = bienLai.vnpt_serial,
+                            invoiceNo = bienLai.vnpt_invoice_no,
+                            publishDate = bienLai.vnpt_publish_date,
+                            link = bienLai.vnpt_link
+                        }
+                    });
+                }
+
+                return BadRequest(new { message = "Không nhận được kết quả hợp lệ từ VNPT", error = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi phát hành biên lai điện tử lên VNPT với tài khoản nhân viên");
+                return StatusCode(500, new { message = "Lỗi khi phát hành biên lai điện tử lên VNPT với tài khoản nhân viên", error = ex.Message });
+            }
+        }
+
         [HttpPost("{id}/publish-to-vnpt")]
         public async Task<IActionResult> PublishToVNPT(int id)
         {
@@ -233,9 +367,22 @@ namespace WebApp.API.Controllers
                 bienLai.vnpt_key = key;
                 _logger.LogInformation($"Generated key: {key}");
 
-                // Sử dụng serial mặc định từ cấu hình
-                string invoiceResult = await _vnptBienLaiService.PublishInvoice(invoiceXml);
-                _logger.LogInformation($"Pattern: {_vnptBienLaiService.GetPattern()}, Serial: {_vnptBienLaiService.GetSerial()}");
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                string invoiceResult = await _vnptBienLaiService.PublishInvoice(invoiceXml, vnptAccount);
+                _logger.LogInformation($"Pattern: {vnptAccount.Pattern}, Serial: {vnptAccount.Serial}");
                 _logger.LogInformation($"Invoice Result: {invoiceResult}");
 
                 if (invoiceResult.StartsWith("ERR:"))
@@ -335,9 +482,22 @@ namespace WebApp.API.Controllers
                 bienLai.vnpt_key = key;
                 _logger.LogInformation($"Generated key: {key}");
 
-                // Sử dụng ImportAndPublishInv
-                string result = await _vnptBienLaiService.ImportAndPublishInv(invoiceXml);
-                _logger.LogInformation($"Pattern: {_vnptBienLaiService.GetPattern()}, Serial: {_vnptBienLaiService.GetSerial()}");
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                }
+
+                // Sử dụng ImportAndPublishInv với tài khoản VNPT của nhân viên
+                string result = await _vnptBienLaiService.ImportAndPublishInv(invoiceXml, vnptAccount);
+                _logger.LogInformation($"Pattern: {vnptAccount.Pattern}, Serial: {vnptAccount.Serial}");
                 _logger.LogInformation($"ImportAndPublishInv Result: {result}");
 
                 if (result.StartsWith("ERR:"))
@@ -468,9 +628,22 @@ namespace WebApp.API.Controllers
                 bienLai.vnpt_key = key;
                 _logger.LogInformation($"Generated key: {key}");
 
-                // Sử dụng serial mặc định từ cấu hình
-                var result = await _vnptBienLaiService.ImportAndPublishInvWithLink(invoiceXml);
-                _logger.LogInformation($"Pattern: {_vnptBienLaiService.GetPattern()}, Serial: {_vnptBienLaiService.GetSerial()}");
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                }
+
+                // Sử dụng ImportAndPublishInvWithLink với tài khoản VNPT của nhân viên
+                var result = await _vnptBienLaiService.ImportAndPublishInvWithLink(invoiceXml, vnptAccount);
+                _logger.LogInformation($"Pattern: {vnptAccount.Pattern}, Serial: {vnptAccount.Serial}");
                 _logger.LogInformation($"ImportAndPublishInvWithLink Result: {result.Status}, Message: {result.Message}");
 
                 if (result.Status != "OK")
@@ -719,8 +892,21 @@ namespace WebApp.API.Controllers
                     return BadRequest(new { message = "Không tìm thấy thông tin key của biên lai trên VNPT" });
                 }
 
-                // Hủy biên lai trên VNPT
-                string result = await _vnptBienLaiService.CancelInvoice(bienLai.vnpt_key);
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                }
+
+                // Hủy biên lai trên VNPT với tài khoản VNPT của nhân viên
+                string result = await _vnptBienLaiService.CancelInvoice(bienLai.vnpt_key, vnptAccount);
 
                 if (result.StartsWith("ERR:"))
                 {

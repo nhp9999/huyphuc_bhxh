@@ -5,8 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using WebApp.API.Data;
 using WebApp.API.Models.BienlaiDienTu;
 
 namespace WebApp.API.Services
@@ -15,6 +17,7 @@ namespace WebApp.API.Services
     {
         private readonly ILogger<VNPTBienLaiService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _context;
         private readonly string _serviceUrl;
         private readonly string _username;
         private readonly string _password;
@@ -23,10 +26,11 @@ namespace WebApp.API.Services
         private readonly string _pattern;
         private readonly string _serial;
 
-        public VNPTBienLaiService(ILogger<VNPTBienLaiService> logger, IConfiguration configuration)
+        public VNPTBienLaiService(ILogger<VNPTBienLaiService> logger, IConfiguration configuration, ApplicationDbContext context)
         {
             _logger = logger;
             _configuration = configuration;
+            _context = context;
 
             // Lấy thông tin cấu hình từ appsettings.json
             _serviceUrl = _configuration["VNPTBienLai:ServiceUrl"] ?? "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PublishService.asmx";
@@ -54,6 +58,195 @@ namespace WebApp.API.Services
         public string GetSerial()
         {
             return _serial;
+        }
+
+        /// <summary>
+        /// Lấy thông tin tài khoản VNPT theo mã nhân viên
+        /// </summary>
+        /// <param name="maNhanVien">Mã nhân viên</param>
+        /// <returns>Thông tin tài khoản VNPT</returns>
+        public async Task<VNPTAccount> GetVNPTAccountByMaNhanVien(string maNhanVien)
+        {
+            try
+            {
+                return await _context.VNPTAccounts
+                    .Where(a => a.MaNhanVien == maNhanVien && a.IsActive)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi lấy tài khoản VNPT theo mã nhân viên {maNhanVien}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Tạo và phát hành biên lai với tài khoản VNPT của nhân viên
+        /// </summary>
+        /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="maNhanVien">Mã nhân viên</param>
+        /// <returns>Kết quả phát hành với link</returns>
+        public async Task<ImportAndPublishInvWithLinkResult> ImportAndPublishInvWithLinkByMaNhanVien(string xmlInvData, string maNhanVien)
+        {
+            try
+            {
+                // Lấy thông tin tài khoản VNPT của nhân viên
+                var vnptAccount = await GetVNPTAccountByMaNhanVien(maNhanVien);
+                if (vnptAccount == null)
+                {
+                    _logger.LogWarning($"Không tìm thấy tài khoản VNPT cho mã nhân viên {maNhanVien}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {maNhanVien}"
+                    };
+                }
+
+                _logger.LogInformation($"Gọi API ImportAndPublishInvWithLink với dữ liệu: {xmlInvData} và tài khoản của nhân viên {maNhanVien}");
+
+                // Tạo SOAP request với thông tin tài khoản của nhân viên
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <ImportAndPublishInvWithLink xmlns=""http://tempuri.org/"">
+      <Account>{vnptAccount.Account}</Account>
+      <ACpass>{vnptAccount.ACPass}</ACpass>
+      <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
+      <username>{vnptAccount.Username}</username>
+      <password>{vnptAccount.Password}</password>
+      <pattern>{vnptAccount.Pattern}</pattern>
+      <serial>{vnptAccount.Serial}</serial>
+      <convert>0</convert>
+    </ImportAndPublishInvWithLink>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"Pattern: {vnptAccount.Pattern}, Serial: {vnptAccount.Serial}");
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API với service URL của nhân viên
+                string response = await CallSoapApi(vnptAccount.ServiceUrl, "http://tempuri.org/ImportAndPublishInvWithLink", soapRequest);
+
+                // Xử lý response tương tự như phương thức ImportAndPublishInvWithLink
+                if (response.StartsWith("Error:") || !response.Contains("<"))
+                {
+                    _logger.LogError($"Phản hồi không phải là XML hợp lệ: {response}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = response
+                    };
+                }
+
+                // Xử lý response
+                XmlDocument xmlDoc;
+                XmlNode resultNode;
+
+                try
+                {
+                    xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(response);
+                    XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                    nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                    // Lấy nội dung XML của kết quả
+                    resultNode = xmlDoc.SelectSingleNode("//ns:ImportAndPublishInvWithLinkResult", nsManager);
+                    if (resultNode == null)
+                    {
+                        _logger.LogError("Không tìm thấy nút ImportAndPublishInvWithLinkResult trong phản hồi");
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "ERROR",
+                            Message = "Không tìm thấy kết quả trong phản hồi"
+                        };
+                    }
+                }
+                catch (XmlException ex)
+                {
+                    _logger.LogError(ex, $"Lỗi khi xử lý XML: {response}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = $"Lỗi khi xử lý XML: {ex.Message}"
+                    };
+                }
+
+                try
+                {
+                    // Ghi log nội dung XML để debug
+                    _logger.LogInformation($"Nội dung XML kết quả: {resultNode.OuterXml}");
+
+                    // Kiểm tra xem kết quả có phải là chuỗi lỗi hoặc chuỗi thành công không
+                    string innerText = resultNode.InnerText;
+                    if (innerText.StartsWith("ERR:"))
+                    {
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "ERROR",
+                            Message = innerText
+                        };
+                    }
+                    else if (innerText.StartsWith("OK:"))
+                    {
+                        // Xử lý kết quả thành công dạng chuỗi
+                        return new ImportAndPublishInvWithLinkResult
+                        {
+                            Status = "OK",
+                            Message = innerText
+                        };
+                    }
+
+                    // Thử phân tích kết quả trực tiếp từ XML
+                    string status = "OK"; // Mặc định là OK nếu không có lỗi
+                    string message = "";
+
+                    // Kiểm tra xem có trường Status và Message không
+                    XmlNode statusNode = resultNode.SelectSingleNode("Status");
+                    XmlNode messageNode = resultNode.SelectSingleNode("Message");
+
+                    if (statusNode != null)
+                    {
+                        status = statusNode.InnerText;
+                    }
+
+                    if (messageNode != null)
+                    {
+                        message = messageNode.InnerText;
+                    }
+
+                    // Nếu không có trường Status và Message, thử phân tích kết quả từ XML
+                    if (string.IsNullOrEmpty(message))
+                    {
+                        message = resultNode.InnerText;
+                    }
+
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = status,
+                        Message = message,
+                        ResultXml = resultNode.OuterXml
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Lỗi khi xử lý kết quả: {resultNode?.OuterXml}");
+                    return new ImportAndPublishInvWithLinkResult
+                    {
+                        Status = "ERROR",
+                        Message = $"Lỗi khi xử lý kết quả: {ex.Message}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi gọi API ImportAndPublishInvWithLink với mã nhân viên {maNhanVien}");
+                return new ImportAndPublishInvWithLinkResult
+                {
+                    Status = "ERROR",
+                    Message = $"Lỗi: {ex.Message}"
+                };
+            }
         }
 
         /// <summary>
@@ -108,16 +301,22 @@ namespace WebApp.API.Services
         /// Tạo biên lai (ImportInv)
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
         /// <param name="serial">Serial biên lai (tùy chọn)</param>
         /// <returns>Kết quả tạo biên lai</returns>
-        public async Task<string> PublishInvoice(string xmlInvData, string? serial = null)
+        public async Task<string> PublishInvoice(string xmlInvData, VNPTAccount? vnptAccount = null, string? serial = null)
         {
             try
             {
                 _logger.LogInformation($"Gọi API ImportInv với dữ liệu: {xmlInvData}");
 
-                // Sử dụng serial từ tham số hoặc từ cấu hình
-                string serialToUse = serial ?? _serial;
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string account = vnptAccount?.Account ?? _account;
+                string pattern = vnptAccount?.Pattern ?? _pattern;
+                string serialToUse = serial ?? vnptAccount?.Serial ?? _serial;
+                string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
 
                 // Tạo SOAP request
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -125,22 +324,21 @@ namespace WebApp.API.Services
   <soap:Body>
     <ImportInv xmlns=""http://tempuri.org/"">
       <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
-      <username>{_username}</username>
-      <password>{_password}</password>
+      <username>{username}</username>
+      <password>{password}</password>
       <convert>0</convert>
-      <tkTao>{_account}</tkTao>
-      <pattern>{_pattern}</pattern>
+      <tkTao>{account}</tkTao>
+      <pattern>{pattern}</pattern>
       <serial>{serialToUse}</serial>
     </ImportInv>
   </soap:Body>
 </soap:Envelope>";
 
-                _logger.LogInformation($"Pattern: {_pattern}, Serial: {serialToUse}");
-
+                _logger.LogInformation($"Pattern: {pattern}, Serial: {serialToUse}");
                 _logger.LogInformation($"SOAP Request: {soapRequest}");
 
                 // Gọi SOAP API
-                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/ImportInv", soapRequest);
+                string response = await CallSoapApi(serviceUrl, "http://tempuri.org/ImportInv", soapRequest);
 
                 // Xử lý response
                 XmlDocument xmlDoc = new XmlDocument();
@@ -156,8 +354,8 @@ namespace WebApp.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi gọi API ImportAndPublishInv");
-                throw;
+                _logger.LogError(ex, "Lỗi khi gọi API ImportInv");
+                return $"Error: {ex.Message}";
             }
         }
 
@@ -323,39 +521,46 @@ namespace WebApp.API.Services
         /// Tạo và phát hành biên lai (ImportAndPublishInv)
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
         /// <param name="serial">Serial biên lai (tùy chọn)</param>
         /// <returns>Kết quả tạo và phát hành biên lai</returns>
-        public async Task<string> ImportAndPublishInv(string xmlInvData, string? serial = null)
+        public async Task<string> ImportAndPublishInv(string xmlInvData, VNPTAccount? vnptAccount = null, string? serial = null)
         {
             try
             {
                 _logger.LogInformation($"Gọi API ImportAndPublishInv với dữ liệu: {xmlInvData}");
 
-                // Sử dụng serial từ tham số hoặc từ cấu hình
-                string serialToUse = serial ?? _serial;
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string account = vnptAccount?.Account ?? _account;
+                string acpass = vnptAccount?.ACPass ?? _acpass;
+                string pattern = vnptAccount?.Pattern ?? _pattern;
+                string serialToUse = serial ?? vnptAccount?.Serial ?? _serial;
+                string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
 
                 // Tạo SOAP request
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
   <soap:Body>
     <ImportAndPublishInv xmlns=""http://tempuri.org/"">
-      <Account>{_account}</Account>
-      <ACpass>{_acpass}</ACpass>
+      <Account>{account}</Account>
+      <ACpass>{acpass}</ACpass>
       <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
-      <username>{_username}</username>
-      <password>{_password}</password>
-      <pattern>{_pattern}</pattern>
+      <username>{username}</username>
+      <password>{password}</password>
+      <pattern>{pattern}</pattern>
       <serial>{serialToUse}</serial>
       <convert>0</convert>
     </ImportAndPublishInv>
   </soap:Body>
 </soap:Envelope>";
 
-                _logger.LogInformation($"Pattern: {_pattern}, Serial: {serialToUse}");
+                _logger.LogInformation($"Pattern: {pattern}, Serial: {serialToUse}");
                 _logger.LogInformation($"SOAP Request: {soapRequest}");
 
                 // Gọi SOAP API
-                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/ImportAndPublishInv", soapRequest);
+                string response = await CallSoapApi(serviceUrl, "http://tempuri.org/ImportAndPublishInv", soapRequest);
 
                 // Xử lý response
                 XmlDocument xmlDoc = new XmlDocument();
@@ -380,39 +585,46 @@ namespace WebApp.API.Services
         /// Tạo và phát hành biên lai với link
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
         /// <param name="serial">Serial biên lai (tùy chọn)</param>
         /// <returns>Kết quả phát hành với link</returns>
-        public async Task<ImportAndPublishInvWithLinkResult> ImportAndPublishInvWithLink(string xmlInvData, string? serial = null)
+        public async Task<ImportAndPublishInvWithLinkResult> ImportAndPublishInvWithLink(string xmlInvData, VNPTAccount? vnptAccount = null, string? serial = null)
         {
             try
             {
                 _logger.LogInformation($"Gọi API ImportAndPublishInvWithLink với dữ liệu: {xmlInvData}");
 
-                // Sử dụng serial từ tham số hoặc từ cấu hình
-                string serialToUse = serial ?? _serial;
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string account = vnptAccount?.Account ?? _account;
+                string acpass = vnptAccount?.ACPass ?? _acpass;
+                string pattern = vnptAccount?.Pattern ?? _pattern;
+                string serialToUse = serial ?? vnptAccount?.Serial ?? _serial;
+                string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
 
                 // Tạo SOAP request
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
   <soap:Body>
     <ImportAndPublishInvWithLink xmlns=""http://tempuri.org/"">
-      <Account>{_account}</Account>
-      <ACpass>{_acpass}</ACpass>
+      <Account>{account}</Account>
+      <ACpass>{acpass}</ACpass>
       <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
-      <username>{_username}</username>
-      <password>{_password}</password>
-      <pattern>{_pattern}</pattern>
+      <username>{username}</username>
+      <password>{password}</password>
+      <pattern>{pattern}</pattern>
       <serial>{serialToUse}</serial>
       <convert>0</convert>
     </ImportAndPublishInvWithLink>
   </soap:Body>
 </soap:Envelope>";
 
-                _logger.LogInformation($"Pattern: {_pattern}, Serial: {serialToUse}");
+                _logger.LogInformation($"Pattern: {pattern}, Serial: {serialToUse}");
                 _logger.LogInformation($"SOAP Request: {soapRequest}");
 
                 // Gọi SOAP API
-                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/ImportAndPublishInvWithLink", soapRequest);
+                string response = await CallSoapApi(serviceUrl, "http://tempuri.org/ImportAndPublishInvWithLink", soapRequest);
 
                 // Kiểm tra xem phản hồi có phải là XML hợp lệ không
                 if (response.StartsWith("Error:") || !response.Contains("<"))
@@ -590,29 +802,37 @@ namespace WebApp.API.Services
         /// Hủy biên lai
         /// </summary>
         /// <param name="fkey">Chuỗi xác định biên lai cần hủy</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
         /// <returns>Kết quả hủy</returns>
-        public async Task<string> CancelInvoice(string fkey)
+        public async Task<string> CancelInvoice(string fkey, VNPTAccount? vnptAccount = null)
         {
             try
             {
                 _logger.LogInformation($"Gọi API cancelInv với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string account = vnptAccount?.Account ?? _account;
+                string acpass = vnptAccount?.ACPass ?? _acpass;
+                string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
 
                 // Tạo SOAP request
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
                 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
                   <soap:Body>
                     <cancelInv xmlns=""http://tempuri.org/"">
-                      <Account>{_account}</Account>
-                      <ACpass>{_acpass}</ACpass>
+                      <Account>{account}</Account>
+                      <ACpass>{acpass}</ACpass>
                       <fkey>{fkey}</fkey>
-                      <userName>{_username}</userName>
-                      <userPass>{_password}</userPass>
+                      <userName>{username}</userName>
+                      <userPass>{password}</userPass>
                     </cancelInv>
                   </soap:Body>
                 </soap:Envelope>";
 
                 // Gọi SOAP API
-                string response = await CallSoapApi(_serviceUrl, "http://tempuri.org/cancelInv", soapRequest);
+                string response = await CallSoapApi(serviceUrl, "http://tempuri.org/cancelInv", soapRequest);
 
                 // Xử lý response
                 XmlDocument xmlDoc = new XmlDocument();

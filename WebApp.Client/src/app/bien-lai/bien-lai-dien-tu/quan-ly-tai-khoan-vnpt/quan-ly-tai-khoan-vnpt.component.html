@@ -1,0 +1,199 @@
+<div class="container">
+  <div class="page-header">
+    <h2>Quản lý tài khoản VNPT</h2>
+    <div class="button-group">
+      <nz-input-group [nzSuffix]="suffixIconSearch" style="width: 300px; margin-right: 16px;">
+        <input type="text" nz-input placeholder="Tìm kiếm tài khoản VNPT" [(ngModel)]="searchValue" (ngModelChange)="search()" />
+      </nz-input-group>
+      <ng-template #suffixIconSearch>
+        <span nz-icon nzType="search"></span>
+      </ng-template>
+      <button nz-button nzType="primary" (click)="showAddModal()">
+        <i nz-icon nzType="plus"></i> Thêm tài khoản VNPT
+      </button>
+    </div>
+  </div>
+
+  <nz-alert *ngIf="accounts.length === 0 && !isLoading" nzType="info" nzMessage="Chưa có tài khoản VNPT nào" nzDescription="Hãy thêm tài khoản VNPT để sử dụng cho việc phát hành biên lai điện tử." nzShowIcon></nz-alert>
+
+  <nz-table #basicTable [nzData]="filteredAccounts" [nzLoading]="isLoading" [nzBordered]="true">
+    <thead>
+      <tr>
+        <th>STT</th>
+        <th>Mã nhân viên</th>
+        <th>Tên nhân viên</th>
+        <th>Account</th>
+        <th>Username</th>
+        <th>Pattern</th>
+        <th>Serial</th>
+        <th>Trạng thái</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of basicTable.data; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ item.maNhanVien }}</td>
+        <td>{{ getNguoiDungName(item.maNhanVien) }}</td>
+        <td>{{ item.account }}</td>
+        <td>{{ item.username }}</td>
+        <td>{{ item.pattern }}</td>
+        <td>{{ item.serial }}</td>
+        <td>
+          <nz-tag [nzColor]="item.isActive ? 'success' : 'error'">
+            {{ item.isActive ? 'Hoạt động' : 'Vô hiệu' }}
+          </nz-tag>
+        </td>
+        <td>
+          <button nz-button nzType="primary" nzSize="small" (click)="showEditModal(item.id!)" nz-tooltip nzTooltipTitle="Sửa">
+            <i nz-icon nzType="edit"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button nz-button [nzType]="item.isActive ? 'default' : 'primary'" nzSize="small" (click)="toggleStatus(item)" nz-tooltip nzTooltipTitle="{{ item.isActive ? 'Vô hiệu hóa' : 'Kích hoạt' }}">
+            <i nz-icon [nzType]="item.isActive ? 'stop' : 'check'"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button nz-button nzType="default" nzSize="small" (click)="showCloneModal(item.id!)" nz-tooltip nzTooltipTitle="Tạo bản sao">
+            <i nz-icon nzType="copy"></i>
+          </button>
+          <nz-divider nzType="vertical"></nz-divider>
+          <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteAccount(item.id!)" nz-tooltip nzTooltipTitle="Xóa">
+            <i nz-icon nzType="delete"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <nz-modal
+    [(nzVisible)]="isVisible"
+    [nzTitle]="editingId ? 'Cập nhật tài khoản VNPT' : 'Thêm tài khoản VNPT'"
+    (nzOnCancel)="handleCancel()"
+    [nzOkText]="editingId ? 'Cập nhật' : 'Thêm mới'"
+    nzOkType="primary"
+    (nzOnOk)="handleOk()"
+    [nzOkLoading]="isSubmitting"
+    [nzWidth]="700"
+    [nzBodyStyle]="{ maxHeight: '600px', overflow: 'auto' }"
+  >
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="form" nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Mã nhân viên</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng chọn mã nhân viên">
+            <nz-select formControlName="maNhanVien" nzPlaceHolder="Chọn mã nhân viên" [nzDisabled]="!!editingId">
+              <nz-option *ngFor="let user of nguoiDungs" [nzValue]="user.maNhanVien || user.ma_nhan_vien" [nzLabel]="(user.maNhanVien || user.ma_nhan_vien) + ' - ' + (user.hoTen || user.ho_ten)"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Account</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Account">
+            <input nz-input formControlName="account" placeholder="Nhập Account" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>ACPass</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập ACPass">
+            <nz-input-group [nzSuffix]="acpassSuffixTemplate">
+              <input
+                [type]="acpassVisible ? 'text' : 'password'"
+                nz-input
+                formControlName="acpass"
+                placeholder="Nhập ACPass"
+              />
+            </nz-input-group>
+            <ng-template #acpassSuffixTemplate>
+              <i
+                nz-icon
+                [nzType]="acpassVisible ? 'eye-invisible' : 'eye'"
+                (click)="acpassVisible = !acpassVisible"
+              ></i>
+            </ng-template>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Username</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Username">
+            <input nz-input formControlName="username" placeholder="Nhập Username" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Password</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Password">
+            <nz-input-group [nzSuffix]="passwordSuffixTemplate">
+              <input
+                [type]="passwordVisible ? 'text' : 'password'"
+                nz-input
+                formControlName="password"
+                placeholder="Nhập Password"
+              />
+            </nz-input-group>
+            <ng-template #passwordSuffixTemplate>
+              <i
+                nz-icon
+                [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+                (click)="passwordVisible = !passwordVisible"
+              ></i>
+            </ng-template>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Pattern</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Pattern">
+            <input nz-input formControlName="pattern" placeholder="Nhập Pattern" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Serial</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Serial">
+            <input nz-input formControlName="serial" placeholder="Nhập Serial" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Service URL</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập Service URL">
+            <input nz-input formControlName="serviceUrl" placeholder="Nhập Service URL" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Trạng thái</nz-form-label>
+          <nz-form-control>
+            <nz-switch formControlName="isActive" [nzCheckedChildren]="'Hoạt động'" [nzUnCheckedChildren]="'Vô hiệu'"></nz-switch>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [(nzVisible)]="isCloneModalVisible"
+    nzTitle="Tạo bản sao tài khoản VNPT"
+    (nzOnCancel)="handleCloneCancel()"
+    nzOkText="Tạo bản sao"
+    nzOkType="primary"
+    (nzOnOk)="handleCloneOk()"
+    [nzOkLoading]="isSubmitting"
+  >
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="cloneForm" nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Mã nhân viên mới</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng chọn mã nhân viên">
+            <nz-select formControlName="maNhanVien" nzPlaceHolder="Chọn mã nhân viên">
+              <nz-option *ngFor="let user of nguoiDungs" [nzValue]="user.maNhanVien || user.ma_nhan_vien" [nzLabel]="(user.maNhanVien || user.ma_nhan_vien) + ' - ' + (user.hoTen || user.ho_ten)"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </ng-container>
+  </nz-modal>
+</div>
