@@ -25,7 +25,7 @@ import { vi_VN } from 'ng-zorro-antd/i18n';
 import { NzI18nService } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
-import { 
+import {
   SaveOutline,
   PlusOutline,
   CloseOutline,
@@ -112,32 +112,32 @@ interface ThongTinCCCD {
 
 // Thêm interface mới
 interface CCCDResult {
-  id: string;                    
-  id_prob?: string;              
-  name: string;                 
-  name_prob?: string;            
-  dob: string;                  
-  dob_prob?: string;             
-  sex: string;                  
-  sex_prob?: string;             
-  nationality: string;          
-  nationality_prob?: string;     
-  home?: string;                 
-  home_prob?: string;            
-  address: string;              
-  address_prob?: string;         
-  doe?: string;                  
-  doe_prob?: string;             
-  overall_score?: string;        
-  number_of_name_lines?: string; 
-  address_entities?: {           
-    province: string;           
-    district: string;           
-    ward: string;               
-    street?: string;             
+  id: string;
+  id_prob?: string;
+  name: string;
+  name_prob?: string;
+  dob: string;
+  dob_prob?: string;
+  sex: string;
+  sex_prob?: string;
+  nationality: string;
+  nationality_prob?: string;
+  home?: string;
+  home_prob?: string;
+  address: string;
+  address_prob?: string;
+  doe?: string;
+  doe_prob?: string;
+  overall_score?: string;
+  number_of_name_lines?: string;
+  address_entities?: {
+    province: string;
+    district: string;
+    ward: string;
+    street?: string;
   };
-  type_new?: string;             
-  type?: string;                 
+  type_new?: string;
+  type?: string;
   status: 'success' | 'error';
   message: string;
   checked?: boolean;
@@ -383,7 +383,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Thêm biến class thành viên mới
   willUseBienLaiDienTu = false;
-  
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -417,11 +417,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       CopyOutline // Thêm vào danh sách
     );
     this.initForm();
-    
+
     // Khởi tạo form trong constructor
     this.loginForm = this.fb.group({
       userName: ['884000_xa_tli_phuoclt'], // Tài khoản mặc định
-      password: ['123456d@D'], // Mật khẩu mặc định  
+      password: ['123456d@D'], // Mật khẩu mặc định
       text: ['', [
         Validators.required,
         Validators.minLength(4),
@@ -437,7 +437,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.currentUser = JSON.parse(userStr);
       console.log('currentUser trong component:', this.currentUser);
     }
-    
+
     // Các phần khởi tạo khác
     this.loadingTable = true;
     this.route.params.subscribe(params => {
@@ -607,7 +607,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     localStorage.removeItem('urgentItems');
-    
+
     // Không xóa cache địa chính để sử dụng lại cho các lần sau
     // Chỉ xóa nếu cần thiết, ví dụ khi dữ liệu quá cũ
     // this.clearAddressCache();
@@ -661,7 +661,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.loadingApDung = false;
     this.thongTinThe = null;
     this.loadingSave = false;
-    
+
     // Reset các danh mục
     this.danhMucHuyens = [];
     this.danhMucXas = [];
@@ -693,10 +693,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         console.log('Đợt kê khai:', data);
         console.log('is_bien_lai_dien_tu:', data.is_bien_lai_dien_tu);
         console.log('bien_lai_dien_tu:', data.bien_lai_dien_tu);
-        
+
         // Lưu lại giá trị cho việc sử dụng biên lai điện tử
         this.willUseBienLaiDienTu = !!data.is_bien_lai_dien_tu;
-        
+
         // Kiểm tra cache trước khi gọi API
         if (data.don_vi_id) {
           if (this.donViCache.length > 0) {
@@ -745,14 +745,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.keKhaiBHYTService.getByDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
         const urgentItems = JSON.parse(localStorage.getItem('urgentItems') || '{}');
-        
+
         this.keKhaiBHYTs = data
           .map(item => ({
             ...item,
             is_urgent: urgentItems[item.id!] || false
           }))
           .sort((a, b) => (b.id || 0) - (a.id || 0));
-        
+
         // Tải trước dữ liệu xã và huyện cho tất cả dữ liệu trong danh sách
         Promise.all([
           this.preloadXaData(this.keKhaiBHYTs),
@@ -764,7 +764,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             xa_nkq_ten: this.getXaTen(item.xa_nkq),
             huyen_nkq_ten: this.getHuyenTen(item.huyen_nkq)
           }));
-          
+
           this.applyFilters();
           this.tinhThongKe();
           this.loadingTable = false; // Sử dụng loadingTable
@@ -786,23 +786,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (this.danhMucTinhs?.length > 0) {
       return Promise.resolve();
     }
-    
+
     // Kiểm tra xem có trong localStorage không
     const cachedData = this.loadFromLocalStorage(this.TINH_CACHE_KEY);
     if (cachedData) {
       this.danhMucTinhs = cachedData;
       return Promise.resolve();
     }
-    
+
     return new Promise<void>((resolve, reject) => {
       this.diaChiService.getDanhMucTinh().subscribe({
         next: (tinhs) => {
           const sortedTinhs = tinhs.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
           this.danhMucTinhs = sortedTinhs;
-          
+
           // Lưu vào localStorage
           this.saveToLocalStorage(this.TINH_CACHE_KEY, sortedTinhs);
-          
+
           resolve();
         },
         error: (error) => {
@@ -816,13 +816,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Tối ưu tải danh mục huyện với cache
   loadDanhMucHuyenByMaTinh(maTinh: string): Promise<void> {
     if (!maTinh) return Promise.resolve();
-    
+
     // Kiểm tra cache trong bộ nhớ
     if (this.huyenCache.has(maTinh)) {
       this.danhMucHuyens = this.huyenCache.get(maTinh) || [];
       return Promise.resolve();
     }
-    
+
     // Kiểm tra cache trong localStorage
     const cacheKey = this.HUYEN_CACHE_PREFIX + maTinh;
     const cachedData = this.loadFromLocalStorage(cacheKey);
@@ -831,17 +831,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.huyenCache.set(maTinh, cachedData);
       return Promise.resolve();
     }
-    
+
     return new Promise<void>((resolve, reject) => {
       this.diaChiService.getDanhMucHuyenByMaTinh(maTinh).subscribe({
         next: (huyens) => {
           const sortedHuyens = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
           this.danhMucHuyens = sortedHuyens;
-          
+
           // Lưu vào cache và localStorage
           this.huyenCache.set(maTinh, sortedHuyens);
           this.saveToLocalStorage(cacheKey, sortedHuyens);
-          
+
           resolve();
         },
         error: (error) => {
@@ -855,13 +855,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Tối ưu tải danh mục xã với cache
   loadDanhMucXaByMaHuyen(maHuyen: string): Promise<void> {
     if (!maHuyen) return Promise.resolve();
-    
+
     // Kiểm tra cache trong bộ nhớ
     if (this.xaCache.has(maHuyen)) {
       this.danhMucXas = this.xaCache.get(maHuyen) || [];
       return Promise.resolve();
     }
-    
+
     // Kiểm tra cache trong localStorage
     const cacheKey = this.XA_CACHE_PREFIX + maHuyen;
     const cachedData = this.loadFromLocalStorage(cacheKey);
@@ -870,17 +870,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.xaCache.set(maHuyen, cachedData);
       return Promise.resolve();
     }
-    
+
     return new Promise<void>((resolve, reject) => {
       this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
         next: (xas) => {
           const sortedXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
           this.danhMucXas = sortedXas;
-          
+
           // Lưu vào cache và localStorage
           this.xaCache.set(maHuyen, sortedXas);
           this.saveToLocalStorage(cacheKey, sortedXas);
-          
+
           resolve();
         },
         error: (error) => {
@@ -894,8 +894,21 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   loadDanhMucCSKCB(): void {
     this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
       next: (data) => {
-        this.danhMucCSKCBs = data;
-        console.log('Đã load danh sách bệnh viện:', this.danhMucCSKCBs);
+        // Sắp xếp danh sách bệnh viện theo mã bệnh viện (value)
+        this.danhMucCSKCBs = data.sort((a, b) => {
+          // Chuyển đổi mã bệnh viện thành số nếu có thể để so sánh số học
+          const valueA = parseInt(a.value);
+          const valueB = parseInt(b.value);
+
+          // Nếu cả hai đều là số hợp lệ, so sánh số học
+          if (!isNaN(valueA) && !isNaN(valueB)) {
+            return valueA - valueB;
+          }
+
+          // Nếu không phải số hoặc một trong hai không phải số, so sánh chuỗi
+          return a.value.localeCompare(b.value);
+        });
+        console.log('Đã load danh sách bệnh viện (đã sắp xếp theo mã):', this.danhMucCSKCBs);
       },
       error: (error) => {
         console.error('Lỗi khi load danh sách bệnh viện:', error);
@@ -911,7 +924,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
     if (data) {
       console.log('Modal data:', data);
-      
+
       // Patch thông tin thẻ trước
       if (data.thongTinThe) {
         this.form.patchValue({
@@ -970,7 +983,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (this.form.valid) {
       const formValue = this.form.value;
       const soTienCanDong = this.tinhSoTienCanDong(formValue.nguoi_thu, formValue.so_thang_dong);
-      
+
       // Gán giá trị so_tien_can_dong vào form
       formValue.so_tien_can_dong = soTienCanDong;
 
@@ -1252,7 +1265,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   onAllChecked(checked: boolean): void {
     // Reset mảng selectedIds
     this.selectedIds = [];
-    
+
     // Nếu checked là true thì thêm tất cả id vào mảng selectedIds
     if (checked) {
       this.keKhaiBHYTs.forEach(item => {
@@ -1261,7 +1274,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       });
     }
-    
+
     // Cập nhật trạng thái
     this.isAllChecked = checked;
     this.isIndeterminate = false;
@@ -1276,7 +1289,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const validItems = this.danhSachCCCD.filter(cccd => cccd.status === 'success');
     const allChecked = validItems.length > 0 && validItems.every(item => item.checked);
     const allUnchecked = validItems.every(item => !item.checked);
-    
+
     this.isAllChecked = allChecked;
     this.isIndeterminate = !allChecked && !allUnchecked;
   }
@@ -1302,11 +1315,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       for (const cccd of selectedCCCDs) {
         await this.apDungThongTin(cccd, false);
       }
-      
+
       const addressTypes = [];
       if (this.applyPermanentAddress) addressTypes.push('địa chỉ thường trú');
       if (this.applyHomeAddress) addressTypes.push('quê quán');
-      
+
       this.message.success(
         `Đã áp dụng thành công ${selectedCCCDs.length} CCCD với ${addressTypes.join(' và ')}`
       );
@@ -1348,7 +1361,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Hàm helper để chuyển đổi ngày tháng an toàn
   private parseDate(dateStr: string | null): Date | null {
     if (!dateStr) return null;
-    
+
     // Kiểm tra nếu chỉ là năm
     if (/^\d{4}$/.test(dateStr)) {
       const year = parseInt(dateStr);
@@ -1357,14 +1370,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       }
       return null;
     }
-    
+
     // Nếu dateStr là định dạng dd/MM/yyyy
     if (dateStr.includes('/')) {
       const parts = dateStr.split('/');
       if (parts.length === 3) {
         const [day, month, year] = parts.map(Number);
         const date = new Date(year, month - 1, day);
-        
+
         // Kiểm tra tính hợp lệ của ngày
         if (
           date.getDate() === day &&
@@ -1378,7 +1391,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     // Thử parse các định dạng khác
     const date = new Date(dateStr);
     return !isNaN(date.getTime()) ? date : null;
@@ -1386,7 +1399,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   onSearchBHYT(): void {
     if (this.loadingSearch) return; // Sử dụng loadingSearch
-    
+
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     if (maSoBHXH && maSoBHXH.length === 10) {
       // Đầu tiên kiểm tra xem mã số BHXH đã được kê khai trong 7 ngày gần đây hay chưa
@@ -1402,7 +1415,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
               return `<li>Đợt: <strong>${record.dot_ke_khai_name || 'Không xác định'}</strong> - Ngày: <strong>${formattedDate}</strong></li>`;
             }).join('');
-            
+
             this.modal.confirm({
               nzTitle: 'Mã số BHXH đã được kê khai gần đây',
               nzContent: `<div>
@@ -1447,13 +1460,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.loadingSearch = false;
       return;
     }
-    
+
     this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
       next: async (response) => {
         if (response.success) {
           const data = response.data;
           console.log('BHYT search response:', data);
-          
+
           // Kiểm tra nếu isThamGiaBb = 1 thì hiển thị thông báo
           if (data.isThamGiaBb === 1) {
             this.modal.warning({
@@ -1476,10 +1489,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             if (denNgayTheCu) {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              
+
               const timeDiff = denNgayTheCu.getTime() - today.getTime();
               const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-              
+
               if (daysDiff > 30) {
                 return new Promise((resolve) => {
                   this.modal.warning({
@@ -1620,7 +1633,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           console.log('Thông tin BHYT:', response.data);
-          
+
           // Cập nhật form với thông tin nhận được
           this.form.patchValue({
             ma_so_bhxh: response.data.maSoBHXH,
@@ -1666,24 +1679,24 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   getHuyenTen(maHuyen: string): string {
     if (!maHuyen) return '';
-    
+
     // Tải trực tiếp từ API nếu không có trong cache
     if (!this.huyenCache || this.huyenCache.size === 0) {
       // Nếu không có cache, trả về mã và tải dữ liệu sau
       this.loadDanhMucHuyenByMaTinh('01'); // Tải dữ liệu mặc định cho Hà Nội
       return maHuyen;
     }
-    
+
     // Tìm trong tất cả các huyện đã tải (không chỉ trong danhMucHuyens hiện tại)
     for (const [tinhKey, huyenList] of this.huyenCache.entries()) {
       const huyen = huyenList.find(h => h.ma === maHuyen);
       if (huyen) return huyen.ten;
     }
-    
+
     // Nếu không tìm thấy trong cache, tìm trong danhMucHuyens hiện tại
     const huyen = this.danhMucHuyens.find(h => h.ma === maHuyen);
     if (huyen) return huyen.ten;
-    
+
     // Nếu vẫn không tìm thấy, tải dữ liệu từ API
     this.diaChiService.getDanhMucHuyenByMa(maHuyen).subscribe({
       next: (huyen) => {
@@ -1702,23 +1715,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       },
       error: (error) => console.error('Lỗi khi tải thông tin huyện:', error)
     });
-    
+
     return maHuyen; // Trả về mã nếu không tìm thấy tên
   }
 
   getXaTen(maXa: string): string {
     if (!maXa) return '';
-    
+
     // Tìm trong tất cả các xã đã tải (không chỉ trong danhMucXas hiện tại)
     for (const [huyenKey, xaList] of this.xaCache.entries()) {
       const xa = xaList.find(x => x.ma === maXa);
       if (xa) return xa.ten;
     }
-    
+
     // Nếu không tìm thấy trong cache, tìm trong danhMucXas hiện tại
     const xa = this.danhMucXas.find(x => x.ma === maXa);
     if (xa) return xa.ten;
-    
+
     console.warn(`Không tìm thấy xã với mã: ${maXa}`);
     return maXa; // Trả về mã nếu không tìm thấy tên
   }
@@ -1726,40 +1739,40 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Hàm tải trước dữ liệu xã cho tất cả các huyện trong danh sách
   async preloadXaData(keKhaiBHYTs: any[]): Promise<void> {
     if (!keKhaiBHYTs || keKhaiBHYTs.length === 0) return;
-    
+
     // Lấy danh sách các mã huyện duy nhất từ dữ liệu
     const uniqueHuyenCodes = [...new Set(keKhaiBHYTs
       .filter(item => item.huyen_nkq) // Lọc các item có mã huyện
       .map(item => item.huyen_nkq))];
-    
+
     // Tải dữ liệu xã cho từng huyện
-    const promises = uniqueHuyenCodes.map(huyenCode => 
+    const promises = uniqueHuyenCodes.map(huyenCode =>
       this.loadDanhMucXaByMaHuyen(huyenCode)
     );
-    
+
     await Promise.all(promises);
   }
 
   // Hàm tải trước dữ liệu huyện cho tất cả các tỉnh trong danh sách
   async preloadHuyenData(keKhaiBHYTs: any[]): Promise<void> {
     if (!keKhaiBHYTs || keKhaiBHYTs.length === 0) return;
-    
+
     console.log('Preloading huyen data for:', keKhaiBHYTs.length, 'items');
-    
+
     // Lấy danh sách các mã tỉnh duy nhất từ dữ liệu
     const uniqueTinhCodes = [...new Set(keKhaiBHYTs
       .filter(item => item.tinh_nkq) // Lọc các item có mã tỉnh
       .map(item => item.tinh_nkq))];
-    
+
     console.log('Unique tinh codes:', uniqueTinhCodes);
-    
+
     // Tải dữ liệu huyện cho từng tỉnh
-    const promises = uniqueTinhCodes.map(tinhCode => 
+    const promises = uniqueTinhCodes.map(tinhCode =>
       this.loadDanhMucHuyenByMaTinh(tinhCode)
     );
-    
+
     await Promise.all(promises);
-    
+
     // Kiểm tra xem dữ liệu huyện đã được tải chưa
     console.log('Huyen cache after preloading:', this.huyenCache);
   }
@@ -1773,14 +1786,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức mới để hiển thị tên bệnh viện
   getBenhVienDisplay(maBenhVien: string): string {
     const benhVien = this.danhMucCSKCBs.find(bv => bv.value === maBenhVien);
-    return benhVien ? benhVien.ten : maBenhVien;
+    return benhVien ? `${maBenhVien} - ${benhVien.ten}` : maBenhVien;
   }
 
   // Thêm hàm tính số tiền cần đóng
   tinhSoTienCanDong(nguoiThu: number, soThangDong: number): number {
     const mucDong = 2340000 * 0.045;
     let tyLe = 1;
-    
+
     // Kiểm tra nếu đơn vị là DTTS
     if (this.donViName.includes('DTTS')) {
       // Công thức cho DTTS: 2.340.000×4,5%×(100%−70%) x số tháng đóng
@@ -1792,7 +1805,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       // Công thức cho NLNN: 2.340.000×4,5%×(100%−30%) x số tháng đóng
       return Math.round(mucDong * 0.7 * soThangDong); // 0.7 = 100% - 30%
     }
-    
+
     // Công thức thông thường cho các đơn vị khác
     if (nguoiThu >= 1 && nguoiThu <= 5) {
       switch(nguoiThu) {
@@ -1811,7 +1824,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   capNhatSoTienCanDong(): void {
     const nguoiThu = this.form.get('nguoi_thu')?.value;
     const soThangDong = this.form.get('so_thang_dong')?.value;
-    
+
     if (nguoiThu && soThangDong) {
       const soTienCanDong = this.tinhSoTienCanDong(nguoiThu, soThangDong);
       this.form.patchValue({
@@ -1840,7 +1853,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       console.log('DTTS - Hạn thẻ mới từ:', result);
       return result;
     }
-    
+
     // Trường hợp HGD, NLNN và các đơn vị khác (mặc định)
     // Nếu không có hạn thẻ cũ, cộng 30 ngày
     if (!hanTheCu) {
@@ -1867,11 +1880,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       // Tạo một ngày mới là hạn thẻ cũ + 1 ngày
       const result = new Date(hanTC);
       result.setDate(result.getDate() + 1);
-      
+
       // Log để debug
       console.log('Hạn thẻ cũ:', hanTC);
       console.log('Hạn thẻ mới từ (cộng 1 ngày):', result);
-      
+
       return result;
     }
 
@@ -1886,12 +1899,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   tinhHanTheMoiDen(hanTheMoiTu: Date, soThangDong: number): Date {
     // Tạo bản sao của hanTheMoiTu để không ảnh hưởng đến ngày gốc
     const result = new Date(hanTheMoiTu);
-    
+
     // Cộng số tháng đóng vào hạn thẻ mới từ
     result.setMonth(result.getMonth() + soThangDong);
     // Trừ đi 1 ngày
     result.setDate(result.getDate() - 1);
-    
+
     return result;
   }
 
@@ -1904,7 +1917,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (ngayBienLai) {
       // Tính hạn thẻ mới từ
       const hanTheMoiTu = this.tinhHanTheMoiTu(new Date(ngayBienLai), hanTheCu ? new Date(hanTheCu) : null);
-      
+
       this.form.patchValue({
         han_the_moi_tu: hanTheMoiTu
       }, { emitEvent: false });
@@ -1972,7 +1985,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.multipleSearchText = '';
     this.multipleSearchBenhVien = '';
     this.hoGiaDinhStartIndex = 1; // Reset về người thứ 1
-    
+
     // Bỏ việc gán giá trị mặc định
     this.multipleSearchNguoiThu = null as any;
     this.multipleSearchSoThangDong = null as any;
@@ -1992,26 +2005,26 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     try {
       // Kiểm tra xem đối tượng có đang tham gia BHXH bắt buộc không
       if (data.isThamGiaBb === 1) {
-        const theBhyt = data.soTheBHYT ? 
-          `Số thẻ BHYT: ${data.soTheBHYT}` : 
+        const theBhyt = data.soTheBHYT ?
+          `Số thẻ BHYT: ${data.soTheBHYT}` :
           'Chưa có thông tin số thẻ BHYT';
-          
+
         return {
           success: false,
           message: `Đối tượng đang tham gia BHXH bắt buộc.\n${theBhyt}`
         };
       }
-      
+
       // Kiểm tra hạn thẻ cũ
       if (data.denNgayTheCu) {
         const denNgayTheCu = this.parseDate(data.denNgayTheCu);
         if (denNgayTheCu) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          
+
           const timeDiff = denNgayTheCu.getTime() - today.getTime();
           const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-          
+
           // Nếu thẻ còn hạn sử dụng > 60 ngày
           if (daysDiff > 60) {
             return {
@@ -2021,7 +2034,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       // Truy xuất thông tin đợt kê khai
       const dotKeKhai = await this.dotKeKhaiService.getDotKeKhai(this.dotKeKhaiId).toPromise();
       if (!dotKeKhai) {
@@ -2038,25 +2051,25 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       // Trích xuất ngày tháng từ dữ liệu
       const ngaySinhDate = this.formatNgaySinh(data.ngaySinh);
-      
+
       // Xác định hạn thẻ cũ
       const denNgayTheCu = data.denNgayTheCu ? this.formatNgaySinh(data.denNgayTheCu) : null;
-      
+
       // Kiểm tra phương án đóng
       const phuongAnDong = this.checkPhuongAnDong(denNgayTheCu);
-      
+
       // Xác định thông tin đóng phí
       const nguoiThu = data.nguoiThu || 1;
       const soThangDong = this.multipleSearchSoThangDong || 3;
-      
+
       // Tính hạn thẻ mới
       const ngayLap = new Date(); // Ngày lập là ngày hiện tại
       const hanTheMoiTu = this.tinhHanTheMoiTu(ngayLap, denNgayTheCu);
       const hanTheMoiDen = this.tinhHanTheMoiDen(hanTheMoiTu, soThangDong);
-      
+
       // Tính số tiền cần đóng
       const soTienCanDong = this.tinhSoTienCanDong(nguoiThu, soThangDong);
-      
+
       // Tạo đối tượng kê khai mới
       const keKhaiBHYT: KeKhaiBHYT = {
         id: 0, // ID sẽ được sinh bởi cơ sở dữ liệu
@@ -2096,22 +2109,22 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         is_urgent: false,
         trang_thai: 'chua_gui'
       };
-      
+
       // Lưu kê khai mới vào cơ sở dữ liệu
       try {
         await this.keKhaiBHYTService.create(this.dotKeKhaiId, keKhaiBHYT).toPromise();
         return { success: true };
       } catch (error: any) {
-        return { 
-          success: false, 
-          message: error?.error?.message || 'Không thể tạo kê khai BHYT' 
+        return {
+          success: false,
+          message: error?.error?.message || 'Không thể tạo kê khai BHYT'
         };
       }
     } catch (error) {
       console.error('Lỗi tạo kê khai từ dữ liệu API:', error);
-      return { 
-        success: false, 
-        message: 'Có lỗi xảy ra khi tạo kê khai BHYT' 
+      return {
+        success: false,
+        message: 'Có lỗi xảy ra khi tạo kê khai BHYT'
       };
     }
   }
@@ -2141,7 +2154,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.isSearchingMultiple = true;
     this.searchResults = [];
     let loadingMessageId: string | undefined;
-    
+
     try {
       const maSoBHXHList = this.multipleSearchText
         .split('\n')
@@ -2152,10 +2165,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         this.message.warning('Không tìm thấy mã số BHXH hợp lệ (phải có 10 số)');
         return;
       }
-      
+
       // Kiểm tra các mã số BHXH đã kê khai trong 7 ngày gần đây
       const recentlyDeclaredMaSoBHXH: {maSoBHXH: string; data: any}[] = [];
-      
+
       // Kiểm tra từng mã số BHXH
       for (const maSoBHXH of maSoBHXHList) {
         try {
@@ -2170,7 +2183,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           console.error(`Lỗi khi kiểm tra mã số BHXH ${maSoBHXH}:`, error);
         }
       }
-      
+
       // Nếu có mã số BHXH đã kê khai gần đây, hiển thị cảnh báo
       if (recentlyDeclaredMaSoBHXH.length > 0) {
         const maSoBHXHListHtml = recentlyDeclaredMaSoBHXH.map(item => {
@@ -2180,10 +2193,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             return `<li>Đợt: <strong>${record.dot_ke_khai_name || 'Không xác định'}</strong> - Ngày: <strong>${formattedDate}</strong></li>`;
           }).join('');
-          
+
           return `<div><strong>Mã số BHXH: ${item.maSoBHXH}</strong><ul>${recordsHtml}</ul></div>`;
         }).join('');
-        
+
         return new Promise<void>((resolve) => {
           this.modal.confirm({
             nzTitle: 'Một số mã số BHXH đã được kê khai gần đây',
@@ -2218,7 +2231,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       console.error('Error processing multiple BHXH numbers:', error);
     }
   }
-  
+
   // Phương thức mới để tiếp tục xử lý danh sách mã số BHXH
   async continueMultipleSearch(maSoBHXHList: string[]): Promise<void> {
     let loadingMessageId: string | undefined;
@@ -2229,7 +2242,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       let processedCount = 0;
 
       loadingMessageId = this.message.loading(
-        `Đang xử lý 0/${totalCount} mã số BHXH...`, 
+        `Đang xử lý 0/${totalCount} mã số BHXH...`,
         { nzDuration: 0 }
       ).messageId;
 
@@ -2252,11 +2265,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             // Kiểm tra isThamGiaBb
             if (response.data.isThamGiaBb === 1) {
               failedCount++;
-              
-              const theBhyt = response.data.soTheBHYT ? 
-                `Số thẻ BHYT: ${response.data.soTheBHYT}` : 
+
+              const theBhyt = response.data.soTheBHYT ?
+                `Số thẻ BHYT: ${response.data.soTheBHYT}` :
                 'Chưa có thông tin số thẻ BHYT';
-                
+
               this.searchResults.push({
                 maSoBHXH,
                 status: 'error',
@@ -2264,9 +2277,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               });
               continue;
             }
-            
+
             let nguoiThu: number;
-            
+
             if (this.isHoGiaDinh) {
               // Trong chế độ Hộ gia đình:
               // - Sử dụng hoGiaDinhStartIndex làm người thứ bắt đầu
@@ -2289,8 +2302,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             if (result.success) {
               successCount++;
               this.searchResults.push({
-                maSoBHXH: this.isHoGiaDinh ? 
-                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` : 
+                maSoBHXH: this.isHoGiaDinh ?
+                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` :
                   maSoBHXH,
                 status: 'success',
                 message: 'Tạo kê khai thành công'
@@ -2298,8 +2311,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             } else {
               failedCount++;
               this.searchResults.push({
-                maSoBHXH: this.isHoGiaDinh ? 
-                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` : 
+                maSoBHXH: this.isHoGiaDinh ?
+                  `${maSoBHXH} (${this.getNguoiThuText(nguoiThu)})` :
                   maSoBHXH,
                 status: 'error',
                 message: result.message || 'Không thể tạo kê khai'
@@ -2354,7 +2367,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   tinhThongKe(): void {
     // Sử dụng dữ liệu đã lọc thay vì toàn bộ dữ liệu
     const data = this.filterSoThangDong !== null ? this.filteredKeKhaiBHYTs : this.keKhaiBHYTs;
-    
+
     this.thongKe.tongSoThe = data.length;
     this.thongKe.daoHan = data.filter(item => item.phuong_an_dong === 'dao_han').length;
     this.thongKe.tangMoi = data.filter(item => item.phuong_an_dong === 'tang_moi').length;
@@ -2382,7 +2395,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   showQuetCCCDModal(): void {
     this.isQuetCCCDVisible = true;
     this.clearImages();
-    
+
     // Tự động focus vào modal sau khi nó được mở
     setTimeout(() => {
       const modalContent = document.querySelector('.ant-modal-content');
@@ -2433,15 +2446,15 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (!event.clipboardData) {
       return;
     }
-    
+
     const items = event.clipboardData.items;
     let imageFound = false;
-    
+
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         imageFound = true;
         const blob = items[i].getAsFile();
-        
+
         if (blob) {
           // Kiểm tra kích thước file
           const isLt2M = blob.size / 1024 / 1024 < 2;
@@ -2449,18 +2462,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             this.message.error('Ảnh phải nhỏ hơn 2MB!');
             return;
           }
-          
+
           // Tạo tên file ngẫu nhiên
           const fileName = `pasted-image-${new Date().getTime()}.png`;
           const file = new File([blob], fileName, { type: 'image/png' });
-          
+
           this.message.success('Đã dán ảnh từ clipboard');
           this.addToPendingFiles(file);
         }
         break;
       }
     }
-    
+
     if (!imageFound) {
       this.message.info('Không tìm thấy ảnh trong clipboard');
     }
@@ -2469,7 +2482,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   requestPasteFromClipboard(): void {
     // Hiển thị thông báo hướng dẫn
     this.message.info('Nhấn Ctrl+V để dán ảnh từ clipboard');
-    
+
     // Focus vào modal để nhận sự kiện paste
     const modalContent = document.querySelector('.ant-modal-content');
     if (modalContent) {
@@ -2478,7 +2491,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         focusableElement.focus();
       }
     }
-    
+
     // Thử đọc clipboard thông qua Clipboard API (chỉ hoạt động trên HTTPS)
     if (navigator.clipboard && navigator.clipboard.read) {
       navigator.clipboard.read()
@@ -2639,7 +2652,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private formatAddress(addressData: any): string {
     if (!addressData) return '';
     const parts = [];
-    
+
     if (typeof addressData === 'string') {
       return addressData;
     }
@@ -2714,13 +2727,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const tinh = this.danhMucTinhs.find(t => t.ten.toUpperCase().includes(province.toUpperCase()));
     if (tinh) {
       this.form.patchValue({ tinh_qq: tinh.ma });
-      
+
       // Load và tìm mã huyện
       await this.loadDanhMucHuyenByMaTinh(tinh.ma);
       const huyen = this.danhMucHuyens.find(h => h.ten.toUpperCase().includes(district.toUpperCase()));
       if (huyen) {
         this.form.patchValue({ huyen_qq: huyen.ma });
-        
+
         // Load và tìm mã xã
         await this.loadDanhMucXaByMaHuyen(huyen.ma);
         const xa = this.danhMucXas.find(x => x.ten.toUpperCase().includes(ward.toUpperCase()));
@@ -2734,20 +2747,20 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức hỗ trợ format ngày
   private formatDate(dateStr: string): string {
     if (!dateStr) return '';
-    
+
     // Kiểm tra nếu dateString đã ở định dạng yyyy-MM-dd
     if (dateStr.includes('-')) {
       const [year, month, day] = dateStr.split('-');
       return `${day}/${month}/${year}`;
     }
-    
+
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
-    
+
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
-    
+
     return `${day}/${month}/${year}`;
   }
 
@@ -2758,36 +2771,36 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       if (this.danhMucTinhs.length === 0) {
         await this.loadDanhMucTinh();
       }
-      
+
       // Tìm mã tỉnh
-      const tinh = this.danhMucTinhs.find(t => 
+      const tinh = this.danhMucTinhs.find(t =>
         t.ten.toUpperCase().includes(province.toUpperCase())
       );
-      
+
       if (tinh) {
         // Cập nhật mã tỉnh
         this.form.patchValue({ tinh_nkq: tinh.ma });
-        
+
         // Tải danh mục huyện sử dụng phương thức đã tối ưu
         await this.loadDanhMucHuyenByMaTinh(tinh.ma);
-        
+
         // Tìm mã huyện
-        const huyen = this.danhMucHuyens.find(h => 
+        const huyen = this.danhMucHuyens.find(h =>
           h.ten.toUpperCase().includes(district.toUpperCase())
         );
-        
+
         if (huyen) {
           // Cập nhật mã huyện
           this.form.patchValue({ huyen_nkq: huyen.ma });
-          
+
           // Tải danh mục xã sử dụng phương thức đã tối ưu
           await this.loadDanhMucXaByMaHuyen(huyen.ma);
-          
+
           // Tìm mã xã
-          const xa = this.danhMucXas.find(x => 
+          const xa = this.danhMucXas.find(x =>
             x.ten.toUpperCase().includes(ward.toUpperCase())
           );
-          
+
           if (xa) {
             // Cập nhật mã xã
             this.form.patchValue({ xa_nkq: xa.ma });
@@ -2819,13 +2832,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức mới để format địa chỉ đầy đủ
   public formatFullAddress(address?: { province: string; district: string; ward: string; street?: string }): string {
     if (!address) return '';
-    
+
     const parts = [];
     if (address.street?.trim()) parts.push(address.street.trim());
     if (address.ward?.trim()) parts.push(address.ward.trim());
     if (address.district?.trim()) parts.push(address.district.trim());
     if (address.province?.trim()) parts.push(address.province.trim());
-    
+
     return parts.join(', ') || '';
   }
 
@@ -2837,7 +2850,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
     if (data) {
       console.log('Modal data:', data);
-      
+
       // Đảm bảo danh mục bệnh viện đã được load
       if (!this.danhMucCSKCBs || this.danhMucCSKCBs.length === 0) {
         this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
@@ -2867,7 +2880,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         const ngaySinhDate = this.formatNgaySinh(data.thongTinThe.ngay_sinh);
         ngaySinh = this.formatDateToString(ngaySinhDate);
       }
-      
+
       this.form.patchValue({
         ma_so_bhxh: data.thongTinThe.ma_so_bhxh,
         cccd: data.thongTinThe.cccd,
@@ -2904,7 +2917,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       // Sửa lại cách gán giá trị cho benh_vien_kcb
       const benhVienValue = data.ma_benh_vien || data.thongTinThe.ma_benh_vien;
-      
+
       this.form.patchValue({
         // Các trường khác giữ nguyên...
         benh_vien_kcb: benhVienValue, // Gán trực tiếp mã bệnh viện
@@ -2990,7 +3003,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
         // Xử lý địa chỉ thường trú từ address
         const addressParts = this.parseAddress(cccd.address || '');
-        
+
         // Xử lý quê quán từ home
         const homeParts = this.parseAddress(cccd.home || '');
 
@@ -3094,7 +3107,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private formatDateForTK1(dateStr: string): string {
     try {
       if (!dateStr) return '';
-      
+
       // Kiểm tra nếu đã đúng định dạng dd/MM/yyyy
       if (dateStr.includes('/')) {
         const parts = dateStr.split('/');
@@ -3158,7 +3171,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.message.warning('Vui lòng chọn ít nhất một CCCD để sao chép thông tin');
       return;
     }
-    
+
     // Format dữ liệu, bỏ mã số BH ở đầu
     const rows = selectedCCCDs.map(cccd => [
       cccd.name || '', // Họ và tên
@@ -3258,14 +3271,14 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức xử lý paste ngày sinh
   handleNgaySinhPaste(event: ClipboardEvent): void {
     event.preventDefault();
-    
+
     // Lấy text từ clipboard
     const clipboardData = event.clipboardData;
     let pastedText = clipboardData?.getData('text') || '';
-    
+
     // Thử parse các định dạng ngày phổ biến
     let formattedDate = '';
-    
+
     // Thử các định dạng phổ biến
     const formats = [
       /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // dd/MM/yyyy
@@ -3285,7 +3298,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           } else { // dd-MM-yyyy
             [, day, month, year] = match;
           }
-          
+
           // Chuẩn hóa về định dạng dd/MM/yyyy
           formattedDate = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
           break;
@@ -3339,7 +3352,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const parts = input.split('\t').map(part => part.trim());
     if (parts.length >= 7) {
       const [maSoBHXH, hoTen, gioiTinh, ngaySinh, diaChi, soCCCD, soDienThoai] = parts;
-      
+
       // Kiểm tra và chuẩn hóa dữ liệu
       if (!maSoBHXH || !hoTen || !ngaySinh || !soCCCD) {
         this.message.warning('Thiếu thông tin bắt buộc: Mã số BHXH, Họ tên, Ngày sinh hoặc CCCD');
@@ -3462,7 +3475,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   handleLogin(): void {
     if (this.loginForm.get('text')?.valid) {
       this.loadingLogin = true;
-      
+
       const data = {
         grant_type: 'password',
         userName: this.loginForm.get('userName')?.value,
@@ -3476,11 +3489,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.ssmv2Service.authenticate(data).subscribe({
         next: (response) => {
           this.loadingLogin = false;
-          
+
           if (response.body?.access_token) {
             this.message.success('Xác thực thành công');
             this.isLoginVisible = false;
-            
+
             if (this.form.get('ma_so_bhxh')?.value) {
               this.onSearchBHYT();
             }
@@ -3536,7 +3549,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time về 00:00:00
-    
+
     const hanTheCuDate = new Date(hanTheCu);
     hanTheCuDate.setHours(0, 0, 0, 0);
 
@@ -3553,12 +3566,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   onCaptchaInput(event: any): void {
     const input = event.target as HTMLInputElement;
     let value = input.value;
-    
+
     // Chỉ lấy 4 ký tự đầu tiên
     if (value.length > 4) {
       value = value.slice(0, 4);
     }
-    
+
     // Chuyển đổi thành chữ hoa và cập nhật vào form
     this.loginForm.patchValue({
       text: value.toUpperCase()
@@ -3579,12 +3592,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   onMultipleSearchTextInput(event: Event): void {
     const textarea = event.target as HTMLTextAreaElement;
     const value = textarea.value;
-    
+
     // Nếu người dùng nhập đủ 10 số và không có dấu xuống dòng ở cuối
     if (value.length > 0 && !value.endsWith('\n')) {
       const lines = value.split('\n');
       const lastLine = lines[lines.length - 1];
-      
+
       // Nếu dòng cuối cùng đã đủ 10 ký tự (đủ 1 mã số BHXH), tự động thêm xuống dòng
       if (lastLine.length === 10 && /^\d+$/.test(lastLine)) {
         textarea.value = value + '\n';
@@ -3597,39 +3610,39 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   onMultipleSearchTextPaste(event: ClipboardEvent): void {
     // Ngăn hành vi mặc định của trình duyệt
     event.preventDefault();
-    
+
     // Lấy nội dung từ clipboard
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;
-    
+
     const pastedText = clipboardData.getData('text');
     if (!pastedText) return;
-    
+
     // Xử lý nội dung dán vào
     const textarea = event.target as HTMLTextAreaElement;
     const currentValue = textarea.value;
     const cursorPosition = textarea.selectionStart;
-    
+
     // Tách nội dung dán thành các dòng
     let formattedText = pastedText
       .replace(/\s+/g, '') // Loại bỏ tất cả khoảng trắng
       .replace(/(.{10})/g, '$1\n'); // Thêm xuống dòng sau mỗi 10 ký tự
-    
+
     // Nếu dòng cuối không đủ 10 ký tự và không phải là dòng trống, không thêm xuống dòng
     if (formattedText.endsWith('\n') && formattedText.length % 11 !== 0) {
       formattedText = formattedText.slice(0, -1);
     }
-    
+
     // Chèn nội dung đã định dạng vào vị trí con trỏ
-    const newValue = 
-      currentValue.substring(0, cursorPosition) + 
-      formattedText + 
+    const newValue =
+      currentValue.substring(0, cursorPosition) +
+      formattedText +
       currentValue.substring(textarea.selectionEnd || cursorPosition);
-    
+
     // Cập nhật giá trị của textarea
     textarea.value = newValue;
     this.multipleSearchText = newValue;
-    
+
     // Di chuyển con trỏ đến cuối nội dung vừa dán
     const newCursorPosition = cursorPosition + formattedText.length;
     textarea.setSelectionRange(newCursorPosition, newCursorPosition);
@@ -3678,7 +3691,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(value)) {
       const [day, month, year] = value.split('/').map(Number);
       const date = new Date(year, month - 1, day);
-      
+
       // Kiểm tra tính hợp lệ của ngày
       if (
         date.getDate() === day &&
@@ -3701,7 +3714,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm hàm mới để xử lý ngày sinh
   private formatNgaySinh(ngaySinhInput: any): Date {
     let date: Date;
-    
+
     // Nếu không có giá trị, trả về ngày hiện tại
     if (!ngaySinhInput) {
       date = new Date();
@@ -3714,13 +3727,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       } else {
         date = new Date();
       }
-    } 
+    }
     // Xử lý trường hợp dd/MM/yyyy
     else if (typeof ngaySinhInput === 'string' && ngaySinhInput.includes('/')) {
       const [day, month, year] = ngaySinhInput.split('/').map(Number);
       // Sử dụng Date.UTC để đảm bảo múi giờ
       date = new Date(Date.UTC(year, month - 1, day));
-      
+
       // Kiểm tra tính hợp lệ của ngày
       if (
         !(date.getUTCDate() === day &&
@@ -3745,28 +3758,28 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     else {
       date = new Date();
     }
-    
+
     return date;
   }
 
   // Thêm phương thức tải trước dữ liệu địa chính
   async preloadAddressData(): Promise<void> {
     if (this.dataInitialized) return;
-    
+
     try {
       console.log('Bắt đầu tải trước dữ liệu địa chính...');
-      
+
       // Tải danh sách tỉnh
       await this.loadDanhMucTinh();
-      
+
       // Tải trước danh sách huyện cho các tỉnh phổ biến
       const commonProvinces = ['01', '79', '48']; // Hà Nội, HCM, Đà Nẵng
       for (const province of commonProvinces) {
         await this.loadDanhMucHuyenByMaTinh(province);
-        
+
         // Lấy các huyện đã tải
         const huyens = this.huyenCache.get(province) || [];
-        
+
         // Tải trước xã cho một số huyện
         if (huyens.length > 0) {
           // Chỉ tải 2 huyện đầu tiên để không tải quá nhiều
@@ -3775,7 +3788,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       this.dataInitialized = true;
       console.log('Đã tải xong dữ liệu địa chính!');
     } catch (error) {
@@ -3787,17 +3800,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   private clearAddressCache(): void {
     // Xóa cache tỉnh
     localStorage.removeItem(this.TINH_CACHE_KEY);
-    
+
     // Xóa cache huyện
     this.huyenCache.forEach((_, key) => {
       localStorage.removeItem(this.HUYEN_CACHE_PREFIX + key);
     });
-    
+
     // Xóa cache xã
     this.xaCache.forEach((_, key) => {
       localStorage.removeItem(this.XA_CACHE_PREFIX + key);
     });
-    
+
     // Xóa cache trong bộ nhớ
     this.huyenCache.clear();
     this.xaCache.clear();
@@ -3826,7 +3839,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   convertToUpperCase(event: Event): void {
     const input = event.target as HTMLInputElement;
     const upperCaseValue = input.value.toUpperCase();
-    
+
     // Nếu giá trị đã thay đổi sau khi chuyển đổi
     if (input.value !== upperCaseValue) {
       input.value = upperCaseValue;
@@ -3849,11 +3862,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
     // Tạo nội dung thông báo với thông tin về biên lai điện tử
     let confirmMessage = 'Bạn có chắc chắn muốn gửi đợt kê khai này? Sau khi gửi sẽ không thể chỉnh sửa.';
-    
+
     if (this.willUseBienLaiDienTu) {
       confirmMessage += '\n\nĐợt kê khai này sẽ tự động sử dụng biên lai điện tử.';
     }
-    
+
     this.modal.confirm({
       nzTitle: 'Xác nhận gửi',
       nzContent: confirmMessage,
@@ -3862,7 +3875,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       nzOnOk: () => {
         this.loadingGui = true;
         console.log('Gửi đợt kê khai với biên lai điện tử:', this.willUseBienLaiDienTu);
-        
+
         // Sử dụng giá trị đã được xác định từ đợt kê khai
         this.dotKeKhaiService.guiDotKeKhai(this.dotKeKhaiId, this.willUseBienLaiDienTu).subscribe({
           next: () => {
@@ -3875,13 +3888,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             console.error('Lỗi khi gửi đợt kê khai:', error);
-            
+
             // Hiển thị thông báo lỗi từ server nếu có
             if (error.error && error.error.message) {
               this.message.error(error.error.message);
-              
+
               // Nếu lỗi liên quan đến biên lai, hiển thị hướng dẫn thêm
-              if (error.error.message.includes('Người thu chưa được cấp quyển biên lai') || 
+              if (error.error.message.includes('Người thu chưa được cấp quyển biên lai') ||
                   error.error.message.includes('hết số')) {
                 this.modal.confirm({
                   nzTitle: 'Lỗi quyển biên lai',
@@ -3923,7 +3936,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   applyFilters(): void {
     // Bắt đầu với tất cả dữ liệu
     this.filteredKeKhaiBHYTs = [...this.keKhaiBHYTs];
-    
+
     // Áp dụng lọc theo số tháng đóng nếu có
     if (this.filterSoThangDong !== null) {
       this.filteredKeKhaiBHYTs = this.filteredKeKhaiBHYTs.filter(
@@ -3973,26 +3986,26 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const hoTenControl = this.form.get('ho_ten');
     if (hoTenControl && hoTenControl.value) {
       const hoTen = hoTenControl.value.trim();
-      
+
       // Kiểm tra độ dài
       if (hoTen.length < 3) {
         hoTenControl.setErrors({ invalidName: true });
         return;
       }
-      
+
       // Kiểm tra ký tự đặc biệt không hợp lệ
       const regex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s\-]+$/;
       if (!regex.test(hoTen)) {
         hoTenControl.setErrors({ invalidName: true });
         return;
       }
-      
+
       // Kiểm tra khoảng trắng liên tiếp
       if (/\s\s/.test(hoTen)) {
         hoTenControl.setErrors({ invalidName: true });
         return;
       }
-      
+
       // Nếu mọi kiểm tra đều thành công, xóa lỗi
       hoTenControl.setErrors(null);
     }
@@ -4092,7 +4105,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.isLoadingTraCuu = true;
       this.daTimKiem = true;
       this.loiTraCuu = '';
-      
+
       // Kiểm tra token VNPost
       const token = this.ssmv2Service.getToken();
       if (!token) {
@@ -4100,7 +4113,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         this.autoLoginVNPost(true);
         return;
       }
-      
+
       // Lấy dữ liệu từ form
       const formData: TraCuuVNPostRequest = {
         maTinh: this.traCuuVNPostForm.value.maTinh,
@@ -4110,31 +4123,31 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         ngaySinh: this.formatDateTraCuu(this.traCuuVNPostForm.value.ngaySinh),
         soCMND: this.traCuuVNPostForm.value.soCMND || ''
       };
-      
+
       console.log('Dữ liệu gửi đi:', formData);
-      
+
       // Gọi API tra cứu VNPost
       this.bhxhService.traCuuMaSoBHXHVNPost(formData)
         .subscribe({
           next: (res: any) => {
             this.isLoadingTraCuu = false;
-            
+
             // Log response để debug
             console.log('Response từ API VNPost:', res);
-            
+
             // Kiểm tra nếu response có chứa thông báo lỗi xác thực
             if (res && res.error === 'Lỗi xác thực') {
               this.ketQuaTraCuu = [];
               this.loiTraCuu = 'Lỗi xác thực: ' + (res.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
               this.message.error(this.loiTraCuu);
-              
+
               // Hiển thị form đăng nhập lại
               this.ssmv2Service.clearToken();
               this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
               this.isLoginVisible = true;
               return;
             }
-            
+
             // Kiểm tra nếu response có status khác 200
             if (res && res.status && res.status !== 200) {
               this.ketQuaTraCuu = [];
@@ -4142,7 +4155,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               this.message.error(this.loiTraCuu);
               return;
             }
-            
+
             // Xử lý dữ liệu trả về
             if (res && res.success && res.data && res.data.length > 0) {
               // Xử lý tất cả kết quả thay vì chỉ kết quả đầu tiên
@@ -4150,12 +4163,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                 // Xử lý đặc biệt cho ngày sinh
                 let ngaySinh: Date;
                 let ngaySinhFormatted: string | undefined = undefined;
-                
+
                 if (data.ngaySinhDt) {
                   ngaySinh = new Date(data.ngaySinhDt);
                 } else if (data.ngaySinh) {
                   const year = parseInt(data.ngaySinh.substring(0, 4));
-                  
+
                   // Kiểm tra nếu chỉ có năm, không có tháng và ngày (hoặc là 0000)
                   if (data.ngaySinh.substring(4, 8) === "0000") {
                     ngaySinh = new Date(year, 0, 1);
@@ -4163,11 +4176,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                   } else {
                     const month = parseInt(data.ngaySinh.substring(4, 6)) - 1;
                     const day = parseInt(data.ngaySinh.substring(6, 8));
-                    
+
                     // Kiểm tra tính hợp lệ của tháng và ngày
                     const validMonth = month >= 0 && month <= 11;
                     const validDay = day >= 1 && day <= 31;
-                    
+
                     if (validMonth && validDay) {
                       ngaySinh = new Date(year, month, day);
                     } else {
@@ -4178,7 +4191,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                 } else {
                   ngaySinh = new Date();
                 }
-                
+
                 return {
                   maSoBHXH: data.maSoBhxh,
                   hoTen: data.hoTen,
@@ -4191,7 +4204,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                   maHo: data.maHo
                 };
               });
-              
+
               this.message.success(`Tra cứu thành công: Tìm thấy ${this.ketQuaTraCuu.length} kết quả`);
               console.log('Kết quả tra cứu đã xử lý:', this.ketQuaTraCuu);
             } else {
@@ -4204,9 +4217,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             // Xử lý lỗi từ API
             this.isLoadingTraCuu = false;
             this.ketQuaTraCuu = [];
-            
+
             console.error('Lỗi khi tra cứu:', err);
-            
+
             if (err.error === 'Lỗi xác thực') {
               this.loiTraCuu = 'Lỗi xác thực: ' + (err.error_description || 'Phiên làm việc đã hết hạn');
               this.message.error(this.loiTraCuu);
@@ -4240,7 +4253,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   private formatDateTraCuu(date: Date | string): string {
     if (!date) return '';
-    
+
     // Nếu là chuỗi có định dạng dd/MM/yyyy
     if (typeof date === 'string' && date.includes('/')) {
       // Chuyển đổi từ dd/MM/yyyy sang yyyy-MM-dd
@@ -4251,15 +4264,15 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         return `${year}-${month}-${day}`;
       }
     }
-    
+
     // Nếu là đối tượng Date
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return '';
-    
+
     const day = dateObj.getDate().toString().padStart(2, '0');
     const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
     const year = dateObj.getFullYear();
-    
+
     // Trả về định dạng yyyy-MM-dd
     return `${year}-${month}-${day}`;
   }
@@ -4268,7 +4281,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (ngaySinhDt) {
       return new Date(ngaySinhDt);
     }
-    
+
     if (ngaySinhStr) {
       // Chuyển đổi chuỗi ngày sinh dạng 'YYYYMMDD' thành Date
       const year = parseInt(ngaySinhStr.substring(0, 4));
@@ -4276,7 +4289,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       const day = parseInt(ngaySinhStr.substring(6, 8));
       return new Date(year, month, day);
     }
-    
+
     return new Date();
   }
 
@@ -4293,7 +4306,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         if (res && res.data) {
           this.captchaImage = res.data.image;
           this.captchaCode = res.data.code;
-          
+
           // Thực hiện đăng nhập tự động
           const data = {
             grant_type: 'password',
@@ -4309,7 +4322,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             next: (response) => {
               if (response.body?.access_token) {
                 console.log('Tự động xác thực thành công');
-                
+
                 // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
                 if (fromSubmitTraCuu) {
                   setTimeout(() => {
@@ -4356,13 +4369,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       cccd: item.soCCCD || '',
       so_dien_thoai: item.soDienThoai && item.soDienThoai !== 'N/A' ? item.soDienThoai : ''
     });
-    
+
     // Đóng modal
     this.handleTraCuuMaSoBHXHCancel();
-    
+
     // Thông báo
     this.message.success('Đã áp dụng thông tin BHXH vào form');
-    
+
     // Tự động tìm kiếm thông tin BHYT
     this.onSearchBHYT();
   }
@@ -4381,7 +4394,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         };
         return result;
       });
-      
+
       this.danhSachCCCD = processedData;
     }
   }
@@ -4389,7 +4402,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức định dạng ngày sinh từ CCCD
   formatDateFromCCCD(dateStr: string): string {
     if (!dateStr) return '';
-    
+
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString('vi-VN', {
@@ -4405,13 +4418,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức định dạng giới tính từ CCCD
   formatGenderFromCCCD(gender: string): string {
     if (!gender) return '';
-    
+
     if (gender.toLowerCase() === 'male' || gender === 'nam' || gender === 'Nam') {
       return 'Nam';
     } else if (gender.toLowerCase() === 'female' || gender === 'nữ' || gender === 'Nữ') {
       return 'Nữ';
     }
-    
+
     return gender;
   }
-} 
+}

@@ -35,67 +35,6 @@
       <a (click)="onCheckTatCa(false)" *ngIf="getSoDotKeKhaiDaChon() > 0">Bỏ chọn tất cả</a>
     </div>
 
-    <!-- Thống kê theo trạng thái -->
-    <div class="status-statistics">
-      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('chua_gui')">
-        <nz-statistic
-          [nzValue]="getCountByStatus('chua_gui')"
-          [nzTitle]="'Chưa gửi'"
-          [nzValueStyle]="{ color: '#8c8c8c' }"
-          [nzPrefix]="prefixChuaGui"
-        ></nz-statistic>
-        <ng-template #prefixChuaGui><span nz-icon nzType="file" nzTheme="outline"></span></ng-template>
-      </nz-card>
-      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_gui')">
-        <nz-statistic
-          [nzValue]="getCountByStatus('da_gui')"
-          [nzTitle]="'Đã gửi'"
-          [nzValueStyle]="{ color: '#1890ff' }"
-          [nzPrefix]="prefixDaGui"
-        ></nz-statistic>
-        <ng-template #prefixDaGui><span nz-icon nzType="send" nzTheme="outline"></span></ng-template>
-      </nz-card>
-      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_duyet')">
-        <nz-statistic
-          [nzValue]="getCountByStatus('da_duyet')"
-          [nzTitle]="'Đã duyệt'"
-          [nzValueStyle]="{ color: '#52c41a' }"
-          [nzPrefix]="prefixDaDuyet"
-        ></nz-statistic>
-        <ng-template #prefixDaDuyet><span nz-icon nzType="check-circle" nzTheme="outline"></span></ng-template>
-      </nz-card>
-      <nz-card class="statistic-card" [nzBordered]="false" (click)="filterByStatus('da_tu_choi')">
-        <nz-statistic
-          [nzValue]="getCountByStatus('da_tu_choi')"
-          [nzTitle]="'Đã từ chối'"
-          [nzValueStyle]="{ color: '#f5222d' }"
-          [nzPrefix]="prefixDaTuChoi"
-        ></nz-statistic>
-        <ng-template #prefixDaTuChoi><span nz-icon nzType="close-circle" nzTheme="outline"></span></ng-template>
-      </nz-card>
-      <nz-card class="statistic-card" [nzBordered]="false" (click)="refreshData()">
-        <nz-statistic
-          [nzValue]="originalDotKeKhaiList.length"
-          [nzTitle]="'Tổng số'"
-          [nzValueStyle]="{ color: '#722ed1' }"
-          [nzPrefix]="prefixTotal"
-        ></nz-statistic>
-        <ng-template #prefixTotal><span nz-icon nzType="database" nzTheme="outline"></span></ng-template>
-      </nz-card>
-      <nz-card class="statistic-card statistic-money" [nzBordered]="false" (click)="refreshData()">
-        <nz-statistic
-          [nzValue]="getTotalAmount()"
-          [nzTitle]="'Tổng tiền đang xử lý'"
-          [nzValueStyle]="{ color: '#fa8c16' }"
-          [nzPrefix]="prefixMoney"
-          [nzSuffix]="suffixMoney"
-          [nzFormatter]="formatterVND"
-        ></nz-statistic>
-        <ng-template #prefixMoney><span nz-icon nzType="dollar" nzTheme="outline"></span></ng-template>
-        <ng-template #suffixMoney>đ</ng-template>
-      </nz-card>
-    </div>
-
     <!-- Tab phân loại theo trạng thái -->
     <div class="status-tabs">
       <nz-tabset [(nzSelectedIndex)]="tabTrangThaiIndex" (nzSelectedIndexChange)="onTabChange($event)">

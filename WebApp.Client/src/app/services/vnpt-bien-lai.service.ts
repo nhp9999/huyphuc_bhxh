@@ -81,19 +81,64 @@ export class VNPTBienLaiService {
     return this.http.post<VNPTBienLaiResponse>(`${this.apiUrl}/cancel-invoice`, request);
   }
 
-  publishBienLaiToVNPT(bienLaiId: number): Observable<VNPTBienLaiResponse> {
-    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/publish-to-vnpt`, {});
-  }
-
-  cancelBienLaiVNPT(bienLaiId: number): Observable<VNPTBienLaiResponse> {
-    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/cancel-vnpt`, {});
-  }
-
+  /**
+   * Phát hành biên lai điện tử lên VNPT (phương thức hợp nhất)
+   * @param bienLaiId ID biên lai cần phát hành
+   * @returns Kết quả phát hành biên lai
+   */
   publishBienLaiToVNPTWithLink(bienLaiId: number): Observable<VNPTBienLaiResponse> {
     return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/publish-to-vnpt-with-link`, {});
   }
 
+  /**
+   * Phương thức này được giữ lại để tương thích ngược, sử dụng publishBienLaiToVNPTWithLink thay thế
+   */
+  publishBienLaiToVNPT(bienLaiId: number): Observable<VNPTBienLaiResponse> {
+    return this.publishBienLaiToVNPTWithLink(bienLaiId);
+  }
+
+  /**
+   * Phương thức này được giữ lại để tương thích ngược, sử dụng publishBienLaiToVNPTWithLink thay thế
+   */
   publishBienLaiToVNPTDirect(bienLaiId: number): Observable<VNPTBienLaiResponse> {
-    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/publish-to-vnpt-direct`, {});
+    return this.publishBienLaiToVNPTWithLink(bienLaiId);
+  }
+
+  /**
+   * Hủy biên lai điện tử trên VNPT
+   * @param bienLaiId ID biên lai cần hủy
+   * @returns Kết quả hủy biên lai
+   */
+  cancelBienLaiVNPT(bienLaiId: number): Observable<VNPTBienLaiResponse> {
+    return this.http.post<VNPTBienLaiResponse>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/cancel-vnpt`, {});
+  }
+
+  // PortalService methods
+
+  /**
+   * Xem nội dung biên lai điện tử
+   * @param bienLaiId ID biên lai
+   * @returns URL để xem biên lai
+   */
+  viewBienLai(bienLaiId: number): string {
+    return `${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/view`;
+  }
+
+  /**
+   * Tải xuống biên lai điện tử dạng PDF
+   * @param bienLaiId ID biên lai
+   * @returns URL để tải xuống biên lai
+   */
+  downloadBienLaiPDF(bienLaiId: number): string {
+    return `${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/download-pdf`;
+  }
+
+  /**
+   * Lấy link biên lai điện tử
+   * @param bienLaiId ID biên lai
+   * @returns Observable với link biên lai
+   */
+  getBienLaiLink(bienLaiId: number): Observable<{link: string}> {
+    return this.http.get<{link: string}>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/get-link`);
   }
 }

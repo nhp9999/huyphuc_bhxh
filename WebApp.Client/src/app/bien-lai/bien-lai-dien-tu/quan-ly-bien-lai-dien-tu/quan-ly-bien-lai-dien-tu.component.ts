@@ -20,7 +20,11 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzUploadModule, NzUploadFile } from 'ng-zorro-antd/upload';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { HttpClient } from '@angular/common/http';
 import { catchError, finalize, of } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-quan-ly-bien-lai-dien-tu',
@@ -41,7 +45,9 @@ import { catchError, finalize, of } from 'rxjs';
     NzDividerModule,
     NzInputNumberModule,
     NzCheckboxModule,
-    NzRadioModule
+    NzRadioModule,
+    NzUploadModule,
+    NzAlertModule
   ],
   templateUrl: './quan-ly-bien-lai-dien-tu.component.html',
   styleUrls: ['./quan-ly-bien-lai-dien-tu.component.scss']
@@ -56,12 +62,25 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   editingId: number | null = null;
   currentBienLai: BienLaiDienTu | null = null;
 
+  // Checkbox và xóa nhiều
+  setOfCheckedId = new Set<number>();
+  isAllChecked = false;
+  isIndeterminate = false;
+  selectedIds: number[] = [];
+
+  // Import Excel
+  isImportVisible = false;
+  importFileList: NzUploadFile[] = [];
+  isImporting = false;
+  importResult: any = null;
+
   constructor(
     private bienLaiDienTuService: BienLaiDienTuService,
     private vnptBienLaiService: VNPTBienLaiService,
     private fb: FormBuilder,
     private message: NzMessageService,
-    private modal: NzModalService
+    private modal: NzModalService,
+    private http: HttpClient
   ) { }
 
   ngOnInit(): void {
@@ -263,17 +282,27 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
     }
   }
 
-  // Tạo biên lai điện tử
+  // Phương thức này được giữ lại để tương thích ngược
   publishToVNPT(id: number): void {
+    this.publishToVNPTWithLink(id);
+  }
+
+  // Phương thức này được giữ lại để tương thích ngược
+  publishToVNPTDirect(id: number): void {
+    this.publishToVNPTWithLink(id);
+  }
+
+  // Tạo biên lai điện tử (phương thức hợp nhất)
+  publishToVNPTWithLink(id: number): void {
     this.modal.confirm({
-      nzTitle: 'Xác nhận tạo',
+      nzTitle: 'Xác nhận tạo biên lai điện tử',
       nzContent: 'Bạn có chắc chắn muốn tạo biên lai điện tử này?',
       nzOkText: 'Tạo',
       nzOkType: 'primary',
       nzOnOk: () => {
         const loadingId = this.message.loading('Đang tạo biên lai điện tử...', { nzDuration: 0 }).messageId;
 
-        this.vnptBienLaiService.publishBienLaiToVNPT(id)
+        this.vnptBienLaiService.publishBienLaiToVNPTWithLink(id)
           .pipe(
             finalize(() => {
               this.message.remove(loadingId);
@@ -288,94 +317,16 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
             next: (response) => {
               if (response && response.success) {
                 this.message.success('Tạo biên lai điện tử thành công');
+
                 // Hiển thị thông báo khi phát hành thành công
-                this.modal.success({
-                  nzTitle: 'Tạo biên lai điện tử thành công',
-                  nzContent: 'Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.'
-                });
-                this.loadBienLais();
-              }
-            }
-          });
-      }
-    });
-  }
-
-  // Tạo và phát hành biên lai trực tiếp
-  publishToVNPTDirect(id: number): void {
-    this.modal.confirm({
-      nzTitle: 'Xác nhận tạo và phát hành',
-      nzContent: 'Bạn có chắc chắn muốn tạo và phát hành biên lai điện tử này trực tiếp?',
-      nzOkText: 'Tạo và phát hành',
-      nzOkType: 'primary',
-      nzOnOk: () => {
-        const loadingId = this.message.loading('Đang tạo và phát hành biên lai điện tử...', { nzDuration: 0 }).messageId;
-
-        this.vnptBienLaiService.publishBienLaiToVNPTDirect(id)
-          .pipe(
-            finalize(() => {
-              this.message.remove(loadingId);
-            }),
-            catchError(error => {
-              console.error('Lỗi khi tạo và phát hành biên lai điện tử:', error);
-              this.message.error(error.error?.message || 'Có lỗi khi tạo và phát hành biên lai điện tử');
-              return of(null);
-            })
-          )
-          .subscribe({
-            next: (response) => {
-              if (response && response.success) {
-                this.message.success('Tạo và phát hành biên lai điện tử thành công');
-                this.modal.success({
-                  nzTitle: 'Tạo và phát hành biên lai điện tử thành công',
-                  nzContent: `
-                    <p>Biên lai điện tử đã được tạo và phát hành thành công.</p>
-                    <p>Mẫu số: ${response.data.pattern}</p>
-                    <p>Ký hiệu: ${response.data.serial}</p>
-                    <p>Số biên lai: ${response.data.invoiceNo}</p>
-                  `,
-                  nzOkText: 'Đóng'
-                });
-                this.loadBienLais();
-              }
-            }
-          });
-      }
-    });
-  }
-
-  // Tạo biên lai điện tử với link
-  publishToVNPTWithLink(id: number): void {
-    this.modal.confirm({
-      nzTitle: 'Xác nhận tạo',
-      nzContent: 'Bạn có chắc chắn muốn tạo biên lai điện tử này với link?',
-      nzOkText: 'Tạo',
-      nzOkType: 'primary',
-      nzOnOk: () => {
-        const loadingId = this.message.loading('Đang tạo biên lai điện tử với link...', { nzDuration: 0 }).messageId;
-
-        this.vnptBienLaiService.publishBienLaiToVNPTWithLink(id)
-          .pipe(
-            finalize(() => {
-              this.message.remove(loadingId);
-            }),
-            catchError(error => {
-              console.error('Lỗi khi tạo biên lai điện tử với link:', error);
-              this.message.error(error.error?.message || 'Có lỗi khi tạo biên lai điện tử với link');
-              return of(null);
-            })
-          )
-          .subscribe({
-            next: (response) => {
-              if (response && response.success) {
-                this.message.success('Tạo biên lai điện tử với link thành công');
-
-                // Hiển thị thông báo khi phát hành thành công với link
                 if (response.data && response.data.link) {
                   this.modal.success({
                     nzTitle: 'Tạo biên lai điện tử thành công',
                     nzContent: `
-                      <p>Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.</p>
+                      <p>Biên lai điện tử đã được tạo thành công.</p>
+                      <p>Mẫu số: ${response.data.pattern}</p>
+                      <p>Ký hiệu: ${response.data.serial}</p>
+                      <p>Số biên lai: ${response.data.invoiceNo}</p>
                       <p>Link biên lai: <a href="${response.data.link}" target="_blank">${response.data.link}</a></p>
                     `,
                     nzOkText: 'Đóng'
@@ -383,7 +334,13 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
                 } else {
                   this.modal.success({
                     nzTitle: 'Tạo biên lai điện tử thành công',
-                    nzContent: 'Biên lai điện tử đã được tạo thành công và sẵn sàng sử dụng.'
+                    nzContent: `
+                      <p>Biên lai điện tử đã được tạo thành công.</p>
+                      <p>Mẫu số: ${response.data.pattern || ''}</p>
+                      <p>Ký hiệu: ${response.data.serial || ''}</p>
+                      <p>Số biên lai: ${response.data.invoiceNo || ''}</p>
+                    `,
+                    nzOkText: 'Đóng'
                   });
                 }
 
@@ -425,6 +382,191 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
               }
             }
           });
+      }
+    });
+  }
+
+  // Phương thức xử lý import Excel
+  showImportModal(): void {
+    this.isImportVisible = true;
+    this.importFileList = [];
+    this.importResult = null;
+  }
+
+  handleImportCancel(): void {
+    this.isImportVisible = false;
+  }
+
+  beforeUpload = (file: NzUploadFile): boolean => {
+    // Kiểm tra định dạng file
+    const isXlsx = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (!isXlsx) {
+      this.message.error('Chỉ hỗ trợ file Excel (.xlsx)!');
+      return false;
+    }
+
+    // Kiểm tra kích thước file
+    const isLt5M = (file.size || 0) / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      this.message.error('File phải nhỏ hơn 5MB!');
+      return false;
+    }
+
+    // Chỉ cho phép 1 file
+    this.importFileList = [file];
+    return false;
+  };
+
+  importFromExcel(): void {
+    if (this.importFileList.length === 0) {
+      this.message.warning('Vui lòng chọn file Excel để import!');
+      return;
+    }
+
+    this.isImporting = true;
+    const formData = new FormData();
+    formData.append('file', this.importFileList[0] as any);
+
+    this.http.post(`${environment.apiUrl}/bien-lai-dien-tu/import`, formData)
+      .subscribe({
+        next: (response: any) => {
+          this.isImporting = false;
+          this.importResult = response;
+          this.message.success(response.message || 'Import thành công!');
+          this.loadBienLais(); // Cập nhật lại danh sách biên lai
+          this.loadQuyenBienLais(); // Cập nhật lại danh sách quyển biên lai
+        },
+        error: (error) => {
+          this.isImporting = false;
+          this.message.error(error.error?.message || 'Lỗi khi import dữ liệu!');
+          console.error('Import error:', error);
+        }
+      });
+  }
+
+  downloadTemplate(): void {
+    // Sử dụng đường dẫn trực tiếp đến file mẫu trong thư mục assets
+    const templateUrl = '/assets/templates/mau-import-bien-lai-dien-tu.xlsx';
+
+    // Tạo link tải xuống
+    const link = document.createElement('a');
+    link.href = templateUrl;
+    link.download = 'mau-import-bien-lai-dien-tu.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    this.message.success('Tải mẫu Excel thành công!');
+  }
+
+  // PortalService methods
+
+  /**
+   * Xem biên lai điện tử
+   * @param id ID biên lai
+   */
+  viewBienLai(id: number): void {
+    // Mở biên lai trong cửa sổ mới
+    window.open(this.vnptBienLaiService.viewBienLai(id), '_blank');
+  }
+
+  /**
+   * Tải xuống biên lai điện tử dạng PDF
+   * @param id ID biên lai
+   */
+  downloadBienLaiPDF(id: number): void {
+    // Mở URL tải xuống trong cửa sổ mới
+    window.open(this.vnptBienLaiService.downloadBienLaiPDF(id), '_blank');
+  }
+
+  /**
+   * Mở link biên lai điện tử
+   * @param id ID biên lai
+   */
+  openBienLaiLink(id: number): void {
+    const loadingId = this.message.loading('Đang lấy link biên lai...', { nzDuration: 0 }).messageId;
+
+    this.vnptBienLaiService.getBienLaiLink(id)
+      .pipe(
+        finalize(() => {
+          this.message.remove(loadingId);
+        }),
+        catchError(error => {
+          console.error('Lỗi khi lấy link biên lai:', error);
+          this.message.error(error.error?.message || 'Có lỗi khi lấy link biên lai');
+          return of(null);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          if (response && response.link) {
+            // Mở link trong cửa sổ mới
+            window.open(response.link, '_blank');
+          } else {
+            this.message.warning('Không tìm thấy link biên lai');
+          }
+        }
+      });
+  }
+
+  // Phương thức xử lý checkbox
+  onAllChecked(checked: boolean): void {
+    this.bienLais.forEach(item => {
+      if (item.id) {
+        this.updateCheckedSet(item.id, checked);
+      }
+    });
+    this.refreshCheckedStatus();
+  }
+
+  onItemChecked(id: number, checked: boolean): void {
+    this.updateCheckedSet(id, checked);
+    this.refreshCheckedStatus();
+  }
+
+  updateCheckedSet(id: number, checked: boolean): void {
+    if (checked) {
+      this.setOfCheckedId.add(id);
+    } else {
+      this.setOfCheckedId.delete(id);
+    }
+    this.selectedIds = Array.from(this.setOfCheckedId);
+  }
+
+  refreshCheckedStatus(): void {
+    const listOfEnabledData = this.bienLais.filter(({ id }) => id !== undefined);
+    this.isAllChecked = listOfEnabledData.length > 0 && listOfEnabledData.every(({ id }) => id !== undefined && this.setOfCheckedId.has(id));
+    this.isIndeterminate = listOfEnabledData.some(({ id }) => id !== undefined && this.setOfCheckedId.has(id)) && !this.isAllChecked;
+    this.selectedIds = Array.from(this.setOfCheckedId);
+  }
+
+  // Xóa nhiều biên lai điện tử
+  deleteMultiple(): void {
+    if (this.selectedIds.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một biên lai để xóa');
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: 'Xác nhận xóa',
+      nzContent: `Bạn có chắc chắn muốn xóa ${this.selectedIds.length} biên lai điện tử đã chọn?`,
+      nzOkText: 'Xóa',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: () => {
+        this.isLoading = true;
+        this.bienLaiDienTuService.deleteMultiple(this.selectedIds).subscribe({
+          next: () => {
+            this.message.success(`Xóa ${this.selectedIds.length} biên lai điện tử thành công`);
+            this.setOfCheckedId.clear();
+            this.selectedIds = [];
+            this.loadBienLais();
+          },
+          error: (error: any) => {
+            console.error('Lỗi khi xóa nhiều biên lai điện tử:', error);
+            this.message.error('Có lỗi khi xóa nhiều biên lai điện tử');
+            this.isLoading = false;
+          }
+        });
       }
     });
   }

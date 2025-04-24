@@ -5,15 +5,25 @@
       <button nz-button nzType="primary" (click)="showAddModal()">
         <i nz-icon nzType="plus"></i> Thêm biên lai điện tử
       </button>
+      <button nz-button nzType="primary" (click)="showImportModal()">
+        <i nz-icon nzType="file-excel"></i> Import từ Excel
+      </button>
       <button nz-button nzType="primary" [routerLink]="['/bien-lai/bien-lai-dien-tu/tao-bien-lai-vnpt']">
         <i nz-icon nzType="cloud-upload"></i> Tạo biên lai điện tử
       </button>
     </div>
   </div>
 
+  <div class="table-actions" *ngIf="selectedIds.length > 0">
+    <button nz-button nzType="primary" nzDanger (click)="deleteMultiple()">
+      <i nz-icon nzType="delete"></i> Xóa {{ selectedIds.length }} biên lai đã chọn
+    </button>
+  </div>
+
   <nz-table #basicTable [nzData]="bienLais" [nzLoading]="isLoading" [nzBordered]="true">
     <thead>
       <tr>
+        <th nzWidth="60px" [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>
         <th>STT</th>
         <th>Ký hiệu</th>
         <th>Số biên lai</th>
@@ -29,6 +39,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let item of basicTable.data; let i = index">
+        <td [nzChecked]="setOfCheckedId.has(item.id!)" (nzCheckedChange)="onItemChecked(item.id!, $event)"></td>
         <td>{{ i + 1 }}</td>
         <td>{{ item.ky_hieu }}</td>
         <td>{{ item.so_bien_lai }}</td>
@@ -60,32 +71,10 @@
             nzType="primary"
             nzSize="small"
             [disabled]="item.is_published_to_vnpt"
-            (click)="publishToVNPT(item.id!)"
-            nz-tooltip
-            nzTooltipTitle="Tạo biên lai">
-            <i nz-icon nzType="cloud-upload"></i>
-          </button>
-          <nz-divider nzType="vertical"></nz-divider>
-          <button
-            nz-button
-            nzType="primary"
-            nzSize="small"
-            [disabled]="item.is_published_to_vnpt"
-            (click)="publishToVNPTDirect(item.id!)"
-            nz-tooltip
-            nzTooltipTitle="Tạo và phát hành trực tiếp">
-            <i nz-icon nzType="thunderbolt"></i>
-          </button>
-          <nz-divider nzType="vertical"></nz-divider>
-          <button
-            nz-button
-            nzType="primary"
-            nzSize="small"
-            [disabled]="item.is_published_to_vnpt"
             (click)="publishToVNPTWithLink(item.id!)"
             nz-tooltip
-            nzTooltipTitle="Tạo biên lai với link">
-            <i nz-icon nzType="link"></i>
+            nzTooltipTitle="Tạo biên lai điện tử">
+            <i nz-icon nzType="cloud-upload"></i>
           </button>
           <nz-divider nzType="vertical"></nz-divider>
           <button
@@ -98,6 +87,39 @@
             nz-tooltip
             nzTooltipTitle="Hủy biên lai">
             <i nz-icon nzType="stop"></i>
+          </button>
+          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
+          <button
+            nz-button
+            nzType="default"
+            nzSize="small"
+            [disabled]="!item.is_published_to_vnpt"
+            (click)="viewBienLai(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Xem biên lai">
+            <i nz-icon nzType="eye"></i>
+          </button>
+          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
+          <button
+            nz-button
+            nzType="default"
+            nzSize="small"
+            [disabled]="!item.is_published_to_vnpt"
+            (click)="downloadBienLaiPDF(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Tải PDF">
+            <i nz-icon nzType="file-pdf"></i>
+          </button>
+          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
+          <button
+            nz-button
+            nzType="default"
+            nzSize="small"
+            [disabled]="!item.is_published_to_vnpt"
+            (click)="openBienLaiLink(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="Mở link">
+            <i nz-icon nzType="link"></i>
           </button>
         </td>
       </tr>
@@ -198,6 +220,113 @@
           </nz-form-control>
         </nz-form-item>
       </form>
+    </div>
+  </nz-modal>
+
+  <!-- Modal Import Excel -->
+  <nz-modal
+    [(nzVisible)]="isImportVisible"
+    nzTitle="Import biên lai điện tử từ Excel"
+    nzCancelText="Đóng"
+    [nzOkText]="null"
+    (nzOnCancel)="handleImportCancel()"
+    [nzWidth]="700"
+  >
+    <div *nzModalContent>
+      <div class="import-container">
+        <div class="upload-section">
+          <nz-upload
+            [(nzFileList)]="importFileList"
+            [nzBeforeUpload]="beforeUpload"
+            [nzAccept]="'.xlsx'"
+            [nzMultiple]="false"
+            [nzShowUploadList]="true"
+          >
+            <button nz-button>
+              <i nz-icon nzType="upload"></i> Chọn file Excel
+            </button>
+          </nz-upload>
+          <div class="upload-hint">
+            <p>Hỗ trợ file Excel (.xlsx) theo mẫu</p>
+            <p>Dung lượng tối đa: 5MB</p>
+          </div>
+          <div class="action-buttons">
+            <button
+              nz-button
+              nzType="primary"
+              [disabled]="importFileList.length === 0 || isImporting"
+              (click)="importFromExcel()"
+              [nzLoading]="isImporting"
+            >
+              <i nz-icon nzType="import"></i> Import dữ liệu
+            </button>
+            <button nz-button (click)="downloadTemplate()">
+              <i nz-icon nzType="download"></i> Tải mẫu Excel
+            </button>
+          </div>
+        </div>
+
+        <nz-divider></nz-divider>
+
+        <div *ngIf="importResult">
+          <nz-alert
+            *ngIf="importResult.errors && importResult.errors.length > 0"
+            nzType="warning"
+            nzMessage="Có lỗi xảy ra khi import"
+            [nzDescription]="errorTpl"
+            nzShowIcon
+          ></nz-alert>
+          <ng-template #errorTpl>
+            <ul>
+              <li *ngFor="let error of importResult.errors">{{ error }}</li>
+            </ul>
+          </ng-template>
+
+          <nz-alert
+            *ngIf="importResult.message"
+            nzType="success"
+            [nzMessage]="importResult.message"
+            nzShowIcon
+            class="mb-3"
+          ></nz-alert>
+
+          <h3 *ngIf="importResult.data && importResult.data.length > 0">Kết quả import</h3>
+          <nz-table
+            *ngIf="importResult.data && importResult.data.length > 0"
+            #importTable
+            [nzData]="importResult.data"
+            [nzPageSize]="5"
+            [nzShowPagination]="true"
+          >
+            <thead>
+              <tr>
+                <th>Dòng</th>
+                <th>Tên người đóng</th>
+                <th>Mã số BHXH</th>
+                <th>Số biên lai</th>
+                <th>Số tiền</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of importTable.data">
+                <td>{{ item.row }}</td>
+                <td>{{ item.ten_nguoi_dong }}</td>
+                <td>{{ item.ma_so_bhxh }}</td>
+                <td>{{ item.so_bien_lai }}</td>
+                <td>{{ item.so_tien | number:'1.0-0' }} đ</td>
+                <td>
+                  <span
+                    [ngClass]="{'success-status': item.status === 'success', 'error-status': item.status !== 'success'}"
+                  >
+                    {{ item.status === 'success' ? 'Thành công' : 'Lỗi' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
     </div>
   </nz-modal>
 </div>

@@ -58,4 +58,8 @@ export class BienLaiDienTuService {
   deleteBienLai(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/bien-lai-dien-tu/${id}`);
   }
-} 
+
+  deleteMultiple(ids: number[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/bien-lai-dien-tu/delete-multiple`, { ids });
+  }
+}

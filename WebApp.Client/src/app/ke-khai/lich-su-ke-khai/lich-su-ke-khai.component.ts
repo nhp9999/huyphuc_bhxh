@@ -15,6 +15,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { LichSuKeKhaiService, KeKhaiBHYT, KeKhaiBHXH } from '../../services/lich-su-ke-khai.service';
+import { DonViService, DonVi } from '../../services/don-vi.service';
 import { D03Service } from '../../bhyt/services/d03.service';
 import { forkJoin } from 'rxjs';
 
@@ -54,8 +55,11 @@ export class LichSuKeKhaiComponent implements OnInit {
     cccd: '',
     hoTen: '',
     tuNgay: null as Date | null,
-    denNgay: null as Date | null
+    denNgay: null as Date | null,
+    donViId: null as number | null
   };
+
+  donVis: DonVi[] = [];
 
   // Biến cho checkbox
   isAllBHYTChecked = false;
@@ -66,11 +70,25 @@ export class LichSuKeKhaiComponent implements OnInit {
   constructor(
     private lichSuKeKhaiService: LichSuKeKhaiService,
     private message: NzMessageService,
-    private d03Service: D03Service
+    private d03Service: D03Service,
+    private donViService: DonViService
   ) {}
 
   ngOnInit(): void {
+    this.loadDonVis();
     this.loadData();
+  }
+
+  loadDonVis(): void {
+    this.donViService.getDonVis().subscribe({
+      next: (data) => {
+        this.donVis = data;
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải danh sách đơn vị:', error);
+        this.message.error('Có lỗi xảy ra khi tải danh sách đơn vị');
+      }
+    });
   }
 
   loadData(): void {
@@ -80,13 +98,13 @@ export class LichSuKeKhaiComponent implements OnInit {
       bhxh: this.lichSuKeKhaiService.getAllKeKhaiBHXH(this.searchForm)
     }).subscribe({
       next: (data) => {
-        this.keKhaiBHYTs = data.bhyt.map((item: KeKhaiBHYT) => ({ 
-          ...item, 
+        this.keKhaiBHYTs = data.bhyt.map((item: KeKhaiBHYT) => ({
+          ...item,
           checked: false,
           dotKeKhaiInfo: `Đợt ${item.dotKeKhai?.so_dot} tháng ${item.dotKeKhai?.thang} năm ${item.dotKeKhai?.nam}`
         }));
-        this.keKhaiBHXHs = data.bhxh.map((item: KeKhaiBHXH) => ({ 
-          ...item, 
+        this.keKhaiBHXHs = data.bhxh.map((item: KeKhaiBHXH) => ({
+          ...item,
           checked: false,
           dotKeKhaiInfo: `Đợt ${item.dotKeKhai?.so_dot} tháng ${item.dotKeKhai?.thang} năm ${item.dotKeKhai?.nam}`
         }));
@@ -148,31 +166,31 @@ export class LichSuKeKhaiComponent implements OnInit {
 
   // Phương thức xuất D03 cho nhiều bảng ghi đã chọn
   xuatD03TuNhieuBangGhi(loaiKeKhai: 'bhyt' | 'bhxh'): void {
-    const selectedItems = loaiKeKhai === 'bhyt' 
+    const selectedItems = loaiKeKhai === 'bhyt'
       ? this.keKhaiBHYTs.filter(item => item.checked)
       : this.keKhaiBHXHs.filter(item => item.checked);
-    
+
     if (selectedItems.length === 0) {
       this.message.warning('Vui lòng chọn ít nhất một bảng ghi để xuất D03');
       return;
     }
-    
+
     // Hiển thị thông báo đang xử lý
     const loadingId = this.message.loading('Đang chuẩn bị dữ liệu xuất D03...', { nzDuration: 0 }).messageId;
-    
+
     // Lấy dữ liệu D03 cho tất cả các bảng ghi đã chọn
-    const requests = selectedItems.map(item => 
+    const requests = selectedItems.map(item =>
       this.d03Service.getD03DataForRecord(item.id, loaiKeKhai)
     );
-    
+
     forkJoin(requests).subscribe({
       next: (results) => {
         // Đóng thông báo loading
         this.message.remove(loadingId);
-        
+
         // Xuất Excel với tất cả dữ liệu đã lấy
         this.d03Service.xuatExcelMauD03TS(results);
-        
+
         this.message.success(`Đã xuất D03 cho ${results.length} bảng ghi thành công`);
       },
       error: (error) => {
@@ -209,7 +227,8 @@ export class LichSuKeKhaiComponent implements OnInit {
       cccd: '',
       hoTen: '',
       tuNgay: null,
-      denNgay: null
+      denNgay: null,
+      donViId: null
     };
     this.dateRange = null;
     this.loadData();
@@ -226,7 +245,7 @@ export class LichSuKeKhaiComponent implements OnInit {
 
   exportToExcel(): void {
     this.loading = true;
-    const exportService = this.selectedTab === 'bhyt' 
+    const exportService = this.selectedTab === 'bhyt'
       ? this.lichSuKeKhaiService.exportBHYTToExcel(this.searchForm)
       : this.lichSuKeKhaiService.exportBHXHToExcel(this.searchForm);
 
@@ -250,17 +269,17 @@ export class LichSuKeKhaiComponent implements OnInit {
 
   xuatD03TuBangGhi(keKhaiId: number, loaiKeKhai: 'bhyt' | 'bhxh'): void {
     this.loading = true;
-    
+
     // Tạo options cho D03
     const options = {
       tenCongTy: 'Đại lý thu BHXH Huy Phúc',
       nguoiLap: 'Người lập biểu',
       ngayLap: new Date()
     };
-    
+
     // Gọi service để xuất D03
     this.d03Service.xuatExcelMauD03TSTuBangGhi(keKhaiId, loaiKeKhai, options);
-    
+
     // Đặt loading = false sau 1 giây (để cho phép thời gian xử lý)
     setTimeout(() => {
       this.loading = false;

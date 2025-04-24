@@ -57,6 +57,23 @@
 
         <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
           <nz-form-item>
+            <nz-form-label>Đơn vị:</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                nzShowSearch
+                nzAllowClear
+                [(ngModel)]="searchForm.donViId"
+                name="donViId"
+                nzPlaceHolder="Chọn đơn vị">
+                <nz-option *ngFor="let donVi of donVis" [nzValue]="donVi.id" [nzLabel]="donVi.tenDonVi"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+      </nz-row>
+      <nz-row [nzGutter]="16">
+        <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+          <nz-form-item>
             <nz-form-label>Thời gian:</nz-form-label>
             <nz-form-control>
               <nz-range-picker
@@ -102,6 +119,8 @@
             <th nzWidth="120px" nzAlign="right">Số tiền đóng</th>
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
+            <th nzWidth="120px">Mã nhân viên</th>
+            <th nzWidth="150px">Đơn vị</th>
             <th nzWidth="100px">Trạng thái</th>
           </tr>
         </thead>
@@ -136,6 +155,8 @@
             <td nzAlign="right">{{ item.so_tien_can_dong | number }} đ</td>
             <td>{{ item.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
             <td>{{ item.ma_ho_so || 'N/A' }}</td>
+            <td>{{ item.ma_nhan_vien || 'N/A' }}</td>
+            <td>{{ item.dotKeKhai?.donVi?.tenDonVi || 'Không có' }}</td>
             <td>
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
@@ -144,7 +165,7 @@
           </tr>
         </tbody>
       </nz-table>
-      
+
       <div class="mt-3" *ngIf="getSelectedBHYTCount() > 0">
         <button nz-button nzType="primary" (click)="xuatD03TuNhieuBangGhi('bhyt')">
           <i nz-icon nzType="file-excel"></i> Xuất D03 ({{ getSelectedBHYTCount() }} bản ghi đã chọn)
@@ -180,6 +201,8 @@
             <th nzWidth="120px" nzAlign="right">Số tiền đóng</th>
             <th nzWidth="150px">Ngày tạo</th>
             <th nzWidth="120px">Mã hồ sơ</th>
+            <th nzWidth="120px">Mã nhân viên</th>
+            <th nzWidth="150px">Đơn vị</th>
             <th nzWidth="100px">Trạng thái</th>
           </tr>
         </thead>
@@ -214,6 +237,8 @@
             <td nzAlign="right">{{ item.so_tien_can_dong | number }} đ</td>
             <td>{{ item.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</td>
             <td>{{ item.ma_ho_so || 'N/A' }}</td>
+            <td>{{ item.ma_nhan_vien || 'N/A' }}</td>
+            <td>{{ item.dotKeKhai?.donVi?.tenDonVi || 'Không có' }}</td>
             <td>
               <nz-tag [nzColor]="item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'success' : 'processing'">
                 {{ item.dotKeKhai?.trang_thai === 'hoan_thanh' ? 'Hoàn thành' : 'Đang xử lý' }}
@@ -222,7 +247,7 @@
           </tr>
         </tbody>
       </nz-table>
-      
+
       <div class="mt-3" *ngIf="getSelectedBHXHCount() > 0">
         <button nz-button nzType="primary" (click)="xuatD03TuNhieuBangGhi('bhxh')">
           <i nz-icon nzType="file-excel"></i> Xuất D03 ({{ getSelectedBHXHCount() }} bản ghi đã chọn)
@@ -234,4 +259,4 @@
   <ng-template #totalTemplate let-total>
     Tổng số {{ total }} bản ghi
   </ng-template>
-</div> 
+</div>

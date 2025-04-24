@@ -179,8 +179,8 @@ namespace WebApp.API.Controllers
                     </Inv>
                 </Invoices>";
 
-                // Gọi API ImportAndPublishInv
-                string result = await _vnptBienLaiService.PublishInvoice(xmlInvData);
+                // Gọi API ImportAndPublishInv theo tài liệu tích hợp
+                string result = await _vnptBienLaiService.ImportAndPublishInv(xmlInvData);
 
                 // Xử lý kết quả
                 if (result.StartsWith("ERR:"))
@@ -216,6 +216,93 @@ namespace WebApp.API.Controllers
                 // Cập nhật thông tin biên lai
                 if (result.StartsWith("OK:"))
                 {
+                    // Phân tích kết quả theo tài liệu tích hợp
+                    string[] parts = result.Replace("OK:", "").Split(';');
+                    _logger.LogInformation($"Phân tích kết quả VNPT: {result}, số phần: {parts.Length}");
+
+                    // Đảm bảo lưu key gốc đã tạo
+                    bienLai.vnpt_key = key;
+                    _logger.LogInformation($"Lưu key gốc: {key}");
+
+                    // Lưu kết quả trả về từ API
+                    bienLai.vnpt_response = result;
+                    _logger.LogInformation($"Lưu kết quả trả về: {result}");
+
+                    // Lưu XML content nếu model đã có trường này
+                    if (bienLai.GetType().GetProperty("vnpt_xml_content") != null)
+                    {
+                        bienLai.vnpt_xml_content = xmlInvData;
+                        _logger.LogInformation($"Lưu XML content");
+                    }
+
+                    if (parts.Length >= 2)
+                    {
+                        // Lưu pattern
+                        bienLai.vnpt_pattern = parts[0];
+                        _logger.LogInformation($"Lưu pattern: {parts[0]}");
+
+                        if (parts.Length >= 3)
+                        {
+                            // Định dạng chuẩn: OK:pattern;serial;invoiceNo
+                            bienLai.vnpt_serial = parts[1];
+                            bienLai.vnpt_invoice_no = parts[2];
+                            _logger.LogInformation($"Lưu serial: {parts[1]}, invoiceNo: {parts[2]}");
+
+                            // Theo tài liệu, fkey có thể là một phần của chuỗi kết quả
+                            // Thử tìm fkey trong chuỗi kết quả
+                            if (parts.Length >= 4 && !string.IsNullOrEmpty(parts[3]))
+                            {
+                                // Nếu có phần thứ 4, có thể đó là fkey
+                                bienLai.vnpt_transaction_id = parts[3];
+                                _logger.LogInformation($"Lưu transaction_id từ phần thứ 4: {parts[3]}");
+                            }
+                            else
+                            {
+                                // Nếu không có phần thứ 4, sử dụng invoiceNo làm fkey
+                                bienLai.vnpt_transaction_id = parts[2];
+                                _logger.LogInformation($"Lưu transaction_id từ invoiceNo: {parts[2]}");
+                            }
+                        }
+                        else
+                        {
+                            // Định dạng khác: OK:pattern;serial-key
+                            // Tìm vị trí của dấu gạch ngang cuối cùng
+                            int lastDashIndex = parts[1].LastIndexOf('-');
+
+                            if (lastDashIndex > 0)
+                            {
+                                // Lưu serial đầy đủ (ví dụ: "BH25-AG/08907/E")
+                                string fullSerial = parts[1].Substring(0, lastDashIndex);
+                                bienLai.vnpt_serial = fullSerial;
+                                _logger.LogInformation($"Lưu serial đầy đủ: {fullSerial}");
+
+                                // Lấy transaction_id (phần sau dấu gạch ngang cuối cùng)
+                                string fkey = parts[1].Substring(lastDashIndex + 1);
+
+                                // Nếu có dấu ',' trong key, lấy phần đầu tiên
+                                if (fkey.Contains(","))
+                                {
+                                    fkey = fkey.Split(',')[0];
+                                }
+
+                                // Lưu transaction_id
+                                bienLai.vnpt_transaction_id = fkey;
+                                _logger.LogInformation($"Lưu transaction_id: {fkey}");
+
+                                // Lấy số biên lai từ key nếu có thể
+                                bienLai.vnpt_invoice_no = fkey;
+                                _logger.LogInformation($"Lưu invoice_no: {fkey}");
+                            }
+                            else
+                            {
+                                // Nếu không có dấu gạch ngang, sử dụng toàn bộ chuỗi làm serial và transaction_id
+                                bienLai.vnpt_serial = parts[1];
+                                bienLai.vnpt_transaction_id = parts[1];
+                                _logger.LogInformation($"Lưu serial và transaction_id: {parts[1]}");
+                            }
+                        }
+                    }
+
                     // Lưu thông tin biên lai vào database nếu là biên lai mới
                     if (request.BienLaiId == 0)
                     {
@@ -225,7 +312,8 @@ namespace WebApp.API.Controllers
 
                     // Cập nhật trạng thái biên lai
                     bienLai.trang_thai = "da_phat_hanh";
-                    bienLai.vnpt_key = key;
+                    bienLai.is_published_to_vnpt = true;
+                    bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
                     bienLai.vnpt_response = result;
                     await _context.SaveChangesAsync();
                 }

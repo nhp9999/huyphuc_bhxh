@@ -10,6 +10,12 @@ export interface LichSuKeKhaiSearchParams {
   hoTen?: string;
   tuNgay?: Date | null;
   denNgay?: Date | null;
+  donViId?: number | null;
+}
+
+export interface DonVi {
+  id: number;
+  tenDonVi: string;
 }
 
 export interface DotKeKhai {
@@ -18,6 +24,7 @@ export interface DotKeKhai {
   nam: number;
   trang_thai: string;
   ngay_tao?: Date;
+  donVi?: DonVi;
 }
 
 export interface ThongTinThe {
@@ -69,7 +76,7 @@ export class LichSuKeKhaiService {
 
   private formatParams(params?: LichSuKeKhaiSearchParams): HttpParams {
     let queryParams = new HttpParams();
-    
+
     if (params) {
       Object.keys(params).forEach(key => {
         const value = params[key as keyof LichSuKeKhaiSearchParams];
@@ -96,7 +103,10 @@ export class LichSuKeKhaiService {
       },
       dotKeKhai: item.dotKeKhai ? {
         ...item.dotKeKhai,
-        ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined
+        ngay_tao: item.dotKeKhai.ngay_tao ? new Date(item.dotKeKhai.ngay_tao) : undefined,
+        donVi: item.dotKeKhai.donVi ? {
+          ...item.dotKeKhai.donVi
+        } : undefined
       } : undefined,
       han_the_cu: item.han_the_cu ? new Date(item.han_the_cu) : null,
       han_the_moi_tu: item.han_the_moi_tu ? new Date(item.han_the_moi_tu) : undefined,
@@ -141,4 +151,4 @@ export class LichSuKeKhaiService {
       responseType: 'blob'
     });
   }
-} 
+}

@@ -19,6 +19,7 @@ namespace WebApp.API.Services
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly string _serviceUrl;
+        private readonly string _portalServiceUrl;
         private readonly string _username;
         private readonly string _password;
         private readonly string _account;
@@ -34,6 +35,7 @@ namespace WebApp.API.Services
 
             // Lấy thông tin cấu hình từ appsettings.json
             _serviceUrl = _configuration["VNPTBienLai:ServiceUrl"] ?? "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PublishService.asmx";
+            _portalServiceUrl = _configuration["VNPTBienLai:PortalServiceUrl"] ?? "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PortalService.asmx";
             _username = _configuration["VNPTBienLai:Username"] ?? "ctyhuyphucpws";
             _password = _configuration["VNPTBienLai:Password"] ?? "Vnpt@1234";
             _account = _configuration["VNPTBienLai:Account"] ?? "NV089182025056";
@@ -102,141 +104,8 @@ namespace WebApp.API.Services
                     };
                 }
 
-                _logger.LogInformation($"Gọi API ImportAndPublishInvWithLink với dữ liệu: {xmlInvData} và tài khoản của nhân viên {maNhanVien}");
-
-                // Tạo SOAP request với thông tin tài khoản của nhân viên
-                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
-  <soap:Body>
-    <ImportAndPublishInvWithLink xmlns=""http://tempuri.org/"">
-      <Account>{vnptAccount.Account}</Account>
-      <ACpass>{vnptAccount.ACPass}</ACpass>
-      <xmlInvData><![CDATA[{xmlInvData}]]></xmlInvData>
-      <username>{vnptAccount.Username}</username>
-      <password>{vnptAccount.Password}</password>
-      <pattern>{vnptAccount.Pattern}</pattern>
-      <serial>{vnptAccount.Serial}</serial>
-      <convert>0</convert>
-    </ImportAndPublishInvWithLink>
-  </soap:Body>
-</soap:Envelope>";
-
-                _logger.LogInformation($"Pattern: {vnptAccount.Pattern}, Serial: {vnptAccount.Serial}");
-                _logger.LogInformation($"SOAP Request: {soapRequest}");
-
-                // Gọi SOAP API với service URL của nhân viên
-                string response = await CallSoapApi(vnptAccount.ServiceUrl, "http://tempuri.org/ImportAndPublishInvWithLink", soapRequest);
-
-                // Xử lý response tương tự như phương thức ImportAndPublishInvWithLink
-                if (response.StartsWith("Error:") || !response.Contains("<"))
-                {
-                    _logger.LogError($"Phản hồi không phải là XML hợp lệ: {response}");
-                    return new ImportAndPublishInvWithLinkResult
-                    {
-                        Status = "ERROR",
-                        Message = response
-                    };
-                }
-
-                // Xử lý response
-                XmlDocument xmlDoc;
-                XmlNode resultNode;
-
-                try
-                {
-                    xmlDoc = new XmlDocument();
-                    xmlDoc.LoadXml(response);
-                    XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
-                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
-                    nsManager.AddNamespace("ns", "http://tempuri.org/");
-
-                    // Lấy nội dung XML của kết quả
-                    resultNode = xmlDoc.SelectSingleNode("//ns:ImportAndPublishInvWithLinkResult", nsManager);
-                    if (resultNode == null)
-                    {
-                        _logger.LogError("Không tìm thấy nút ImportAndPublishInvWithLinkResult trong phản hồi");
-                        return new ImportAndPublishInvWithLinkResult
-                        {
-                            Status = "ERROR",
-                            Message = "Không tìm thấy kết quả trong phản hồi"
-                        };
-                    }
-                }
-                catch (XmlException ex)
-                {
-                    _logger.LogError(ex, $"Lỗi khi xử lý XML: {response}");
-                    return new ImportAndPublishInvWithLinkResult
-                    {
-                        Status = "ERROR",
-                        Message = $"Lỗi khi xử lý XML: {ex.Message}"
-                    };
-                }
-
-                try
-                {
-                    // Ghi log nội dung XML để debug
-                    _logger.LogInformation($"Nội dung XML kết quả: {resultNode.OuterXml}");
-
-                    // Kiểm tra xem kết quả có phải là chuỗi lỗi hoặc chuỗi thành công không
-                    string innerText = resultNode.InnerText;
-                    if (innerText.StartsWith("ERR:"))
-                    {
-                        return new ImportAndPublishInvWithLinkResult
-                        {
-                            Status = "ERROR",
-                            Message = innerText
-                        };
-                    }
-                    else if (innerText.StartsWith("OK:"))
-                    {
-                        // Xử lý kết quả thành công dạng chuỗi
-                        return new ImportAndPublishInvWithLinkResult
-                        {
-                            Status = "OK",
-                            Message = innerText
-                        };
-                    }
-
-                    // Thử phân tích kết quả trực tiếp từ XML
-                    string status = "OK"; // Mặc định là OK nếu không có lỗi
-                    string message = "";
-
-                    // Kiểm tra xem có trường Status và Message không
-                    XmlNode statusNode = resultNode.SelectSingleNode("Status");
-                    XmlNode messageNode = resultNode.SelectSingleNode("Message");
-
-                    if (statusNode != null)
-                    {
-                        status = statusNode.InnerText;
-                    }
-
-                    if (messageNode != null)
-                    {
-                        message = messageNode.InnerText;
-                    }
-
-                    // Nếu không có trường Status và Message, thử phân tích kết quả từ XML
-                    if (string.IsNullOrEmpty(message))
-                    {
-                        message = resultNode.InnerText;
-                    }
-
-                    return new ImportAndPublishInvWithLinkResult
-                    {
-                        Status = status,
-                        Message = message,
-                        ResultXml = resultNode.OuterXml
-                    };
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Lỗi khi xử lý kết quả: {resultNode?.OuterXml}");
-                    return new ImportAndPublishInvWithLinkResult
-                    {
-                        Status = "ERROR",
-                        Message = $"Lỗi khi xử lý kết quả: {ex.Message}"
-                    };
-                }
+                // Sử dụng phương thức chung ImportAndPublishInvWithLink
+                return await ImportAndPublishInvWithLink(xmlInvData, vnptAccount);
             }
             catch (Exception ex)
             {
@@ -298,7 +167,7 @@ namespace WebApp.API.Services
         }
 
         /// <summary>
-        /// Tạo biên lai (ImportInv)
+        /// Tạo biên lai (ImportInv) - Chỉ tạo biên lai, không phát hành
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
         /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
@@ -518,7 +387,7 @@ namespace WebApp.API.Services
         }
 
         /// <summary>
-        /// Tạo và phát hành biên lai (ImportAndPublishInv)
+        /// Tạo và phát hành biên lai (ImportAndPublishInv) theo tài liệu tích hợp
         /// </summary>
         /// <param name="xmlInvData">XML dữ liệu biên lai</param>
         /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
@@ -539,7 +408,7 @@ namespace WebApp.API.Services
                 string serialToUse = serial ?? vnptAccount?.Serial ?? _serial;
                 string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
 
-                // Tạo SOAP request
+                // Tạo SOAP request theo tài liệu tích hợp
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
   <soap:Body>
@@ -967,6 +836,197 @@ namespace WebApp.API.Services
             return xml;
         }
 
+        #region PortalService Methods
+
+        /// <summary>
+        /// Lấy nội dung biên lai dựa trên fkey
+        /// </summary>
+        /// <param name="fkey">Khóa biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Nội dung HTML của biên lai</returns>
+        public async Task<string> GetInvViewByFkey(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API getInvViewFkey với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string portalServiceUrl = vnptAccount?.ServiceUrl.Replace("PublishService.asmx", "PortalService.asmx") ?? _portalServiceUrl;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <getInvViewFkey xmlns=""http://tempuri.org/"">
+      <fkey>{fkey}</fkey>
+      <userName>{username}</userName>
+      <userPass>{password}</userPass>
+    </getInvViewFkey>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(portalServiceUrl, "http://tempuri.org/getInvViewFkey", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:getInvViewFkeyResult", nsManager)?.InnerText ?? "";
+                _logger.LogInformation($"Kết quả getInvViewFkey: {result.Substring(0, Math.Min(100, result.Length))}...");
+
+                // Kiểm tra lỗi ERR:6
+                if (result == "ERR:6")
+                {
+                    _logger.LogWarning($"Gặp lỗi ERR:6 (Dải biên lai cũ đã hết) khi xem biên lai với fkey: {fkey}");
+
+                    // Thử sử dụng getLinkInvFkey thay thế
+                    string link = await GetLinkInvByFkey(fkey, vnptAccount);
+                    if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
+                    {
+                        _logger.LogInformation($"Lấy được link biên lai: {link}");
+                        return $"<html><body><h2>Biên lai điện tử</h2><p>Biên lai điện tử của bạn đã được tạo thành công.</p><p>Bạn có thể xem biên lai tại đường dẫn sau:</p><p><a href='{link}' target='_blank'>{link}</a></p></body></html>";
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API getInvViewFkey");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Tải xuống biên lai dạng PDF dựa trên fkey
+        /// </summary>
+        /// <param name="fkey">Khóa biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Dữ liệu PDF dạng Base64</returns>
+        public async Task<string> DownloadInvPDFByFkey(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API downloadInvPDFFkey với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string portalServiceUrl = vnptAccount?.ServiceUrl.Replace("PublishService.asmx", "PortalService.asmx") ?? _portalServiceUrl;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <downloadInvPDFFkey xmlns=""http://tempuri.org/"">
+      <fkey>{fkey}</fkey>
+      <userName>{username}</userName>
+      <userPass>{password}</userPass>
+    </downloadInvPDFFkey>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(portalServiceUrl, "http://tempuri.org/downloadInvPDFFkey", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:downloadInvPDFFkeyResult", nsManager)?.InnerText ?? "";
+                _logger.LogInformation($"Kết quả downloadInvPDFFkey: {result.Substring(0, Math.Min(100, result.Length))}...");
+
+                // Kiểm tra lỗi ERR:6
+                if (result == "ERR:6")
+                {
+                    _logger.LogWarning($"Gặp lỗi ERR:6 (Dải biên lai cũ đã hết) khi tải xuống PDF biên lai với fkey: {fkey}");
+
+                    // Thử sử dụng getLinkInvFkey thay thế
+                    string link = await GetLinkInvByFkey(fkey, vnptAccount);
+                    if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
+                    {
+                        _logger.LogInformation($"Lấy được link biên lai: {link}");
+                        return $"Error: Không thể tải xuống biên lai dạng PDF. Vui lòng sử dụng link sau để xem biên lai: {link}";
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API downloadInvPDFFkey");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Lấy link biên lai dựa trên fkey
+        /// </summary>
+        /// <param name="fkey">Khóa biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Link đến biên lai</returns>
+        public async Task<string> GetLinkInvByFkey(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API getLinkInvFkey với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string portalServiceUrl = vnptAccount?.ServiceUrl.Replace("PublishService.asmx", "PortalService.asmx") ?? _portalServiceUrl;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <getLinkInvFkey xmlns=""http://tempuri.org/"">
+      <fkey>{fkey}</fkey>
+      <userName>{username}</userName>
+      <userPass>{password}</userPass>
+    </getLinkInvFkey>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(portalServiceUrl, "http://tempuri.org/getLinkInvFkey", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:getLinkInvFkeyResult", nsManager)?.InnerText ?? "";
+                _logger.LogInformation($"Kết quả getLinkInvFkey: {result}");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API getLinkInvFkey");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Tạo XML dữ liệu biên lai
         /// </summary>
@@ -974,7 +1034,13 @@ namespace WebApp.API.Services
         /// <returns>XML dữ liệu biên lai</returns>
         public string CreateInvoiceXml(BienLaiDienTu bienLai)
         {
-            string key = bienLai.vnpt_key ?? $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+            // Ưu tiên sử dụng vnpt_key vì đây là key được tạo cho XML
+            // transaction_id chỉ được sử dụng khi xem biên lai
+            string key = !string.IsNullOrEmpty(bienLai.vnpt_key) ? bienLai.vnpt_key :
+                         $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+
+            _logger.LogInformation($"Sử dụng key cho XML: {key}");
+
             // Sử dụng ngày tạo biên lai làm ngày tạo biên lai VNPT
             string arisingDate = bienLai.ngay_tao.ToString("dd/MM/yyyy");
             string amountInWords = ConvertNumberToWords(bienLai.so_tien);

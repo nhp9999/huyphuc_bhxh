@@ -111,5 +111,8 @@ namespace WebApp.API.Models.BienlaiDienTu
 
         [StringLength(100)]
         public string? vnpt_transaction_id { get; set; }
+
+        [Column(TypeName = "text")]
+        public string? vnpt_xml_content { get; set; }
     }
 }

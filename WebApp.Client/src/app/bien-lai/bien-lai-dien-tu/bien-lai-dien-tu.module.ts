@@ -27,6 +27,7 @@ const routes: Routes = [
   { path: 'quyen-bien-lai', component: QuyenBienLaiDienTuComponent },
   { path: 'tao-bien-lai-vnpt', loadComponent: () => import('./tao-bien-lai-vnpt/tao-bien-lai-vnpt.component').then(m => m.TaoBienLaiVNPTComponent) },
   { path: 'tai-khoan-vnpt', loadComponent: () => import('./quan-ly-tai-khoan-vnpt/quan-ly-tai-khoan-vnpt.component').then(m => m.QuanLyTaiKhoanVNPTComponent) },
+  { path: 'import-bien-lai-dien-tu', loadComponent: () => import('./import-bien-lai-dien-tu/import-bien-lai-dien-tu.component').then(m => m.ImportBienLaiDienTuComponent) },
   { path: '', redirectTo: 'quan-ly', pathMatch: 'full' }
 ];
 

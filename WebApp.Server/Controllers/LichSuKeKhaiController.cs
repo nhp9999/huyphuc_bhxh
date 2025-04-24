@@ -34,7 +34,8 @@ namespace WebApp.API.Controllers
             [FromQuery] string? cccd,
             [FromQuery] string? hoTen,
             [FromQuery] DateTime? tuNgay,
-            [FromQuery] DateTime? denNgay)
+            [FromQuery] DateTime? denNgay,
+            [FromQuery] int? donViId)
         {
             try
             {
@@ -55,6 +56,7 @@ namespace WebApp.API.Controllers
                 var query = _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
+                    .Include(k => k.DotKeKhai.DonVi)
                     .AsQueryable();
 
                 // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
@@ -89,8 +91,18 @@ namespace WebApp.API.Controllers
                     query = query.Where(k => k.ngay_tao <= denNgay.Value.Date.AddDays(1).AddSeconds(-1));
                 }
 
+                if (donViId.HasValue)
+                {
+                    query = query.Where(k => k.DotKeKhai.don_vi_id == donViId.Value);
+                }
+
                 // Sắp xếp theo ngày tạo mới nhất
                 query = query.OrderByDescending(k => k.ngay_tao);
+
+                // Lấy danh sách mã nhân viên từ bảng NguoiDung
+                var nguoiDungMap = await _context.NguoiDungs
+                    .Where(n => n.ma_nhan_vien != null && n.ma_nhan_vien != "")
+                    .ToDictionaryAsync(n => n.user_name, n => n.ma_nhan_vien);
 
                 var keKhaiBHYTs = await query
                     .Select(k => new
@@ -110,6 +122,7 @@ namespace WebApp.API.Controllers
                         k.is_urgent,
                         k.ma_ho_so,
                         k.nguoi_tao,
+                        ma_nhan_vien = "",
                         ThongTinThe = new
                         {
                             k.ThongTinThe.ma_so_bhxh,
@@ -124,12 +137,39 @@ namespace WebApp.API.Controllers
                             k.DotKeKhai.so_dot,
                             k.DotKeKhai.thang,
                             k.DotKeKhai.nam,
-                            k.DotKeKhai.trang_thai
+                            k.DotKeKhai.trang_thai,
+                            DonVi = k.DotKeKhai.DonVi != null ? new
+                            {
+                                k.DotKeKhai.DonVi.Id,
+                                k.DotKeKhai.DonVi.TenDonVi
+                            } : null
                         }
                     })
                     .ToListAsync();
 
-                return Ok(keKhaiBHYTs);
+                // Thêm mã nhân viên từ nguoiDungMap
+                var result = keKhaiBHYTs.Select(k => new {
+                    k.id,
+                    k.dot_ke_khai_id,
+                    k.thong_tin_the_id,
+                    k.nguoi_thu,
+                    k.so_thang_dong,
+                    k.phuong_an_dong,
+                    k.han_the_cu,
+                    k.han_the_moi_tu,
+                    k.han_the_moi_den,
+                    k.ngay_tao,
+                    k.ngay_bien_lai,
+                    k.so_tien_can_dong,
+                    k.is_urgent,
+                    k.ma_ho_so,
+                    k.nguoi_tao,
+                    ma_nhan_vien = nguoiDungMap.ContainsKey(k.nguoi_tao) ? nguoiDungMap[k.nguoi_tao] : "",
+                    k.ThongTinThe,
+                    k.DotKeKhai
+                }).ToList();
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -144,7 +184,8 @@ namespace WebApp.API.Controllers
             [FromQuery] string? cccd,
             [FromQuery] string? hoTen,
             [FromQuery] DateTime? tuNgay,
-            [FromQuery] DateTime? denNgay)
+            [FromQuery] DateTime? denNgay,
+            [FromQuery] int? donViId)
         {
             try
             {
@@ -165,6 +206,7 @@ namespace WebApp.API.Controllers
                 var query = _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
+                    .Include(k => k.DotKeKhai.DonVi)
                     .AsQueryable();
 
                 // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
@@ -197,6 +239,11 @@ namespace WebApp.API.Controllers
                 if (denNgay.HasValue)
                 {
                     query = query.Where(k => k.ngay_tao <= denNgay.Value.Date.AddDays(1).AddSeconds(-1));
+                }
+
+                if (donViId.HasValue)
+                {
+                    query = query.Where(k => k.DotKeKhai.don_vi_id == donViId.Value);
                 }
 
                 var data = await query.ToListAsync();
@@ -219,7 +266,9 @@ namespace WebApp.API.Controllers
                     worksheet.Cells[1, 10].Value = "Số tiền đóng";
                     worksheet.Cells[1, 11].Value = "Ngày tạo";
                     worksheet.Cells[1, 12].Value = "Mã hồ sơ";
-                    worksheet.Cells[1, 13].Value = "Trạng thái";
+                    worksheet.Cells[1, 13].Value = "Mã nhân viên";
+                    worksheet.Cells[1, 14].Value = "Đơn vị";
+                    worksheet.Cells[1, 15].Value = "Trạng thái";
 
                     // Thêm dữ liệu
                     int row = 2;
@@ -237,7 +286,16 @@ namespace WebApp.API.Controllers
                         worksheet.Cells[row, 10].Value = item.so_tien_can_dong;
                         worksheet.Cells[row, 11].Value = item.ngay_tao.ToString("dd/MM/yyyy HH:mm");
                         worksheet.Cells[row, 12].Value = item.ma_ho_so;
-                        worksheet.Cells[row, 13].Value = item.DotKeKhai.trang_thai;
+                        // Lấy mã nhân viên từ người tạo
+                        var maNhanVien = "";
+                        var nguoiDung = _context.NguoiDungs.FirstOrDefault(n => n.user_name == item.nguoi_tao);
+                        if (nguoiDung != null && !string.IsNullOrEmpty(nguoiDung.ma_nhan_vien))
+                        {
+                            maNhanVien = nguoiDung.ma_nhan_vien;
+                        }
+                        worksheet.Cells[row, 13].Value = maNhanVien;
+                        worksheet.Cells[row, 14].Value = item.DotKeKhai.DonVi?.TenDonVi ?? "";
+                        worksheet.Cells[row, 15].Value = item.DotKeKhai.trang_thai;
                         row++;
                     }
 
@@ -264,7 +322,8 @@ namespace WebApp.API.Controllers
             [FromQuery] string? cccd,
             [FromQuery] string? hoTen,
             [FromQuery] DateTime? tuNgay,
-            [FromQuery] DateTime? denNgay)
+            [FromQuery] DateTime? denNgay,
+            [FromQuery] int? donViId)
         {
             try
             {
@@ -285,6 +344,7 @@ namespace WebApp.API.Controllers
                 var query = _context.KeKhaiBHXHs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
+                    .Include(k => k.DotKeKhai.DonVi)
                     .AsQueryable();
 
                 // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
@@ -318,6 +378,16 @@ namespace WebApp.API.Controllers
                 {
                     query = query.Where(k => k.ngay_tao <= denNgay.Value.Date.AddDays(1).AddSeconds(-1));
                 }
+
+                if (donViId.HasValue)
+                {
+                    query = query.Where(k => k.DotKeKhai.don_vi_id == donViId.Value);
+                }
+
+                // Lấy danh sách mã nhân viên từ bảng NguoiDung
+                var nguoiDungMap = await _context.NguoiDungs
+                    .Where(n => n.ma_nhan_vien != null && n.ma_nhan_vien != "")
+                    .ToDictionaryAsync(n => n.user_name, n => n.ma_nhan_vien);
 
                 var keKhaiBHXHs = await query
                     .Select(k => new {
@@ -340,6 +410,7 @@ namespace WebApp.API.Controllers
                         k.ngay_tao,
                         k.ma_ho_so,
                         k.nguoi_tao,
+                        k.ma_nhan_vien,
                         ThongTinThe = new {
                             k.ThongTinThe.ma_so_bhxh,
                             k.ThongTinThe.ho_ten,
@@ -351,7 +422,12 @@ namespace WebApp.API.Controllers
                             k.DotKeKhai.so_dot,
                             k.DotKeKhai.thang,
                             k.DotKeKhai.nam,
-                            k.DotKeKhai.trang_thai
+                            k.DotKeKhai.trang_thai,
+                            DonVi = k.DotKeKhai.DonVi != null ? new
+                            {
+                                k.DotKeKhai.DonVi.Id,
+                                k.DotKeKhai.DonVi.TenDonVi
+                            } : null
                         }
                     })
                     .OrderByDescending(k => k.ngay_tao)
@@ -372,7 +448,8 @@ namespace WebApp.API.Controllers
             [FromQuery] string? cccd,
             [FromQuery] string? hoTen,
             [FromQuery] DateTime? tuNgay,
-            [FromQuery] DateTime? denNgay)
+            [FromQuery] DateTime? denNgay,
+            [FromQuery] int? donViId)
         {
             try
             {
@@ -393,6 +470,7 @@ namespace WebApp.API.Controllers
                 var query = _context.KeKhaiBHXHs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
+                    .Include(k => k.DotKeKhai.DonVi)
                     .AsQueryable();
 
                 // Nếu không phải admin hoặc super_admin, chỉ hiển thị kê khai do người dùng tạo
@@ -427,6 +505,11 @@ namespace WebApp.API.Controllers
                     query = query.Where(k => k.ngay_tao <= denNgay.Value.Date.AddDays(1).AddSeconds(-1));
                 }
 
+                if (donViId.HasValue)
+                {
+                    query = query.Where(k => k.DotKeKhai.don_vi_id == donViId.Value);
+                }
+
                 var data = await query.ToListAsync();
 
                 // Tạo file Excel
@@ -447,7 +530,9 @@ namespace WebApp.API.Controllers
                     worksheet.Cells[1, 10].Value = "Số tiền đóng";
                     worksheet.Cells[1, 11].Value = "Ngày tạo";
                     worksheet.Cells[1, 12].Value = "Mã hồ sơ";
-                    worksheet.Cells[1, 13].Value = "Trạng thái";
+                    worksheet.Cells[1, 13].Value = "Mã nhân viên";
+                    worksheet.Cells[1, 14].Value = "Đơn vị";
+                    worksheet.Cells[1, 15].Value = "Trạng thái";
 
                     // Thêm dữ liệu
                     int row = 2;
@@ -465,7 +550,18 @@ namespace WebApp.API.Controllers
                         worksheet.Cells[row, 10].Value = item.so_tien_can_dong;
                         worksheet.Cells[row, 11].Value = item.ngay_tao.ToString("dd/MM/yyyy HH:mm");
                         worksheet.Cells[row, 12].Value = item.ma_ho_so;
-                        worksheet.Cells[row, 13].Value = item.DotKeKhai.trang_thai;
+                        worksheet.Cells[row, 13].Value = item.ma_nhan_vien ?? "";
+                        // Nếu không có mã nhân viên, thử lấy từ người tạo
+                        if (string.IsNullOrEmpty(item.ma_nhan_vien))
+                        {
+                            var nguoiDung = _context.NguoiDungs.FirstOrDefault(n => n.user_name == item.nguoi_tao);
+                            if (nguoiDung != null && !string.IsNullOrEmpty(nguoiDung.ma_nhan_vien))
+                            {
+                                worksheet.Cells[row, 13].Value = nguoiDung.ma_nhan_vien;
+                            }
+                        }
+                        worksheet.Cells[row, 14].Value = item.DotKeKhai.DonVi?.TenDonVi ?? "";
+                        worksheet.Cells[row, 15].Value = item.DotKeKhai.trang_thai;
                         row++;
                     }
 
@@ -486,4 +582,4 @@ namespace WebApp.API.Controllers
             }
         }
     }
-} 
+}

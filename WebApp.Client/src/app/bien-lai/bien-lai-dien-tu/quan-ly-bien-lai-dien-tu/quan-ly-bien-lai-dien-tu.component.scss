@@ -37,3 +37,48 @@ nz-input-number {
   display: flex;
   gap: 20px;
 }
+
+// CSS cho modal import Excel
+.import-container {
+  padding: 10px;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 5px;
+  background: #fafafa;
+}
+
+.upload-hint {
+  margin-top: 10px;
+  color: #888;
+  text-align: center;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.success-status {
+  color: #52c41a;
+}
+
+.error-status {
+  color: #f5222d;
+}
+
+.mb-3 {
+  margin-bottom: 15px;
+}
+
+.table-actions {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 8px;
+}

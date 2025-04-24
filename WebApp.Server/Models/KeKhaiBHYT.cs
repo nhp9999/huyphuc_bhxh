@@ -165,6 +165,13 @@ namespace WebApp.API.Models
         [StringLength(50)]
         public string? ma_ho_so { get; set; }
 
+        /// <summary>
+        /// Mã nhân viên
+        /// </summary>
+        [Column("ma_nhan_vien")]
+        [StringLength(50)]
+        public string? ma_nhan_vien { get; set; }
+
         public int? quyen_bien_lai_id { get; set; }
 
         [ForeignKey("quyen_bien_lai_id")]
@@ -189,4 +196,4 @@ namespace WebApp.API.Models
             ThongTinThe = new ThongTinThe(); // Khởi tạo ThongTinThe
         }
     }
-} 
+}

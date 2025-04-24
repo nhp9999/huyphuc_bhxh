@@ -140,7 +140,7 @@ namespace WebApp.API.Controllers
                         // Sử dụng thông tin thẻ đã tồn tại
                         keKhaiBHYT.thong_tin_the_id = existingThongTinThe.id;
                         keKhaiBHYT.ThongTinThe = existingThongTinThe;
-                        
+
                         // Cập nhật thông tin thẻ nếu cần
                         _context.Entry(existingThongTinThe).CurrentValues.SetValues(keKhaiBHYT.ThongTinThe);
                     }
@@ -165,8 +165,8 @@ namespace WebApp.API.Controllers
                 // Nếu mọi thứ OK thì commit transaction
                 await transaction.CommitAsync();
 
-                return CreatedAtAction(nameof(GetKeKhaiBHYT), 
-                    new { dotKeKhaiId, id = keKhaiBHYT.id }, 
+                return CreatedAtAction(nameof(GetKeKhaiBHYT),
+                    new { dotKeKhaiId, id = keKhaiBHYT.id },
                     new { success = true, message = "Tạo kê khai BHYT thành công", data = keKhaiBHYT }
                 );
             }
@@ -197,7 +197,7 @@ namespace WebApp.API.Controllers
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
                     .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
-                    
+
                 if (existingKeKhaiBHYT == null)
                 {
                     return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
@@ -259,7 +259,7 @@ namespace WebApp.API.Controllers
                 var keKhaiBHYT = await _context.KeKhaiBHYTs
                     .Include(k => k.QuyenBienLai)
                     .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
-                    
+
                 if (keKhaiBHYT == null)
                 {
                     return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
@@ -277,7 +277,7 @@ namespace WebApp.API.Controllers
 
                     // Reset số hiện tại về số của biên lai bị xóa
                     keKhaiBHYT.QuyenBienLai.so_hien_tai = keKhaiBHYT.so_bien_lai;
-                    
+
                     // Nếu trạng thái là đã sử dụng thì chuyển về đang sử dụng
                     if (keKhaiBHYT.QuyenBienLai.trang_thai == "da_su_dung")
                     {
@@ -353,7 +353,7 @@ namespace WebApp.API.Controllers
             {
                 var keKhaiBHYT = await _context.KeKhaiBHYTs
                     .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
-                    
+
                 if (keKhaiBHYT == null)
                 {
                     return NotFound(new { message = "Không tìm thấy kê khai BHYT" });
@@ -404,8 +404,8 @@ namespace WebApp.API.Controllers
 
                 // Kiểm tra số biên lai đã được sử dụng chưa
                 var daCoSoBienLai = await _context.KeKhaiBHYTs
-                    .AnyAsync(k => k.id != id && 
-                                  k.quyen_bien_lai_id == quyenBienLai.id && 
+                    .AnyAsync(k => k.id != id &&
+                                  k.quyen_bien_lai_id == quyenBienLai.id &&
                                   k.so_bien_lai == dto.so_bien_lai);
 
                 if (daCoSoBienLai)
@@ -483,35 +483,50 @@ namespace WebApp.API.Controllers
                 // Lấy ngày 7 ngày trước
                 var sevenDaysAgo = DateTime.Now.AddDays(-7);
 
-                // Tìm tất cả các kê khai có mã số BHXH tương ứng trong 7 ngày gần đây
-                var recentKeKhai = await _context.KeKhaiBHYTs
-                    .Include(k => k.ThongTinThe)
-                    .Include(k => k.DotKeKhai)
-                    .Where(k => k.ThongTinThe.ma_so_bhxh == dto.ma_so_bhxh && k.ngay_tao >= sevenDaysAgo)
-                    .OrderByDescending(k => k.ngay_tao)
-                    .ToListAsync();
+                // Tìm thông tin thẻ có mã số BHXH tương ứng
+                var thongTinThe = await _context.ThongTinThes
+                    .FirstOrDefaultAsync(t => t.ma_so_bhxh == dto.ma_so_bhxh);
+
+                if (thongTinThe == null)
+                {
+                    return Ok(new { success = true, exists = false, message = "Mã số BHXH chưa được kê khai trong 7 ngày gần đây" });
+                }
+
+                // Tìm các kê khai trong 7 ngày gần đây, chỉ chọn các trường cần thiết
+                var recentKeKhaiQuery = from k in _context.KeKhaiBHYTs
+                                       join d in _context.DotKeKhais on k.dot_ke_khai_id equals d.id
+                                       where k.thong_tin_the_id == thongTinThe.id && k.ngay_tao >= sevenDaysAgo
+                                       orderby k.ngay_tao descending
+                                       select new {
+                                           k.id,
+                                           k.dot_ke_khai_id,
+                                           dot_ke_khai_name = d.ten_dot,
+                                           k.ngay_tao
+                                       };
+
+                var recentKeKhai = await recentKeKhaiQuery.ToListAsync();
 
                 if (recentKeKhai.Any())
                 {
                     // Nếu có kê khai trong 7 ngày gần đây, trả về thông tin chi tiết
                     var latestKeKhai = recentKeKhai.First();
-                    return Ok(new { 
-                        success = true, 
-                        exists = true, 
+                    return Ok(new {
+                        success = true,
+                        exists = true,
                         message = "Mã số BHXH đã được kê khai trong 7 ngày gần đây",
                         data = new {
                             id = latestKeKhai.id,
                             dot_ke_khai_id = latestKeKhai.dot_ke_khai_id,
-                            dot_ke_khai_name = latestKeKhai.DotKeKhai?.ten_dot,
+                            dot_ke_khai_name = latestKeKhai.dot_ke_khai_name,
                             ngay_tao = latestKeKhai.ngay_tao,
-                            ho_ten = latestKeKhai.ThongTinThe?.ho_ten,
-                            ma_so_bhxh = latestKeKhai.ThongTinThe?.ma_so_bhxh,
+                            ho_ten = thongTinThe.ho_ten,
+                            ma_so_bhxh = thongTinThe.ma_so_bhxh,
                             all_records = recentKeKhai.Select(k => new {
                                 id = k.id,
                                 dot_ke_khai_id = k.dot_ke_khai_id,
-                                dot_ke_khai_name = k.DotKeKhai?.ten_dot,
+                                dot_ke_khai_name = k.dot_ke_khai_name,
                                 ngay_tao = k.ngay_tao,
-                                ho_ten = k.ThongTinThe?.ho_ten
+                                ho_ten = thongTinThe.ho_ten
                             }).ToList()
                         }
                     });
@@ -558,4 +573,4 @@ namespace WebApp.API.Controllers
         [Required]
         public string ma_so_bhxh { get; set; }
     }
-} 
+}
