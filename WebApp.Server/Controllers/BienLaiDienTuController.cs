@@ -30,12 +30,54 @@ namespace WebApp.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? ky_hieu, [FromQuery] string? so_bien_lai,
+            [FromQuery] string? ten_nguoi_dong, [FromQuery] string? ma_so_bhxh, [FromQuery] string? ma_nhan_vien,
+            [FromQuery] bool? is_bhyt, [FromQuery] bool? is_bhxh)
         {
             try
             {
-                var bienLais = await _context.BienLaiDienTus
+                var query = _context.BienLaiDienTus
                     .Include(b => b.QuyenBienLaiDienTu)
+                    .AsQueryable();
+
+                // Áp dụng các bộ lọc
+                if (!string.IsNullOrEmpty(ky_hieu))
+                {
+                    query = query.Where(b => b.ky_hieu.Contains(ky_hieu));
+                }
+
+                if (!string.IsNullOrEmpty(so_bien_lai))
+                {
+                    query = query.Where(b => b.so_bien_lai.Contains(so_bien_lai));
+                }
+
+                if (!string.IsNullOrEmpty(ten_nguoi_dong))
+                {
+                    query = query.Where(b => b.ten_nguoi_dong.Contains(ten_nguoi_dong));
+                }
+
+                if (!string.IsNullOrEmpty(ma_so_bhxh))
+                {
+                    query = query.Where(b => b.ma_so_bhxh.Contains(ma_so_bhxh));
+                }
+
+                if (!string.IsNullOrEmpty(ma_nhan_vien))
+                {
+                    query = query.Where(b => b.ma_nhan_vien.Contains(ma_nhan_vien));
+                }
+
+                // Lọc theo loại kê khai
+                if (is_bhyt.HasValue)
+                {
+                    query = query.Where(b => b.is_bhyt == is_bhyt.Value);
+                }
+
+                if (is_bhxh.HasValue)
+                {
+                    query = query.Where(b => b.is_bhxh == is_bhxh.Value);
+                }
+
+                var bienLais = await query
                     .Select(b => new
                     {
                         b.id,
@@ -427,6 +469,297 @@ namespace WebApp.API.Controllers
             return await _context.BienLaiDienTus.AnyAsync(e => e.id == id);
         }
 
+        /// <summary>
+        /// Phát hành nhiều biên lai điện tử lên VNPT theo thứ tự số biên lai từ bé đến lớn
+        /// </summary>
+        /// <param name="dto">Danh sách ID biên lai cần phát hành</param>
+        /// <returns>Kết quả phát hành</returns>
+        [HttpPost("publish-multiple")]
+        public async Task<IActionResult> PublishMultiple([FromBody] DeleteMultipleDto dto)
+        {
+            try
+            {
+                if (dto.ids == null || dto.ids.Length == 0)
+                {
+                    return BadRequest(new { message = "Danh sách ID không hợp lệ" });
+                }
+
+                _logger.LogInformation($"Nhận yêu cầu phát hành nhiều biên lai điện tử: {string.Join(", ", dto.ids)}");
+
+                // Lấy danh sách biên lai cần phát hành
+                var bienLais = await _context.BienLaiDienTus
+                    .Where(b => dto.ids.Contains(b.id) && !b.is_published_to_vnpt)
+                    .OrderBy(b => b.so_bien_lai) // Sắp xếp theo số biên lai từ bé đến lớn
+                    .ToListAsync();
+
+                if (bienLais.Count == 0)
+                {
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử nào cần phát hành" });
+                }
+
+                // Kết quả phát hành
+                var results = new List<object>();
+                var successCount = 0;
+                var errorCount = 0;
+
+                // Phát hành từng biên lai theo thứ tự
+                foreach (var bienLai in bienLais)
+                {
+                    try
+                    {
+                        // Tạo key tạm thời cho XML
+                        string key = $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+                        _logger.LogInformation($"Generated temporary key for XML for receipt {bienLai.so_bien_lai}: {key}");
+
+                        // Gán key tạm thời vào biên lai để sử dụng trong XML
+                        bienLai.vnpt_key = key;
+
+                        // Đảm bảo KeKhaiBHYT được tải đầy đủ
+                        if (bienLai.ke_khai_bhyt_id.HasValue && bienLai.KeKhaiBHYT == null)
+                        {
+                            bienLai.KeKhaiBHYT = await _context.KeKhaiBHYTs.FindAsync(bienLai.ke_khai_bhyt_id.Value);
+                            _logger.LogInformation($"Đã tải KeKhaiBHYT cho biên lai {bienLai.id}: {bienLai.KeKhaiBHYT?.id}");
+                        }
+
+                        // Tạo XML với key tạm thời
+                        string invoiceXml = _vnptBienLaiService.CreateInvoiceXml(bienLai);
+
+                        // Kiểm tra xem nội dung thu có được truyền đúng không
+                        bool containsFullFormatBHYT = invoiceXml.Contains("Thu tiền đóng BHYT - Số tháng đóng");
+                        bool containsSimpleFormatBHYT = invoiceXml.Contains("Thu tiền đóng BHYT") && !containsFullFormatBHYT;
+                        bool containsFullFormatBHXH = invoiceXml.Contains("Thu tiền đóng BHXH tự nguyện - Số tháng đóng");
+                        bool containsSimpleFormatBHXH = invoiceXml.Contains("Thu tiền đóng BHXH tự nguyện") && !containsFullFormatBHXH;
+
+                        _logger.LogInformation($"Kiểm tra nội dung thu trong XML cho biên lai {bienLai.id}: " +
+                            $"BHYT ĐầyĐủ={containsFullFormatBHYT}, BHYT ĐơnGiản={containsSimpleFormatBHYT}, " +
+                            $"BHXH ĐầyĐủ={containsFullFormatBHXH}, BHXH ĐơnGiản={containsSimpleFormatBHXH}");
+
+                        // Kiểm tra mã nhân viên
+                        if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                        {
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = false,
+                                message = "Biên lai điện tử không có mã nhân viên"
+                            });
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Sử dụng tài khoản VNPT của nhân viên
+                        var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                        if (vnptAccount == null)
+                        {
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = false,
+                                message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}"
+                            });
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Sử dụng ImportAndPublishInv với tài khoản VNPT của nhân viên theo tài liệu tích hợp
+                        string result = await _vnptBienLaiService.ImportAndPublishInv(invoiceXml, vnptAccount);
+                        _logger.LogInformation($"ImportAndPublishInv Result for receipt {bienLai.so_bien_lai}: {result}");
+
+                        if (result.StartsWith("ERR:"))
+                        {
+                            // Xử lý lỗi
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = false,
+                                message = $"Lỗi khi phát hành: {result}"
+                            });
+                            errorCount++;
+                            continue;
+                        }
+                        else if (result.StartsWith("Error:"))
+                        {
+                            // Xử lý lỗi máy chủ
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = false,
+                                message = $"Lỗi máy chủ: {result}"
+                            });
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Cập nhật thông tin biên lai
+                        if (result.StartsWith("OK:"))
+                        {
+                            // Xử lý kết quả dạng chuỗi theo tài liệu tích hợp
+                            string[] parts = result.Replace("OK:", "").Split(';');
+                            _logger.LogInformation($"Phân tích kết quả VNPT cho biên lai {bienLai.so_bien_lai}: {result}, số phần: {parts.Length}");
+
+                            // Đảm bảo lưu key gốc đã tạo
+                            bienLai.vnpt_key = key;
+                            bienLai.vnpt_response = result;
+
+                            if (parts.Length >= 2)
+                            {
+                                // Lưu pattern
+                                bienLai.vnpt_pattern = parts[0];
+
+                                if (parts.Length >= 3)
+                                {
+                                    // Định dạng chuẩn: OK:pattern;serial;invoiceNo
+                                    bienLai.vnpt_serial = parts[1];
+                                    bienLai.vnpt_invoice_no = parts[2];
+
+                                    // Theo tài liệu, fkey có thể là một phần của chuỗi kết quả
+                                    if (parts.Length >= 4 && !string.IsNullOrEmpty(parts[3]))
+                                    {
+                                        // Nếu có phần thứ 4, có thể đó là fkey
+                                        bienLai.vnpt_transaction_id = parts[3];
+                                    }
+                                    else
+                                    {
+                                        // Nếu không có phần thứ 4, sử dụng invoiceNo làm fkey
+                                        bienLai.vnpt_transaction_id = parts[2];
+                                    }
+                                }
+                                else
+                                {
+                                    // Định dạng khác: OK:pattern;serial-key
+                                    // Tìm vị trí của dấu gạch ngang cuối cùng
+                                    int lastDashIndex = parts[1].LastIndexOf('-');
+
+                                    if (lastDashIndex > 0)
+                                    {
+                                        // Lưu serial đầy đủ (ví dụ: "BH25-AG/08907/E")
+                                        string fullSerial = parts[1].Substring(0, lastDashIndex);
+                                        bienLai.vnpt_serial = fullSerial;
+
+                                        // Lấy phần sau dấu gạch ngang cuối cùng
+                                        string transactionPart = parts[1].Substring(lastDashIndex + 1);
+
+                                        // Kiểm tra xem có dấu gạch dưới cuối cùng không
+                                        int lastUnderscoreIndex = transactionPart.LastIndexOf('_');
+
+                                        if (lastUnderscoreIndex > 0)
+                                        {
+                                            // Lấy invoice_no (phần sau dấu gạch dưới cuối cùng)
+                                            string invoiceNo = transactionPart.Substring(lastUnderscoreIndex + 1);
+                                            bienLai.vnpt_invoice_no = invoiceNo;
+
+                                            // Lấy transaction_id (phần trước dấu gạch dưới cuối cùng)
+                                            string transactionId = transactionPart.Substring(0, lastUnderscoreIndex);
+                                            bienLai.vnpt_transaction_id = transactionId;
+                                        }
+                                        else
+                                        {
+                                            // Nếu không có dấu gạch dưới, sử dụng toàn bộ phần sau dấu gạch ngang
+                                            bienLai.vnpt_transaction_id = transactionPart;
+                                            bienLai.vnpt_invoice_no = transactionPart;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Nếu không có dấu gạch ngang, sử dụng toàn bộ chuỗi làm serial và transaction_id
+                                        bienLai.vnpt_serial = parts[1];
+                                        bienLai.vnpt_transaction_id = parts[1];
+                                    }
+                                }
+                            }
+
+                            // Cập nhật trạng thái biên lai
+                            bienLai.is_published_to_vnpt = true;
+                            bienLai.vnpt_publish_date = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+                            bienLai.trang_thai = "da_phat_hanh";
+
+                            // Lưu thay đổi vào database
+                            await _context.SaveChangesAsync();
+
+                            // Tạo link xem biên lai nếu có transaction_id
+                            string link = "";
+                            if (!string.IsNullOrEmpty(bienLai.vnpt_transaction_id))
+                            {
+                                try
+                                {
+                                    link = await _vnptBienLaiService.GetLinkInvByFkey(bienLai.vnpt_transaction_id, vnptAccount);
+                                    if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
+                                    {
+                                        bienLai.vnpt_link = link;
+                                        await _context.SaveChangesAsync();
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, $"Không thể lấy link biên lai cho biên lai {bienLai.so_bien_lai}");
+                                }
+                            }
+
+                            // Thêm kết quả thành công
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = true,
+                                message = "Phát hành thành công",
+                                data = new
+                                {
+                                    pattern = bienLai.vnpt_pattern,
+                                    serial = bienLai.vnpt_serial,
+                                    invoiceNo = bienLai.vnpt_invoice_no,
+                                    publishDate = bienLai.vnpt_publish_date,
+                                    link = bienLai.vnpt_link,
+                                    transactionId = bienLai.vnpt_transaction_id
+                                }
+                            });
+                            successCount++;
+                        }
+                        else
+                        {
+                            // Kết quả không xác định
+                            results.Add(new
+                            {
+                                id = bienLai.id,
+                                so_bien_lai = bienLai.so_bien_lai,
+                                success = false,
+                                message = $"Kết quả không xác định: {result}"
+                            });
+                            errorCount++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Lỗi khi phát hành biên lai {bienLai.so_bien_lai}");
+                        results.Add(new
+                        {
+                            id = bienLai.id,
+                            so_bien_lai = bienLai.so_bien_lai,
+                            success = false,
+                            message = $"Lỗi: {ex.Message}"
+                        });
+                        errorCount++;
+                    }
+                }
+
+                return Ok(new
+                {
+                    message = $"Đã xử lý {bienLais.Count} biên lai: {successCount} thành công, {errorCount} lỗi",
+                    successCount,
+                    errorCount,
+                    results
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi phát hành nhiều biên lai điện tử");
+                return StatusCode(500, new { message = "Lỗi khi phát hành nhiều biên lai điện tử", error = ex.Message });
+            }
+        }
+
         // Phương thức này đã được hợp nhất vào PublishToVNPTWithLink
         [HttpPost("{id}/publish-to-vnpt-with-employee-account")]
         public async Task<IActionResult> PublishToVNPTWithEmployeeAccount(int id)
@@ -478,9 +811,26 @@ namespace WebApp.API.Controllers
                 // Gán key tạm thời vào biên lai để sử dụng trong XML
                 bienLai.vnpt_key = key;
 
+                // Đảm bảo KeKhaiBHYT được tải đầy đủ
+                if (bienLai.ke_khai_bhyt_id.HasValue && bienLai.KeKhaiBHYT == null)
+                {
+                    bienLai.KeKhaiBHYT = await _context.KeKhaiBHYTs.FindAsync(bienLai.ke_khai_bhyt_id.Value);
+                    _logger.LogInformation($"Đã tải KeKhaiBHYT cho biên lai {bienLai.id}: {bienLai.KeKhaiBHYT?.id}");
+                }
+
                 // Tạo XML với key tạm thời
                 string invoiceXml = _vnptBienLaiService.CreateInvoiceXml(bienLai);
                 _logger.LogInformation($"Invoice XML: {invoiceXml}");
+
+                // Kiểm tra xem nội dung thu có được truyền đúng không
+                bool containsFullFormatBHYT = invoiceXml.Contains("Thu tiền đóng BHYT - Số tháng đóng");
+                bool containsSimpleFormatBHYT = invoiceXml.Contains("Thu tiền đóng BHYT") && !containsFullFormatBHYT;
+                bool containsFullFormatBHXH = invoiceXml.Contains("Thu tiền đóng BHXH tự nguyện - Số tháng đóng");
+                bool containsSimpleFormatBHXH = invoiceXml.Contains("Thu tiền đóng BHXH tự nguyện") && !containsFullFormatBHXH;
+
+                _logger.LogInformation($"Kiểm tra nội dung thu trong XML: " +
+                    $"BHYT ĐầyĐủ={containsFullFormatBHYT}, BHYT ĐơnGiản={containsSimpleFormatBHYT}, " +
+                    $"BHXH ĐầyĐủ={containsFullFormatBHXH}, BHXH ĐơnGiản={containsSimpleFormatBHXH}");
 
                 // Kiểm tra mã nhân viên
                 if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
@@ -579,39 +929,49 @@ namespace WebApp.API.Controllers
                                 else
                                 {
                                     // Định dạng khác: OK:pattern;serial-key
-                                    // Tách serial và key nếu có dấu '-'
-                                    string[] serialParts = parts[1].Split('-');
-                                    if (serialParts.Length >= 1)
-                                    {
-                                        bienLai.vnpt_serial = serialParts[0];
-                                        _logger.LogInformation($"Lưu serial: {serialParts[0]}");
-                                    }
+                                    // Tìm vị trí của dấu gạch ngang cuối cùng
+                                    int lastDashIndex = parts[1].LastIndexOf('-');
 
-                                    if (serialParts.Length >= 2)
+                                    if (lastDashIndex > 0)
                                     {
-                                        // Nếu có phần thứ 2 sau dấu '-', đó là key/fkey
-                                        string fkey = serialParts[1];
+                                        // Lưu serial đầy đủ (ví dụ: "BH25-AG/08907/E")
+                                        string fullSerial = parts[1].Substring(0, lastDashIndex);
+                                        bienLai.vnpt_serial = fullSerial;
+                                        _logger.LogInformation($"Lưu serial đầy đủ: {fullSerial}");
 
-                                        // Nếu có dấu ',' trong key, lấy phần đầu tiên
-                                        if (fkey.Contains(","))
+                                        // Lấy phần sau dấu gạch ngang cuối cùng
+                                        string transactionPart = parts[1].Substring(lastDashIndex + 1);
+                                        _logger.LogInformation($"Phần transaction: {transactionPart}");
+
+                                        // Kiểm tra xem có dấu gạch dưới cuối cùng không
+                                        int lastUnderscoreIndex = transactionPart.LastIndexOf('_');
+
+                                        if (lastUnderscoreIndex > 0)
                                         {
-                                            fkey = fkey.Split(',')[0];
+                                            // Lấy invoice_no (phần sau dấu gạch dưới cuối cùng)
+                                            string invoiceNo = transactionPart.Substring(lastUnderscoreIndex + 1);
+                                            bienLai.vnpt_invoice_no = invoiceNo;
+                                            _logger.LogInformation($"Lưu invoice_no: {invoiceNo}");
+
+                                            // Lấy transaction_id (phần trước dấu gạch dưới cuối cùng)
+                                            string transactionId = transactionPart.Substring(0, lastUnderscoreIndex);
+                                            bienLai.vnpt_transaction_id = transactionId;
+                                            _logger.LogInformation($"Lưu transaction_id: {transactionId}");
                                         }
-
-                                        // Lưu cả key và transaction_id
-                                        bienLai.vnpt_key = key; // Giữ lại key gốc đã tạo
-                                        bienLai.vnpt_transaction_id = fkey;
-                                        _logger.LogInformation($"Lưu transaction_id: {fkey}");
-
-                                        // Lấy số biên lai từ key nếu có thể
-                                        bienLai.vnpt_invoice_no = fkey;
-                                        _logger.LogInformation($"Lưu invoice_no: {fkey}");
+                                        else
+                                        {
+                                            // Nếu không có dấu gạch dưới, sử dụng toàn bộ phần sau dấu gạch ngang
+                                            bienLai.vnpt_transaction_id = transactionPart;
+                                            bienLai.vnpt_invoice_no = transactionPart;
+                                            _logger.LogInformation($"Lưu transaction_id và invoice_no: {transactionPart}");
+                                        }
                                     }
                                     else
                                     {
-                                        // Nếu không có phần thứ 2, sử dụng serial làm fkey
-                                        bienLai.vnpt_transaction_id = serialParts[0];
-                                        _logger.LogInformation($"Lưu transaction_id từ serial: {serialParts[0]}");
+                                        // Nếu không có dấu gạch ngang, sử dụng toàn bộ chuỗi làm serial và transaction_id
+                                        bienLai.vnpt_serial = parts[1];
+                                        bienLai.vnpt_transaction_id = parts[1];
+                                        _logger.LogInformation($"Lưu serial và transaction_id: {parts[1]}");
                                     }
                                 }
 
@@ -739,22 +1099,32 @@ namespace WebApp.API.Controllers
                                 bienLai.vnpt_serial = fullSerial;
                                 _logger.LogInformation($"Lưu serial đầy đủ: {fullSerial}");
 
-                                // Lấy transaction_id (phần sau dấu gạch ngang cuối cùng)
-                                string fkey = parts[1].Substring(lastDashIndex + 1);
+                                // Lấy phần sau dấu gạch ngang cuối cùng
+                                string transactionPart = parts[1].Substring(lastDashIndex + 1);
+                                _logger.LogInformation($"Phần transaction: {transactionPart}");
 
-                                // Nếu có dấu ',' trong key, lấy phần đầu tiên
-                                if (fkey.Contains(","))
+                                // Kiểm tra xem có dấu gạch dưới cuối cùng không
+                                int lastUnderscoreIndex = transactionPart.LastIndexOf('_');
+
+                                if (lastUnderscoreIndex > 0)
                                 {
-                                    fkey = fkey.Split(',')[0];
+                                    // Lấy invoice_no (phần sau dấu gạch dưới cuối cùng)
+                                    string invoiceNo = transactionPart.Substring(lastUnderscoreIndex + 1);
+                                    bienLai.vnpt_invoice_no = invoiceNo;
+                                    _logger.LogInformation($"Lưu invoice_no: {invoiceNo}");
+
+                                    // Lấy transaction_id (phần trước dấu gạch dưới cuối cùng)
+                                    string transactionId = transactionPart.Substring(0, lastUnderscoreIndex);
+                                    bienLai.vnpt_transaction_id = transactionId;
+                                    _logger.LogInformation($"Lưu transaction_id: {transactionId}");
                                 }
-
-                                // Lưu transaction_id
-                                bienLai.vnpt_transaction_id = fkey;
-                                _logger.LogInformation($"Lưu transaction_id: {fkey}");
-
-                                // Lấy số biên lai từ key nếu có thể
-                                bienLai.vnpt_invoice_no = fkey;
-                                _logger.LogInformation($"Lưu invoice_no: {fkey}");
+                                else
+                                {
+                                    // Nếu không có dấu gạch dưới, sử dụng toàn bộ phần sau dấu gạch ngang
+                                    bienLai.vnpt_transaction_id = transactionPart;
+                                    bienLai.vnpt_invoice_no = transactionPart;
+                                    _logger.LogInformation($"Lưu transaction_id và invoice_no: {transactionPart}");
+                                }
 
                                 // Lưu XML response nếu model đã có trường này
                                 if (bienLai.GetType().GetProperty("vnpt_xml_content") != null)
@@ -1002,177 +1372,6 @@ namespace WebApp.API.Controllers
             {
                 _logger.LogError(ex, "Lỗi khi xem biên lai điện tử");
                 return StatusCode(500, new { message = "Lỗi khi xem biên lai điện tử", error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Tải xuống biên lai điện tử dạng PDF
-        /// </summary>
-        /// <param name="id">ID biên lai</param>
-        /// <returns>File PDF của biên lai</returns>
-        [HttpGet("{id}/download-pdf")]
-        public async Task<IActionResult> DownloadInvoicePDF(int id)
-        {
-            try
-            {
-                _logger.LogInformation($"Nhận yêu cầu tải xuống biên lai điện tử dạng PDF: {id}");
-
-                var bienLai = await _context.BienLaiDienTus
-                    .FirstOrDefaultAsync(b => b.id == id);
-                if (bienLai == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
-                }
-
-                if (!bienLai.is_published_to_vnpt)
-                {
-                    return BadRequest(new { message = "Biên lai điện tử chưa được phát hành lên VNPT" });
-                }
-
-                // Kiểm tra xem có transaction_id hoặc key không
-                if (string.IsNullOrEmpty(bienLai.vnpt_transaction_id) && string.IsNullOrEmpty(bienLai.vnpt_key))
-                {
-                    return BadRequest(new { message = "Không tìm thấy thông tin key hoặc transaction_id của biên lai trên VNPT" });
-                }
-
-                // Kiểm tra mã nhân viên
-                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
-                {
-                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
-                }
-
-                // Sử dụng tài khoản VNPT của nhân viên
-                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
-                if (vnptAccount == null)
-                {
-                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
-                }
-
-                // Lấy nội dung PDF của biên lai từ VNPT, ưu tiên sử dụng transaction_id nếu có
-                string fkey = !string.IsNullOrEmpty(bienLai.vnpt_transaction_id) ? bienLai.vnpt_transaction_id : bienLai.vnpt_key;
-                _logger.LogInformation($"Sử dụng fkey: {fkey} để tải xuống PDF biên lai");
-                string base64PDF = await _vnptBienLaiService.DownloadInvPDFByFkey(fkey, vnptAccount);
-
-                if (base64PDF.StartsWith("Error:"))
-                {
-                    // Kiểm tra xem lỗi có chứa link biên lai không
-                    if (base64PDF.Contains("Vui lòng sử dụng link sau để xem biên lai:"))
-                    {
-                        // Trích xuất link từ thông báo lỗi
-                        string link = base64PDF.Substring(base64PDF.IndexOf("http"));
-
-                        // Chuyển hướng người dùng đến link biên lai
-                        return Redirect(link);
-                    }
-
-                    return BadRequest(new { message = "Lỗi khi tải xuống biên lai dạng PDF từ VNPT", error = base64PDF });
-                }
-
-                if (base64PDF == "ERR:6")
-                {
-                    // Lấy link biên lai thay thế
-                    string link = await _vnptBienLaiService.GetLinkInvByFkey(fkey, vnptAccount);
-                    if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
-                    {
-                        // Cập nhật link vào database
-                        bienLai.vnpt_link = link;
-                        await _context.SaveChangesAsync();
-
-                        // Chuyển hướng người dùng đến link biên lai
-                        return Redirect(link);
-                    }
-                    else
-                    {
-                        return BadRequest(new { message = "Lỗi khi tải xuống biên lai dạng PDF từ VNPT (ERR:6 - Dải biên lai cũ đã hết)", error = "ERR:6" });
-                    }
-                }
-
-                // Chuyển đổi base64 thành byte array
-                byte[] pdfBytes = Convert.FromBase64String(base64PDF);
-
-                // Tạo tên file
-                string fileName = $"BienLai_{bienLai.ma_so_bhxh}_{bienLai.so_bien_lai}.pdf";
-
-                // Trả về file PDF
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi tải xuống biên lai điện tử dạng PDF");
-                return StatusCode(500, new { message = "Lỗi khi tải xuống biên lai điện tử dạng PDF", error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Lấy link biên lai điện tử
-        /// </summary>
-        /// <param name="id">ID biên lai</param>
-        /// <returns>Link đến biên lai</returns>
-        [HttpGet("{id}/get-link")]
-        public async Task<IActionResult> GetInvoiceLink(int id)
-        {
-            try
-            {
-                _logger.LogInformation($"Nhận yêu cầu lấy link biên lai điện tử: {id}");
-
-                var bienLai = await _context.BienLaiDienTus
-                    .FirstOrDefaultAsync(b => b.id == id);
-                if (bienLai == null)
-                {
-                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
-                }
-
-                if (!bienLai.is_published_to_vnpt)
-                {
-                    return BadRequest(new { message = "Biên lai điện tử chưa được phát hành lên VNPT" });
-                }
-
-                // Nếu đã có link trong database, trả về luôn
-                if (!string.IsNullOrEmpty(bienLai.vnpt_link))
-                {
-                    return Ok(new { link = bienLai.vnpt_link });
-                }
-
-                // Kiểm tra xem có transaction_id hoặc key không
-                if (string.IsNullOrEmpty(bienLai.vnpt_transaction_id) && string.IsNullOrEmpty(bienLai.vnpt_key))
-                {
-                    return BadRequest(new { message = "Không tìm thấy thông tin key hoặc transaction_id của biên lai trên VNPT" });
-                }
-
-                // Kiểm tra mã nhân viên
-                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
-                {
-                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
-                }
-
-                // Sử dụng tài khoản VNPT của nhân viên
-                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
-                if (vnptAccount == null)
-                {
-                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
-                }
-
-                // Lấy link biên lai từ VNPT, ưu tiên sử dụng transaction_id nếu có
-                string fkey = !string.IsNullOrEmpty(bienLai.vnpt_transaction_id) ? bienLai.vnpt_transaction_id : bienLai.vnpt_key;
-                _logger.LogInformation($"Sử dụng fkey: {fkey} để lấy link biên lai");
-                string link = await _vnptBienLaiService.GetLinkInvByFkey(fkey, vnptAccount);
-
-                if (link.StartsWith("Error:"))
-                {
-                    return BadRequest(new { message = "Lỗi khi lấy link biên lai từ VNPT", error = link });
-                }
-
-                // Cập nhật link vào database
-                bienLai.vnpt_link = link;
-                await _context.SaveChangesAsync();
-
-                // Trả về link
-                return Ok(new { link = link });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy link biên lai điện tử");
-                return StatusCode(500, new { message = "Lỗi khi lấy link biên lai điện tử", error = ex.Message });
             }
         }
 

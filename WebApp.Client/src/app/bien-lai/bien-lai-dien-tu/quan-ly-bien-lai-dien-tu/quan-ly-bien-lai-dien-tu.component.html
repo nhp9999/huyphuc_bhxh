@@ -14,7 +14,80 @@
     </div>
   </div>
 
+  <!-- Form tìm kiếm -->
+  <div class="search-container">
+    <form nz-form [formGroup]="searchForm" class="search-form">
+      <div nz-row [nzGutter]="16">
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Ký hiệu</nz-form-label>
+            <nz-form-control>
+              <input nz-input formControlName="ky_hieu" placeholder="Nhập ký hiệu" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Số biên lai</nz-form-label>
+            <nz-form-control>
+              <input nz-input formControlName="so_bien_lai" placeholder="Nhập số biên lai" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Người đóng</nz-form-label>
+            <nz-form-control>
+              <input nz-input formControlName="ten_nguoi_dong" placeholder="Nhập tên người đóng" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Mã số BHXH</nz-form-label>
+            <nz-form-control>
+              <input nz-input formControlName="ma_so_bhxh" placeholder="Nhập mã số BHXH" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Mã nhân viên</nz-form-label>
+            <nz-form-control>
+              <input nz-input formControlName="ma_nhan_vien" placeholder="Nhập mã nhân viên" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <nz-form-item>
+            <nz-form-label>Loại kê khai</nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="loai_ke_khai" nzPlaceHolder="Chọn loại kê khai">
+                <nz-option nzValue="" nzLabel="Tất cả"></nz-option>
+                <nz-option nzValue="bhyt" nzLabel="BHYT"></nz-option>
+                <nz-option nzValue="bhxh" nzLabel="BHXH"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
+          <div class="search-buttons">
+            <button nz-button nzType="primary" (click)="search()">
+              <i nz-icon nzType="search"></i> Tìm kiếm
+            </button>
+            <button nz-button (click)="resetSearch()">
+              <i nz-icon nzType="clear"></i> Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <div class="table-actions" *ngIf="selectedIds.length > 0">
+    <button nz-button nzType="primary" (click)="publishMultiple()">
+      <i nz-icon nzType="cloud-upload"></i> Tạo {{ selectedIds.length }} biên lai đã chọn
+    </button>
     <button nz-button nzType="primary" nzDanger (click)="deleteMultiple()">
       <i nz-icon nzType="delete"></i> Xóa {{ selectedIds.length }} biên lai đã chọn
     </button>
@@ -32,6 +105,7 @@
         <th>Mã nhân viên</th>
         <th>Số tiền</th>
         <th>Ngày tạo</th>
+        <th>Loại kê khai</th>
         <th>Tính chất</th>
         <th>Trạng thái</th>
         <th>Thao tác</th>
@@ -48,6 +122,11 @@
         <td>{{ item.ma_nhan_vien }}</td>
         <td>{{ item.so_tien | number:'1.0-0' }} đ</td>
         <td>{{ item.ngay_tao | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <nz-tag *ngIf="item.is_bhyt" nzColor="blue">BHYT</nz-tag>
+          <nz-tag *ngIf="item.is_bhxh" nzColor="purple">BHXH</nz-tag>
+          <nz-tag *ngIf="!item.is_bhyt && !item.is_bhxh" nzColor="default">Không xác định</nz-tag>
+        </td>
         <td>
           <nz-tag [nzColor]="item.tinh_chat === 'bien_lai_goc' ? 'green' : 'red'">
             {{ getTinhChatText(item.tinh_chat) }}
@@ -99,28 +178,8 @@
             nzTooltipTitle="Xem biên lai">
             <i nz-icon nzType="eye"></i>
           </button>
-          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
-          <button
-            nz-button
-            nzType="default"
-            nzSize="small"
-            [disabled]="!item.is_published_to_vnpt"
-            (click)="downloadBienLaiPDF(item.id!)"
-            nz-tooltip
-            nzTooltipTitle="Tải PDF">
-            <i nz-icon nzType="file-pdf"></i>
-          </button>
-          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
-          <button
-            nz-button
-            nzType="default"
-            nzSize="small"
-            [disabled]="!item.is_published_to_vnpt"
-            (click)="openBienLaiLink(item.id!)"
-            nz-tooltip
-            nzTooltipTitle="Mở link">
-            <i nz-icon nzType="link"></i>
-          </button>
+
+
         </td>
       </tr>
     </tbody>
@@ -328,5 +387,31 @@
         </div>
       </div>
     </div>
+  </nz-modal>
+
+  <!-- Modal xem biên lai điện tử -->
+  <nz-modal
+    [(nzVisible)]="isViewModalVisible"
+    nzTitle="Biên lai điện tử"
+    [nzWidth]="1000"
+    [nzFooter]="viewModalFooter"
+    (nzOnCancel)="closeViewModal()"
+    [nzBodyStyle]="{ maxHeight: '80vh', overflow: 'auto' }"
+  >
+    <div *nzModalContent>
+      <nz-spin [nzSpinning]="isLoadingBienLai">
+        <div class="bien-lai-content" *ngIf="bienLaiContent" [innerHTML]="bienLaiContent"></div>
+        <div class="no-content" *ngIf="!bienLaiContent && !isLoadingBienLai">
+          Không có nội dung biên lai
+        </div>
+      </nz-spin>
+    </div>
+    <ng-template #viewModalFooter>
+      <button nz-button nzType="default" (click)="closeViewModal()">Đóng</button>
+      <button nz-button nzType="primary" (click)="openBienLaiInNewTab()">
+        <i nz-icon nzType="export"></i> Mở trong tab mới
+      </button>
+
+    </ng-template>
   </nz-modal>
 </div>

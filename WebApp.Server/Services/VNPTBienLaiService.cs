@@ -1045,6 +1045,19 @@ namespace WebApp.API.Services
             string arisingDate = bienLai.ngay_tao.ToString("dd/MM/yyyy");
             string amountInWords = ConvertNumberToWords(bienLai.so_tien);
 
+            // Kiểm tra xem KeKhaiBHYT đã được tải chưa
+            if (bienLai.ke_khai_bhyt_id.HasValue && bienLai.KeKhaiBHYT == null)
+            {
+                // Tải KeKhaiBHYT từ database
+                _logger.LogInformation($"KeKhaiBHYT chưa được tải, tải từ database với ID: {bienLai.ke_khai_bhyt_id}");
+                var keKhaiBHYT = _context.KeKhaiBHYTs.Find(bienLai.ke_khai_bhyt_id.Value);
+                if (keKhaiBHYT != null)
+                {
+                    bienLai.KeKhaiBHYT = keKhaiBHYT;
+                    _logger.LogInformation($"Đã tải KeKhaiBHYT: ID={keKhaiBHYT.id}, HanTheMoiTu={keKhaiBHYT.han_the_moi_tu}, HanTheMoiDen={keKhaiBHYT.han_the_moi_den}, SoThangDong={keKhaiBHYT.so_thang_dong}");
+                }
+            }
+
             // Đọc file XML mẫu
             string xmlTemplate = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <Invoices>
@@ -1082,30 +1095,110 @@ namespace WebApp.API.Services
             string productName = "Phí BHXH";
             string address = "BHXH Việt Nam";
 
-            if (bienLai.KeKhaiBHYT != null)
+            // Xử lý nội dung thu dựa trên loại biên lai
+            if (bienLai.is_bhyt)
             {
-                // Lấy địa chỉ từ KeKhaiBHYT
-                string tinh = bienLai.KeKhaiBHYT.tinh_nkq;
-                string huyen = bienLai.KeKhaiBHYT.huyen_nkq;
-                string xa = bienLai.KeKhaiBHYT.xa_nkq;
-                string diaChi = bienLai.KeKhaiBHYT.dia_chi_nkq;
-
-                // Tạo địa chỉ đầy đủ
-                address = $"{diaChi}, {xa}, {huyen}, {tinh}";
-
-                // Nếu là BHYT, lấy thông tin hạn thẻ
-                if (bienLai.is_bhyt)
+                // Nếu là BHYT, định dạng nội dung thu theo yêu cầu
+                if (bienLai.KeKhaiBHYT != null)
                 {
+                    // Lấy địa chỉ từ KeKhaiBHYT
+                    string tinh = bienLai.KeKhaiBHYT.tinh_nkq;
+                    string huyen = bienLai.KeKhaiBHYT.huyen_nkq;
+                    string xa = bienLai.KeKhaiBHYT.xa_nkq;
+                    string diaChi = bienLai.KeKhaiBHYT.dia_chi_nkq;
+
+                    // Tạo địa chỉ đầy đủ
+                    address = $"{diaChi}, {xa}, {huyen}, {tinh}";
+
+                    // Lấy thông tin hạn thẻ và số tháng đóng
                     string hanTheTu = bienLai.KeKhaiBHYT.han_the_moi_tu.ToString("dd/MM/yyyy");
                     string hanTheDen = bienLai.KeKhaiBHYT.han_the_moi_den.ToString("dd/MM/yyyy");
                     int soThangDong = bienLai.KeKhaiBHYT.so_thang_dong;
+
+                    // Định dạng nội dung thu theo yêu cầu
                     productName = $"Thu tiền đóng BHYT - Số tháng đóng {soThangDong} tháng (từ ngày {hanTheTu} đến ngày {hanTheDen})";
+
+                    // Log thông tin để debug
+                    _logger.LogInformation($"BHYT - Thông tin biên lai: ID={bienLai.id}, MaSoBHXH={bienLai.ma_so_bhxh}, " +
+                        $"HanTheTu={hanTheTu}, HanTheDen={hanTheDen}, SoThangDong={soThangDong}, " +
+                        $"NoiDungThu={productName}");
+                }
+                else
+                {
+                    // Nếu không có thông tin kê khai BHYT, sử dụng nội dung mặc định
+                    productName = "Thu tiền đóng BHYT";
+                    _logger.LogWarning($"BHYT - Không có thông tin kê khai BHYT cho biên lai ID={bienLai.id}, MaSoBHXH={bienLai.ma_so_bhxh}");
                 }
             }
-            else if (bienLai.is_bhyt)
+            else if (bienLai.is_bhxh)
             {
-                productName = "Thu tiền đóng BHYT";
+                // Nếu là BHXH, cần lấy thông tin từ KeKhaiBHXH
+                // Vì không có mối quan hệ trực tiếp, cần truy vấn từ database
+                var keKhaiBHXH = _context.KeKhaiBHXHs
+                    .Where(k => k.so_bien_lai == bienLai.so_bien_lai)
+                    .FirstOrDefault();
+
+                if (keKhaiBHXH != null)
+                {
+                    // Lấy thông tin số tháng đóng
+                    int soThangDong = keKhaiBHXH.so_thang_dong;
+
+                    // Lấy thông tin tháng bắt đầu
+                    string thangBatDau = keKhaiBHXH.thang_bat_dau;
+
+                    // Tính tháng kết thúc
+                    DateTime thangBatDauDate;
+                    if (DateTime.TryParse(thangBatDau, out thangBatDauDate))
+                    {
+                        // Tính tháng kết thúc bằng cách cộng số tháng đóng vào tháng bắt đầu
+                        DateTime thangKetThucDate = thangBatDauDate.AddMonths(soThangDong - 1);
+
+                        // Format tháng bắt đầu và tháng kết thúc
+                        string thangBatDauFormatted = thangBatDauDate.ToString("MM/yyyy");
+                        string thangKetThucFormatted = thangKetThucDate.ToString("MM/yyyy");
+
+                        // Định dạng nội dung thu theo yêu cầu
+                        productName = $"Thu tiền đóng BHXH tự nguyện - Số tháng đóng {soThangDong} tháng (từ tháng {thangBatDauFormatted} đến tháng {thangKetThucFormatted})";
+
+                        _logger.LogInformation($"BHXH TN - Thông tin biên lai: ID={bienLai.id}, MaSoBHXH={bienLai.ma_so_bhxh}, " +
+                            $"ThangBatDau={thangBatDauFormatted}, ThangKetThuc={thangKetThucFormatted}, SoThangDong={soThangDong}, " +
+                            $"NoiDungThu={productName}");
+                    }
+                    else
+                    {
+                        // Nếu không parse được tháng bắt đầu, sử dụng nội dung mặc định
+                        productName = $"Thu tiền đóng BHXH tự nguyện - Số tháng đóng {soThangDong} tháng";
+                        _logger.LogWarning($"BHXH TN - Không thể parse tháng bắt đầu '{thangBatDau}' cho biên lai ID={bienLai.id}, MaSoBHXH={bienLai.ma_so_bhxh}");
+                    }
+
+                    // Lấy địa chỉ từ KeKhaiBHXH
+                    if (!string.IsNullOrEmpty(keKhaiBHXH.tinh_nkq) && !string.IsNullOrEmpty(keKhaiBHXH.huyen_nkq) && !string.IsNullOrEmpty(keKhaiBHXH.xa_nkq))
+                    {
+                        string tinh = keKhaiBHXH.tinh_nkq;
+                        string huyen = keKhaiBHXH.huyen_nkq;
+                        string xa = keKhaiBHXH.xa_nkq;
+                        address = $"{xa}, {huyen}, {tinh}";
+                    }
+                }
+                else
+                {
+                    // Nếu không tìm thấy KeKhaiBHXH, sử dụng nội dung mặc định
+                    productName = "Thu tiền đóng BHXH tự nguyện";
+                    _logger.LogWarning($"BHXH TN - Không tìm thấy thông tin kê khai BHXH cho biên lai ID={bienLai.id}, SoBienLai={bienLai.so_bien_lai}, MaSoBHXH={bienLai.ma_so_bhxh}");
+
+                    // Lấy địa chỉ từ KeKhaiBHYT nếu có
+                    if (bienLai.KeKhaiBHYT != null)
+                    {
+                        string tinh = bienLai.KeKhaiBHYT.tinh_nkq;
+                        string huyen = bienLai.KeKhaiBHYT.huyen_nkq;
+                        string xa = bienLai.KeKhaiBHYT.xa_nkq;
+                        string diaChi = bienLai.KeKhaiBHYT.dia_chi_nkq;
+                        address = $"{diaChi}, {xa}, {huyen}, {tinh}";
+                    }
+                }
             }
+
+            _logger.LogInformation($"Nội dung thu cuối cùng: {productName}");
 
             string xml = string.Format(xmlTemplate,
                 key,

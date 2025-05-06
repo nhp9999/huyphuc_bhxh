@@ -125,20 +125,11 @@ export class VNPTBienLaiService {
   }
 
   /**
-   * Tải xuống biên lai điện tử dạng PDF
+   * Lấy nội dung HTML của biên lai điện tử
    * @param bienLaiId ID biên lai
-   * @returns URL để tải xuống biên lai
+   * @returns Observable với nội dung HTML của biên lai
    */
-  downloadBienLaiPDF(bienLaiId: number): string {
-    return `${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/download-pdf`;
-  }
-
-  /**
-   * Lấy link biên lai điện tử
-   * @param bienLaiId ID biên lai
-   * @returns Observable với link biên lai
-   */
-  getBienLaiLink(bienLaiId: number): Observable<{link: string}> {
-    return this.http.get<{link: string}>(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/get-link`);
+  getBienLaiContent(bienLaiId: number): Observable<string> {
+    return this.http.get(`${environment.apiUrl}/bien-lai-dien-tu/${bienLaiId}/view`, { responseType: 'text' });
   }
 }

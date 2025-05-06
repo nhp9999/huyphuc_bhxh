@@ -276,22 +276,32 @@ namespace WebApp.API.Controllers
                                 bienLai.vnpt_serial = fullSerial;
                                 _logger.LogInformation($"Lưu serial đầy đủ: {fullSerial}");
 
-                                // Lấy transaction_id (phần sau dấu gạch ngang cuối cùng)
-                                string fkey = parts[1].Substring(lastDashIndex + 1);
+                                // Lấy phần sau dấu gạch ngang cuối cùng
+                                string transactionPart = parts[1].Substring(lastDashIndex + 1);
+                                _logger.LogInformation($"Phần transaction: {transactionPart}");
 
-                                // Nếu có dấu ',' trong key, lấy phần đầu tiên
-                                if (fkey.Contains(","))
+                                // Kiểm tra xem có dấu gạch dưới cuối cùng không
+                                int lastUnderscoreIndex = transactionPart.LastIndexOf('_');
+
+                                if (lastUnderscoreIndex > 0)
                                 {
-                                    fkey = fkey.Split(',')[0];
+                                    // Lấy invoice_no (phần sau dấu gạch dưới cuối cùng)
+                                    string invoiceNo = transactionPart.Substring(lastUnderscoreIndex + 1);
+                                    bienLai.vnpt_invoice_no = invoiceNo;
+                                    _logger.LogInformation($"Lưu invoice_no: {invoiceNo}");
+
+                                    // Lấy transaction_id (phần trước dấu gạch dưới cuối cùng)
+                                    string transactionId = transactionPart.Substring(0, lastUnderscoreIndex);
+                                    bienLai.vnpt_transaction_id = transactionId;
+                                    _logger.LogInformation($"Lưu transaction_id: {transactionId}");
                                 }
-
-                                // Lưu transaction_id
-                                bienLai.vnpt_transaction_id = fkey;
-                                _logger.LogInformation($"Lưu transaction_id: {fkey}");
-
-                                // Lấy số biên lai từ key nếu có thể
-                                bienLai.vnpt_invoice_no = fkey;
-                                _logger.LogInformation($"Lưu invoice_no: {fkey}");
+                                else
+                                {
+                                    // Nếu không có dấu gạch dưới, sử dụng toàn bộ phần sau dấu gạch ngang
+                                    bienLai.vnpt_transaction_id = transactionPart;
+                                    bienLai.vnpt_invoice_no = transactionPart;
+                                    _logger.LogInformation($"Lưu transaction_id và invoice_no: {transactionPart}");
+                                }
                             }
                             else
                             {

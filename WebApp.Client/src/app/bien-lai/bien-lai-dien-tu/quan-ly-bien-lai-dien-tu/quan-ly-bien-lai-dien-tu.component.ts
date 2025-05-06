@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService } from 'ng-zorro-antd/modal';
-import { BienLaiDienTuService } from '../../../services/bien-lai-dien-tu.service';
+import { BienLaiDienTuService, BienLaiDienTuSearchParams } from '../../../services/bien-lai-dien-tu.service';
 import { BienLaiDienTu, QuyenBienLaiDienTu } from '../../models/bien-lai-dien-tu.model';
 import { VNPTBienLaiService } from '../../../services/vnpt-bien-lai.service';
 import { CommonModule } from '@angular/common';
@@ -22,8 +22,11 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzUploadModule, NzUploadFile } from 'ng-zorro-antd/upload';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { HttpClient } from '@angular/common/http';
 import { catchError, finalize, of } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -47,10 +50,13 @@ import { environment } from '../../../../environments/environment';
     NzCheckboxModule,
     NzRadioModule,
     NzUploadModule,
-    NzAlertModule
+    NzAlertModule,
+    NzGridModule,
+    NzSpinModule
   ],
   templateUrl: './quan-ly-bien-lai-dien-tu.component.html',
-  styleUrls: ['./quan-ly-bien-lai-dien-tu.component.scss']
+  styleUrls: ['./quan-ly-bien-lai-dien-tu.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class QuanLyBienLaiDienTuComponent implements OnInit {
   bienLais: BienLaiDienTu[] = [];
@@ -59,6 +65,7 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   isVisible = false;
   isSubmitting = false;
   form!: FormGroup;
+  searchForm!: FormGroup;
   editingId: number | null = null;
   currentBienLai: BienLaiDienTu | null = null;
 
@@ -74,17 +81,25 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   isImporting = false;
   importResult: any = null;
 
+  // Modal xem biên lai
+  isViewModalVisible = false;
+  bienLaiContent: SafeHtml | null = null;
+  isLoadingBienLai = false;
+  currentViewBienLaiId: number | null = null;
+
   constructor(
     private bienLaiDienTuService: BienLaiDienTuService,
     private vnptBienLaiService: VNPTBienLaiService,
     private fb: FormBuilder,
     private message: NzMessageService,
     private modal: NzModalService,
-    private http: HttpClient
+    private http: HttpClient,
+    private sanitizer: DomSanitizer
   ) { }
 
   ngOnInit(): void {
     this.initForm();
+    this.initSearchForm();
     this.loadBienLais();
     this.loadQuyenBienLais();
   }
@@ -110,9 +125,42 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
     });
   }
 
+  initSearchForm(): void {
+    this.searchForm = this.fb.group({
+      ky_hieu: [''],
+      so_bien_lai: [''],
+      ten_nguoi_dong: [''],
+      ma_so_bhxh: [''],
+      ma_nhan_vien: [''],
+      loai_ke_khai: [''] // Thêm trường lọc loại kê khai
+    });
+  }
+
   loadBienLais(): void {
     this.isLoading = true;
-    this.bienLaiDienTuService.getBienLais()
+
+    // Lấy các giá trị tìm kiếm từ form
+    const searchParams: BienLaiDienTuSearchParams = {};
+    const formValue = this.searchForm?.value;
+
+    if (formValue) {
+      if (formValue.ky_hieu) searchParams.ky_hieu = formValue.ky_hieu;
+      if (formValue.so_bien_lai) searchParams.so_bien_lai = formValue.so_bien_lai;
+      if (formValue.ten_nguoi_dong) searchParams.ten_nguoi_dong = formValue.ten_nguoi_dong;
+      if (formValue.ma_so_bhxh) searchParams.ma_so_bhxh = formValue.ma_so_bhxh;
+      if (formValue.ma_nhan_vien) searchParams.ma_nhan_vien = formValue.ma_nhan_vien;
+
+      // Xử lý lọc theo loại kê khai
+      if (formValue.loai_ke_khai) {
+        if (formValue.loai_ke_khai === 'bhyt') {
+          searchParams.is_bhyt = true;
+        } else if (formValue.loai_ke_khai === 'bhxh') {
+          searchParams.is_bhxh = true;
+        }
+      }
+    }
+
+    this.bienLaiDienTuService.getBienLais(searchParams)
       .pipe(
         catchError(error => {
           console.error('Lỗi khi tải danh sách biên lai điện tử:', error);
@@ -127,6 +175,15 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  search(): void {
+    this.loadBienLais();
+  }
+
+  resetSearch(): void {
+    this.searchForm.reset();
+    this.loadBienLais();
   }
 
   loadQuyenBienLais(): void {
@@ -465,47 +522,89 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
    * @param id ID biên lai
    */
   viewBienLai(id: number): void {
-    // Mở biên lai trong cửa sổ mới
-    window.open(this.vnptBienLaiService.viewBienLai(id), '_blank');
-  }
+    this.isLoadingBienLai = true;
+    this.isViewModalVisible = true;
+    this.currentViewBienLaiId = id;
+    this.bienLaiContent = null;
 
-  /**
-   * Tải xuống biên lai điện tử dạng PDF
-   * @param id ID biên lai
-   */
-  downloadBienLaiPDF(id: number): void {
-    // Mở URL tải xuống trong cửa sổ mới
-    window.open(this.vnptBienLaiService.downloadBienLaiPDF(id), '_blank');
-  }
-
-  /**
-   * Mở link biên lai điện tử
-   * @param id ID biên lai
-   */
-  openBienLaiLink(id: number): void {
-    const loadingId = this.message.loading('Đang lấy link biên lai...', { nzDuration: 0 }).messageId;
-
-    this.vnptBienLaiService.getBienLaiLink(id)
+    this.vnptBienLaiService.getBienLaiContent(id)
       .pipe(
         finalize(() => {
-          this.message.remove(loadingId);
+          this.isLoadingBienLai = false;
         }),
         catchError(error => {
-          console.error('Lỗi khi lấy link biên lai:', error);
-          this.message.error(error.error?.message || 'Có lỗi khi lấy link biên lai');
-          return of(null);
+          console.error('Lỗi khi lấy nội dung biên lai:', error);
+          this.message.error('Có lỗi khi lấy nội dung biên lai');
+          return of('');
         })
       )
       .subscribe({
-        next: (response) => {
-          if (response && response.link) {
-            // Mở link trong cửa sổ mới
-            window.open(response.link, '_blank');
+        next: (content: string) => {
+          if (content) {
+            // Kiểm tra nếu nội dung là HTML
+            if (content.includes('<html') || content.includes('<!DOCTYPE html')) {
+              this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml(content);
+            } else if (content.startsWith('Error:')) {
+              // Hiển thị thông báo lỗi
+              this.message.error(content);
+              this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml(`<div class="error-message">${content}</div>`);
+            } else if (content.startsWith('ERR:')) {
+              // Xử lý mã lỗi từ VNPT
+              const errorMessage = this.getVNPTErrorMessage(content);
+              this.message.error(errorMessage);
+              this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml(`<div class="error-message">${errorMessage}</div>`);
+            } else if (content.includes('<a href=')) {
+              // Nếu là link biên lai
+              this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml(content);
+            } else {
+              // Nội dung không xác định
+              this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml(`<div>${content}</div>`);
+            }
           } else {
-            this.message.warning('Không tìm thấy link biên lai');
+            this.bienLaiContent = this.sanitizer.bypassSecurityTrustHtml('<div class="error-message">Không có nội dung biên lai</div>');
           }
         }
       });
+  }
+
+  /**
+   * Đóng modal xem biên lai
+   */
+  closeViewModal(): void {
+    this.isViewModalVisible = false;
+    this.bienLaiContent = null;
+    this.currentViewBienLaiId = null;
+  }
+
+  /**
+   * Mở biên lai trong tab mới
+   */
+  openBienLaiInNewTab(): void {
+    if (this.currentViewBienLaiId) {
+      window.open(this.vnptBienLaiService.viewBienLai(this.currentViewBienLaiId), '_blank');
+    }
+  }
+
+  /**
+   * Lấy thông báo lỗi từ mã lỗi VNPT
+   * @param errorCode Mã lỗi từ VNPT
+   * @returns Thông báo lỗi
+   */
+  getVNPTErrorMessage(errorCode: string): string {
+    switch (errorCode) {
+      case 'ERR:1':
+        return 'Lỗi xác thực: Tài khoản đăng nhập sai hoặc không có quyền';
+      case 'ERR:2':
+        return 'Không tìm thấy biên lai';
+      case 'ERR:6':
+        return 'Dải biên lai cũ đã hết, vui lòng sử dụng chức năng "Mở link" để xem biên lai';
+      case 'ERR:8':
+        return 'Biên lai đã được thay thế hoặc hủy';
+      case 'ERR:9':
+        return 'Trạng thái biên lai không hợp lệ';
+      default:
+        return `Lỗi không xác định: ${errorCode}`;
+    }
   }
 
   // Phương thức xử lý checkbox
@@ -567,6 +666,73 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
             this.isLoading = false;
           }
         });
+      }
+    });
+  }
+
+  // Phát hành nhiều biên lai điện tử lên VNPT
+  publishMultiple(): void {
+    if (this.selectedIds.length === 0) {
+      this.message.warning('Vui lòng chọn ít nhất một biên lai để tạo');
+      return;
+    }
+
+    // Lọc ra những biên lai chưa phát hành
+    const unpublishedBienLais = this.bienLais.filter(
+      item => item.id && this.setOfCheckedId.has(item.id) && !item.is_published_to_vnpt
+    );
+
+    if (unpublishedBienLais.length === 0) {
+      this.message.warning('Không có biên lai nào chưa phát hành trong danh sách đã chọn');
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: 'Xác nhận tạo biên lai điện tử',
+      nzContent: `Bạn có chắc chắn muốn tạo ${unpublishedBienLais.length} biên lai điện tử đã chọn? Hệ thống sẽ xử lý theo thứ tự số biên lai từ bé đến lớn.`,
+      nzOkText: 'Tạo',
+      nzOkType: 'primary',
+      nzOnOk: () => {
+        const loadingId = this.message.loading('Đang tạo biên lai điện tử...', { nzDuration: 0 }).messageId;
+
+        this.bienLaiDienTuService.publishMultiple(this.selectedIds)
+          .pipe(
+            finalize(() => {
+              this.message.remove(loadingId);
+            }),
+            catchError(error => {
+              console.error('Lỗi khi tạo nhiều biên lai điện tử:', error);
+              this.message.error(error.error?.message || 'Có lỗi khi tạo nhiều biên lai điện tử');
+              return of(null);
+            })
+          )
+          .subscribe({
+            next: (response) => {
+              if (response) {
+                // Hiển thị thông báo kết quả
+                this.message.success(`Đã xử lý ${response.successCount + response.errorCount} biên lai: ${response.successCount} thành công, ${response.errorCount} lỗi`);
+
+                // Hiển thị modal kết quả chi tiết
+                this.modal.success({
+                  nzTitle: 'Kết quả tạo biên lai điện tử',
+                  nzContent: `
+                    <p>Tổng số biên lai đã xử lý: ${response.successCount + response.errorCount}</p>
+                    <p>Số biên lai thành công: ${response.successCount}</p>
+                    <p>Số biên lai lỗi: ${response.errorCount}</p>
+                  `,
+                  nzWidth: 600,
+                  nzOkText: 'Đóng'
+                });
+
+                // Cập nhật lại danh sách biên lai
+                this.loadBienLais();
+
+                // Xóa danh sách đã chọn
+                this.setOfCheckedId.clear();
+                this.selectedIds = [];
+              }
+            }
+          });
       }
     });
   }
