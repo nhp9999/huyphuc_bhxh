@@ -99,4 +99,4 @@ namespace WebApp.API.Models
         [StringLength(50)]
         public string? ma_benh_vien { get; set; }
     }
-} 
+}

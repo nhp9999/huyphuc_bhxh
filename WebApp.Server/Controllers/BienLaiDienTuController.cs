@@ -32,26 +32,179 @@ namespace WebApp.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var bienLais = await _context.BienLaiDienTus
-                .Include(b => b.KeKhaiBHYT)
-                .Include(b => b.QuyenBienLaiDienTu)
-                .OrderByDescending(b => b.ngay_tao)
-                .ToListAsync();
-            return Ok(bienLais);
+            try
+            {
+                var bienLais = await _context.BienLaiDienTus
+                    .Include(b => b.QuyenBienLaiDienTu)
+                    .Select(b => new
+                    {
+                        b.id,
+                        b.ky_hieu,
+                        b.so_bien_lai,
+                        b.ten_nguoi_dong,
+                        b.so_tien,
+                        b.ghi_chu,
+                        b.trang_thai,
+                        b.ngay_tao,
+                        b.ngay_bien_lai,
+                        b.ke_khai_bhyt_id,
+                        b.quyen_bien_lai_dien_tu_id,
+                        b.ma_so_bhxh,
+                        b.ma_nhan_vien,
+                        b.tinh_chat,
+                        b.ma_co_quan_bhxh,
+                        b.ma_so_bhxh_don_vi,
+                        b.is_bhyt,
+                        b.is_bhxh,
+                        b.is_published_to_vnpt,
+                        b.vnpt_key,
+                        b.vnpt_response,
+                        b.vnpt_pattern,
+                        b.vnpt_serial,
+                        b.vnpt_invoice_no,
+                        b.vnpt_publish_date,
+                        b.vnpt_link,
+                        b.vnpt_transaction_id,
+                        b.vnpt_xml_content,
+                        QuyenBienLaiDienTu = b.QuyenBienLaiDienTu == null ? null : new
+                        {
+                            b.QuyenBienLaiDienTu.id,
+                            b.QuyenBienLaiDienTu.ky_hieu,
+                            b.QuyenBienLaiDienTu.tu_so,
+                            b.QuyenBienLaiDienTu.den_so,
+                            b.QuyenBienLaiDienTu.so_hien_tai,
+                            b.QuyenBienLaiDienTu.trang_thai,
+                            b.QuyenBienLaiDienTu.ngay_cap,
+                            b.QuyenBienLaiDienTu.nguoi_cap,
+                            b.QuyenBienLaiDienTu.ma_co_quan_bhxh
+                        },
+                        KeKhaiBHYT = b.KeKhaiBHYT == null ? null : new
+                        {
+                            b.KeKhaiBHYT.id,
+                            b.KeKhaiBHYT.dot_ke_khai_id,
+                            b.KeKhaiBHYT.thong_tin_the_id,
+                            b.KeKhaiBHYT.nguoi_thu,
+                            b.KeKhaiBHYT.so_thang_dong,
+                            b.KeKhaiBHYT.phuong_an_dong,
+                            b.KeKhaiBHYT.han_the_cu,
+                            b.KeKhaiBHYT.han_the_moi_tu,
+                            b.KeKhaiBHYT.han_the_moi_den,
+                            b.KeKhaiBHYT.tinh_nkq,
+                            b.KeKhaiBHYT.huyen_nkq,
+                            b.KeKhaiBHYT.xa_nkq,
+                            b.KeKhaiBHYT.dia_chi_nkq,
+                            b.KeKhaiBHYT.benh_vien_kcb,
+                            b.KeKhaiBHYT.nguoi_tao,
+                            b.KeKhaiBHYT.ngay_tao,
+                            b.KeKhaiBHYT.ngay_bien_lai,
+                            b.KeKhaiBHYT.so_tien_can_dong,
+                            b.KeKhaiBHYT.is_urgent,
+                            b.KeKhaiBHYT.trang_thai,
+                            b.KeKhaiBHYT.so_bien_lai,
+                            b.KeKhaiBHYT.ma_ho_so,
+                            b.KeKhaiBHYT.quyen_bien_lai_id
+                        }
+                    })
+                    .OrderByDescending(b => b.ngay_tao)
+                    .ToListAsync();
+
+                return Ok(bienLais);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách biên lai điện tử");
+                return StatusCode(500, new { message = "Lỗi khi lấy danh sách biên lai điện tử", error = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var bienLai = await _context.BienLaiDienTus
-                .Include(b => b.KeKhaiBHYT)
-                .Include(b => b.QuyenBienLaiDienTu)
-                .FirstOrDefaultAsync(b => b.id == id);
+            try
+            {
+                var bienLai = await _context.BienLaiDienTus
+                    .Include(b => b.QuyenBienLaiDienTu)
+                    .Select(b => new
+                    {
+                        b.id,
+                        b.ky_hieu,
+                        b.so_bien_lai,
+                        b.ten_nguoi_dong,
+                        b.so_tien,
+                        b.ghi_chu,
+                        b.trang_thai,
+                        b.ngay_tao,
+                        b.ngay_bien_lai,
+                        b.ke_khai_bhyt_id,
+                        b.quyen_bien_lai_dien_tu_id,
+                        b.ma_so_bhxh,
+                        b.ma_nhan_vien,
+                        b.tinh_chat,
+                        b.ma_co_quan_bhxh,
+                        b.ma_so_bhxh_don_vi,
+                        b.is_bhyt,
+                        b.is_bhxh,
+                        b.is_published_to_vnpt,
+                        b.vnpt_key,
+                        b.vnpt_response,
+                        b.vnpt_pattern,
+                        b.vnpt_serial,
+                        b.vnpt_invoice_no,
+                        b.vnpt_publish_date,
+                        b.vnpt_link,
+                        b.vnpt_transaction_id,
+                        b.vnpt_xml_content,
+                        QuyenBienLaiDienTu = b.QuyenBienLaiDienTu == null ? null : new
+                        {
+                            b.QuyenBienLaiDienTu.id,
+                            b.QuyenBienLaiDienTu.ky_hieu,
+                            b.QuyenBienLaiDienTu.tu_so,
+                            b.QuyenBienLaiDienTu.den_so,
+                            b.QuyenBienLaiDienTu.so_hien_tai,
+                            b.QuyenBienLaiDienTu.trang_thai,
+                            b.QuyenBienLaiDienTu.ngay_cap,
+                            b.QuyenBienLaiDienTu.nguoi_cap,
+                            b.QuyenBienLaiDienTu.ma_co_quan_bhxh
+                        },
+                        KeKhaiBHYT = b.KeKhaiBHYT == null ? null : new
+                        {
+                            b.KeKhaiBHYT.id,
+                            b.KeKhaiBHYT.dot_ke_khai_id,
+                            b.KeKhaiBHYT.thong_tin_the_id,
+                            b.KeKhaiBHYT.nguoi_thu,
+                            b.KeKhaiBHYT.so_thang_dong,
+                            b.KeKhaiBHYT.phuong_an_dong,
+                            b.KeKhaiBHYT.han_the_cu,
+                            b.KeKhaiBHYT.han_the_moi_tu,
+                            b.KeKhaiBHYT.han_the_moi_den,
+                            b.KeKhaiBHYT.tinh_nkq,
+                            b.KeKhaiBHYT.huyen_nkq,
+                            b.KeKhaiBHYT.xa_nkq,
+                            b.KeKhaiBHYT.dia_chi_nkq,
+                            b.KeKhaiBHYT.benh_vien_kcb,
+                            b.KeKhaiBHYT.nguoi_tao,
+                            b.KeKhaiBHYT.ngay_tao,
+                            b.KeKhaiBHYT.ngay_bien_lai,
+                            b.KeKhaiBHYT.so_tien_can_dong,
+                            b.KeKhaiBHYT.is_urgent,
+                            b.KeKhaiBHYT.trang_thai,
+                            b.KeKhaiBHYT.so_bien_lai,
+                            b.KeKhaiBHYT.ma_ho_so,
+                            b.KeKhaiBHYT.quyen_bien_lai_id
+                        }
+                    })
+                    .FirstOrDefaultAsync(b => b.id == id);
 
-            if (bienLai == null)
-                return NotFound();
+                if (bienLai == null)
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
 
-            return Ok(bienLai);
+                return Ok(bienLai);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi lấy biên lai điện tử với ID {id}");
+                return StatusCode(500, new { message = $"Lỗi khi lấy biên lai điện tử với ID {id}", error = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -125,8 +278,40 @@ namespace WebApp.API.Controllers
                 await _context.SaveChangesAsync();
 
                 var createdBienLai = await _context.BienLaiDienTus
-                    .Include(b => b.KeKhaiBHYT)
                     .Include(b => b.QuyenBienLaiDienTu)
+                    .Select(b => new
+                    {
+                        b.id,
+                        b.ky_hieu,
+                        b.so_bien_lai,
+                        b.ten_nguoi_dong,
+                        b.so_tien,
+                        b.ghi_chu,
+                        b.trang_thai,
+                        b.ngay_tao,
+                        b.ngay_bien_lai,
+                        b.ke_khai_bhyt_id,
+                        b.quyen_bien_lai_dien_tu_id,
+                        b.ma_so_bhxh,
+                        b.ma_nhan_vien,
+                        b.tinh_chat,
+                        b.ma_co_quan_bhxh,
+                        b.ma_so_bhxh_don_vi,
+                        b.is_bhyt,
+                        b.is_bhxh,
+                        QuyenBienLaiDienTu = b.QuyenBienLaiDienTu == null ? null : new
+                        {
+                            b.QuyenBienLaiDienTu.id,
+                            b.QuyenBienLaiDienTu.ky_hieu,
+                            b.QuyenBienLaiDienTu.tu_so,
+                            b.QuyenBienLaiDienTu.den_so,
+                            b.QuyenBienLaiDienTu.so_hien_tai,
+                            b.QuyenBienLaiDienTu.trang_thai,
+                            b.QuyenBienLaiDienTu.ngay_cap,
+                            b.QuyenBienLaiDienTu.nguoi_cap,
+                            b.QuyenBienLaiDienTu.ma_co_quan_bhxh
+                        }
+                    })
                     .FirstOrDefaultAsync(b => b.id == bienLai.id);
 
                 return CreatedAtAction(
@@ -274,7 +459,6 @@ namespace WebApp.API.Controllers
                 _logger.LogInformation($"Nhận yêu cầu phát hành biên lai điện tử lên VNPT với link: {id}");
 
                 var bienLai = await _context.BienLaiDienTus
-                    .Include(b => b.KeKhaiBHYT)
                     .FirstOrDefaultAsync(b => b.id == id);
                 if (bienLai == null)
                 {
@@ -656,7 +840,6 @@ namespace WebApp.API.Controllers
                 _logger.LogInformation($"Nhận yêu cầu hủy biên lai điện tử trên VNPT: {id}");
 
                 var bienLai = await _context.BienLaiDienTus
-                    .Include(b => b.KeKhaiBHYT)
                     .FirstOrDefaultAsync(b => b.id == id);
                 if (bienLai == null)
                 {

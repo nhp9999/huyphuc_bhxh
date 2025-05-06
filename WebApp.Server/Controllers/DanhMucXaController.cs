@@ -27,7 +27,7 @@ namespace WebApp.API.Controllers
             try
             {
                 _logger.LogInformation("Đang lấy danh sách xã/phường");
-                
+
                 var danhMucXas = await _context.DanhMucXas
                     .OrderBy(x => x.ten)
                     .ToListAsync();
@@ -61,7 +61,7 @@ namespace WebApp.API.Controllers
                 }
 
                 _logger.LogInformation($"Đang lấy danh sách xã/phường theo mã huyện: {maHuyen}");
-                
+
                 var danhMucXas = await _context.DanhMucXas
                     .Where(x => x.ma_huyen == maHuyen)
                     .OrderBy(x => x.ten)
@@ -90,24 +90,54 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                _logger.LogInformation($"Đang tìm xã/phường với mã: {ma}");
-                
-                var danhMucXa = await _context.DanhMucXas
-                    .FirstOrDefaultAsync(x => x.ma == ma);
+                _logger.LogInformation($"Đang tìm xã/phường với mã hoặc tên: {ma}");
 
-                if (danhMucXa == null)
+                // Kiểm tra nếu tham số là tên xã thay vì mã xã
+                bool isTenXa = ma.StartsWith("Xã ") || ma.StartsWith("Phường ") ||
+                               ma.StartsWith("Thị trấn ");
+
+                DanhMucXa danhMucXa;
+
+                if (isTenXa)
                 {
-                    _logger.LogWarning($"Không tìm thấy xã/phường với mã: {ma}");
-                    return NotFound($"Không tìm thấy xã/phường với mã: {ma}");
+                    // Tìm theo tên xã
+                    danhMucXa = await _context.DanhMucXas
+                        .FirstOrDefaultAsync(x => x.ten == ma);
+
+                    if (danhMucXa == null)
+                    {
+                        _logger.LogWarning($"Không tìm thấy xã/phường với tên: {ma}");
+
+                        // Thử tìm kiếm tương đối
+                        danhMucXa = await _context.DanhMucXas
+                            .FirstOrDefaultAsync(x => x.ten.Contains(ma) || ma.Contains(x.ten));
+
+                        if (danhMucXa == null)
+                        {
+                            return NotFound($"Không tìm thấy xã/phường với tên: {ma}");
+                        }
+                    }
+                }
+                else
+                {
+                    // Tìm theo mã xã
+                    danhMucXa = await _context.DanhMucXas
+                        .FirstOrDefaultAsync(x => x.ma == ma);
+
+                    if (danhMucXa == null)
+                    {
+                        _logger.LogWarning($"Không tìm thấy xã/phường với mã: {ma}");
+                        return NotFound($"Không tìm thấy xã/phường với mã: {ma}");
+                    }
                 }
 
                 return Ok(danhMucXa);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Lỗi khi tìm xã/phường với mã: {ma}");
+                _logger.LogError(ex, $"Lỗi khi tìm xã/phường với mã hoặc tên: {ma}");
                 return StatusCode(500, "Có lỗi xảy ra khi tìm xã/phường");
             }
         }
     }
-} 
+}

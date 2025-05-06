@@ -77,10 +77,41 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Sử dụng truy vấn với Select để chỉ lấy các trường cần thiết
                 var keKhaiBHYT = await _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
-                    .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
+                    .Where(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id)
+                    .Select(k => new KeKhaiBHYT
+                    {
+                        id = k.id,
+                        dot_ke_khai_id = k.dot_ke_khai_id,
+                        thong_tin_the_id = k.thong_tin_the_id,
+                        nguoi_thu = k.nguoi_thu,
+                        so_thang_dong = k.so_thang_dong,
+                        phuong_an_dong = k.phuong_an_dong,
+                        han_the_cu = k.han_the_cu,
+                        han_the_moi_tu = k.han_the_moi_tu,
+                        han_the_moi_den = k.han_the_moi_den,
+                        tinh_nkq = k.tinh_nkq,
+                        huyen_nkq = k.huyen_nkq,
+                        xa_nkq = k.xa_nkq,
+                        dia_chi_nkq = k.dia_chi_nkq,
+                        benh_vien_kcb = k.benh_vien_kcb,
+                        nguoi_tao = k.nguoi_tao,
+                        ngay_tao = k.ngay_tao,
+                        ngay_bien_lai = k.ngay_bien_lai,
+                        so_tien_can_dong = k.so_tien_can_dong,
+                        trang_thai = k.trang_thai,
+                        so_bien_lai = k.so_bien_lai,
+                        quyen_bien_lai_id = k.quyen_bien_lai_id,
+                        ma_ho_so = k.ma_ho_so,
+                        is_urgent = k.is_urgent,
+                        DotKeKhai = k.DotKeKhai,
+                        ThongTinThe = k.ThongTinThe,
+                        QuyenBienLai = k.QuyenBienLai
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (keKhaiBHYT == null)
                 {
@@ -129,23 +160,6 @@ namespace WebApp.API.Controllers
                     keKhaiBHYT.ma_ho_so = dotKeKhai.ma_ho_so;
                 }
 
-                // Kiểm tra xem thông tin thẻ đã tồn tại chưa
-                if (keKhaiBHYT.ThongTinThe != null && !string.IsNullOrEmpty(keKhaiBHYT.ThongTinThe.ma_so_bhxh))
-                {
-                    var existingThongTinThe = await _context.ThongTinThes
-                        .FirstOrDefaultAsync(t => t.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh);
-
-                    if (existingThongTinThe != null)
-                    {
-                        // Sử dụng thông tin thẻ đã tồn tại
-                        keKhaiBHYT.thong_tin_the_id = existingThongTinThe.id;
-                        keKhaiBHYT.ThongTinThe = existingThongTinThe;
-
-                        // Cập nhật thông tin thẻ nếu cần
-                        _context.Entry(existingThongTinThe).CurrentValues.SetValues(keKhaiBHYT.ThongTinThe);
-                    }
-                }
-
                 // Lấy thông tin người dùng đăng nhập
                 var userName = User.Identity != null ? User.Identity.Name : null;
                 if (string.IsNullOrEmpty(userName))
@@ -158,7 +172,100 @@ namespace WebApp.API.Controllers
                 keKhaiBHYT.nguoi_tao = userName;
                 keKhaiBHYT.ngay_tao = DateTime.Now;
 
-                // Lưu kê khai BHYT
+                // Kiểm tra xem thông tin thẻ đã tồn tại chưa
+                if (keKhaiBHYT.ThongTinThe != null)
+                {
+                    // Kiểm tra dựa trên mã số BHXH hoặc CCCD
+                    var existingThongTinThe = await _context.ThongTinThes
+                        .FirstOrDefaultAsync(t =>
+                            (!string.IsNullOrEmpty(keKhaiBHYT.ThongTinThe.ma_so_bhxh) && t.ma_so_bhxh == keKhaiBHYT.ThongTinThe.ma_so_bhxh) ||
+                            (!string.IsNullOrEmpty(keKhaiBHYT.ThongTinThe.cccd) && t.cccd == keKhaiBHYT.ThongTinThe.cccd));
+
+                    if (existingThongTinThe != null)
+                    {
+                        _logger.LogInformation($"Thông tin thẻ với mã số BHXH {keKhaiBHYT.ThongTinThe.ma_so_bhxh} hoặc CCCD {keKhaiBHYT.ThongTinThe.cccd} đã tồn tại trong database, cập nhật thông tin thẻ");
+
+                        // Sử dụng thông tin thẻ đã tồn tại
+                        keKhaiBHYT.thong_tin_the_id = existingThongTinThe.id;
+
+                        // Lưu ID của thông tin thẻ hiện tại
+                        int existingId = existingThongTinThe.id;
+
+                        // Tạo một bản sao của thông tin thẻ mới để cập nhật
+                        var updatedThongTinThe = keKhaiBHYT.ThongTinThe;
+
+                        // Đảm bảo ID không bị thay đổi
+                        updatedThongTinThe.id = existingId;
+
+                        // Cập nhật các trường thông tin (ngoại trừ ID)
+                        existingThongTinThe.ho_ten = updatedThongTinThe.ho_ten;
+                        existingThongTinThe.cccd = updatedThongTinThe.cccd;
+                        existingThongTinThe.ngay_sinh = updatedThongTinThe.ngay_sinh;
+                        existingThongTinThe.gioi_tinh = updatedThongTinThe.gioi_tinh;
+                        existingThongTinThe.so_dien_thoai = updatedThongTinThe.so_dien_thoai;
+                        existingThongTinThe.ma_tinh_ks = updatedThongTinThe.ma_tinh_ks;
+                        existingThongTinThe.ma_huyen_ks = updatedThongTinThe.ma_huyen_ks;
+                        existingThongTinThe.ma_xa_ks = updatedThongTinThe.ma_xa_ks;
+                        existingThongTinThe.ma_dan_toc = updatedThongTinThe.ma_dan_toc;
+                        existingThongTinThe.ma_hgd = updatedThongTinThe.ma_hgd;
+                        existingThongTinThe.quoc_tich = updatedThongTinThe.quoc_tich;
+
+                        // Cập nhật thông tin nơi khám chữa bệnh
+                        existingThongTinThe.ma_benh_vien = updatedThongTinThe.ma_benh_vien;
+
+                        // Cập nhật thông tin nơi khám quán
+                        existingThongTinThe.ma_tinh_nkq = updatedThongTinThe.ma_tinh_nkq;
+                        existingThongTinThe.ma_huyen_nkq = updatedThongTinThe.ma_huyen_nkq;
+                        existingThongTinThe.ma_xa_nkq = updatedThongTinThe.ma_xa_nkq;
+
+                        // Cập nhật entity trong context
+                        _context.ThongTinThes.Update(existingThongTinThe);
+
+                        // Gán lại thông tin thẻ đã cập nhật
+                        keKhaiBHYT.ThongTinThe = existingThongTinThe;
+
+                        // Kiểm tra xem mã số BHYT này đã tồn tại trong đợt kê khai hiện tại chưa
+                        var existingKeKhai = await _context.KeKhaiBHYTs
+                            .Include(k => k.ThongTinThe)
+                            .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId &&
+                                                     k.thong_tin_the_id == existingThongTinThe.id);
+
+                        if (existingKeKhai != null)
+                        {
+                            _logger.LogInformation($"Mã số BHYT {keKhaiBHYT.ThongTinThe.ma_so_bhxh} đã tồn tại trong đợt kê khai {dotKeKhaiId}, thực hiện cập nhật thay vì tạo mới");
+
+                            // Lưu giá trị quyen_bien_lai_id hiện tại nếu không được cung cấp trong request
+                            if (keKhaiBHYT.quyen_bien_lai_id == null && existingKeKhai.quyen_bien_lai_id != null)
+                            {
+                                keKhaiBHYT.quyen_bien_lai_id = existingKeKhai.quyen_bien_lai_id;
+                            }
+
+                            // Lưu giá trị trang_thai hiện tại nếu không được cung cấp trong request hoặc là giá trị mặc định
+                            if (string.IsNullOrEmpty(keKhaiBHYT.trang_thai) || keKhaiBHYT.trang_thai == "chua_gui")
+                            {
+                                keKhaiBHYT.trang_thai = existingKeKhai.trang_thai;
+                            }
+
+                            // Giữ lại ID của bản ghi hiện tại
+                            keKhaiBHYT.id = existingKeKhai.id;
+
+                            // Cập nhật thông tin kê khai
+                            _context.Entry(existingKeKhai).CurrentValues.SetValues(keKhaiBHYT);
+
+                            await _context.SaveChangesAsync();
+                            await transaction.CommitAsync();
+
+                            return Ok(new {
+                                success = true,
+                                message = "Cập nhật kê khai BHYT thành công",
+                                data = existingKeKhai,
+                                updated = true
+                            });
+                        }
+                    }
+                }
+
+                // Nếu không tìm thấy bản ghi hiện có, tạo mới
                 _context.KeKhaiBHYTs.Add(keKhaiBHYT);
                 await _context.SaveChangesAsync();
 
@@ -193,10 +300,15 @@ namespace WebApp.API.Controllers
 
             try
             {
+                // Log dữ liệu được gửi lên để debug
+                _logger.LogInformation($"Dữ liệu cập nhật KeKhaiBHYT: {JsonSerializer.Serialize(keKhaiBHYT)}");
+
+                // Sử dụng truy vấn với Select để chỉ lấy các trường cần thiết
                 var existingKeKhaiBHYT = await _context.KeKhaiBHYTs
                     .Include(k => k.ThongTinThe)
                     .Include(k => k.DotKeKhai)
-                    .FirstOrDefaultAsync(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id);
+                    .Where(k => k.dot_ke_khai_id == dotKeKhaiId && k.id == id)
+                    .FirstOrDefaultAsync();
 
                 if (existingKeKhaiBHYT == null)
                 {
@@ -206,7 +318,32 @@ namespace WebApp.API.Controllers
                 // Cập nhật thông tin thẻ
                 if (existingKeKhaiBHYT.ThongTinThe != null && keKhaiBHYT.ThongTinThe != null)
                 {
-                    _context.Entry(existingKeKhaiBHYT.ThongTinThe).CurrentValues.SetValues(keKhaiBHYT.ThongTinThe);
+                    var existingThongTinThe = existingKeKhaiBHYT.ThongTinThe;
+                    var updatedThongTinThe = keKhaiBHYT.ThongTinThe;
+
+                    // Cập nhật các trường thông tin (ngoại trừ ID)
+                    existingThongTinThe.ho_ten = updatedThongTinThe.ho_ten;
+                    existingThongTinThe.cccd = updatedThongTinThe.cccd;
+                    existingThongTinThe.ngay_sinh = updatedThongTinThe.ngay_sinh;
+                    existingThongTinThe.gioi_tinh = updatedThongTinThe.gioi_tinh;
+                    existingThongTinThe.so_dien_thoai = updatedThongTinThe.so_dien_thoai;
+                    existingThongTinThe.ma_tinh_ks = updatedThongTinThe.ma_tinh_ks;
+                    existingThongTinThe.ma_huyen_ks = updatedThongTinThe.ma_huyen_ks;
+                    existingThongTinThe.ma_xa_ks = updatedThongTinThe.ma_xa_ks;
+                    existingThongTinThe.ma_dan_toc = updatedThongTinThe.ma_dan_toc;
+                    existingThongTinThe.ma_hgd = updatedThongTinThe.ma_hgd;
+                    existingThongTinThe.quoc_tich = updatedThongTinThe.quoc_tich;
+
+                    // Cập nhật thông tin nơi khám chữa bệnh
+                    existingThongTinThe.ma_benh_vien = updatedThongTinThe.ma_benh_vien;
+
+                    // Cập nhật thông tin nơi khám quán
+                    existingThongTinThe.ma_tinh_nkq = updatedThongTinThe.ma_tinh_nkq;
+                    existingThongTinThe.ma_huyen_nkq = updatedThongTinThe.ma_huyen_nkq;
+                    existingThongTinThe.ma_xa_nkq = updatedThongTinThe.ma_xa_nkq;
+
+                    // Cập nhật entity trong context
+                    _context.ThongTinThes.Update(existingThongTinThe);
                 }
 
                 // Lưu giá trị quyen_bien_lai_id hiện tại nếu không được cung cấp trong request
@@ -221,8 +358,23 @@ namespace WebApp.API.Controllers
                     keKhaiBHYT.trang_thai = existingKeKhaiBHYT.trang_thai;
                 }
 
-                // Cập nhật thông tin kê khai
-                _context.Entry(existingKeKhaiBHYT).CurrentValues.SetValues(keKhaiBHYT);
+                // Cập nhật từng trường thông tin thay vì sử dụng SetValues
+                existingKeKhaiBHYT.nguoi_thu = keKhaiBHYT.nguoi_thu;
+                existingKeKhaiBHYT.so_thang_dong = keKhaiBHYT.so_thang_dong;
+                existingKeKhaiBHYT.phuong_an_dong = keKhaiBHYT.phuong_an_dong;
+                existingKeKhaiBHYT.han_the_cu = keKhaiBHYT.han_the_cu;
+                existingKeKhaiBHYT.han_the_moi_tu = keKhaiBHYT.han_the_moi_tu;
+                existingKeKhaiBHYT.han_the_moi_den = keKhaiBHYT.han_the_moi_den;
+                existingKeKhaiBHYT.tinh_nkq = keKhaiBHYT.tinh_nkq;
+                existingKeKhaiBHYT.huyen_nkq = keKhaiBHYT.huyen_nkq;
+                existingKeKhaiBHYT.xa_nkq = keKhaiBHYT.xa_nkq;
+                existingKeKhaiBHYT.dia_chi_nkq = keKhaiBHYT.dia_chi_nkq;
+                existingKeKhaiBHYT.benh_vien_kcb = keKhaiBHYT.benh_vien_kcb;
+                existingKeKhaiBHYT.ngay_bien_lai = keKhaiBHYT.ngay_bien_lai;
+                existingKeKhaiBHYT.so_tien_can_dong = keKhaiBHYT.so_tien_can_dong;
+                existingKeKhaiBHYT.is_urgent = keKhaiBHYT.is_urgent;
+                existingKeKhaiBHYT.so_bien_lai = keKhaiBHYT.so_bien_lai;
+                existingKeKhaiBHYT.quyen_bien_lai_id = keKhaiBHYT.quyen_bien_lai_id;
 
                 // Đảm bảo mã hồ sơ được đồng bộ với đợt kê khai
                 if (existingKeKhaiBHYT.DotKeKhai != null && !string.IsNullOrEmpty(existingKeKhaiBHYT.DotKeKhai.ma_ho_so))
@@ -231,6 +383,9 @@ namespace WebApp.API.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                // Log thông tin sau khi cập nhật
+                _logger.LogInformation($"Đã cập nhật thành công KeKhaiBHYT với ID: {id}");
 
                 return NoContent();
             }

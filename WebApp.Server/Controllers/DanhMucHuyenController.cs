@@ -27,7 +27,7 @@ namespace WebApp.API.Controllers
             try
             {
                 _logger.LogInformation("Đang lấy danh sách quận/huyện");
-                
+
                 var danhMucHuyens = await _context.DanhMucHuyens
                     .OrderBy(p => p.ten)
                     .ToListAsync();
@@ -61,7 +61,7 @@ namespace WebApp.API.Controllers
                 }
 
                 _logger.LogInformation($"Đang lấy danh sách quận/huyện theo mã tỉnh: {maTinh}");
-                
+
                 var danhMucHuyens = await _context.DanhMucHuyens
                     .Where(d => d.ma_tinh == maTinh)
                     .OrderBy(d => d.ten)
@@ -90,24 +90,54 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                _logger.LogInformation($"Đang tìm quận/huyện với mã: {ma}");
-                
-                var danhMucHuyen = await _context.DanhMucHuyens
-                    .FirstOrDefaultAsync(d => d.ma == ma);
+                _logger.LogInformation($"Đang tìm quận/huyện với mã hoặc tên: {ma}");
 
-                if (danhMucHuyen == null)
+                // Kiểm tra nếu tham số là tên huyện thay vì mã huyện
+                bool isTenHuyen = ma.StartsWith("Huyện ") || ma.StartsWith("Quận ") ||
+                                  ma.StartsWith("Thị xã ") || ma.StartsWith("Thành phố ");
+
+                DanhMucHuyen danhMucHuyen;
+
+                if (isTenHuyen)
                 {
-                    _logger.LogWarning($"Không tìm thấy quận/huyện với mã: {ma}");
-                    return NotFound($"Không tìm thấy quận/huyện với mã: {ma}");
+                    // Tìm theo tên huyện
+                    danhMucHuyen = await _context.DanhMucHuyens
+                        .FirstOrDefaultAsync(d => d.ten == ma);
+
+                    if (danhMucHuyen == null)
+                    {
+                        _logger.LogWarning($"Không tìm thấy quận/huyện với tên: {ma}");
+
+                        // Thử tìm kiếm tương đối
+                        danhMucHuyen = await _context.DanhMucHuyens
+                            .FirstOrDefaultAsync(d => d.ten.Contains(ma) || ma.Contains(d.ten));
+
+                        if (danhMucHuyen == null)
+                        {
+                            return NotFound($"Không tìm thấy quận/huyện với tên: {ma}");
+                        }
+                    }
+                }
+                else
+                {
+                    // Tìm theo mã huyện
+                    danhMucHuyen = await _context.DanhMucHuyens
+                        .FirstOrDefaultAsync(d => d.ma == ma);
+
+                    if (danhMucHuyen == null)
+                    {
+                        _logger.LogWarning($"Không tìm thấy quận/huyện với mã: {ma}");
+                        return NotFound($"Không tìm thấy quận/huyện với mã: {ma}");
+                    }
                 }
 
                 return Ok(danhMucHuyen);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Lỗi khi tìm quận/huyện với mã: {ma}");
+                _logger.LogError(ex, $"Lỗi khi tìm quận/huyện với mã hoặc tên: {ma}");
                 return StatusCode(500, "Có lỗi xảy ra khi tìm quận/huyện");
             }
         }
     }
-} 
+}

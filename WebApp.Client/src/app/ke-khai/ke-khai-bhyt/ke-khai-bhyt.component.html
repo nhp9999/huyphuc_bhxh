@@ -300,7 +300,7 @@
                 <nz-option
                   *ngFor="let tinh of danhMucTinhs"
                   [nzValue]="tinh.ma"
-                  [nzLabel]="tinh.ten">
+                  [nzLabel]="tinh.ma + ' - ' + tinh.ten">
                 </nz-option>
               </nz-select>
             </nz-form-control>
@@ -315,7 +315,7 @@
                 <nz-option
                   *ngFor="let huyen of danhMucHuyens"
                   [nzValue]="huyen.ma"
-                  [nzLabel]="huyen.ten">
+                  [nzLabel]="huyen.ma + ' - ' + huyen.ten">
                 </nz-option>
               </nz-select>
             </nz-form-control>
@@ -330,7 +330,7 @@
                 <nz-option
                   *ngFor="let xa of danhMucXas"
                   [nzValue]="xa.ma"
-                  [nzLabel]="xa.ten">
+                  [nzLabel]="xa.ma + ' - ' + xa.ten">
                 </nz-option>
               </nz-select>
             </nz-form-control>
@@ -384,7 +384,7 @@
                 <nz-option
                   *ngFor="let huyen of danhMucHuyenKS"
                   [nzValue]="huyen.ma"
-                  [nzLabel]="huyen.ten">
+                  [nzLabel]="huyen.ma + ' - ' + huyen.ten">
                 </nz-option>
               </nz-select>
             </nz-form-control>
@@ -400,7 +400,7 @@
                 <nz-option
                   *ngFor="let xa of danhMucXaKS"
                   [nzValue]="xa.ma"
-                  [nzLabel]="xa.ten">
+                  [nzLabel]="xa.ma + ' - ' + xa.ten">
                 </nz-option>
               </nz-select>
             </nz-form-control>
@@ -974,7 +974,7 @@
                 nzShowSearch
                 [nzFilterOption]="filterOption"
                 (ngModelChange)="onTinhChangeTraCuu($event)">
-                <nz-option *ngFor="let tinh of danhSachTinhTraCuu" [nzValue]="tinh.ma" [nzLabel]="tinh.ten"></nz-option>
+                <nz-option *ngFor="let tinh of danhSachTinhTraCuu" [nzValue]="tinh.ma" [nzLabel]="tinh.ma + ' - ' + tinh.ten"></nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -991,7 +991,7 @@
                 nzShowSearch
                 [nzFilterOption]="filterOption"
                 (ngModelChange)="onHuyenChangeTraCuu($event)">
-                <nz-option *ngFor="let huyen of huyenTheoTinhTraCuu" [nzValue]="huyen.ma" [nzLabel]="huyen.ten"></nz-option>
+                <nz-option *ngFor="let huyen of huyenTheoTinhTraCuu" [nzValue]="huyen.ma" [nzLabel]="huyen.ma + ' - ' + huyen.ten"></nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>
@@ -1007,7 +1007,7 @@
                 nzPlaceHolder="Chọn Xã/Phường"
                 nzShowSearch
                 [nzFilterOption]="filterOption">
-                <nz-option *ngFor="let xa of xaTheoHuyenTraCuu" [nzValue]="xa.ma" [nzLabel]="xa.ten"></nz-option>
+                <nz-option *ngFor="let xa of xaTheoHuyenTraCuu" [nzValue]="xa.ma" [nzLabel]="xa.ma + ' - ' + xa.ten"></nz-option>
               </nz-select>
             </nz-form-control>
           </nz-form-item>

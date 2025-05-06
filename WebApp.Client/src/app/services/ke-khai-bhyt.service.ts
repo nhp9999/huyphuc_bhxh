@@ -174,7 +174,7 @@ export interface BHYTSearchResponse {
 interface BienLai {
   id: number;
   quyen_so: string;
-  so_bien_lai: string; 
+  so_bien_lai: string;
   ten_nguoi_dong: string;
   so_tien: number;
   ghi_chu?: string;
@@ -241,9 +241,9 @@ export class KeKhaiBHYTService {
 
   private formatDateISO(date: Date | string | null): string {
     if (!date) return '';
-    
+
     let dateObj: Date;
-    
+
     // Kiểm tra nếu date là chuỗi
     if (typeof date === 'string') {
       // Xử lý chuỗi ngày tháng theo định dạng dd/MM/yyyy
@@ -264,25 +264,25 @@ export class KeKhaiBHYTService {
       console.error('Kiểu dữ liệu không hợp lệ cho ngày tháng:', date);
       return '';
     }
-    
+
     // Kiểm tra tính hợp lệ của đối tượng Date
     if (isNaN(dateObj.getTime())) {
       console.error('Ngày tháng không hợp lệ:', date);
       return '';
     }
-    
+
     return dateObj.toISOString().split('T')[0];
   }
 
-  create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
+  create(dotKeKhaiId: number, data: KeKhaiBHYT): Observable<any> {
     // Tạo bản sao của dữ liệu để tránh thay đổi dữ liệu gốc
     console.log('Dữ liệu gốc trước khi format:', JSON.stringify(data));
     console.log('currentUser:', JSON.stringify(this.currentUser));
-    
+
     // Xử lý trường hợp userName không tồn tại
     const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
     console.log('userName được sử dụng:', userName);
-    
+
     const formattedData = {
       ...data,
       nguoi_tao: data.nguoi_tao || userName,
@@ -297,16 +297,17 @@ export class KeKhaiBHYTService {
       ngay_tao: this.formatDateISO(data.ngay_tao),
       ngay_bien_lai: data.ngay_bien_lai ? this.formatDateISO(data.ngay_bien_lai) : null
     };
-    
+
     console.log('Dữ liệu đã format trước khi gửi:', JSON.stringify(formattedData));
-    
-    return this.http.post<KeKhaiBHYT>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
+
+    // Thay đổi kiểu trả về thành any để xử lý cả trường hợp tạo mới và cập nhật
+    return this.http.post<any>(`${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt`, formattedData);
   }
 
   update(dotKeKhaiId: number, id: number, data: KeKhaiBHYT): Observable<KeKhaiBHYT> {
     // Xử lý trường hợp userName không tồn tại
     const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
-    
+
     const formattedData = {
       ...data,
       nguoi_tao: data.nguoi_tao || userName,
@@ -361,7 +362,7 @@ export class KeKhaiBHYTService {
   createThongTinThe(data: ThongTinThe): Observable<ThongTinThe> {
     // Xử lý trường hợp userName không tồn tại
     const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
-    
+
     const formattedData = {
       ...data,
       nguoi_tao: data.nguoi_tao || userName
@@ -372,7 +373,7 @@ export class KeKhaiBHYTService {
   updateThongTinThe(id: number, data: ThongTinThe): Observable<ThongTinThe> {
     // Xử lý trường hợp userName không tồn tại
     const userName = this.currentUser.userName || this.currentUser.name || 'unknown_user';
-    
+
     const formattedData = {
       ...data,
       nguoi_tao: data.nguoi_tao || userName
@@ -410,7 +411,7 @@ export class KeKhaiBHYTService {
 
     // Sửa lại URL và method thành POST
     return this.http.post(
-      'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai', 
+      'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai',
       body,
       { headers }
     );
@@ -423,7 +424,7 @@ export class KeKhaiBHYTService {
 
   toggleUrgent(dotKeKhaiId: number, id: number): Observable<{success: boolean; is_urgent: boolean}> {
     return this.http.patch<{success: boolean; is_urgent: boolean}>(
-      `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`, 
+      `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhyt/${id}/toggle-urgent`,
       {}
     );
   }
@@ -444,4 +445,4 @@ export class BienLaiService {
   getBienLai(id: number): Observable<BienLai> {
     return this.http.get<BienLai>(`/api/bien-lai/${id}`);
   }
-} 
+}

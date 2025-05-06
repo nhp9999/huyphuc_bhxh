@@ -891,29 +891,38 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDanhMucCSKCB(): void {
-    this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
-      next: (data) => {
-        // Sắp xếp danh sách bệnh viện theo mã bệnh viện (value)
-        this.danhMucCSKCBs = data.sort((a, b) => {
-          // Chuyển đổi mã bệnh viện thành số nếu có thể để so sánh số học
-          const valueA = parseInt(a.value);
-          const valueB = parseInt(b.value);
+  loadDanhMucCSKCB(): Promise<void> {
+    // Nếu đã có dữ liệu trong bộ nhớ, sử dụng luôn
+    if (this.danhMucCSKCBs?.length > 0) {
+      return Promise.resolve();
+    }
 
-          // Nếu cả hai đều là số hợp lệ, so sánh số học
-          if (!isNaN(valueA) && !isNaN(valueB)) {
-            return valueA - valueB;
-          }
+    return new Promise<void>((resolve, reject) => {
+      this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
+        next: (data) => {
+          // Sắp xếp danh sách bệnh viện theo mã bệnh viện (value)
+          this.danhMucCSKCBs = data.sort((a, b) => {
+            // Chuyển đổi mã bệnh viện thành số nếu có thể để so sánh số học
+            const valueA = parseInt(a.value);
+            const valueB = parseInt(b.value);
 
-          // Nếu không phải số hoặc một trong hai không phải số, so sánh chuỗi
-          return a.value.localeCompare(b.value);
-        });
-        console.log('Đã load danh sách bệnh viện (đã sắp xếp theo mã):', this.danhMucCSKCBs);
-      },
-      error: (error) => {
-        console.error('Lỗi khi load danh sách bệnh viện:', error);
-        this.message.error('Có lỗi xảy ra khi tải danh sách bệnh viện');
-      }
+            // Nếu cả hai đều là số hợp lệ, so sánh số học
+            if (!isNaN(valueA) && !isNaN(valueB)) {
+              return valueA - valueB;
+            }
+
+            // Nếu không phải số hoặc một trong hai không phải số, so sánh chuỗi
+            return a.value.localeCompare(b.value);
+          });
+          console.log('Đã load danh sách bệnh viện (đã sắp xếp theo mã):', this.danhMucCSKCBs);
+          resolve();
+        },
+        error: (error) => {
+          console.error('Lỗi khi load danh sách bệnh viện:', error);
+          this.message.error('Có lỗi xảy ra khi tải danh sách bệnh viện');
+          reject(error);
+        }
+      });
     });
   }
 
@@ -956,7 +965,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           han_the_moi_tu: data.han_the_moi_tu,
           han_the_moi_den: data.han_the_moi_den,
           so_tien_can_dong: data.so_tien_can_dong,
-          ngay_bien_lai: data.ngay_bien_lai || new Date(),
+          ngay_bien_lai: data.ngay_bien_lai ? this.preserveDateWithoutTimezoneOffset(data.ngay_bien_lai) : new Date(),
           so_bien_lai: data.so_bien_lai, // Thêm trường so_bien_lai
           quyen_bien_lai_id: data.quyen_bien_lai_id, // Thêm trường quyen_bien_lai_id
           trang_thai: data.trang_thai // Thêm trường trang_thai với giá trị mặc định
@@ -1056,9 +1065,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                       nguoi_thu: formValue.nguoi_thu,
                       so_thang_dong: formValue.so_thang_dong,
                       phuong_an_dong: formValue.phuong_an_dong,
-                      han_the_cu: formValue.han_the_cu ? new Date(formValue.han_the_cu) : null,
-                      han_the_moi_tu: formValue.han_the_moi_tu ? new Date(formValue.han_the_moi_tu) : new Date(),
-                      han_the_moi_den: formValue.han_the_moi_den ? new Date(formValue.han_the_moi_den) : new Date(),
+                      han_the_cu: formValue.han_the_cu ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_cu) : null,
+                      han_the_moi_tu: formValue.han_the_moi_tu ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_moi_tu) : new Date(),
+                      han_the_moi_den: formValue.han_the_moi_den ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_moi_den) : new Date(),
                       tinh_nkq: this.getTinhTen(formValue.tinh_nkq),
                       huyen_nkq: this.getHuyenTen(formValue.huyen_nkq),
                       xa_nkq: this.getXaTen(formValue.xa_nkq),
@@ -1067,7 +1076,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                       ma_benh_vien: formValue.benh_vien_kcb || '',
                       nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
                       ngay_tao: new Date(),
-                      ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
+                      ngay_bien_lai: formValue.ngay_bien_lai ? this.preserveDateWithoutTimezoneOffset(formValue.ngay_bien_lai) : null,
                       so_tien_can_dong: formValue.so_tien_can_dong || 0,
                       is_urgent: false,
                       so_bien_lai: currentKeKhai.so_bien_lai, // Giữ lại số biên lai từ dữ liệu hiện tại
@@ -1158,9 +1167,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           so_thang_dong: formValue.so_thang_dong,
           so_tien_can_dong: formValue.so_tien_can_dong || 0,
           phuong_an_dong: formValue.phuong_an_dong,
-          han_the_cu: formValue.han_the_cu ? new Date(formValue.han_the_cu) : null,
-          han_the_moi_tu: formValue.han_the_moi_tu ? new Date(formValue.han_the_moi_tu) : new Date(),
-          han_the_moi_den: formValue.han_the_moi_den ? new Date(formValue.han_the_moi_den) : new Date(),
+          han_the_cu: formValue.han_the_cu ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_cu) : null,
+          han_the_moi_tu: formValue.han_the_moi_tu ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_moi_tu) : new Date(),
+          han_the_moi_den: formValue.han_the_moi_den ? this.preserveDateWithoutTimezoneOffset(formValue.han_the_moi_den) : new Date(),
           tinh_nkq: this.getTinhTen(formValue.tinh_nkq),
           huyen_nkq: this.getHuyenTen(formValue.huyen_nkq),
           xa_nkq: this.getXaTen(formValue.xa_nkq),
@@ -1169,15 +1178,20 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           ma_benh_vien: formValue.benh_vien_kcb || '',
           nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
           ngay_tao: new Date(),
-          ngay_bien_lai: formValue.ngay_bien_lai ? new Date(formValue.ngay_bien_lai) : null,
+          ngay_bien_lai: formValue.ngay_bien_lai ? this.preserveDateWithoutTimezoneOffset(formValue.ngay_bien_lai) : null,
           is_urgent: false,
           trang_thai: 'chua_gui'
         };
 
-        // Tạo mới KeKhaiBHYT
+        // Tạo mới hoặc cập nhật KeKhaiBHYT
         this.keKhaiBHYTService.create(this.dotKeKhaiId, data).subscribe({
-          next: (response) => {
-            this.message.success('Thêm mới thành công');
+          next: (response: any) => {
+            // Kiểm tra nếu phản hồi có trường updated = true thì hiển thị thông báo cập nhật
+            if (response && response.updated) {
+              this.message.success('Cập nhật thành công');
+            } else {
+              this.message.success('Thêm mới thành công');
+            }
             this.isVisible = false;
             this.loadData();
             this.loadingSave = false; // Reset trạng thái loading
@@ -1669,6 +1683,22 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   getTinhTen(maTinh: string): string {
+    if (!maTinh) return '';
+
+    // Kiểm tra nếu maTinh là tên tỉnh thay vì mã tỉnh (như "Tỉnh An Giang")
+    if (maTinh.startsWith('Tỉnh ') || maTinh.startsWith('Thành phố ')) {
+      // Tìm trong danh sách tỉnh đã tải
+      const tinh = this.danhMucTinhs.find(t => t.ten === maTinh);
+      if (tinh) {
+        console.log(`Đã tìm thấy mã tỉnh ${tinh.ma} cho tên tỉnh ${maTinh}`);
+        return tinh.ten; // Trả về tên tỉnh
+      }
+
+      // Nếu không tìm thấy, trả về tên tỉnh như đã nhận
+      return maTinh;
+    }
+
+    // Tìm theo mã tỉnh
     const tinh = this.danhMucTinhs.find(t => t.ma === maTinh);
     if (!tinh) {
       console.warn(`Không tìm thấy tỉnh với mã: ${maTinh}`);
@@ -1679,6 +1709,28 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   getHuyenTen(maHuyen: string): string {
     if (!maHuyen) return '';
+
+    // Kiểm tra nếu maHuyen là tên huyện thay vì mã huyện (như "Huyện Châu Phú")
+    if (maHuyen.startsWith('Huyện ') || maHuyen.startsWith('Quận ') || maHuyen.startsWith('Thị xã ') || maHuyen.startsWith('Thành phố ')) {
+      // Tìm trong tất cả các huyện đã tải để xem có huyện nào có tên trùng với mã không
+      for (const [tinhKey, huyenList] of this.huyenCache.entries()) {
+        const huyen = huyenList.find(h => h.ten === maHuyen);
+        if (huyen) {
+          console.log(`Đã tìm thấy mã huyện ${huyen.ma} cho tên huyện ${maHuyen}`);
+          return huyen.ten; // Trả về tên huyện
+        }
+      }
+
+      // Nếu không tìm thấy trong cache, tìm trong danhMucHuyens hiện tại
+      const huyen = this.danhMucHuyens.find(h => h.ten === maHuyen);
+      if (huyen) {
+        console.log(`Đã tìm thấy mã huyện ${huyen.ma} cho tên huyện ${maHuyen} trong danhMucHuyens`);
+        return huyen.ten;
+      }
+
+      // Nếu không tìm thấy, trả về tên huyện như đã nhận
+      return maHuyen;
+    }
 
     // Tải trực tiếp từ API nếu không có trong cache
     if (!this.huyenCache || this.huyenCache.size === 0) {
@@ -1722,18 +1774,70 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   getXaTen(maXa: string): string {
     if (!maXa) return '';
 
+    // Kiểm tra nếu maXa là tên xã thay vì mã xã (như "Thị trấn Cái Dầu")
+    if (maXa.startsWith('Xã ') || maXa.startsWith('Phường ') || maXa.startsWith('Thị trấn ')) {
+      // Tìm trong tất cả các xã đã tải để xem có xã nào có tên trùng với mã không
+      for (const [huyenKey, xaList] of this.xaCache.entries()) {
+        const xa = xaList.find(x => x.ten === maXa);
+        if (xa) {
+          console.log(`Đã tìm thấy mã xã ${xa.ma} cho tên xã ${maXa}`);
+          // Rút gọn tên xã nếu vượt quá 20 ký tự
+          return this.truncateXaTen(xa.ten);
+        }
+      }
+
+      // Nếu không tìm thấy trong cache, tìm trong danhMucXas hiện tại
+      const xa = this.danhMucXas.find(x => x.ten === maXa);
+      if (xa) {
+        console.log(`Đã tìm thấy mã xã ${xa.ma} cho tên xã ${maXa} trong danhMucXas`);
+        // Rút gọn tên xã nếu vượt quá 20 ký tự
+        return this.truncateXaTen(xa.ten);
+      }
+
+      // Nếu không tìm thấy, trả về tên xã như đã nhận (đã rút gọn)
+      console.warn(`Không tìm thấy xã với mã: ${maXa}`);
+      return this.truncateXaTen(maXa);
+    }
+
     // Tìm trong tất cả các xã đã tải (không chỉ trong danhMucXas hiện tại)
     for (const [huyenKey, xaList] of this.xaCache.entries()) {
       const xa = xaList.find(x => x.ma === maXa);
-      if (xa) return xa.ten;
+      if (xa) return this.truncateXaTen(xa.ten);
     }
 
     // Nếu không tìm thấy trong cache, tìm trong danhMucXas hiện tại
     const xa = this.danhMucXas.find(x => x.ma === maXa);
-    if (xa) return xa.ten;
+    if (xa) return this.truncateXaTen(xa.ten);
 
     console.warn(`Không tìm thấy xã với mã: ${maXa}`);
     return maXa; // Trả về mã nếu không tìm thấy tên
+  }
+
+  // Phương thức để rút gọn tên xã nếu vượt quá 20 ký tự
+  private truncateXaTen(tenXa: string): string {
+    if (!tenXa) return '';
+
+    // Nếu tên xã vượt quá 20 ký tự, rút gọn nó
+    if (tenXa.length > 20) {
+      // Rút gọn "Thị trấn" thành "TT."
+      if (tenXa.startsWith('Thị trấn ')) {
+        return 'TT.' + tenXa.substring(9).trim();
+      }
+      // Rút gọn "Phường" thành "P."
+      else if (tenXa.startsWith('Phường ')) {
+        return 'P.' + tenXa.substring(7).trim();
+      }
+      // Rút gọn "Xã" thành "X."
+      else if (tenXa.startsWith('Xã ')) {
+        return 'X.' + tenXa.substring(3).trim();
+      }
+      // Nếu vẫn vượt quá 20 ký tự, cắt bớt
+      if (tenXa.length > 20) {
+        return tenXa.substring(0, 20);
+      }
+    }
+
+    return tenXa;
   }
 
   // Hàm tải trước dữ liệu xã cho tất cả các huyện trong danh sách
@@ -2851,28 +2955,24 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     if (data) {
       console.log('Modal data:', data);
 
-      // Đảm bảo danh mục bệnh viện đã được load
-      if (!this.danhMucCSKCBs || this.danhMucCSKCBs.length === 0) {
-        this.keKhaiBHYTService.getDanhMucCSKCB().subscribe({
-          next: (cskcbs) => {
-            this.danhMucCSKCBs = cskcbs;
-            // Truyền data gốc vào setFormValues
-            this.setFormValues(data);
-          },
-          error: (error) => {
-            console.error('Error loading CSKCB:', error);
-            this.message.error('Có lỗi xảy ra khi tải danh sách cơ sở KCB');
-          }
-        });
-      } else {
-        // Truyền data gốc vào setFormValues
+      // Đảm bảo tất cả các danh mục cần thiết đã được load
+      Promise.all([
+        this.loadDanhMucTinh(),
+        this.loadDanhMucCSKCB()
+      ]).then(() => {
+        // Sau khi tất cả các danh mục đã được load, gọi setFormValues
         this.setFormValues(data);
-      }
+      }).catch(error => {
+        console.error('Error loading data for edit form:', error);
+        this.message.error('Có lỗi xảy ra khi tải dữ liệu cho form chỉnh sửa');
+      });
     }
   }
 
   // Tách phần gán giá trị form ra một phương thức riêng
   private setFormValues(data: KeKhaiBHYT): void {
+    console.log('Dữ liệu gốc nhận được:', data);
+
     if (data.thongTinThe) {
       // Xử lý ngày sinh
       let ngaySinh = '';
@@ -2881,7 +2981,13 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         ngaySinh = this.formatDateToString(ngaySinhDate);
       }
 
+      // Load danh sách tỉnh NKQ trước
+      this.loadDanhMucTinh();
+
+      // Gán giá trị cho các trường thông tin thẻ
       this.form.patchValue({
+        id: data.id,
+        thong_tin_the_id: data.thong_tin_the_id,
         ma_so_bhxh: data.thongTinThe.ma_so_bhxh,
         cccd: data.thongTinThe.cccd,
         ho_ten: data.thongTinThe.ho_ten,
@@ -2890,50 +2996,90 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         so_dien_thoai: data.thongTinThe.so_dien_thoai,
         ma_hgd: data.thongTinThe.ma_hgd,
         ma_tinh_ks: data.thongTinThe.ma_tinh_ks,
-        tinh_nkq: data.thongTinThe.ma_tinh_nkq,
-        huyen_nkq: data.thongTinThe.ma_huyen_nkq,
-        xa_nkq: data.thongTinThe.ma_xa_nkq,
-        dia_chi_nkq: data.thongTinThe.dia_chi_nkq || '',
-        // Tìm bệnh viện trong danh mục và gán value
-        benh_vien_kcb: this.danhMucCSKCBs.find(bv => bv.ma === data.ma_benh_vien)?.value || '',
-        so_the_bhyt: data.thongTinThe.so_the_bhyt,
         ma_dan_toc: data.thongTinThe.ma_dan_toc,
-        quoc_tich: data.thongTinThe.quoc_tich
+        quoc_tich: data.thongTinThe.quoc_tich,
+        so_the_bhyt: data.thongTinThe.so_the_bhyt
       });
 
-      // Load danh sách huyện và xã dựa trên mã tỉnh/huyện đã chọn
-      if (data.thongTinThe.ma_tinh_ks) {
-        this.diaChiService.getDanhMucHuyenByMaTinh(data.thongTinThe.ma_tinh_ks).subscribe({
-          next: (huyens) => {
-            this.danhMucHuyenKS = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-            console.log('Loaded huyện KS:', this.danhMucHuyenKS);
-          },
-          error: (error) => {
-            console.error('Error loading huyện KS:', error);
-            this.message.error('Có lỗi xảy ra khi tải danh sách quận/huyện KS');
+      // Xử lý thông tin địa chỉ NKQ
+      if (data.thongTinThe.ma_tinh_nkq) {
+        // Load danh sách huyện NKQ dựa trên mã tỉnh
+        this.loadDanhMucHuyenByMaTinh(data.thongTinThe.ma_tinh_nkq).then(() => {
+          // Sau khi load xong huyện, gán giá trị cho trường tinh_nkq
+          this.form.patchValue({
+            tinh_nkq: data.thongTinThe.ma_tinh_nkq
+          });
+
+          // Nếu có mã huyện, load danh sách xã
+          if (data.thongTinThe.ma_huyen_nkq) {
+            this.loadDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_nkq).then(() => {
+              // Sau khi load xong xã, gán giá trị cho trường huyen_nkq và xa_nkq
+              this.form.patchValue({
+                huyen_nkq: data.thongTinThe.ma_huyen_nkq,
+                xa_nkq: data.thongTinThe.ma_xa_nkq
+              });
+            });
           }
         });
       }
 
-      // Sửa lại cách gán giá trị cho benh_vien_kcb
-      const benhVienValue = data.ma_benh_vien || data.thongTinThe.ma_benh_vien;
+      // Xử lý thông tin địa chỉ KS
+      if (data.thongTinThe.ma_tinh_ks) {
+        this.diaChiService.getDanhMucHuyenByMaTinh(data.thongTinThe.ma_tinh_ks).subscribe({
+          next: (huyens) => {
+            this.danhMucHuyenKS = huyens.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
 
-      this.form.patchValue({
-        // Các trường khác giữ nguyên...
-        benh_vien_kcb: benhVienValue, // Gán trực tiếp mã bệnh viện
-        ma_benh_vien: benhVienValue
+            // Sau khi load xong huyện KS, gán giá trị cho trường ma_huyen_ks
+            if (data.thongTinThe.ma_huyen_ks) {
+              this.form.patchValue({
+                ma_huyen_ks: data.thongTinThe.ma_huyen_ks
+              });
+
+              // Load danh sách xã KS
+              this.diaChiService.getDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_ks).subscribe({
+                next: (xas) => {
+                  this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+
+                  // Sau khi load xong xã KS, gán giá trị cho trường ma_xa_ks
+                  if (data.thongTinThe.ma_xa_ks) {
+                    this.form.patchValue({
+                      ma_xa_ks: data.thongTinThe.ma_xa_ks
+                    });
+                  }
+                },
+                error: (error) => {
+                  console.error('Error loading xã KS:', error);
+                }
+              });
+            }
+          },
+          error: (error) => {
+            console.error('Error loading huyện KS:', error);
+          }
+        });
+      }
+    }
+
+    // Xử lý thông tin bệnh viện KCB
+    const benhVienValue = data.ma_benh_vien || (data.thongTinThe ? data.thongTinThe.ma_benh_vien : '');
+
+    // Đảm bảo danh mục bệnh viện đã được load
+    if (this.danhMucCSKCBs.length === 0) {
+      this.loadDanhMucCSKCB().then(() => {
+        this.form.patchValue({
+          benh_vien_kcb: benhVienValue,
+          ma_benh_vien: benhVienValue
+        });
       });
-
-      console.log('Bệnh viện được chọn:', {
-        ma_benh_vien: benhVienValue,
-        danh_sach_benh_vien: this.danhMucCSKCBs
+    } else {
+      this.form.patchValue({
+        benh_vien_kcb: benhVienValue,
+        ma_benh_vien: benhVienValue
       });
     }
 
     // Patch các thông tin khác
     this.form.patchValue({
-      id: data.id,
-      thong_tin_the_id: data.thong_tin_the_id,
       nguoi_thu: data.nguoi_thu,
       so_thang_dong: data.so_thang_dong,
       phuong_an_dong: data.phuong_an_dong,
@@ -2945,7 +3091,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       ngay_bien_lai: data.ngay_bien_lai || new Date(),
       so_bien_lai: data.so_bien_lai,
       quyen_bien_lai_id: data.quyen_bien_lai_id,
-      trang_thai: data.trang_thai // Thêm trường trang_thai vào form
+      trang_thai: data.trang_thai
     });
 
     // Log để kiểm tra
@@ -3853,6 +3999,39 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
     const year = date.getUTCFullYear();
     return `${day}/${month}/${year}`;
+  }
+
+  // Phương thức để giữ nguyên ngày tháng mà không bị ảnh hưởng bởi múi giờ
+  private preserveDateWithoutTimezoneOffset(dateInput: string | Date): Date {
+    if (!dateInput) return new Date();
+
+    let date: Date;
+
+    if (typeof dateInput === 'string') {
+      // Nếu là chuỗi ISO hoặc chuỗi ngày tháng khác
+      if (dateInput.includes('T')) {
+        // Chuỗi ISO với thông tin giờ
+        date = new Date(dateInput);
+      } else if (dateInput.includes('/')) {
+        // Chuỗi dd/MM/yyyy
+        const [day, month, year] = dateInput.split('/').map(Number);
+        date = new Date(year, month - 1, day);
+      } else if (dateInput.includes('-')) {
+        // Chuỗi yyyy-MM-dd
+        const [year, month, day] = dateInput.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Các định dạng khác
+        date = new Date(dateInput);
+      }
+    } else {
+      // Nếu là đối tượng Date
+      date = new Date(dateInput);
+    }
+
+    // Tạo một đối tượng Date mới với năm, tháng, ngày giống hệt nhưng không có thông tin giờ
+    // Điều này giúp tránh vấn đề múi giờ
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   guiDotKeKhai(): void {
