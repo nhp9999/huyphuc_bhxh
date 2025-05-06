@@ -384,6 +384,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm biến class thành viên mới
   willUseBienLaiDienTu = false;
 
+  // Biến cho xử lý API phản hồi lâu
+  searchTimeout: any = null;
+  searchTimeoutDuration = 5000; // 5 giây
+  isSearchTimedOut = false;
+
   constructor(
     private keKhaiBHYTService: KeKhaiBHYTService,
     private dotKeKhaiService: DotKeKhaiService,
@@ -605,13 +610,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.loadDanhSachTinhTraCuu();
   }
 
-  ngOnDestroy(): void {
-    localStorage.removeItem('urgentItems');
-
-    // Không xóa cache địa chính để sử dụng lại cho các lần sau
-    // Chỉ xóa nếu cần thiết, ví dụ khi dữ liệu quá cũ
-    // this.clearAddressCache();
-  }
+  // Phương thức ngOnDestroy đã được chuyển xuống cuối file
 
   initForm(): void {
     this.form = this.fb.group({
@@ -1475,8 +1474,38 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Đặt lại trạng thái timeout
+    this.isSearchTimedOut = false;
+
+    // Xóa timeout cũ nếu có
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+
+    // Thiết lập timeout mới
+    this.searchTimeout = setTimeout(() => {
+      // Nếu API vẫn chưa phản hồi sau khoảng thời gian đã định
+      if (this.loadingSearch) {
+        this.isSearchTimedOut = true;
+        // Hiển thị thông báo cho người dùng
+        this.message.loading('Hệ thống đang xử lý, vui lòng đợi thêm...', { nzDuration: 0 });
+      }
+    }, this.searchTimeoutDuration);
+
     this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
       next: async (response) => {
+        // Xóa timeout khi có phản hồi
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
+
         if (response.success) {
           const data = response.data;
           console.log('BHYT search response:', data);
@@ -1537,6 +1566,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
+        // Xóa timeout khi có lỗi
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
+
         console.error('Search error:', err);
         if (err.error?.error === 'Lỗi xác thực') {
           this.ssmv2Service.clearToken();
@@ -1546,6 +1587,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       },
       complete: () => {
+        // Xóa timeout khi hoàn thành
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
+
         this.loadingSearch = false;
       }
     });
@@ -1559,9 +1612,26 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       const ngaySinh = this.formatDateToString(ngaySinhDate);
       const denNgayTheCu = data.denNgayTheCu ? this.formatNgaySinh(data.denNgayTheCu) : null;
 
-      // Cập nhật form với dữ liệu từ API
-      this.form.patchValue({
-        ma_so_bhxh: data.maSoBHXH,
+      // Kiểm tra và sử dụng dữ liệu từ tỉnh KS, huyện KS, xã KS nếu tỉnh NKQ, huyện NKQ, xã NKQ là null
+      const maTinhNkq = data.maTinhNkq || data.maTinhKS;
+      const maHuyenNkq = data.maHuyenNkq || data.maHuyenKS;
+      const maXaNkq = data.maXaNkq || data.maXaKS;
+
+      // Log để kiểm tra
+      console.log('Dữ liệu địa chỉ:', {
+        maTinhNkq_original: data.maTinhNkq,
+        maHuyenNkq_original: data.maHuyenNkq,
+        maXaNkq_original: data.maXaNkq,
+        maTinhKS: data.maTinhKS,
+        maHuyenKS: data.maHuyenKS,
+        maXaKS: data.maXaKS,
+        maTinhNkq_used: maTinhNkq,
+        maHuyenNkq_used: maHuyenNkq,
+        maXaNkq_used: maXaNkq
+      });
+
+      // Chuẩn bị dữ liệu để cập nhật form
+      const formData: any = {
         cccd: data.cmnd,
         ho_ten: data.hoTen,
         ngay_sinh: ngaySinh,
@@ -1571,9 +1641,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         ma_tinh_ks: data.maTinhKS,
         ma_huyen_ks: data.maHuyenKS,
         ma_xa_ks: data.maXaKS,
-        tinh_nkq: data.maTinhNkq,
-        huyen_nkq: data.maHuyenNkq,
-        xa_nkq: data.maXaNkq,
+        tinh_nkq: maTinhNkq,
+        huyen_nkq: maHuyenNkq,
+        xa_nkq: maXaNkq,
         dia_chi_nkq: data.noiNhanHoSo,
         benh_vien_kcb: data.maBenhVien,
         ma_benh_vien: data.maBenhVien,
@@ -1581,15 +1651,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         han_the_cu: denNgayTheCu,
         ma_dan_toc: data.danToc,
         quoc_tich: data.quocTich,
-      });
+      };
+
+      // Chỉ cập nhật mã số BHXH nếu API trả về giá trị không phải null
+      if (data.maSoBHXH) {
+        formData.ma_so_bhxh = data.maSoBHXH;
+      }
+
+      // Cập nhật form với dữ liệu đã chuẩn bị
+      this.form.patchValue(formData);
 
       try {
         // Load danh sách huyện và xã tương ứng
-        if (data.maTinhNkq) {
-          await this.loadDanhMucHuyenByMaTinh(data.maTinhNkq);
+        if (maTinhNkq) {
+          await this.loadDanhMucHuyenByMaTinh(maTinhNkq);
         }
-        if (data.maHuyenNkq) {
-          await this.loadDanhMucXaByMaHuyen(data.maHuyenNkq);
+        if (maHuyenNkq) {
+          await this.loadDanhMucXaByMaHuyen(maHuyenNkq);
         }
       } catch (error) {
         console.error('Lỗi khi tải danh mục địa chỉ:', error);
@@ -1642,21 +1720,58 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     // Hiển thị loading
     this.loadingSearch = true;
 
+    // Đặt lại trạng thái timeout
+    this.isSearchTimedOut = false;
+
+    // Xóa timeout cũ nếu có
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+
+    // Thiết lập timeout mới
+    this.searchTimeout = setTimeout(() => {
+      // Nếu API vẫn chưa phản hồi sau khoảng thời gian đã định
+      if (this.loadingSearch) {
+        this.isSearchTimedOut = true;
+        // Hiển thị thông báo cho người dùng
+        this.message.loading('Hệ thống đang xử lý, vui lòng đợi thêm...', { nzDuration: 0 });
+      }
+    }, this.searchTimeoutDuration);
+
     // Gọi API tra cứu thông tin BHYT
     this.keKhaiBHYTService.traCuuThongTinBHYT(maSoBHXH).subscribe({
       next: (response) => {
+        // Xóa timeout khi có phản hồi
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
+
         if (response.success) {
           console.log('Thông tin BHYT:', response.data);
 
-          // Cập nhật form với thông tin nhận được
-          this.form.patchValue({
-            ma_so_bhxh: response.data.maSoBHXH,
+          // Chuẩn bị dữ liệu để cập nhật form
+          const formData: any = {
             ho_ten: response.data.hoTen,
             cccd: response.data.cmnd,
             so_dien_thoai: response.data.soDienThoai,
             ma_hgd: response.data.maHoGiaDinh,
             benh_vien_kcb: response.data.maBenhVien, // Cập nhật mã bệnh viện
-          });
+          };
+
+          // Chỉ cập nhật mã số BHXH nếu API trả về giá trị không phải null
+          if (response.data.maSoBHXH) {
+            formData.ma_so_bhxh = response.data.maSoBHXH;
+          }
+
+          // Cập nhật form với dữ liệu đã chuẩn bị
+          this.form.patchValue(formData);
 
           // Log để kiểm tra
           console.log('Form sau khi cập nhật:', this.form.value);
@@ -1675,9 +1790,34 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
+        // Xóa timeout khi có lỗi
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
+
         console.error('Lỗi tra cứu BHYT:', error);
         this.message.error('Có lỗi xảy ra khi tra cứu thông tin BHYT');
         this.loadingSearch = false;
+      },
+      complete: () => {
+        // Xóa timeout khi hoàn thành
+        if (this.searchTimeout) {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = null;
+        }
+
+        // Đóng thông báo loading nếu đã hiển thị
+        if (this.isSearchTimedOut) {
+          this.message.remove();
+          this.isSearchTimedOut = false;
+        }
       }
     });
   }
@@ -4293,6 +4433,24 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         return;
       }
 
+      // Đặt lại trạng thái timeout
+      this.isSearchTimedOut = false;
+
+      // Xóa timeout cũ nếu có
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+
+      // Thiết lập timeout mới
+      this.searchTimeout = setTimeout(() => {
+        // Nếu API vẫn chưa phản hồi sau khoảng thời gian đã định
+        if (this.isLoadingTraCuu) {
+          this.isSearchTimedOut = true;
+          // Hiển thị thông báo cho người dùng
+          this.message.loading('Hệ thống đang xử lý, vui lòng đợi thêm...', { nzDuration: 0 });
+        }
+      }, this.searchTimeoutDuration);
+
       // Lấy dữ liệu từ form
       const formData: TraCuuVNPostRequest = {
         maTinh: this.traCuuVNPostForm.value.maTinh,
@@ -4309,6 +4467,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.bhxhService.traCuuMaSoBHXHVNPost(formData)
         .subscribe({
           next: (res: any) => {
+            // Xóa timeout khi có phản hồi
+            if (this.searchTimeout) {
+              clearTimeout(this.searchTimeout);
+              this.searchTimeout = null;
+            }
+
+            // Đóng thông báo loading nếu đã hiển thị
+            if (this.isSearchTimedOut) {
+              this.message.remove();
+              this.isSearchTimedOut = false;
+            }
+
             this.isLoadingTraCuu = false;
 
             // Log response để debug
@@ -4393,6 +4563,18 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             }
           },
           error: (err: any) => {
+            // Xóa timeout khi có lỗi
+            if (this.searchTimeout) {
+              clearTimeout(this.searchTimeout);
+              this.searchTimeout = null;
+            }
+
+            // Đóng thông báo loading nếu đã hiển thị
+            if (this.isSearchTimedOut) {
+              this.message.remove();
+              this.isSearchTimedOut = false;
+            }
+
             // Xử lý lỗi từ API
             this.isLoadingTraCuu = false;
             this.ketQuaTraCuu = [];
@@ -4407,6 +4589,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             } else {
               this.loiTraCuu = 'Đã xảy ra lỗi khi tra cứu: ' + (err.error?.message || err.message || 'Vui lòng thử lại sau');
               this.message.error(this.loiTraCuu);
+            }
+          },
+          complete: () => {
+            // Xóa timeout khi hoàn thành
+            if (this.searchTimeout) {
+              clearTimeout(this.searchTimeout);
+              this.searchTimeout = null;
+            }
+
+            // Đóng thông báo loading nếu đã hiển thị
+            if (this.isSearchTimedOut) {
+              this.message.remove();
+              this.isSearchTimedOut = false;
             }
           }
         });
@@ -4540,14 +4735,22 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
   // Áp dụng thông tin từ kết quả tra cứu vào form chính
   apDungThongTinBHXH(item: any): void {
-    this.form.patchValue({
-      ma_so_bhxh: item.maSoBHXH,
+    // Chuẩn bị dữ liệu để cập nhật form
+    const formData: any = {
       ho_ten: item.hoTen,
       ngay_sinh: this.formatDateToString(new Date(item.ngaySinh)),
       gioi_tinh: item.gioiTinh === 'Nam' ? 'Nam' : 'Nữ',
       cccd: item.soCCCD || '',
       so_dien_thoai: item.soDienThoai && item.soDienThoai !== 'N/A' ? item.soDienThoai : ''
-    });
+    };
+
+    // Chỉ cập nhật mã số BHXH nếu có giá trị
+    if (item.maSoBHXH) {
+      formData.ma_so_bhxh = item.maSoBHXH;
+    }
+
+    // Cập nhật form với dữ liệu đã chuẩn bị
+    this.form.patchValue(formData);
 
     // Đóng modal
     this.handleTraCuuMaSoBHXHCancel();
@@ -4605,5 +4808,27 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
 
     return gender;
+  }
+
+  // Xử lý khi component bị hủy
+  ngOnDestroy(): void {
+    // Xóa các item khẩn cấp từ localStorage
+    localStorage.removeItem('urgentItems');
+
+    // Xóa timeout nếu có
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = null;
+    }
+
+    // Đóng thông báo loading nếu đang hiển thị
+    if (this.isSearchTimedOut) {
+      this.message.remove();
+      this.isSearchTimedOut = false;
+    }
+
+    // Không xóa cache địa chính để sử dụng lại cho các lần sau
+    // Chỉ xóa nếu cần thiết, ví dụ khi dữ liệu quá cũ
+    // this.clearAddressCache();
   }
 }
