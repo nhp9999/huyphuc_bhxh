@@ -36,9 +36,31 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
+
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
+
                 var query = _context.BienLaiDienTus
                     .Include(b => b.QuyenBienLaiDienTu)
                     .AsQueryable();
+
+                // Nếu không phải admin, chỉ hiển thị biên lai của người dùng hiện tại
+                if (!isAdmin && !string.IsNullOrEmpty(currentUserMaNhanVien))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUserMaNhanVien);
+                }
 
                 // Áp dụng các bộ lọc
                 if (!string.IsNullOrEmpty(ky_hieu))
@@ -164,8 +186,33 @@ namespace WebApp.API.Controllers
         {
             try
             {
-                var bienLai = await _context.BienLaiDienTus
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
+
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
+
+                var query = _context.BienLaiDienTus
                     .Include(b => b.QuyenBienLaiDienTu)
+                    .Where(b => b.id == id);
+
+                // Nếu không phải admin, chỉ cho phép xem biên lai của người dùng hiện tại
+                if (!isAdmin && !string.IsNullOrEmpty(currentUserMaNhanVien))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUserMaNhanVien);
+                }
+
+                var bienLai = await query
                     .Select(b => new
                     {
                         b.id,
@@ -235,10 +282,10 @@ namespace WebApp.API.Controllers
                             b.KeKhaiBHYT.quyen_bien_lai_id
                         }
                     })
-                    .FirstOrDefaultAsync(b => b.id == id);
+                    .FirstOrDefaultAsync();
 
                 if (bienLai == null)
-                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử hoặc bạn không có quyền xem biên lai này" });
 
                 return Ok(bienLai);
             }
@@ -375,56 +422,120 @@ namespace WebApp.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, BienLaiDienTu bienLai)
         {
-            if (id != bienLai.id)
-                return BadRequest();
-
-            var existingBienLai = await _context.BienLaiDienTus.FindAsync(id);
-            if (existingBienLai == null)
-                return NotFound();
-
-            // Không cho phép cập nhật số biên lai và ký hiệu
-            bienLai.so_bien_lai = existingBienLai.so_bien_lai;
-            bienLai.ky_hieu = existingBienLai.ky_hieu;
-
-            // Cập nhật các trường khác
-            existingBienLai.ten_nguoi_dong = bienLai.ten_nguoi_dong;
-            existingBienLai.so_tien = bienLai.so_tien;
-            existingBienLai.ghi_chu = bienLai.ghi_chu;
-            existingBienLai.trang_thai = bienLai.trang_thai;
-            existingBienLai.ma_so_bhxh = bienLai.ma_so_bhxh;
-            existingBienLai.ma_nhan_vien = bienLai.ma_nhan_vien;
-            existingBienLai.tinh_chat = bienLai.tinh_chat;
-            existingBienLai.ma_co_quan_bhxh = bienLai.ma_co_quan_bhxh;
-            existingBienLai.ma_so_bhxh_don_vi = bienLai.ma_so_bhxh_don_vi;
-            existingBienLai.is_bhyt = bienLai.is_bhyt;
-            existingBienLai.is_bhxh = bienLai.is_bhxh;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await BienLaiExists(id))
-                    return NotFound();
-                throw;
-            }
+                if (id != bienLai.id)
+                    return BadRequest(new { message = "ID không khớp" });
 
-            return NoContent();
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
+
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
+
+                var existingBienLai = await _context.BienLaiDienTus.FindAsync(id);
+                if (existingBienLai == null)
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+
+                // Kiểm tra quyền: chỉ admin hoặc người tạo biên lai mới có thể cập nhật
+                if (!isAdmin && existingBienLai.ma_nhan_vien != currentUserMaNhanVien)
+                {
+                    return Forbid();
+                }
+
+                // Không cho phép cập nhật số biên lai và ký hiệu
+                bienLai.so_bien_lai = existingBienLai.so_bien_lai;
+                bienLai.ky_hieu = existingBienLai.ky_hieu;
+
+                // Cập nhật các trường khác
+                existingBienLai.ten_nguoi_dong = bienLai.ten_nguoi_dong;
+                existingBienLai.so_tien = bienLai.so_tien;
+                existingBienLai.ghi_chu = bienLai.ghi_chu;
+                existingBienLai.trang_thai = bienLai.trang_thai;
+                existingBienLai.ma_so_bhxh = bienLai.ma_so_bhxh;
+                // Không cho phép thay đổi mã nhân viên nếu không phải admin
+                if (isAdmin)
+                {
+                    existingBienLai.ma_nhan_vien = bienLai.ma_nhan_vien;
+                }
+                existingBienLai.tinh_chat = bienLai.tinh_chat;
+                existingBienLai.ma_co_quan_bhxh = bienLai.ma_co_quan_bhxh;
+                existingBienLai.ma_so_bhxh_don_vi = bienLai.ma_so_bhxh_don_vi;
+                existingBienLai.is_bhyt = bienLai.is_bhyt;
+                existingBienLai.is_bhxh = bienLai.is_bhxh;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!await BienLaiExists(id))
+                        return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                    throw;
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi cập nhật biên lai điện tử với ID {id}");
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật biên lai điện tử với ID {id}", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var bienLai = await _context.BienLaiDienTus.FindAsync(id);
-            if (bienLai == null)
-                return NotFound();
+            try
+            {
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
 
-            // Xóa biên lai
-            _context.BienLaiDienTus.Remove(bienLai);
-            await _context.SaveChangesAsync();
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
 
-            return NoContent();
+                var bienLai = await _context.BienLaiDienTus.FindAsync(id);
+                if (bienLai == null)
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+
+                // Kiểm tra quyền: chỉ admin hoặc người tạo biên lai mới có thể xóa
+                if (!isAdmin && bienLai.ma_nhan_vien != currentUserMaNhanVien)
+                {
+                    return Forbid();
+                }
+
+                // Xóa biên lai
+                _context.BienLaiDienTus.Remove(bienLai);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi khi xóa biên lai điện tử với ID {id}");
+                return StatusCode(500, new { message = $"Lỗi khi xóa biên lai điện tử với ID {id}", error = ex.Message });
+            }
         }
 
         [HttpPost("delete-multiple")]
@@ -439,13 +550,35 @@ namespace WebApp.API.Controllers
 
                 _logger.LogInformation($"Nhận yêu cầu xóa nhiều biên lai điện tử: {string.Join(", ", dto.ids)}");
 
-                var bienLais = await _context.BienLaiDienTus
-                    .Where(b => dto.ids.Contains(b.id))
-                    .ToListAsync();
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
+
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
+
+                var query = _context.BienLaiDienTus.Where(b => dto.ids.Contains(b.id));
+
+                // Nếu không phải admin, chỉ cho phép xóa biên lai của người dùng hiện tại
+                if (!isAdmin && !string.IsNullOrEmpty(currentUserMaNhanVien))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUserMaNhanVien);
+                }
+
+                var bienLais = await query.ToListAsync();
 
                 if (bienLais.Count == 0)
                 {
-                    return NotFound(new { message = "Không tìm thấy biên lai điện tử nào" });
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử nào hoặc bạn không có quyền xóa các biên lai này" });
                 }
 
                 // Xóa các biên lai
@@ -486,9 +619,33 @@ namespace WebApp.API.Controllers
 
                 _logger.LogInformation($"Nhận yêu cầu phát hành nhiều biên lai điện tử: {string.Join(", ", dto.ids)}");
 
+                // Lấy thông tin người dùng hiện tại
+                var currentUser = User.Identity?.Name;
+                var isAdmin = User.IsInRole("admin") || User.IsInRole("super_admin") || User.HasClaim("IsSuperAdmin", "true");
+
+                // Lấy mã nhân viên từ người dùng hiện tại
+                var currentUserMaNhanVien = string.Empty;
+                if (!string.IsNullOrEmpty(currentUser))
+                {
+                    var nguoiDung = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == currentUser);
+                    if (nguoiDung != null)
+                    {
+                        currentUserMaNhanVien = nguoiDung.ma_nhan_vien ?? nguoiDung.user_name;
+                    }
+                }
+
                 // Lấy danh sách biên lai cần phát hành
-                var bienLais = await _context.BienLaiDienTus
-                    .Where(b => dto.ids.Contains(b.id) && !b.is_published_to_vnpt)
+                var query = _context.BienLaiDienTus
+                    .Where(b => dto.ids.Contains(b.id) && !b.is_published_to_vnpt);
+
+                // Nếu không phải admin, chỉ cho phép phát hành biên lai của người dùng hiện tại
+                if (!isAdmin && !string.IsNullOrEmpty(currentUserMaNhanVien))
+                {
+                    query = query.Where(b => b.ma_nhan_vien == currentUserMaNhanVien);
+                }
+
+                var bienLais = await query
                     .OrderBy(b => b.so_bien_lai) // Sắp xếp theo số biên lai từ bé đến lớn
                     .ToListAsync();
 
@@ -1293,6 +1450,72 @@ namespace WebApp.API.Controllers
         #region PortalService Endpoints
 
         /// <summary>
+        /// Tải biên lai điện tử dưới dạng PDF
+        /// </summary>
+        /// <param name="id">ID biên lai</param>
+        /// <returns>File PDF của biên lai</returns>
+        [HttpGet("{id}/download-pdf")]
+        public async Task<IActionResult> DownloadPdf(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"Nhận yêu cầu tải PDF biên lai điện tử: {id}");
+
+                var bienLai = await _context.BienLaiDienTus
+                    .FirstOrDefaultAsync(b => b.id == id);
+                if (bienLai == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy biên lai điện tử" });
+                }
+
+                // Kiểm tra mã nhân viên
+                if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                {
+                    return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                }
+
+                // Sử dụng tài khoản VNPT của nhân viên
+                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount == null)
+                {
+                    return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                }
+
+                // Lấy fkey từ biên lai
+                string fkey = !string.IsNullOrEmpty(bienLai.vnpt_transaction_id) ? bienLai.vnpt_transaction_id : bienLai.vnpt_key;
+                if (string.IsNullOrEmpty(fkey))
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin key hoặc transaction_id của biên lai trên VNPT" });
+                }
+
+                _logger.LogInformation($"Sử dụng fkey: {fkey} để tải PDF biên lai");
+
+                // Tải PDF biên lai
+                string base64Pdf = await _vnptBienLaiService.DownloadInvPDFFkeyNoPay(fkey, vnptAccount);
+
+                // Kiểm tra lỗi
+                if (base64Pdf.StartsWith("ERR:") || base64Pdf.StartsWith("Error:"))
+                {
+                    return BadRequest(new { message = $"Lỗi khi tải PDF biên lai từ VNPT: {base64Pdf}" });
+                }
+
+                // Chuyển đổi base64 thành byte array
+                byte[] pdfBytes = Convert.FromBase64String(base64Pdf);
+
+                // Tạo tên file
+                string fileName = $"BienLai_{bienLai.ky_hieu}_{bienLai.so_bien_lai}.pdf";
+
+                // Trả về file PDF
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tải PDF biên lai điện tử");
+                return StatusCode(500, new { message = "Lỗi khi tải PDF biên lai điện tử", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Xem nội dung biên lai điện tử
         /// </summary>
         /// <param name="id">ID biên lai</param>
@@ -1313,6 +1536,42 @@ namespace WebApp.API.Controllers
 
                 if (!bienLai.is_published_to_vnpt)
                 {
+                    // Kiểm tra xem có XML content không
+                    if (!string.IsNullOrEmpty(bienLai.vnpt_xml_content))
+                    {
+                        _logger.LogInformation($"Biên lai {id} chưa được phát hành lên VNPT nhưng có XML content, thử hiển thị từ XML");
+
+                        // Kiểm tra mã nhân viên
+                        if (string.IsNullOrEmpty(bienLai.ma_nhan_vien))
+                        {
+                            return BadRequest(new { message = "Biên lai điện tử không có mã nhân viên" });
+                        }
+
+                        // Sử dụng tài khoản VNPT của nhân viên
+                        var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                        if (vnptAccount == null)
+                        {
+                            return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
+                        }
+
+                        // Tạo key tạm thời nếu không có
+                        string fkey = !string.IsNullOrEmpty(bienLai.vnpt_key) ? bienLai.vnpt_key : $"{bienLai.ma_so_bhxh}_{DateTime.Now.Ticks}";
+                        _logger.LogInformation($"Sử dụng fkey: {fkey} để xem biên lai từ XML");
+
+                        // Sử dụng getInvViewFkeyNoPay để hiển thị biên lai từ XML mà không kiểm tra trạng thái thanh toán
+                        string result = await _vnptBienLaiService.GetInvViewFkeyNoPay(fkey, vnptAccount);
+
+                        if (!result.StartsWith("Error:") && !result.StartsWith("ERR:"))
+                        {
+                            // Trả về nội dung HTML của biên lai
+                            return Content(result, "text/html");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Không thể hiển thị biên lai từ XML: {result}");
+                        }
+                    }
+
                     return BadRequest(new { message = "Biên lai điện tử chưa được phát hành lên VNPT" });
                 }
 
@@ -1329,26 +1588,35 @@ namespace WebApp.API.Controllers
                 }
 
                 // Sử dụng tài khoản VNPT của nhân viên
-                var vnptAccount = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
-                if (vnptAccount == null)
+                var vnptAccount2 = await _vnptBienLaiService.GetVNPTAccountByMaNhanVien(bienLai.ma_nhan_vien);
+                if (vnptAccount2 == null)
                 {
                     return BadRequest(new { message = $"Không tìm thấy tài khoản VNPT cho mã nhân viên {bienLai.ma_nhan_vien}" });
                 }
 
                 // Lấy nội dung biên lai từ VNPT, ưu tiên sử dụng transaction_id nếu có
-                string fkey = !string.IsNullOrEmpty(bienLai.vnpt_transaction_id) ? bienLai.vnpt_transaction_id : bienLai.vnpt_key;
-                _logger.LogInformation($"Sử dụng fkey: {fkey} để xem biên lai");
-                string result = await _vnptBienLaiService.GetInvViewByFkey(fkey, vnptAccount);
+                string fkey2 = !string.IsNullOrEmpty(bienLai.vnpt_transaction_id) ? bienLai.vnpt_transaction_id : bienLai.vnpt_key;
+                _logger.LogInformation($"Sử dụng fkey: {fkey2} để xem biên lai");
 
-                if (result.StartsWith("Error:"))
+                // Thử sử dụng getInvViewFkeyNoPay trước (không kiểm tra trạng thái thanh toán)
+                string result2 = await _vnptBienLaiService.GetInvViewFkeyNoPay(fkey2, vnptAccount2);
+
+                // Nếu không thành công, thử sử dụng getInvViewByFkey
+                if (result2.StartsWith("Error:") || result2.StartsWith("ERR:"))
                 {
-                    return BadRequest(new { message = "Lỗi khi lấy nội dung biên lai từ VNPT", error = result });
+                    _logger.LogWarning($"Không thể hiển thị biên lai bằng getInvViewFkeyNoPay: {result2}, thử sử dụng getInvViewByFkey");
+                    result2 = await _vnptBienLaiService.GetInvViewByFkey(fkey2, vnptAccount2);
                 }
 
-                if (result == "ERR:6")
+                if (result2.StartsWith("Error:"))
+                {
+                    return BadRequest(new { message = "Lỗi khi lấy nội dung biên lai từ VNPT", error = result2 });
+                }
+
+                if (result2 == "ERR:6")
                 {
                     // Lấy link biên lai thay thế
-                    string link = await _vnptBienLaiService.GetLinkInvByFkey(fkey, vnptAccount);
+                    string link = await _vnptBienLaiService.GetLinkInvByFkey(fkey2, vnptAccount2);
                     if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
                     {
                         // Cập nhật link vào database
@@ -1361,12 +1629,12 @@ namespace WebApp.API.Controllers
                     }
                     else
                     {
-                        return BadRequest(new { message = "Lỗi khi lấy nội dung biên lai từ VNPT (ERR:6 - Dải biên lai cũ đã hết)", error = "ERR:6" });
+                        return BadRequest(new { message = "Lỗi khi lấy nội dung biên lai từ VNPT (ERR:6 - Không tìm thấy hóa đơn)", error = "ERR:6" });
                     }
                 }
 
                 // Trả về nội dung HTML của biên lai
-                return Content(result, "text/html");
+                return Content(result2, "text/html");
             }
             catch (Exception ex)
             {

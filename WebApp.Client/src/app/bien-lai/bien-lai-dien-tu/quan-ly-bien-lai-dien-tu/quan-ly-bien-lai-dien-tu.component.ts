@@ -5,6 +5,7 @@ import { NzModalService } from 'ng-zorro-antd/modal';
 import { BienLaiDienTuService, BienLaiDienTuSearchParams } from '../../../services/bien-lai-dien-tu.service';
 import { BienLaiDienTu, QuyenBienLaiDienTu } from '../../models/bien-lai-dien-tu.model';
 import { VNPTBienLaiService } from '../../../services/vnpt-bien-lai.service';
+import { AuthService } from '../../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -86,6 +87,8 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   bienLaiContent: SafeHtml | null = null;
   isLoadingBienLai = false;
   currentViewBienLaiId: number | null = null;
+  currentUser: any;
+  isAdmin = false;
 
   constructor(
     private bienLaiDienTuService: BienLaiDienTuService,
@@ -94,8 +97,14 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
     private message: NzMessageService,
     private modal: NzModalService,
     private http: HttpClient,
-    private sanitizer: DomSanitizer
-  ) { }
+    private sanitizer: DomSanitizer,
+    private authService: AuthService
+  ) {
+    this.currentUser = this.authService.getCurrentUser();
+    this.isAdmin = this.currentUser?.roles?.some((role: string) =>
+      ['admin', 'super_admin'].includes(role)
+    ) || this.currentUser?.isSuperAdmin;
+  }
 
   ngOnInit(): void {
     this.initForm();
@@ -206,12 +215,25 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   showAddModal(): void {
     this.editingId = null;
     this.form.reset();
+
+    // Tự động điền mã nhân viên từ người dùng hiện tại
+    const maNhanVien = this.currentUser?.ma_nhan_vien || this.currentUser?.username || '';
+
     this.form.patchValue({
       tinh_chat: 'bien_lai_goc',
       is_bhyt: true,
       is_bhxh: false,
-      so_tien: 0
+      so_tien: 0,
+      ma_nhan_vien: maNhanVien
     });
+
+    // Nếu không phải admin, disable trường mã nhân viên
+    if (!this.isAdmin) {
+      this.form.get('ma_nhan_vien')?.disable();
+    } else {
+      this.form.get('ma_nhan_vien')?.enable();
+    }
+
     this.isVisible = true;
   }
 
@@ -244,6 +266,14 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
               is_bhxh: data.is_bhxh,
               tinh_chat: data.tinh_chat
             });
+
+            // Nếu không phải admin, disable trường mã nhân viên
+            if (!this.isAdmin) {
+              this.form.get('ma_nhan_vien')?.disable();
+            } else {
+              this.form.get('ma_nhan_vien')?.enable();
+            }
+
             this.isVisible = true;
           }
           this.isLoading = false;
@@ -267,7 +297,13 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    const formData = this.form.value;
+    // Lấy giá trị từ form, bao gồm cả các trường bị disabled
+    const formData = {...this.form.getRawValue()};
+
+    // Đảm bảo mã nhân viên được điền
+    if (!formData.ma_nhan_vien) {
+      formData.ma_nhan_vien = this.currentUser?.ma_nhan_vien || this.currentUser?.username || '';
+    }
 
     if (this.editingId) {
       // Cập nhật biên lai
@@ -586,6 +622,111 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   }
 
   /**
+   * Tải biên lai điện tử dưới dạng PDF
+   * @param id ID biên lai
+   * @returns URL để tải file PDF
+   */
+  downloadBienLaiPdf(id: number): string {
+    return this.vnptBienLaiService.downloadBienLaiPdf(id);
+  }
+
+  /**
+   * Tải PDF của biên lai hiện tại
+   * Phương thức này sẽ tạo một thẻ a tạm thời để tải file PDF trực tiếp
+   */
+  downloadPdf(): void {
+    if (!this.currentViewBienLaiId) {
+      this.message.warning('Không có biên lai để tải');
+      return;
+    }
+
+    // Tạo một thẻ a tạm thời
+    const link = document.createElement('a');
+    link.href = this.downloadBienLaiPdf(this.currentViewBienLaiId);
+
+    // Đặt thuộc tính download để tải xuống thay vì mở trong trình duyệt
+    link.setAttribute('download', `BienLai_${this.currentViewBienLaiId}.pdf`);
+
+    // Thêm vào DOM, kích hoạt sự kiện click, và xóa
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * In biên lai điện tử
+   * Sử dụng iframe để in nội dung biên lai hiện tại
+   */
+  printBienLai(): void {
+    if (!this.bienLaiContent) {
+      this.message.warning('Không có nội dung biên lai để in');
+      return;
+    }
+
+    try {
+      // Tạo một iframe ẩn
+      const printIframe = document.createElement('iframe');
+      printIframe.style.position = 'absolute';
+      printIframe.style.top = '-9999px';
+      printIframe.style.left = '-9999px';
+      document.body.appendChild(printIframe);
+
+      // Lấy phần tử DOM chứa nội dung biên lai thay vì chuyển đổi SafeHtml thành chuỗi
+      const bienLaiElement = document.querySelector('.bien-lai-content');
+      if (!bienLaiElement) {
+        throw new Error('Không tìm thấy phần tử chứa nội dung biên lai');
+      }
+
+      // Ghi nội dung vào iframe
+      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+      if (!iframeDoc) {
+        throw new Error('Không thể truy cập document của iframe');
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>In biên lai điện tử</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${bienLaiElement.innerHTML}
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Đợi iframe tải xong
+      setTimeout(() => {
+        // In nội dung của iframe
+        printIframe.contentWindow?.focus();
+        printIframe.contentWindow?.print();
+
+        // Xóa iframe sau khi in
+        setTimeout(() => {
+          document.body.removeChild(printIframe);
+        }, 1000);
+      }, 500);
+    } catch (error) {
+      console.error('Lỗi khi in biên lai:', error);
+      this.message.error('Có lỗi khi in biên lai. Vui lòng thử lại sau.');
+    }
+  }
+
+  /**
    * Lấy thông báo lỗi từ mã lỗi VNPT
    * @param errorCode Mã lỗi từ VNPT
    * @returns Thông báo lỗi
@@ -610,7 +751,8 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   // Phương thức xử lý checkbox
   onAllChecked(checked: boolean): void {
     this.bienLais.forEach(item => {
-      if (item.id) {
+      // Chỉ chọn các biên lai chưa phát hành
+      if (item.id && !item.is_published_to_vnpt) {
         this.updateCheckedSet(item.id, checked);
       }
     });
@@ -618,6 +760,13 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   }
 
   onItemChecked(id: number, checked: boolean): void {
+    // Kiểm tra xem biên lai có đã phát hành không
+    const bienLai = this.bienLais.find(item => item.id === id);
+    if (bienLai && bienLai.is_published_to_vnpt) {
+      // Không cho phép chọn biên lai đã phát hành
+      return;
+    }
+
     this.updateCheckedSet(id, checked);
     this.refreshCheckedStatus();
   }
@@ -632,7 +781,8 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   }
 
   refreshCheckedStatus(): void {
-    const listOfEnabledData = this.bienLais.filter(({ id }) => id !== undefined);
+    // Chỉ tính toán trạng thái checkbox dựa trên các biên lai chưa phát hành
+    const listOfEnabledData = this.bienLais.filter(item => item.id !== undefined && !item.is_published_to_vnpt);
     this.isAllChecked = listOfEnabledData.length > 0 && listOfEnabledData.every(({ id }) => id !== undefined && this.setOfCheckedId.has(id));
     this.isIndeterminate = listOfEnabledData.some(({ id }) => id !== undefined && this.setOfCheckedId.has(id)) && !this.isAllChecked;
     this.selectedIds = Array.from(this.setOfCheckedId);

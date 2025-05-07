@@ -46,38 +46,7 @@
             </div>
           </ng-template>
         </nz-tab>
-        <nz-tab [nzTitle]="tabTitleChuaGui">
-          <ng-template #tabTitleChuaGui>
-            <div class="tab-title-container">
-              <span>Chưa gửi</span>
-              <nz-badge [nzCount]="getCountByStatus('chua_gui')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#8c8c8c' }"></nz-badge>
-            </div>
-          </ng-template>
-        </nz-tab>
-        <nz-tab [nzTitle]="tabTitleDaGui">
-          <ng-template #tabTitleDaGui>
-            <div class="tab-title-container">
-              <span>Đã gửi</span>
-              <nz-badge [nzCount]="getCountByStatus('da_gui')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#1890ff' }"></nz-badge>
-            </div>
-          </ng-template>
-        </nz-tab>
-        <nz-tab [nzTitle]="tabTitleDaDuyet">
-          <ng-template #tabTitleDaDuyet>
-            <div class="tab-title-container">
-              <span>Đã duyệt</span>
-              <nz-badge [nzCount]="getCountByStatus('da_duyet')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#52c41a' }"></nz-badge>
-            </div>
-          </ng-template>
-        </nz-tab>
-        <nz-tab [nzTitle]="tabTitleDaTuChoi">
-          <ng-template #tabTitleDaTuChoi>
-            <div class="tab-title-container">
-              <span>Đã từ chối</span>
-              <nz-badge [nzCount]="getCountByStatus('da_tu_choi')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#f5222d' }"></nz-badge>
-            </div>
-          </ng-template>
-        </nz-tab>
+
         <nz-tab [nzTitle]="tabTitleChoThanhToan">
           <ng-template #tabTitleChoThanhToan>
             <div class="tab-title-container">
@@ -86,11 +55,27 @@
             </div>
           </ng-template>
         </nz-tab>
+        <nz-tab [nzTitle]="tabTitleDangXuLy">
+          <ng-template #tabTitleDangXuLy>
+            <div class="tab-title-container">
+              <span>Đang xử lý</span>
+              <nz-badge [nzCount]="getCountByStatus('dang_xu_ly')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#1890ff' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
         <nz-tab [nzTitle]="tabTitleHoanThanh">
           <ng-template #tabTitleHoanThanh>
             <div class="tab-title-container">
               <span>Hoàn thành</span>
               <nz-badge [nzCount]="getCountByStatus('hoan_thanh')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#13c2c2' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
+        <nz-tab [nzTitle]="tabTitleDaTuChoi">
+          <ng-template #tabTitleDaTuChoi>
+            <div class="tab-title-container">
+              <span>Đã từ chối</span>
+              <nz-badge [nzCount]="getCountByStatus('da_tu_choi')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#f5222d' }"></nz-badge>
             </div>
           </ng-template>
         </nz-tab>
@@ -132,9 +117,9 @@
           <nz-option *ngFor="let option of danhSachNam" [nzValue]="option.value" [nzLabel]="option.text"></nz-option>
         </nz-select>
 
-        <nz-date-picker class="filter-item" nzPlaceHolder="Từ ngày tạo" [(ngModel)]="danhSachFilters.ngayGuiTu" nzFormat="dd/MM/yyyy"></nz-date-picker>
+        <nz-date-picker class="filter-item" nzPlaceHolder="Từ ngày gửi" [(ngModel)]="danhSachFilters.ngayGuiTu" nzFormat="dd/MM/yyyy"></nz-date-picker>
 
-        <nz-date-picker class="filter-item" nzPlaceHolder="Đến ngày tạo" [(ngModel)]="danhSachFilters.ngayGuiDen" nzFormat="dd/MM/yyyy"></nz-date-picker>
+        <nz-date-picker class="filter-item" nzPlaceHolder="Đến ngày gửi" [(ngModel)]="danhSachFilters.ngayGuiDen" nzFormat="dd/MM/yyyy"></nz-date-picker>
 
         <button nz-button nzType="primary" (click)="searchData()">
           <span nz-icon nzType="filter" nzTheme="outline"></span>
@@ -260,12 +245,12 @@
                     Xuất Excel
                   </li>
 
-                  <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="duyetDotKeKhai(data)">
+                  <li nz-menu-item *ngIf="data.trang_thai === 'cho_thanh_toan'" (click)="duyetDotKeKhai(data)">
                     <span nz-icon nzType="check-circle" nzTheme="outline"></span>
                     Duyệt
                   </li>
 
-                  <li nz-menu-item *ngIf="data.trang_thai === 'da_gui'" (click)="tuChoiDotKeKhai(data)">
+                  <li nz-menu-item *ngIf="data.trang_thai === 'cho_thanh_toan'" (click)="tuChoiDotKeKhai(data)">
                     <span nz-icon nzType="close-circle" nzTheme="outline"></span>
                     Từ chối
                   </li>

@@ -122,8 +122,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     nam: null as number | null,
     thang: null as number | null,
     maNhanVien: null as string | null,
-    ngayGuiTu: null as Date | null, // Đã đổi ý nghĩa thành ngày tạo từ
-    ngayGuiDen: null as Date | null // Đã đổi ý nghĩa thành ngày tạo đến
+    ngayGuiTu: null as Date | null, // Ngày gửi từ
+    ngayGuiDen: null as Date | null // Ngày gửi đến
   };
   danhSachDichVu = [
     { text: 'BHYT', value: 'BHYT' },
@@ -249,26 +249,17 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
 
     // Cập nhật tab tương ứng với trạng thái
     switch (status) {
-      case 'chua_gui':
+      case 'cho_thanh_toan':
         this.tabTrangThaiIndex = 1;
         break;
-      case 'da_gui':
+      case 'dang_xu_ly':
         this.tabTrangThaiIndex = 2;
         break;
-      case 'da_duyet':
+      case 'hoan_thanh':
         this.tabTrangThaiIndex = 3;
         break;
       case 'da_tu_choi':
         this.tabTrangThaiIndex = 4;
-        break;
-      case 'cho_thanh_toan':
-        this.tabTrangThaiIndex = 5;
-        break;
-      case 'hoan_thanh':
-        this.tabTrangThaiIndex = 6;
-        break;
-      case 'dang_xu_ly':
-        this.tabTrangThaiIndex = 7;
         break;
       default:
         this.tabTrangThaiIndex = 0;
@@ -350,8 +341,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       nam: null,
       thang: null,
       maNhanVien: null,
-      ngayGuiTu: null, // Đặt lại bộ lọc ngày tạo từ
-      ngayGuiDen: null  // Đặt lại bộ lọc ngày tạo đến
+      ngayGuiTu: null, // Đặt lại bộ lọc ngày gửi từ
+      ngayGuiDen: null  // Đặt lại bộ lọc ngày gửi đến
     };
     this.tabTrangThaiIndex = 0;
     this.loadDotKeKhaiList();
@@ -406,21 +397,21 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       );
     }
 
-    // Lọc theo ngày tạo từ
+    // Lọc theo ngày gửi từ
     if (this.danhSachFilters.ngayGuiTu) {
       filteredData = filteredData.filter(item => {
-        if (!item.ngay_tao) return false;
-        const ngayTao = new Date(item.ngay_tao);
-        return ngayTao >= (this.danhSachFilters.ngayGuiTu as Date);
+        if (!item.ngay_gui) return false;
+        const ngayGui = new Date(item.ngay_gui);
+        return ngayGui >= (this.danhSachFilters.ngayGuiTu as Date);
       });
     }
 
-    // Lọc theo ngày tạo đến
+    // Lọc theo ngày gửi đến
     if (this.danhSachFilters.ngayGuiDen) {
       filteredData = filteredData.filter(item => {
-        if (!item.ngay_tao) return false;
-        const ngayTao = new Date(item.ngay_tao);
-        return ngayTao <= (this.danhSachFilters.ngayGuiDen as Date);
+        if (!item.ngay_gui) return false;
+        const ngayGui = new Date(item.ngay_gui);
+        return ngayGui <= (this.danhSachFilters.ngayGuiDen as Date);
       });
     }
 
@@ -878,23 +869,17 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       case 0: // Tất cả
         this.danhSachFilters.trangThai = null;
         break;
-      case 1: // Chưa gửi
-        this.danhSachFilters.trangThai = 'chua_gui';
+      case 1: // Chờ thanh toán
+        this.danhSachFilters.trangThai = 'cho_thanh_toan';
         break;
-      case 2: // Đã gửi
-        this.danhSachFilters.trangThai = 'da_gui';
+      case 2: // Đang xử lý
+        this.danhSachFilters.trangThai = 'dang_xu_ly';
         break;
-      case 3: // Đã duyệt
-        this.danhSachFilters.trangThai = 'da_duyet';
+      case 3: // Hoàn thành
+        this.danhSachFilters.trangThai = 'hoan_thanh';
         break;
       case 4: // Đã từ chối
         this.danhSachFilters.trangThai = 'da_tu_choi';
-        break;
-      case 5: // Chờ thanh toán (nếu có tab này)
-        this.danhSachFilters.trangThai = 'cho_thanh_toan';
-        break;
-      case 6: // Hoàn thành (nếu có tab này)
-        this.danhSachFilters.trangThai = 'hoan_thanh';
         break;
       default:
         this.danhSachFilters.trangThai = null;
@@ -1277,11 +1262,11 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     // Lấy danh sách đợt kê khai đã chọn
     const dotKeKhaiDaChonList = this.dotKeKhaiList.filter(d => this.danhSachDaChon.has(d.id!));
 
-    // Lọc ra những đợt có trạng thái "đã gửi"
-    const dotKeKhaiDaGuiList = dotKeKhaiDaChonList.filter(d => d.trang_thai === 'da_gui');
+    // Lọc ra những đợt có trạng thái "chờ thanh toán"
+    const dotKeKhaiDaGuiList = dotKeKhaiDaChonList.filter(d => d.trang_thai === 'cho_thanh_toan');
 
     if (dotKeKhaiDaGuiList.length === 0) {
-      this.message.warning('Không có đợt kê khai nào ở trạng thái "Đã gửi" để duyệt');
+      this.message.warning('Không có đợt kê khai nào ở trạng thái "Chờ thanh toán" để duyệt');
       return;
     }
 

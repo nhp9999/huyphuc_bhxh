@@ -973,6 +973,133 @@ namespace WebApp.API.Services
         }
 
         /// <summary>
+        /// Lấy nội dung HTML của biên lai điện tử không kiểm tra trạng thái thanh toán
+        /// </summary>
+        /// <param name="fkey">Chuỗi xác định biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Nội dung HTML của biên lai</returns>
+        public async Task<string> GetInvViewFkeyNoPay(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API getInvViewFkeyNoPay với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string portalServiceUrl = vnptAccount?.ServiceUrl.Replace("PublishService.asmx", "PortalService.asmx") ?? _portalServiceUrl;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <getInvViewFkeyNoPay xmlns=""http://tempuri.org/"">
+      <fkey>{fkey}</fkey>
+      <userName>{username}</userName>
+      <userPass>{password}</userPass>
+    </getInvViewFkeyNoPay>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(portalServiceUrl, "http://tempuri.org/getInvViewFkeyNoPay", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:getInvViewFkeyNoPayResult", nsManager)?.InnerText ?? "";
+                _logger.LogInformation($"Kết quả getInvViewFkeyNoPay: {result.Substring(0, Math.Min(100, result.Length))}...");
+
+                // Kiểm tra lỗi ERR:6
+                if (result == "ERR:6")
+                {
+                    _logger.LogWarning($"Gặp lỗi ERR:6 (Không tìm thấy hóa đơn) khi xem biên lai với fkey: {fkey}");
+
+                    // Thử sử dụng getLinkInvFkey thay thế
+                    string link = await GetLinkInvByFkey(fkey, vnptAccount);
+                    if (!link.StartsWith("Error:") && !link.StartsWith("ERR:"))
+                    {
+                        _logger.LogInformation($"Lấy được link biên lai: {link}");
+                        return $"<html><body><h2>Biên lai điện tử</h2><p>Biên lai điện tử của bạn đã được tạo thành công.</p><p>Bạn có thể xem biên lai tại đường dẫn sau:</p><p><a href='{link}' target='_blank'>{link}</a></p></body></html>";
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API getInvViewFkeyNoPay");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Tải biên lai điện tử dưới dạng PDF không kiểm tra trạng thái thanh toán
+        /// </summary>
+        /// <param name="fkey">Chuỗi xác định biên lai</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Chuỗi base64 của file PDF</returns>
+        public async Task<string> DownloadInvPDFFkeyNoPay(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API downloadInvPDFFkeyNoPay với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string portalServiceUrl = vnptAccount?.ServiceUrl.Replace("PublishService.asmx", "PortalService.asmx") ?? _portalServiceUrl;
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <downloadInvPDFFkeyNoPay xmlns=""http://tempuri.org/"">
+      <fkey>{fkey}</fkey>
+      <userName>{username}</userName>
+      <userPass>{password}</userPass>
+    </downloadInvPDFFkeyNoPay>
+  </soap:Body>
+</soap:Envelope>";
+
+                _logger.LogInformation($"SOAP Request: {soapRequest}");
+
+                // Gọi SOAP API
+                string response = await CallSoapApi(portalServiceUrl, "http://tempuri.org/downloadInvPDFFkeyNoPay", soapRequest);
+
+                // Xử lý response
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(response);
+                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                string result = xmlDoc.SelectSingleNode("//ns:downloadInvPDFFkeyNoPayResult", nsManager)?.InnerText ?? "";
+
+                // Kiểm tra lỗi
+                if (result.StartsWith("ERR:"))
+                {
+                    _logger.LogWarning($"Gặp lỗi {result} khi tải PDF biên lai với fkey: {fkey}");
+                    return result;
+                }
+
+                _logger.LogInformation($"Đã tải PDF biên lai thành công với fkey: {fkey}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API downloadInvPDFFkeyNoPay");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
         /// Lấy link biên lai dựa trên fkey
         /// </summary>
         /// <param name="fkey">Khóa biên lai</param>

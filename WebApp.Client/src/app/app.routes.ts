@@ -24,9 +24,9 @@ export const routes: Routes = [
       },
       { path: 'dot-ke-khai', loadComponent: () => import('./ke-khai/dot-ke-khai/dot-ke-khai.component').then(m => m.DotKeKhaiComponent) },
       { path: 'dot-ke-khai/:id/ke-khai-bhyt', loadComponent: () => import('./ke-khai/ke-khai-bhyt/ke-khai-bhyt.component').then(m => m.KeKhaiBHYTComponent) },
-      { 
-        path: 'dot-ke-khai/:id/ke-khai-bhxh', 
-        loadComponent: () => import('./ke-khai/ke-khai-bhxh/ke-khai-bhxh.component').then(m => m.KeKhaiBHXHComponent) 
+      {
+        path: 'dot-ke-khai/:id/ke-khai-bhxh',
+        loadComponent: () => import('./ke-khai/ke-khai-bhxh/ke-khai-bhxh.component').then(m => m.KeKhaiBHXHComponent)
       },
       {
         path: 'lich-su-ke-khai',
@@ -37,15 +37,15 @@ export const routes: Routes = [
         loadComponent: () => import('./ke-khai/admin-danh-sach-ke-khai/admin-danh-sach-ke-khai.component').then(m => m.AdminDanhSachKeKhaiComponent),
         canActivate: [AdminGuard]
       },
-      { 
+      {
         path: 'reports',
         children: [
           { path: 'statistics', component: StatisticsComponent }
         ]
       },
-      { 
-        path: 'don-vi', 
-        loadComponent: () => import('./ke-khai/don-vi/don-vi.component').then(m => m.DonViComponent) 
+      {
+        path: 'don-vi',
+        loadComponent: () => import('./ke-khai/don-vi/don-vi.component').then(m => m.DonViComponent)
       },
       {
         path: 'bien-lai',
@@ -78,8 +78,7 @@ export const routes: Routes = [
           },
           {
             path: 'dien-tu',
-            loadChildren: () => import('./bien-lai/bien-lai-dien-tu/bien-lai-dien-tu.module').then(m => m.BienLaiDienTuModule),
-            canActivate: [AdminGuard]
+            loadChildren: () => import('./bien-lai/bien-lai-dien-tu/bien-lai-dien-tu.module').then(m => m.BienLaiDienTuModule)
           },
           { path: '', redirectTo: 'danh-sach', pathMatch: 'full' }
         ]

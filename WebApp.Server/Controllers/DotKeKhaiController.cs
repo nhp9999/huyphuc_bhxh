@@ -54,6 +54,7 @@ namespace WebApp.API.Controllers
                         d.nguoi_tao,
                         d.don_vi_id,
                         d.ngay_tao,
+                        d.ngay_gui,
                         d.ma_ho_so,
                         DonVi = d.DonVi,
                         tong_so_tien = d.dich_vu == "BHYT"
@@ -106,6 +107,7 @@ namespace WebApp.API.Controllers
                         d.nguoi_tao,
                         d.don_vi_id,
                         d.ngay_tao,
+                        d.ngay_gui,
                         d.ma_ho_so,
                         DonVi = d.DonVi,
                         tong_so_tien = d.dich_vu == "BHYT"

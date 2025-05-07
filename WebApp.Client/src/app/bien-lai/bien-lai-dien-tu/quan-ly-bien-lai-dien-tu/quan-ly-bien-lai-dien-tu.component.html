@@ -113,7 +113,7 @@
     </thead>
     <tbody>
       <tr *ngFor="let item of basicTable.data; let i = index">
-        <td [nzChecked]="setOfCheckedId.has(item.id!)" (nzCheckedChange)="onItemChecked(item.id!, $event)"></td>
+        <td [nzChecked]="setOfCheckedId.has(item.id!)" [nzDisabled]="!!item.is_published_to_vnpt" (nzCheckedChange)="onItemChecked(item.id!, $event)"></td>
         <td>{{ i + 1 }}</td>
         <td>{{ item.ky_hieu }}</td>
         <td>{{ item.so_bien_lai }}</td>
@@ -137,11 +137,28 @@
           <nz-tag *ngIf="!item.is_published_to_vnpt" nzColor="warning">Chưa tạo</nz-tag>
         </td>
         <td>
-          <button nz-button nzType="primary" nzSize="small" (click)="showEditModal(item.id!)">
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="small"
+            (click)="showEditModal(item.id!)"
+            [disabled]="item.is_published_to_vnpt"
+            *ngIf="!item.is_published_to_vnpt"
+            nz-tooltip
+            nzTooltipTitle="Chỉnh sửa">
             <i nz-icon nzType="edit"></i>
           </button>
-          <nz-divider nzType="vertical"></nz-divider>
-          <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteBienLai(item.id!)">
+          <nz-divider nzType="vertical" *ngIf="!item.is_published_to_vnpt"></nz-divider>
+          <button
+            nz-button
+            nzType="primary"
+            nzDanger
+            nzSize="small"
+            (click)="deleteBienLai(item.id!)"
+            [disabled]="item.is_published_to_vnpt"
+            *ngIf="!item.is_published_to_vnpt"
+            nz-tooltip
+            nzTooltipTitle="Xóa">
             <i nz-icon nzType="delete"></i>
           </button>
           <nz-divider nzType="vertical"></nz-divider>
@@ -178,8 +195,18 @@
             nzTooltipTitle="Xem biên lai">
             <i nz-icon nzType="eye"></i>
           </button>
-
-
+          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
+          <a
+            nz-button
+            nzType="default"
+            nzSize="small"
+            [disabled]="!item.is_published_to_vnpt"
+            [href]="downloadBienLaiPdf(item.id!)"
+            target="_blank"
+            nz-tooltip
+            nzTooltipTitle="Tải PDF">
+            <i nz-icon nzType="file-pdf"></i>
+          </a>
         </td>
       </tr>
     </tbody>
@@ -242,6 +269,9 @@
           <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired>Mã nhân viên</nz-form-label>
           <nz-form-control [nzSm]="14" [nzXs]="24" nzErrorTip="Vui lòng nhập mã nhân viên">
             <input nz-input formControlName="ma_nhan_vien" />
+            <div *ngIf="!isAdmin" class="ant-form-item-explain ant-form-item-explain-info">
+              <div>Mã nhân viên được điền tự động từ tài khoản của bạn</div>
+            </div>
           </nz-form-control>
         </nz-form-item>
 
@@ -408,10 +438,16 @@
     </div>
     <ng-template #viewModalFooter>
       <button nz-button nzType="default" (click)="closeViewModal()">Đóng</button>
-      <button nz-button nzType="primary" (click)="openBienLaiInNewTab()">
-        <i nz-icon nzType="export"></i> Mở trong tab mới
+      <button
+        *ngIf="currentViewBienLaiId"
+        nz-button
+        nzType="primary"
+        (click)="downloadPdf()">
+        <i nz-icon nzType="file-pdf"></i> Tải PDF
       </button>
-
+      <button nz-button nzType="primary" (click)="printBienLai()">
+        <i nz-icon nzType="printer"></i> In biên lai
+      </button>
     </ng-template>
   </nz-modal>
 </div>
