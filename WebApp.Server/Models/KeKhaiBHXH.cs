@@ -92,10 +92,13 @@ namespace WebApp.API.Models
         [StringLength(50)]
         public string? ma_ho_so { get; set; }
 
+        [Column("he_so")]
+        public int? he_so { get; set; }
+
         [ForeignKey("thong_tin_the_id")]
         public virtual ThongTinThe? ThongTinThe { get; set; }
 
         [ForeignKey("dot_ke_khai_id")]
         public virtual DotKeKhai? DotKeKhai { get; set; }
     }
-} 
+}

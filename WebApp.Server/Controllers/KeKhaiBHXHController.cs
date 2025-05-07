@@ -116,28 +116,28 @@ namespace WebApp.API.Controllers
             try
             {
                 _logger.LogInformation("Nhận yêu cầu tạo kê khai BHXH");
-                
+
                 // Lấy thông tin từ request
                 if (!requestData.TryGetProperty("dot_ke_khai_id", out JsonElement dotKeKhaiIdElement))
                 {
                     return BadRequest(new { message = "Thiếu thông tin dot_ke_khai_id" });
                 }
-                
+
                 int dotKeKhaiId = dotKeKhaiIdElement.GetInt32();
-                
+
                 // Kiểm tra đợt kê khai tồn tại
                 var dotKeKhai = await _context.DotKeKhais.FindAsync(dotKeKhaiId);
                 if (dotKeKhai == null)
                 {
                     return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {dotKeKhaiId}" });
                 }
-                
+
                 // Lấy thông tin thẻ từ request
                 if (!requestData.TryGetProperty("thong_tin_the", out JsonElement thongTinTheElement))
                 {
                     return BadRequest(new { message = "Thiếu thông tin thẻ" });
                 }
-                
+
                 // Xử lý thông tin thẻ
                 var thongTinThe = new ThongTinThe
                 {
@@ -159,11 +159,11 @@ namespace WebApp.API.Controllers
                     nguoi_tao = GetStringProperty(requestData, "nguoi_tao"),
                     ngay_tao = DateTime.Now
                 };
-                
+
                 // Kiểm tra nếu thẻ đã tồn tại (dựa vào mã số BHXH hoặc CCCD)
                 var existingThe = await _context.ThongTinThes
                     .FirstOrDefaultAsync(t => t.ma_so_bhxh == thongTinThe.ma_so_bhxh || t.cccd == thongTinThe.cccd);
-                
+
                 if (existingThe != null)
                 {
                     // Cập nhật thông tin thẻ nếu đã tồn tại
@@ -179,7 +179,7 @@ namespace WebApp.API.Controllers
                     existingThe.ma_xa_ks = thongTinThe.ma_xa_ks;
                     existingThe.ma_dan_toc = thongTinThe.ma_dan_toc;
                     existingThe.ma_hgd = thongTinThe.ma_hgd;
-                    
+
                     _context.ThongTinThes.Update(existingThe);
                     thongTinThe = existingThe;
                 }
@@ -188,15 +188,21 @@ namespace WebApp.API.Controllers
                     // Thêm mới nếu chưa tồn tại
                     _context.ThongTinThes.Add(thongTinThe);
                 }
-                
+
                 await _context.SaveChangesAsync();
-                
+
+                // Lấy mức thu nhập
+                decimal mucThuNhap = GetDecimalProperty(requestData, "muc_thu_nhap");
+
+                // Tính hệ số dựa trên mức thu nhập
+                int heSo = GetHeSoFromMucThuNhap(mucThuNhap);
+
                 // Tạo kê khai BHXH
                 var keKhaiBHXH = new KeKhaiBHXH
                 {
                     dot_ke_khai_id = dotKeKhaiId,
                     thong_tin_the_id = thongTinThe.id,
-                    muc_thu_nhap = GetDecimalProperty(requestData, "muc_thu_nhap"),
+                    muc_thu_nhap = mucThuNhap,
                     ty_le_dong = GetDecimalProperty(requestData, "ty_le_dong"),
                     ty_le_nsnn = GetDecimalProperty(requestData, "ty_le_nsnn"),
                     loai_nsnn = GetStringProperty(requestData, "loai_nsnn"),
@@ -215,12 +221,13 @@ namespace WebApp.API.Controllers
                     ma_nhan_vien = GetStringProperty(requestData, "ma_nhan_vien", ""),
                     tinh_nkq = GetStringProperty(requestData, "tinh_nkq", ""),
                     huyen_nkq = GetStringProperty(requestData, "huyen_nkq", ""),
-                    xa_nkq = GetStringProperty(requestData, "xa_nkq", "")
+                    xa_nkq = GetStringProperty(requestData, "xa_nkq", ""),
+                    he_so = heSo
                 };
-                
+
                 _context.KeKhaiBHXHs.Add(keKhaiBHXH);
                 await _context.SaveChangesAsync();
-                
+
                 return CreatedAtAction(nameof(GetKeKhaiBHXH), new { dotKeKhaiId, id = keKhaiBHXH.id }, new { id = keKhaiBHXH.id });
             }
             catch (Exception ex)
@@ -238,8 +245,8 @@ namespace WebApp.API.Controllers
         // Các phương thức hỗ trợ để lấy giá trị từ JsonElement
         private string GetStringProperty(JsonElement element, string propertyName, string defaultValue = "")
         {
-            if (element.TryGetProperty(propertyName, out JsonElement property) && 
-                property.ValueKind != JsonValueKind.Null && 
+            if (element.TryGetProperty(propertyName, out JsonElement property) &&
+                property.ValueKind != JsonValueKind.Null &&
                 property.ValueKind != JsonValueKind.Undefined)
             {
                 return property.GetString() ?? defaultValue;
@@ -249,8 +256,8 @@ namespace WebApp.API.Controllers
 
         private decimal GetDecimalProperty(JsonElement element, string propertyName, decimal defaultValue = 0)
         {
-            if (element.TryGetProperty(propertyName, out JsonElement property) && 
-                property.ValueKind != JsonValueKind.Null && 
+            if (element.TryGetProperty(propertyName, out JsonElement property) &&
+                property.ValueKind != JsonValueKind.Null &&
                 property.ValueKind != JsonValueKind.Undefined)
             {
                 return property.GetDecimal();
@@ -260,8 +267,8 @@ namespace WebApp.API.Controllers
 
         private int GetInt32Property(JsonElement element, string propertyName, int defaultValue = 0)
         {
-            if (element.TryGetProperty(propertyName, out JsonElement property) && 
-                property.ValueKind != JsonValueKind.Null && 
+            if (element.TryGetProperty(propertyName, out JsonElement property) &&
+                property.ValueKind != JsonValueKind.Null &&
                 property.ValueKind != JsonValueKind.Undefined)
             {
                 return property.GetInt32();
@@ -271,8 +278,8 @@ namespace WebApp.API.Controllers
 
         private DateTime GetDateTimeProperty(JsonElement element, string propertyName, DateTime? defaultValue = null)
         {
-            if (element.TryGetProperty(propertyName, out JsonElement property) && 
-                property.ValueKind != JsonValueKind.Null && 
+            if (element.TryGetProperty(propertyName, out JsonElement property) &&
+                property.ValueKind != JsonValueKind.Null &&
                 property.ValueKind != JsonValueKind.Undefined)
             {
                 return DateTime.Parse(property.GetString());
@@ -355,7 +362,7 @@ namespace WebApp.API.Controllers
                 var dotKeKhai = await _context.DotKeKhais
                     .Include(d => d.DonVi)
                     .FirstOrDefaultAsync(d => d.id == dotKeKhaiId);
-                
+
                 if (dotKeKhai == null)
                 {
                     return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {dotKeKhaiId}" });
@@ -398,8 +405,8 @@ namespace WebApp.API.Controllers
                             "TienNSDP",
                             "TyleHotroKhac",
                             "TienHotroKhac",
-                            "TienTuDong",
-                            "TongTien",
+                            "TienTudong",
+                            "Tongtien",
                             "TenTinhDangSS",
                             "Matinh_DangSS",
                             "TenhuyenDangSS",
@@ -407,8 +414,8 @@ namespace WebApp.API.Controllers
                             "TenxaDangSS",
                             "Maxa_DangSS",
                             "Diachi_DangSS",
-                            "GhiChu",
-                            "PhuongPhuc",
+                            "Ghichu",
+                            "Phuongthuc",
                             "Heso",
                             "SoCCCD",
                             "SoBienLai",
@@ -436,19 +443,17 @@ namespace WebApp.API.Controllers
                             "TenTinhNN",
                             "Matinh_NN",
                             "TenHuyenNN",
+                            "Mahuyen_NN",
                             "TenXaNN",
                             "Maxa_NN",
                             "Diachi_NN"
                         };
 
-                        // Set header style và nội dung
+                        // Set header nội dung - không định dạng gì cả
                         for (int i = 0; i < headers.Count; i++)
                         {
                             worksheet.Cells[1, i + 1].Value = headers[i];
-                            worksheet.Cells[1, i + 1].Style.Font.Bold = true;
-                            worksheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                            worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-                            worksheet.Cells[1, i + 1].Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                            // Không áp dụng bất kỳ định dạng nào
                         }
 
                         // Fill data
@@ -456,19 +461,19 @@ namespace WebApp.API.Controllers
                         {
                             var item = keKhaiBHXHs[i];
                             int row = i + 2; // Dòng 1 là header
-                            
+
                             // Xác định loại đóng (1 = TM, 2 = DC)
                             int loai = item.phuong_an == "TM" ? 1 : 2;
-                            
+
                             // Phương án
                             string phuongAn = item.phuong_an;
-                            
+
                             // Tính tiền hỗ trợ (NSNN)
                             decimal tienHoTro = Math.Round(item.muc_thu_nhap * (item.ty_le_dong / 100) * ((item.ty_le_nsnn ?? 0) / 100));
-                            
+
                             // Tính tiền tự đóng
                             decimal tienTuDong = item.so_tien_can_dong - tienHoTro;
-                            
+
                             // Định dạng tháng bắt đầu thành mm/yyyy
                             string thangBatDau = "";
                             if (!string.IsNullOrEmpty(item.thang_bat_dau))
@@ -476,7 +481,7 @@ namespace WebApp.API.Controllers
                                 try
                                 {
                                     // Nếu tháng bắt đầu có định dạng yyyy-MM hoặc yyyy/MM
-                                    if (item.thang_bat_dau.Length >= 7 && 
+                                    if (item.thang_bat_dau.Length >= 7 &&
                                         (item.thang_bat_dau.Contains("-") || item.thang_bat_dau.Contains("/")))
                                     {
                                         var parts = item.thang_bat_dau.Split(new char[] { '-', '/' });
@@ -499,21 +504,21 @@ namespace WebApp.API.Controllers
                                     thangBatDau = item.thang_bat_dau;
                                 }
                             }
-                            
+
                             // Lấy thông tin tỉnh, huyện, xã
                             string tenTinh = item.tinh_nkq ?? "";
                             string tenHuyen = item.huyen_nkq ?? "";
                             string tenXa = item.xa_nkq ?? "";
-                            
+
                             // Xác định hệ số từ giá trị phuong_thuc_dong
                             int heSo = item.phuong_thuc_dong;
-                            
+
                             // Định dạng ngày biên lai
                             string ngayBienLai = item.ngay_bien_lai.HasValue ? item.ngay_bien_lai.Value.ToString("dd/MM/yyyy") : "";
-                            
+
                             // Xác định giới tính dạng số (1 = nam, 0 = nữ)
                             int gioiTinh = item.ThongTinThe.gioi_tinh?.ToLower() == "nam" ? 1 : 0;
-                            
+
                             // Định dạng ngày sinh
                             string ngaySinh = "";
                             if (!string.IsNullOrEmpty(item.ThongTinThe.ngay_sinh))
@@ -535,10 +540,10 @@ namespace WebApp.API.Controllers
                             // Dân tộc
                             string tenDanToc = "";
                             string danToc = item.ThongTinThe.ma_dan_toc ?? "";
-                            
+
                             // Phương phúc - Giá trị cho cột Z
                             string phuongPhuc = item.phuong_an == "TM" ? "TM" : "DC";
-                            
+
                             // Thông tin KCB
                             string maNhanVienThu = item.ma_nhan_vien;
                             string tenTinhKS = "";
@@ -547,7 +552,7 @@ namespace WebApp.API.Controllers
                             string maHuyenKS = item.ThongTinThe.ma_huyen_ks ?? "";
                             string tenXaKS = "";
                             string maXaKS = item.ThongTinThe.ma_xa_ks ?? "";
-                            
+
                             // Thông tin nơi ở
                             string tenTinhNN = "";
                             string maTinhNN = item.ThongTinThe.ma_tinh_nkq ?? "";
@@ -556,7 +561,7 @@ namespace WebApp.API.Controllers
                             string tenXaNN = "";
                             string maXaNN = item.ThongTinThe.ma_xa_nkq ?? "";
                             string diaChiNN = "";
-                            
+
                             // Thông tin bệnh viện
                             string tenTinhBenhVien = "";
                             string maTinhBenhVien = "";
@@ -580,7 +585,7 @@ namespace WebApp.API.Controllers
                             worksheet.Cells[row, 14].Value = 0; // TyleHotroKhac
                             worksheet.Cells[row, 15].Value = 0; // TienHotroKhac
                             worksheet.Cells[row, 16].Value = tienTuDong; // TienTuDong
-                            
+
                             // Các cột vừa thêm
                             worksheet.Cells[row, 17].Value = item.muc_thu_nhap; // TongTien
                             worksheet.Cells[row, 18].Value = tenTinh; // TenTinhDangSS
@@ -595,7 +600,7 @@ namespace WebApp.API.Controllers
                             worksheet.Cells[row, 27].Value = heSo; // Heso
                             worksheet.Cells[row, 28].Value = item.ThongTinThe.cccd; // SoCCCD
                             worksheet.Cells[row, 29].Value = item.so_bien_lai; // SoBienLai
-                            
+
                             // Các cột mới được thêm theo ảnh trước
                             worksheet.Cells[row, 30].Value = ngayBienLai; // NgayBienLai
                             worksheet.Cells[row, 31].Value = maNhanVienThu; // MaNhanvienThu
@@ -608,7 +613,7 @@ namespace WebApp.API.Controllers
                             worksheet.Cells[row, 38].Value = quocTich; // QuocTich
                             worksheet.Cells[row, 39].Value = tenDanToc; // TenDanToc
                             worksheet.Cells[row, 40].Value = danToc; // DanToc
-                            
+
                             // Các cột mới thêm từ ảnh mới về bệnh viện và KS
                             worksheet.Cells[row, 41].Value = tenTinhBenhVien; // TenTinhBenhVien
                             worksheet.Cells[row, 42].Value = maTinhBenhVien; // MaTinhBenhVien
@@ -623,29 +628,33 @@ namespace WebApp.API.Controllers
                             worksheet.Cells[row, 51].Value = tenTinhNN; // TenTinhNN
                             worksheet.Cells[row, 52].Value = maTinhNN; // Matinh_NN
                             worksheet.Cells[row, 53].Value = tenHuyenNN; // TenHuyenNN
-                            
+
                             // Các cột mới thêm từ ảnh mới nhất về xã nơi ở
                             worksheet.Cells[row, 54].Value = tenXaNN; // TenXaNN
                             worksheet.Cells[row, 55].Value = maXaNN; // Maxa_NN
                             worksheet.Cells[row, 56].Value = diaChiNN; // Diachi_NN
 
-                            // Format các ô số
-                            worksheet.Cells[row, 6].Style.Numberformat.Format = "#,##0"; // MucTien
-                            worksheet.Cells[row, 11].Style.Numberformat.Format = "#,##0"; // TienHotro
-                            worksheet.Cells[row, 13].Style.Numberformat.Format = "#,##0"; // TienNSDP
-                            worksheet.Cells[row, 15].Style.Numberformat.Format = "#,##0"; // TienHotroKhac
-                            worksheet.Cells[row, 16].Style.Numberformat.Format = "#,##0"; // TienTuDong
-                            worksheet.Cells[row, 17].Style.Numberformat.Format = "#,##0"; // TongTien
+                            // Không format các ô số, để dữ liệu thuần túy
 
-                            // Thêm border cho các ô
-                            for (int j = 1; j <= headers.Count; j++)
-                            {
-                                worksheet.Cells[row, j].Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
-                            }
+                            // Bỏ phần thêm border cho các ô dữ liệu
                         }
 
-                        // Tự động điều chỉnh độ rộng cột
-                        worksheet.Cells.AutoFitColumns();
+                        // Thiết lập độ rộng cột cố định thay vì tự động điều chỉnh
+                        // Thiết lập độ rộng cột cho các cột quan trọng
+                        worksheet.Column(1).Width = 5;     // STT
+                        worksheet.Column(2).Width = 30;    // Họ tên
+                        worksheet.Column(3).Width = 15;    // Mã số BHXH
+                        worksheet.Column(6).Width = 15;    // Mức tiền
+                        worksheet.Column(7).Width = 10;    // Từ tháng
+                        worksheet.Column(8).Width = 8;     // Số tháng
+                        worksheet.Column(11).Width = 15;   // Tiền hỗ trợ
+                        worksheet.Column(16).Width = 15;   // Tiền tự đóng
+                        worksheet.Column(17).Width = 15;   // Tổng tiền
+                        worksheet.Column(24).Width = 40;   // Địa chỉ
+                        worksheet.Column(28).Width = 15;   // Số CCCD
+                        worksheet.Column(29).Width = 15;   // Số biên lai
+                        worksheet.Column(30).Width = 15;   // Ngày biên lai
+                        worksheet.Column(31).Width = 15;   // Mã nhân viên thu
 
                         // Lưu workbook
                         package.Save();
@@ -663,5 +672,248 @@ namespace WebApp.API.Controllers
                 return StatusCode(500, new { message = "Lỗi khi xuất dữ liệu BHXH VNPT", error = ex.Message });
             }
         }
+        // GET: api/dot-ke-khai/{dotKeKhaiId}/ke-khai-bhxh-export-vnpt-sheetjs
+        [HttpGet]
+        [Route("{dotKeKhaiId}/ke-khai-bhxh-export-vnpt-sheetjs")]
+        public async Task<IActionResult> ExportBHXHVNPTSheetJS(int dotKeKhaiId)
+        {
+            try
+            {
+                // Kiểm tra đợt kê khai tồn tại
+                var dotKeKhai = await _context.DotKeKhais
+                    .Include(d => d.DonVi)
+                    .FirstOrDefaultAsync(d => d.id == dotKeKhaiId);
+
+                if (dotKeKhai == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {dotKeKhaiId}" });
+                }
+
+                // Lấy danh sách kê khai BHXH theo đợt kê khai
+                var keKhaiBHXHs = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .Where(k => k.dot_ke_khai_id == dotKeKhaiId)
+                    .ToListAsync();
+
+                if (keKhaiBHXHs.Count == 0)
+                {
+                    return NotFound(new { message = "Không có dữ liệu kê khai BHXH trong đợt này" });
+                }
+
+                // Chuẩn bị dữ liệu để trả về cho client
+                var result = new
+                {
+                    dotKeKhai = new
+                    {
+                        id = dotKeKhai.id,
+                        ten_dot = dotKeKhai.ten_dot,
+                        don_vi = dotKeKhai.DonVi != null ? new { id = dotKeKhai.DonVi.Id, ten_don_vi = dotKeKhai.DonVi.TenDonVi } : null
+                    },
+                    keKhaiBHXHs = keKhaiBHXHs.Select((item, index) => {
+                        // Loại mặc định là 1
+                        int loai = 1;
+
+                        // Phương án
+                        string phuongAn = item.phuong_an;
+
+                        // Tính tiền hỗ trợ (NSNN)
+                        decimal tienHoTro = Math.Round(item.muc_thu_nhap * (item.ty_le_dong / 100) * ((item.ty_le_nsnn ?? 0) / 100));
+
+                        // Tính tiền tự đóng
+                        decimal tienTuDong = item.so_tien_can_dong - tienHoTro;
+
+                        // Định dạng tháng bắt đầu thành mm/yyyy
+                        string thangBatDau = "";
+                        if (!string.IsNullOrEmpty(item.thang_bat_dau))
+                        {
+                            try
+                            {
+                                // Nếu tháng bắt đầu có định dạng yyyy-MM hoặc yyyy/MM
+                                if (item.thang_bat_dau.Length >= 7 &&
+                                    (item.thang_bat_dau.Contains("-") || item.thang_bat_dau.Contains("/")))
+                                {
+                                    var parts = item.thang_bat_dau.Split(new char[] { '-', '/' });
+                                    if (parts.Length >= 2)
+                                    {
+                                        // Chuyển từ yyyy-MM hoặc yyyy/MM thành MM/yyyy
+                                        thangBatDau = $"{parts[1]}/{parts[0]}";
+                                    }
+                                }
+                                else
+                                {
+                                    // Nếu là định dạng khác, thử chuyển sang DateTime và định dạng lại
+                                    var date = DateTime.Parse(item.thang_bat_dau);
+                                    thangBatDau = date.ToString("MM/yyyy");
+                                }
+                            }
+                            catch
+                            {
+                                // Nếu không chuyển đổi được, giữ nguyên giá trị
+                                thangBatDau = item.thang_bat_dau;
+                            }
+                        }
+
+                        // Lấy thông tin tỉnh, huyện, xã
+                        string tenTinh = item.tinh_nkq ?? "";
+                        string tenHuyen = item.huyen_nkq ?? "";
+                        string tenXa = item.xa_nkq ?? "";
+
+                        // Xác định hệ số dựa trên mức thu nhập
+                        int heSo = GetHeSoFromMucThuNhap(item.muc_thu_nhap);
+
+                        // Cập nhật hệ số nếu đã có trong cơ sở dữ liệu
+                        if (item.he_so.HasValue)
+                        {
+                            heSo = item.he_so.Value;
+                        }
+
+                        // Định dạng ngày biên lai
+                        string ngayBienLai = item.ngay_bien_lai.HasValue ? item.ngay_bien_lai.Value.ToString("dd/MM/yyyy") : "";
+
+                        // Xác định giới tính dạng số (1 = nam, 0 = nữ)
+                        int gioiTinh = item.ThongTinThe.gioi_tinh?.ToLower() == "nam" ? 1 : 0;
+
+                        // Định dạng ngày sinh - hiển thị đầy đủ
+                        string ngaySinh = "";
+                        if (!string.IsNullOrEmpty(item.ThongTinThe.ngay_sinh))
+                        {
+                            try
+                            {
+                                // Chuyển đổi sang DateTime và định dạng lại theo dd/MM/yyyy
+                                ngaySinh = DateTime.Parse(item.ThongTinThe.ngay_sinh).ToString("dd/MM/yyyy");
+                            }
+                            catch
+                            {
+                                // Nếu không chuyển đổi được, giữ nguyên giá trị
+                                ngaySinh = item.ThongTinThe.ngay_sinh;
+                            }
+                        }
+
+                        // Quốc tịch
+                        string tenQuocTich = "Việt Nam";
+                        string quocTich = item.ThongTinThe.quoc_tich ?? "VN";
+
+                        // Dân tộc
+                        string tenDanToc = "";
+                        string danToc = item.ThongTinThe.ma_dan_toc ?? "";
+
+                        // Phương phúc - Giá trị cho cột Z
+                        string phuongPhuc = item.phuong_an;
+
+                        // Thông tin KCB
+                        string maNhanVienThu = item.ma_nhan_vien;
+                        string tenTinhKS = "";
+                        string maTinhKS = item.ThongTinThe.ma_tinh_ks ?? "";
+                        string tenHuyenKS = "";
+                        string maHuyenKS = item.ThongTinThe.ma_huyen_ks ?? "";
+                        string tenXaKS = "";
+                        string maXaKS = item.ThongTinThe.ma_xa_ks ?? "";
+
+                        // Thông tin nơi ở
+                        string tenTinhNN = "";
+                        string maTinhNN = item.ThongTinThe.ma_tinh_nkq ?? "";
+                        string tenHuyenNN = "";
+                        string maHuyenNN = item.ThongTinThe.ma_huyen_nkq ?? "";
+                        string tenXaNN = "";
+                        string maXaNN = item.ThongTinThe.ma_xa_nkq ?? "";
+                        string diaChiNN = "";
+
+                        // Thông tin bệnh viện
+                        string tenTinhBenhVien = "";
+                        string maTinhBenhVien = "";
+                        string tenBenhVien = "";
+                        string maBenhVien = "";
+
+                        return new
+                        {
+                            stt = index + 1,
+                            ho_ten = item.ThongTinThe.ho_ten,
+                            ma_so_bhxh = item.ThongTinThe.ma_so_bhxh,
+                            loai,
+                            phuong_an = phuongAn,
+                            muc_tien = item.muc_thu_nhap,
+                            tu_thang = thangBatDau,
+                            so_thang = item.phuong_thuc_dong,
+                            ty_le = item.ty_le_dong,
+                            ty_le_nsnn = item.ty_le_nsnn,
+                            tien_ho_tro = tienHoTro,
+                            ty_le_nsdp = 0,
+                            tien_nsdp = 0,
+                            ty_le_ho_tro_khac = 0,
+                            tien_ho_tro_khac = 0,
+                            tien_tu_dong = tienTuDong,
+                            so_tien_can_dong = item.so_tien_can_dong,
+                            tong_tien = item.muc_thu_nhap,
+                            ten_tinh_dang_ss = tenTinh,
+                            ma_tinh_dang_ss = maTinhNN,
+                            ten_huyen_dang_ss = tenHuyen,
+                            ma_huyen_dang_ss = maHuyenNN,
+                            ten_xa_dang_ss = tenXa,
+                            ma_xa_dang_ss = maXaNN,
+                            dia_chi_dang_ss = ".",
+                            ghi_chu = item.ghi_chu,
+                            phuong_thuc = item.phuong_thuc_dong.ToString(),
+                            phuong_thuc_dong = item.phuong_thuc_dong,
+                            he_so = heSo,
+                            so_cccd = item.ThongTinThe.cccd,
+                            so_bien_lai = item.so_bien_lai,
+                            ngay_bien_lai = ngayBienLai,
+                            ma_nhan_vien_thu = maNhanVienThu,
+                            tk1_save = "",
+                            cmnd = item.ThongTinThe.cccd,
+                            ma_ho_gia_dinh = item.ThongTinThe.ma_hgd,
+                            ngay_sinh = ngaySinh,
+                            gioi_tinh = gioiTinh,
+                            ten_quoc_tich = tenQuocTich,
+                            quoc_tich = quocTich,
+                            ten_dan_toc = tenDanToc,
+                            dan_toc = danToc,
+                            ten_tinh_benh_vien = tenTinhBenhVien,
+                            ma_tinh_benh_vien = maTinhBenhVien,
+                            ten_benh_vien = tenBenhVien,
+                            ma_benh_vien = maBenhVien,
+                            ten_tinh_ks = tenTinhKS,
+                            ma_tinh_ks = maTinhKS,
+                            ten_huyen_ks = tenHuyenKS,
+                            ma_huyen_ks = maHuyenKS,
+                            ten_xa_ks = tenXaKS,
+                            ma_xa_ks = maXaKS,
+                            ten_tinh_nn = tenTinhNN,
+                            ma_tinh_nn = maTinhNN,
+                            ten_huyen_nn = tenHuyenNN,
+                            ma_huyen_nn = maHuyenNN,
+                            ten_xa_nn = tenXaNN,
+                            ma_xa_nn = maXaNN,
+                            dia_chi_nn = diaChiNN
+                        };
+                    }).ToList()
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi xuất dữ liệu BHXH VNPT SheetJS: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi xuất dữ liệu BHXH VNPT", error = ex.Message });
+            }
+        }
+        // Phương thức để lấy hệ số từ mức thu nhập
+        private int GetHeSoFromMucThuNhap(decimal mucThuNhap)
+        {
+            // Trường hợp đặc biệt cho mức thu nhập tối thiểu
+            if (mucThuNhap == 1500000)
+            {
+                return 0; // Mức tối thiểu tương ứng với hệ số 0
+            }
+
+            // Tính hệ số dựa trên công thức: CEIL((mức thu nhập - 1.500.000) / 50.000)
+            if (mucThuNhap < 1500000)
+            {
+                return 0; // Đảm bảo không có hệ số âm
+            }
+
+            // Làm tròn lên để đảm bảo hệ số luôn là số nguyên
+            return (int)Math.Ceiling((mucThuNhap - 1500000) / 50000);
+        }
     }
-} 
+}

@@ -18,7 +18,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { RouterModule, Router } from '@angular/router';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { UserService, DaiLy } from '../../services/user.service';
-import { 
+import {
   SaveOutline,
   PlusOutline,
   CloseOutline,
@@ -234,7 +234,7 @@ export class DotKeKhaiComponent implements OnInit {
     this.form.get('so_dot')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('thang')?.valueChanges.subscribe(() => this.updateTenDot());
     this.form.get('nam')?.valueChanges.subscribe(() => this.updateTenDot());
-    
+
     // Thêm sự kiện lắng nghe khi thay đổi đại lý
     this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
       if (daiLyId) {
@@ -278,7 +278,7 @@ export class DotKeKhaiComponent implements OnInit {
     this.loadData();
     this.loadDaiLys();
     this.updateTenDot();
-    
+
     // Theo dõi thay đổi của don_vi_id
     this.form.get('don_vi_id')?.valueChanges.subscribe(() => {
       this.updateSoDot();
@@ -328,10 +328,10 @@ export class DotKeKhaiComponent implements OnInit {
     this.dotKeKhaiService.getDotKeKhais().subscribe({
       next: (data) => {
         console.log('Danh sách đợt kê khai:', data);
-        
+
         // Lọc theo người tạo
         const filteredData = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
-        
+
         // Kiểm tra thông tin đơn vị
         filteredData.forEach(dot => {
           if (!dot.DonVi) {
@@ -340,7 +340,7 @@ export class DotKeKhaiComponent implements OnInit {
             console.warn(`Đơn vị của đợt kê khai ${dot.ten_dot} chưa có mã số BHXH`);
           }
         });
-        
+
         this.dotKeKhais = this.sortDotKeKhais(filteredData);
         this.filterData();
         this.loading = false;
@@ -364,14 +364,14 @@ export class DotKeKhaiComponent implements OnInit {
           // Nếu không có donViCongTac, lấy tất cả đại lý
           this.daiLys = data;
         }
-        
+
         // Nếu có đại lý và form chưa có giá trị đại lý, tự động set vào form
         // Sử dụng emitEvent: false để tránh kích hoạt sự kiện valueChanges
         if (this.daiLys.length === 1 && !this.form.get('dai_ly_id')?.value) {
           this.form.patchValue({
             dai_ly_id: this.daiLys[0].id
           }, { emitEvent: false });
-          
+
           // Gọi trực tiếp loadDonVisByDaiLy thay vì thông qua sự kiện valueChanges
           this.loadDonVisByDaiLy(this.daiLys[0].id);
         }
@@ -408,7 +408,7 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   getNextSoDot(nam: number): number {
-    const dotKeKhaisInYear = this.filteredDotKeKhais.filter(dot => 
+    const dotKeKhaisInYear = this.filteredDotKeKhais.filter(dot =>
       dot.nam === nam && dot.nguoi_tao === this.currentUser.username
     );
     if (dotKeKhaisInYear.length === 0) {
@@ -420,13 +420,13 @@ export class DotKeKhaiComponent implements OnInit {
 
   showModal(data?: DotKeKhai): void {
     this.isEdit = !!data;
-    
+
     // Tạm thởi hủy đăng ký sự kiện valueChanges của dai_ly_id để tránh gọi API nhiều lần
     const subscription = this.form.get('dai_ly_id')?.valueChanges.subscribe();
     if (subscription) {
       subscription.unsubscribe();
     }
-    
+
     // Load danh sách đại lý trước
     this.loading = true;
     this.userService.getDaiLys().subscribe({
@@ -438,24 +438,24 @@ export class DotKeKhaiComponent implements OnInit {
           // Nếu không có donViCongTac, lấy tất cả đại lý
           this.daiLys = daiLyData;
         }
-        
+
         if (data) {
           // Kiểm tra xem đại lý của đợt kê khai có tồn tại trong danh sách đại lý không
           const daiLyExists = this.daiLys.some(daiLy => daiLy.id === data.dai_ly_id);
-          
+
           // Nếu không tồn tại và chỉ có một đại lý, sử dụng đại lý đó
           if (!daiLyExists && this.daiLys.length === 1) {
             data.dai_ly_id = this.daiLys[0].id;
           }
-          
+
           // Disable các control khi cập nhật
           this.disableFormControls();
-          
+
           // Đầu tiên, load danh sách đơn vị dựa trên đại lý của đợt kê khai
           this.donViService.getDonVisByDaiLy(data.dai_ly_id).subscribe({
             next: (donViData) => {
               this.donVis = donViData;
-              
+
               // Sau khi có danh sách đơn vị, mới patch giá trị vào form
               this.form.patchValue({
                 id: data.id,
@@ -471,10 +471,10 @@ export class DotKeKhaiComponent implements OnInit {
                 is_bien_lai_dien_tu: data.is_bien_lai_dien_tu,
                 dai_ly_id: data.dai_ly_id
               }, { emitEvent: false });
-              
+
               this.loading = false;
               this.isVisible = true;
-              
+
               // Đăng ký lại sự kiện valueChanges của dai_ly_id sau khi đã cập nhật form
               this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
                 if (daiLyId) {
@@ -497,7 +497,7 @@ export class DotKeKhaiComponent implements OnInit {
         } else {
           // Enable lại các control khi thêm mới
           this.enableFormControls();
-          
+
           this.form.reset({
             ten_dot: '',
             so_dot: 1,
@@ -511,16 +511,16 @@ export class DotKeKhaiComponent implements OnInit {
             is_bien_lai_dien_tu: true, // Tự động chọn sử dụng biên lai điện tử
             dai_ly_id: this.daiLys.length === 1 ? this.daiLys[0].id : null
           }, { emitEvent: false });
-          
+
           // Nếu có đại lý được chọn, load danh sách đơn vị
           const daiLyId = this.form.get('dai_ly_id')?.value;
           if (daiLyId) {
             this.loadDonVisByDaiLy(daiLyId);
           }
-          
+
           this.loading = false;
           this.isVisible = true;
-          
+
           // Đăng ký lại sự kiện valueChanges của dai_ly_id sau khi đã cập nhật form
           this.form.get('dai_ly_id')?.valueChanges.subscribe(daiLyId => {
             if (daiLyId) {
@@ -547,11 +547,11 @@ export class DotKeKhaiComponent implements OnInit {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const nextSoDot = this.getNextSoDot(currentYear);
-    
+
     // Enable lại các controls
     this.enableFormControls();
-    
-    this.form.reset({ 
+
+    this.form.reset({
       so_dot: nextSoDot,
       thang: currentDate.getMonth() + 1,
       nam: currentYear,
@@ -570,7 +570,7 @@ export class DotKeKhaiComponent implements OnInit {
   handleOk(): void {
     if (this.form.valid) {
       const formValue = this.form.getRawValue();
-      
+
       // Kiểm tra đại lý trước khi tạo/cập nhật
       const daiLyId = formValue.dai_ly_id;
       if (daiLyId === undefined || daiLyId === null) {
@@ -596,11 +596,11 @@ export class DotKeKhaiComponent implements OnInit {
           return;
         }
       }
-      
+
       // Kiểm tra đơn vị trước khi tạo/cập nhật
       const donViId = formValue.don_vi_id;
       const donVi = this.donVis.find(d => d.id === donViId);
-      
+
       if (!donVi) {
         this.message.warning('Vui lòng chọn đơn vị');
         return;
@@ -700,7 +700,7 @@ export class DotKeKhaiComponent implements OnInit {
           this.message.success('Thêm mới đợt kê khai thành công');
           this.isVisible = false;
           this.loadData();
-          
+
           // Chuyển hướng dựa trên loại dịch vụ
           if (response && response.id) {
             if (response.dich_vu === 'BHYT') {
@@ -725,7 +725,7 @@ export class DotKeKhaiComponent implements OnInit {
 
   delete(id: number | undefined): void {
     if (!id) return;
-    
+
     this.modal.confirm({
       nzTitle: 'Xác nhận xóa',
       nzContent: 'Bạn có chắc chắn muốn xóa đợt kê khai này?',
@@ -817,7 +817,7 @@ export class DotKeKhaiComponent implements OnInit {
       'chua_gui': 'default',
       'da_gui': 'processing',
       'dang_xu_ly': 'cyan',
-      'cho_thanh_toan': 'warning', 
+      'cho_thanh_toan': 'warning',
       'hoan_thanh': 'success',
       'tu_choi': 'error'
     };
@@ -830,7 +830,7 @@ export class DotKeKhaiComponent implements OnInit {
       'da_gui': 'Đã gửi',
       'dang_xu_ly': 'Đang xử lý',
       'cho_thanh_toan': 'Chờ thanh toán',
-      'hoan_thanh': 'Hoàn thành', 
+      'hoan_thanh': 'Hoàn thành',
       'tu_choi': 'Từ chối'
     };
     return texts[trangThai] || trangThai;
@@ -879,7 +879,7 @@ export class DotKeKhaiComponent implements OnInit {
     this.dotKeKhaiService.getDotKeKhai(data.id!).subscribe({
       next: (dotKeKhai) => {
         this.loading = false;
-        
+
         // Kiểm tra thông tin đơn vị từ cache trước
         const donVi = this.donVis.find(d => d.id === dotKeKhai.don_vi_id);
         if (!donVi) {
@@ -969,16 +969,16 @@ export class DotKeKhaiComponent implements OnInit {
               if (!a.so_bien_lai && !b.so_bien_lai) return 0;
               if (!a.so_bien_lai) return 1;
               if (!b.so_bien_lai) return -1;
-              
+
               // Nếu cùng quyển biên lai, so sánh số biên lai
               if (a.QuyenBienLai?.quyen_so === b.QuyenBienLai?.quyen_so) {
                 return parseInt(a.so_bien_lai) - parseInt(b.so_bien_lai);
               }
-              
+
               // Nếu khác quyển biên lai, so sánh quyển biên lai
               return (a.QuyenBienLai?.quyen_so || '').localeCompare(b.QuyenBienLai?.quyen_so || '');
             });
-            
+
             // Cập nhật lại STT sau khi sắp xếp
             keKhaiBHYTs = keKhaiBHYTs.map((item, index) => ({
               ...item,
@@ -1067,11 +1067,11 @@ export class DotKeKhaiComponent implements OnInit {
               Array(13).fill(''),  // Dòng 1 trống với 13 cột
               Array(13).fill('')   // Dòng 2 trống với 13 cột
             ];
-            
+
             const keKhaiData = keKhaiBHYTs.map((item: any) => [
               item.stt, // Sử dụng STT từ API
               item.ho_ten,
-              item.ma_so_bhxh || '', 
+              item.ma_so_bhxh || '',
               maNhanVien, // Sử dụng mã nhân viên từ API
               '1', // Cột E giá trị mặc định là 1
               this.getPhuongAnDongText(item.phuong_an_dong || ''),
@@ -1081,8 +1081,8 @@ export class DotKeKhaiComponent implements OnInit {
                 month: '2-digit',
                 year: 'numeric'
               }) : '',
-              item.so_bien_lai ? (item.QuyenBienLai ? 
-                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+              item.so_bien_lai ? (item.QuyenBienLai ?
+                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
                 item.so_bien_lai
               ) : '',
               typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
@@ -1146,8 +1146,8 @@ export class DotKeKhaiComponent implements OnInit {
               '', // Cột BG trống
               '', // Cột BH trống
               item.cccd || '', // Cột BI hiển thị CCCD
-              item.so_bien_lai ? (item.QuyenBienLai ? 
-                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+              item.so_bien_lai ? (item.QuyenBienLai ?
+                `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
                 item.so_bien_lai
               ) : '', // Cột BJ - Số biên lai
               item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
@@ -1166,12 +1166,12 @@ export class DotKeKhaiComponent implements OnInit {
             // Tạo style cho sheet
             ws['!cols'] = [
               { wch: 8 },  // STT
-              { wch: 30 }, // HoTen  
+              { wch: 30 }, // HoTen
               { wch: 15 }, // Mã số BHXH
               { wch: 10 }, // Cột D trống
               { wch: 10 }, // Cột E trống
               { wch: 15 }, // Phương án đóng
-              { wch: 10 }, // Cột G trống 
+              { wch: 10 }, // Cột G trống
               { wch: 15 }, // Ngày biên lai
               { wch: 10 }, // Cột I trống
               { wch: 15 }, // Người thứ
@@ -1232,7 +1232,7 @@ export class DotKeKhaiComponent implements OnInit {
 
             // Xuất file Excel
             XLSX.writeFile(wb, `ke-khai-bhyt-${data.ten_dot.toLowerCase().replace(/\s+/g, '-')}.xlsx`);
-            
+
             this.message.success('Xuất dữ liệu kê khai BHYT thành công');
             this.loading = false;
           },
@@ -1263,29 +1263,29 @@ export class DotKeKhaiComponent implements OnInit {
   // Thêm hàm kiểm tra tuổi
   isUnder18(ngaySinh: string | Date | null | undefined): boolean {
     if (!ngaySinh) return false;
-    
+
     const birthDate = new Date(ngaySinh);
     const today = new Date();
-    
+
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     // Nếu chưa tới tháng sinh nhật hoặc tới tháng sinh nhật nhưng chưa tới ngày sinh nhật
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
+
     return age < 18;
   }
 
   showViewBillModal(url: string): void {
     // Tìm đợt kê khai tương ứng với hóa đơn này
     const dotKeKhai = this.dotKeKhais.find(d => d.url_bill === url);
-    
+
     this.selectedBillUrl = url;
     this.selectedDotKeKhai = dotKeKhai || null;
     this.isViewBillModalVisible = true;
-    
+
     // Reset các giá trị zoom và xoay
     this.zoomLevel = 1;
     this.rotationDegree = 0;
@@ -1298,48 +1298,48 @@ export class DotKeKhaiComponent implements OnInit {
     this.zoomLevel = 1;
     this.rotationDegree = 0;
   }
-  
+
   // Thêm các phương thức mới cho modal xem hóa đơn
   zoomIn(): void {
     if (this.zoomLevel < 3) {
       this.zoomLevel += 0.1;
     }
   }
-  
+
   zoomOut(): void {
     if (this.zoomLevel > 0.5) {
       this.zoomLevel -= 0.1;
     }
   }
-  
+
   resetZoom(): void {
     this.zoomLevel = 1;
     this.rotationDegree = 0;
   }
-  
+
   rotateLeft(): void {
     this.rotationDegree = (this.rotationDegree - 90) % 360;
   }
-  
+
   rotateRight(): void {
     this.rotationDegree = (this.rotationDegree + 90) % 360;
   }
-  
+
   downloadBill(): void {
     if (!this.selectedBillUrl) {
       this.message.error('Không có hình ảnh hóa đơn để tải xuống');
       return;
     }
-    
+
     if (!this.selectedDotKeKhai) {
       this.message.error('Không có thông tin đợt kê khai');
       return;
     }
-    
+
     // Lấy mã hồ sơ và mã nhân viên
     const maHoSo = this.selectedDotKeKhai.ma_ho_so || 'unknown';
     const maNhanVien = this.currentUser.username || 'unknown';
-    
+
     // Tạo một thẻ a ẩn để tải xuống hình ảnh
     const link = document.createElement('a');
     link.href = this.selectedBillUrl;
@@ -1347,37 +1347,37 @@ export class DotKeKhaiComponent implements OnInit {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     this.message.success('Đang tải xuống hóa đơn');
   }
 
   downloadAllBills(): void {
     // Lấy danh sách các đợt kê khai đã chọn
     const selectedDotKeKhais = this.dotKeKhais.filter(item => this.checkedSet.has(item.id!));
-    
+
     // Kiểm tra nếu không có đợt kê khai nào được chọn
     if (selectedDotKeKhais.length === 0) {
       this.message.warning('Vui lòng chọn ít nhất một đợt kê khai có hóa đơn');
       return;
     }
-    
+
     // Lọc các đợt kê khai có hóa đơn
     const dotKeKhaisWithBill = selectedDotKeKhais.filter(item => item.url_bill);
-    
+
     if (dotKeKhaisWithBill.length === 0) {
       this.message.warning('Không có hóa đơn nào trong các đợt kê khai đã chọn');
       return;
     }
-    
+
     // Hiển thị thông báo đang tải
     const loadingMessageId = this.message.loading(`Đang chuẩn bị tải ${dotKeKhaisWithBill.length} hóa đơn...`, { nzDuration: 0 }).messageId;
-    
+
     // Lấy mã nhân viên
     const maNhanVien = this.currentUser.username || 'unknown';
-    
+
     // Tạo một mảng để lưu trữ các blob của ảnh
     const imageBlobs: { fileName: string, blob: Blob }[] = [];
-    
+
     // Hàm tải ảnh từ URL
     const downloadImage = (dotKeKhai: DotKeKhai) => {
       return new Promise<void>((resolve, reject) => {
@@ -1385,7 +1385,7 @@ export class DotKeKhaiComponent implements OnInit {
           resolve();
           return;
         }
-        
+
         // Tải ảnh từ URL
         fetch(dotKeKhai.url_bill)
           .then(response => {
@@ -1397,14 +1397,14 @@ export class DotKeKhaiComponent implements OnInit {
           .then(blob => {
             // Lấy mã hồ sơ và đảm bảo không có ký tự đặc biệt
             const maHoSo = (dotKeKhai.ma_ho_so || 'unknown').replace(/[\/\\:*?"<>|]/g, '_');
-            
+
             // Tạo tên file theo cú pháp "mã hồ sơ_mã nhân viên.jpg"
             // Đảm bảo không có ký tự đặc biệt trong tên file
             const fileName = `${maHoSo}_${maNhanVien.replace(/[\/\\:*?"<>|]/g, '_')}.jpg`;
-            
+
             // Thêm vào mảng imageBlobs
             imageBlobs.push({ fileName, blob });
-            
+
             resolve();
           })
           .catch(error => {
@@ -1413,25 +1413,25 @@ export class DotKeKhaiComponent implements OnInit {
           });
       });
     };
-    
+
     // Tải tất cả ảnh
     const downloadPromises = dotKeKhaisWithBill.map(dotKeKhai => downloadImage(dotKeKhai));
-    
+
     Promise.all(downloadPromises)
       .then(() => {
         try {
           // Tạo file ZIP mới
           const zip = new JSZip();
-          
+
           // Thêm các ảnh vào ZIP
           imageBlobs.forEach(item => {
             // Đảm bảo tên file không chứa đường dẫn
             const simpleName = item.fileName.split(/[\/\\]/).pop() || item.fileName;
             zip.file(simpleName, item.blob);
           });
-          
+
           // Tạo file ZIP
-          return zip.generateAsync({ 
+          return zip.generateAsync({
             type: 'blob',
             compression: 'DEFLATE',
             compressionOptions: { level: 9 }
@@ -1443,7 +1443,7 @@ export class DotKeKhaiComponent implements OnInit {
       .then(content => {
         // Tải xuống file ZIP
         saveAs(content, `hoa-don.zip`);
-        
+
         // Đóng thông báo loading và hiển thị thông báo thành công
         this.message.remove(loadingMessageId);
         this.message.success(`Đã tải xuống ${imageBlobs.length} hóa đơn thành công`);
@@ -1459,7 +1459,7 @@ export class DotKeKhaiComponent implements OnInit {
   getSelectedBillCount(): number {
     // Lấy danh sách các đợt kê khai đã chọn
     const selectedDotKeKhais = this.dotKeKhais.filter(item => this.checkedSet.has(item.id!));
-    
+
     // Đếm số lượng đợt kê khai có hóa đơn
     return selectedDotKeKhais.filter(item => item.url_bill).length;
   }
@@ -1469,10 +1469,10 @@ export class DotKeKhaiComponent implements OnInit {
     console.log('Đợt kê khai cần gửi:', data);
     const useBienLaiDienTu = !!(data.is_bien_lai_dien_tu || data.bien_lai_dien_tu);
     console.log('Sử dụng biên lai điện tử:', useBienLaiDienTu);
-    
+
     // Cập nhật biến willUseBienLaiDienTu để hiển thị thông báo trong modal
     this.willUseBienLaiDienTu = useBienLaiDienTu;
-    
+
     // Hiển thị modal xác nhận gửi đợt kê khai
     this.modal.confirm({
       nzTitle: 'Xác nhận gửi',
@@ -1509,7 +1509,7 @@ export class DotKeKhaiComponent implements OnInit {
   // Thêm hàm loadDonVisByDaiLy
   loadDonVisByDaiLy(daiLyId?: number): void {
     this.isLoadingDonVis = true;
-    
+
     if (!daiLyId) {
       this.donVis = [];
       this.isLoadingDonVis = false;
@@ -1520,13 +1520,13 @@ export class DotKeKhaiComponent implements OnInit {
     this.donViService.getDonVisByDaiLy(daiLyId).subscribe({
       next: (donVis) => {
         this.donVis = donVis;
-        
+
         // Kiểm tra nếu có đơn vị nào không có mã số BHXH thì hiển thị cảnh báo
         const donVisWithoutMaSoBHXH = donVis.filter(donVi => !donVi.maSoBHXH);
         if (donVisWithoutMaSoBHXH.length > 0) {
           console.warn('Có đơn vị không có mã số BHXH:', donVisWithoutMaSoBHXH);
         }
-        
+
         // Nếu đợt kê khai đã có đơn vị, thì chọn đơn vị đó
         if (this.dotKeKhai && this.dotKeKhai.don_vi_id) {
           const donVi = this.donVis.find(dv => dv.id === this.dotKeKhai.don_vi_id);
@@ -1537,7 +1537,7 @@ export class DotKeKhaiComponent implements OnInit {
             });
           }
         }
-        
+
         this.isLoadingDonVis = false;
       },
       error: (error) => {
@@ -1580,29 +1580,212 @@ export class DotKeKhaiComponent implements OnInit {
       this.message.error('Không tìm thấy thông tin đợt kê khai');
       return;
     }
-    
+
     this.loading = true;
     this.message.loading('Đang xuất dữ liệu BHXH VNPT...', { nzDuration: 0 });
-    
-    // Gọi API để lấy dữ liệu BHXH của đợt kê khai này
-    this.http.get(`${this.apiUrl}/${data.id}/ke-khai-bhxh-export-vnpt`, { 
-      responseType: 'blob' 
-    }).subscribe({
-      next: (blob: Blob) => {
-        // Tạo tên file dựa trên thông tin đợt kê khai
-        const fileName = `BHXH_VNPT_${data.ten_dot?.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`;
-        
-        // Sử dụng file-saver để lưu file
-        saveAs(blob, fileName);
-        
-        this.message.remove();
-        this.message.success('Đã xuất dữ liệu BHXH VNPT thành công');
-        this.loading = false;
+
+    // Gọi API mới để lấy dữ liệu JSON thay vì file Excel
+    this.http.get(`${this.apiUrl}/${data.id}/ke-khai-bhxh-export-vnpt-sheetjs`).subscribe({
+      next: (response: any) => {
+        try {
+          // Tạo workbook mới
+          const wb = XLSX.utils.book_new();
+
+          // Thêm 2 dòng trống
+          const emptyRows = [
+            Array(13).fill(''),  // Dòng 1 trống với 13 cột
+            Array(13).fill('')   // Dòng 2 trống với 13 cột
+          ];
+
+          // Tạo header cho worksheet
+          const headers = [
+            'STT',
+            'HoTen',
+            'MasoBHXH',
+            'Loai',
+            'PA',
+            'MucTien',
+            'Tuthang',
+            'Sothang',
+            'Tyle',
+            'TyleNSNN',
+            'TienHotro',
+            'TyleNSDP',
+            'TienNSDP',
+            'TyleHotroKhac',
+            'TienHotroKhac',
+            'TienTudong',
+            'Tongtien',
+            'TenTinhDangSS',
+            'Matinh_DangSS',
+            'TenhuyenDangSS',
+            'Mahuyen_DangSS',
+            'TenxaDangSS',
+            'Maxa_DangSS',
+            'Diachi_DangSS',
+            'Ghichu',
+            'Phuongthuc',
+            'Heso',
+            'SoCCCD',
+            'SoBienLai',
+            'NgayBienLai',
+            'MaNhanvienThu',
+            'Tk1_Save',
+            'CMND',
+            'Maho_Giadinh',
+            'NgaySinh',
+            'GioiTinh',
+            'TenQuocTich',
+            'QuocTich',
+            'TenDanToc',
+            'DanToc',
+            'TenTinhBenhVien',
+            'MaTinhBenhVien',
+            'TenBenhVien',
+            'MaBenhVien',
+            'TenTinhKS',
+            'Matinh_KS',
+            'TenHuyenKS',
+            'Mahuyen_KS',
+            'TenXaKS',
+            'Maxa_KS',
+            'TenTinhNN',
+            'Matinh_NN',
+            'TenHuyenNN',
+            'Mahuyen_NN',
+            'TenXaNN',
+            'Maxa_NN',
+            'Diachi_NN'
+          ];
+
+          // Chuyển đổi dữ liệu từ JSON sang định dạng mảng 2 chiều cho XLSX
+          const keKhaiBHXHs = response.keKhaiBHXHs || [];
+          const keKhaiData = keKhaiBHXHs.map((item: any) => {
+            // Giữ nguyên phương án đóng
+            const phuongAn = item.phuong_an;
+
+            return [
+              item.stt,
+              item.ho_ten,
+              item.ma_so_bhxh,
+              1, // Cột loại mặc định là 1
+              phuongAn, // Sử dụng giá trị đã được xử lý
+              item.muc_tien,
+              item.tu_thang,
+              item.so_thang,
+              item.ty_le,
+              item.ty_le_nsnn,
+              item.tien_ho_tro,
+              item.ty_le_nsdp,
+              item.tien_nsdp,
+              item.ty_le_ho_tro_khac,
+              item.tien_ho_tro_khac,
+              item.so_tien_can_dong, // Sử dụng so_tien_can_dong thay vì tien_tu_dong
+              item.tong_tien,
+              item.ten_tinh_dang_ss,
+              item.ma_tinh_dang_ss,
+              item.ten_huyen_dang_ss,
+              item.ma_huyen_dang_ss,
+              item.ten_xa_dang_ss,
+              item.ma_xa_dang_ss,
+              item.dia_chi_dang_ss || ".",
+              item.ghi_chu,
+              item.phuong_thuc_dong, // Sử dụng phuong_thuc_dong cho cột phương thức
+              item.he_so,
+              item.so_cccd,
+              item.so_bien_lai,
+              item.ngay_bien_lai,
+              item.ma_nhan_vien_thu,
+              item.tk1_save,
+              item.cmnd,
+              item.ma_ho_gia_dinh,
+              item.ngay_sinh,
+              item.gioi_tinh,
+              item.ten_quoc_tich,
+              item.quoc_tich,
+              item.ten_dan_toc,
+              item.dan_toc,
+              item.ten_tinh_benh_vien,
+              item.ma_tinh_benh_vien,
+              item.ten_benh_vien,
+              item.ma_benh_vien,
+              item.ten_tinh_ks,
+              item.ma_tinh_ks,
+              item.ten_huyen_ks,
+              item.ma_huyen_ks,
+              item.ten_xa_ks,
+              item.ma_xa_ks,
+              item.ten_tinh_nn,
+              item.ma_tinh_nn,
+              item.ten_huyen_nn,
+              item.ma_huyen_nn,
+              item.ten_xa_nn,
+              item.ma_xa_nn,
+              item.dia_chi_nn
+            ];
+          });
+
+          // Tạo worksheet từ dữ liệu
+          const ws = XLSX.utils.aoa_to_sheet([...emptyRows, headers, ...keKhaiData]);
+
+          // Thiết lập độ rộng cột
+          ws['!cols'] = [
+            { wch: 5 },     // STT
+            { wch: 30 },    // Họ tên
+            { wch: 15 },    // Mã số BHXH
+            { wch: 8 },     // Loại
+            { wch: 8 },     // PA
+            { wch: 15 },    // Mức tiền
+            { wch: 10 },    // Từ tháng
+            { wch: 8 },     // Số tháng
+            { wch: 8 },     // Tỷ lệ
+            { wch: 10 },    // Tỷ lệ NSNN
+            { wch: 15 },    // Tiền hỗ trợ
+            { wch: 10 },    // Tỷ lệ NSDP
+            { wch: 15 },    // Tiền NSDP
+            { wch: 15 },    // Tỷ lệ hỗ trợ khác
+            { wch: 15 },    // Tiền hỗ trợ khác
+            { wch: 15 },    // Tiền tự đóng
+            { wch: 15 },    // Tổng tiền
+            { wch: 20 },    // Tên tỉnh đăng ký
+            { wch: 15 },    // Mã tỉnh đăng ký
+            { wch: 20 },    // Tên huyện đăng ký
+            { wch: 15 },    // Mã huyện đăng ký
+            { wch: 20 },    // Tên xã đăng ký
+            { wch: 15 },    // Mã xã đăng ký
+            { wch: 40 },    // Địa chỉ đăng ký
+            { wch: 20 },    // Ghi chú
+            { wch: 15 },    // Phương thức
+            { wch: 8 },     // Hệ số
+            { wch: 15 },    // Số CCCD
+            { wch: 15 },    // Số biên lai
+            { wch: 15 },    // Ngày biên lai
+            { wch: 15 },    // Mã nhân viên thu
+          ];
+
+          // Thêm worksheet vào workbook
+          XLSX.utils.book_append_sheet(wb, ws, 'Dữ Liệu');
+
+          // Tạo tên file với timestamp
+          const fileName = `BHXH_VNPT_${data.ten_dot?.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`;
+
+          // Xuất file Excel
+          XLSX.writeFile(wb, fileName);
+
+          this.message.remove();
+          this.message.success('Đã xuất dữ liệu BHXH VNPT thành công');
+        } catch (error) {
+          console.error('Lỗi khi tạo file Excel:', error);
+          this.message.remove();
+          this.message.error('Có lỗi xảy ra khi tạo file Excel');
+        } finally {
+          this.loading = false;
+        }
       },
       error: (error) => {
-        console.error('Lỗi khi xuất dữ liệu BHXH VNPT:', error);
+        console.error('Lỗi khi lấy dữ liệu BHXH VNPT:', error);
         this.message.remove();
-        this.message.error('Có lỗi xảy ra khi xuất dữ liệu BHXH VNPT');
+        this.message.error('Có lỗi xảy ra khi lấy dữ liệu BHXH VNPT');
         this.loading = false;
       }
     });
@@ -1644,11 +1827,11 @@ export class DotKeKhaiComponent implements OnInit {
       this.message.warning('Chức năng xuất D03-TS chỉ áp dụng cho đợt kê khai BHYT');
       return;
     }
-    
+
     try {
       this.loading = true;
       const messageId = this.message.loading('Đang chuẩn bị xuất D03-TS...', { nzDuration: 0 }).messageId;
-      
+
       // Kiểm tra thông tin đơn vị
       const donVi = this.donVis.find(d => d.id === data.don_vi_id);
       if (!donVi) {
@@ -1663,10 +1846,10 @@ export class DotKeKhaiComponent implements OnInit {
         this.message.remove(messageId);
         this.message.warning('Đơn vị chưa có mã số BHXH, dữ liệu xuất có thể không đầy đủ');
       }
-      
+
       // Lấy thông tin đại lý
       const daiLy = this.daiLys.find(d => d.id === data.dai_ly_id);
-      
+
       // Chuẩn bị options cho D03
       const options = {
         tenCongTy: donVi.tenDonVi || '',
@@ -1678,7 +1861,7 @@ export class DotKeKhaiComponent implements OnInit {
         dotKeKhaiId: data.id,
         tenDotKeKhai: data.ten_dot || ''
       };
-      
+
       // Gọi service để xuất D03-TS và xử lý kết quả
       this.d03Service.getD03Data(data.id!).subscribe({
         next: (d03Data) => {
@@ -1688,7 +1871,7 @@ export class DotKeKhaiComponent implements OnInit {
             this.loading = false;
             return;
           }
-          
+
           try {
             // Xuất dữ liệu ra Excel
             this.d03Service.xuatExcelMauD03TS(d03Data, options);
@@ -1705,7 +1888,7 @@ export class DotKeKhaiComponent implements OnInit {
         error: (error) => {
           console.error('Lỗi khi lấy dữ liệu D03-TS:', error);
           this.message.remove(messageId);
-          
+
           if (error.status === 404) {
             this.message.error(`Không tìm thấy dữ liệu D03-TS cho đợt kê khai ID: ${data.id}`);
           } else if (error.status === 403) {
@@ -1715,7 +1898,7 @@ export class DotKeKhaiComponent implements OnInit {
           } else {
             this.message.error('Có lỗi xảy ra khi lấy dữ liệu D03-TS: ' + (error.message || 'Lỗi không xác định'));
           }
-          
+
           this.loading = false;
         }
       });
@@ -1729,16 +1912,16 @@ export class DotKeKhaiComponent implements OnInit {
   // Hàm kiểm tra xem có đợt kê khai BHYT nào được chọn không
   hasBHYTSelected(): boolean {
     if (this.selectedIds.length === 0) return false;
-    
+
     // Kiểm tra xem có ít nhất một đợt kê khai BHYT được chọn
-    return this.dotKeKhais.some(dot => 
+    return this.dotKeKhais.some(dot =>
       this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
     );
   }
 
   // Hàm đếm số lượng đợt kê khai BHYT đã chọn
   getSelectedBHYTCount(): number {
-    return this.dotKeKhais.filter(dot => 
+    return this.dotKeKhais.filter(dot =>
       this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
     ).length;
   }
@@ -1746,7 +1929,7 @@ export class DotKeKhaiComponent implements OnInit {
   // Hàm xuất D03-TS cho nhiều đợt kê khai đã chọn
   exportD03TSForSelected(): void {
     // Lọc ra các đợt kê khai BHYT đã chọn
-    const selectedBHYTDots = this.dotKeKhais.filter(dot => 
+    const selectedBHYTDots = this.dotKeKhais.filter(dot =>
       this.selectedIds.includes(dot.id!) && dot.dich_vu === 'BHYT'
     );
 
@@ -1778,7 +1961,7 @@ export class DotKeKhaiComponent implements OnInit {
 
     this.loading = true;
     const messageId = this.message.loading(`Đang chuẩn bị xuất D03-TS cho ${selectedDots.length} đợt kê khai...`, { nzDuration: 0 }).messageId;
-    
+
     // Tạo mảng các Observable để lấy dữ liệu D03 cho từng đợt kê khai
     const observables = selectedDots.map(dot => {
       return this.d03Service.getD03Data(dot.id!);
@@ -1799,13 +1982,13 @@ export class DotKeKhaiComponent implements OnInit {
               const dotKeKhai = selectedDots[index];
               const donVi = this.donVis.find(d => d.id === dotKeKhai.don_vi_id);
               const daiLy = this.daiLys.find(d => d.id === dotKeKhai.dai_ly_id);
-              
+
               // Thêm thông tin đợt kê khai vào ghi chú của mỗi bản ghi
               const enhancedData = d03Data.map(item => ({
                 ...item,
                 ghiChu: `${item.ghiChu || ''} - Đợt: ${dotKeKhai.ten_dot}`.trim()
               }));
-              
+
               allD03Data = [...allD03Data, ...enhancedData];
             }
           });
@@ -1822,7 +2005,7 @@ export class DotKeKhaiComponent implements OnInit {
             const firstDot = selectedDots[0];
             const donVi = this.donVis.find(d => d.id === firstDot.don_vi_id);
             const daiLy = this.daiLys.find(d => d.id === firstDot.dai_ly_id);
-            
+
             if (!donVi) {
               this.message.remove(messageId);
               this.message.error('Không tìm thấy thông tin đơn vị');
@@ -1840,7 +2023,7 @@ export class DotKeKhaiComponent implements OnInit {
               tenDaiLy: daiLy?.ten || '',
               tenDotKeKhai: `Nhiều đợt kê khai (${selectedDots.length})`
             };
-            
+
             // Xuất dữ liệu ra Excel
             this.d03Service.xuatExcelMauD03TS(allD03Data, options);
             this.message.remove(messageId);
