@@ -575,6 +575,8 @@ namespace WebApp.API.Controllers
                 if (result.StartsWith("ERR:"))
                 {
                     string errorMessage = "Lỗi không xác định";
+                    bool shouldTryNoPayMethod = false;
+
                     switch (result)
                     {
                         case "ERR:1":
@@ -587,8 +589,63 @@ namespace WebApp.API.Controllers
                             errorMessage = "Biên lai đã được thay thế rồi, hủy rồi";
                             break;
                         case "ERR:9":
-                            errorMessage = "Trạng thái biên lai ko được hủy";
+                            errorMessage = "Trạng thái biên lai không được hủy (đã thanh toán)";
+                            shouldTryNoPayMethod = true; // Thử sử dụng phương thức không kiểm tra thanh toán
                             break;
+                        case "ERR:6":
+                            errorMessage = "Lỗi không xác định";
+                            break;
+                        case "ERR:7":
+                            errorMessage = "Không tìm thấy thông tin công ty tương ứng";
+                            break;
+                    }
+
+                    // Nếu lỗi ERR:9 (đã thanh toán), thử sử dụng cancelInvNoPay
+                    if (shouldTryNoPayMethod)
+                    {
+                        _logger.LogInformation($"Thử hủy biên lai không kiểm tra thanh toán với fkey: {request.FKey}");
+                        string noPayResult = await _vnptBienLaiService.CancelInvoiceNoPay(request.FKey);
+
+                        if (!noPayResult.StartsWith("ERR:"))
+                        {
+                            return Ok(new VNPTBienLaiResponse
+                            {
+                                Success = true,
+                                Message = "Hủy biên lai thành công (không kiểm tra thanh toán)",
+                                Data = noPayResult
+                            });
+                        }
+                        else
+                        {
+                            // Nếu vẫn lỗi, trả về lỗi mới
+                            _logger.LogWarning($"Vẫn gặp lỗi khi hủy biên lai không kiểm tra thanh toán: {noPayResult}");
+
+                            switch (noPayResult)
+                            {
+                                case "ERR:1":
+                                    errorMessage = "Tài khoản đăng nhập sai hoặc không có quyền";
+                                    break;
+                                case "ERR:2":
+                                    errorMessage = "Không tìm thấy biên lai";
+                                    break;
+                                case "ERR:8":
+                                    errorMessage = "Biên lai đã bị điều chỉnh / hủy / hóa đơn mới tạo không thể hủy được";
+                                    break;
+                                case "ERR:20":
+                                    errorMessage = "Dải hóa đơn hết, User/Account không có quyền với Serial/Pattern và serial không phù hợp";
+                                    break;
+                                default:
+                                    errorMessage = $"Lỗi khi hủy biên lai: {noPayResult}";
+                                    break;
+                            }
+
+                            return BadRequest(new VNPTBienLaiResponse
+                            {
+                                Success = false,
+                                Message = errorMessage,
+                                Data = noPayResult
+                            });
+                        }
                     }
 
                     return BadRequest(new VNPTBienLaiResponse

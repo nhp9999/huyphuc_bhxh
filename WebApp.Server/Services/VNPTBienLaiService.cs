@@ -684,7 +684,19 @@ namespace WebApp.API.Services
                 string password = vnptAccount?.Password ?? _password;
                 string account = vnptAccount?.Account ?? _account;
                 string acpass = vnptAccount?.ACPass ?? _acpass;
+
+                // Đảm bảo sử dụng PublishService.asmx cho API cancelInv
                 string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
+                if (!serviceUrl.EndsWith("PublishService.asmx"))
+                {
+                    serviceUrl = serviceUrl.Replace("PortalService.asmx", "PublishService.asmx");
+                    if (!serviceUrl.EndsWith("PublishService.asmx"))
+                    {
+                        serviceUrl = "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PublishService.asmx";
+                    }
+                }
+
+                _logger.LogInformation($"Sử dụng service URL: {serviceUrl}");
 
                 // Tạo SOAP request
                 string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -693,32 +705,127 @@ namespace WebApp.API.Services
                     <cancelInv xmlns=""http://tempuri.org/"">
                       <Account>{account}</Account>
                       <ACpass>{acpass}</ACpass>
-                      <fkey>{fkey}</fkey>
+                      <Fkey>{fkey}</Fkey>
                       <userName>{username}</userName>
                       <userPass>{password}</userPass>
                     </cancelInv>
                   </soap:Body>
                 </soap:Envelope>";
 
-                // Gọi SOAP API
-                string response = await CallSoapApi(serviceUrl, "http://tempuri.org/cancelInv", soapRequest);
+                try
+                {
+                    // Gọi SOAP API
+                    string response = await CallSoapApi(serviceUrl, "http://tempuri.org/cancelInv", soapRequest);
 
-                // Xử lý response
-                XmlDocument xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(response);
-                XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
-                nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
-                nsManager.AddNamespace("ns", "http://tempuri.org/");
+                    // Xử lý response
+                    if (response.StartsWith("Error:"))
+                    {
+                        _logger.LogWarning($"Lỗi khi gọi API cancelInv: {response}");
+                        return response;
+                    }
 
-                string result = xmlDoc.SelectSingleNode("//ns:cancelInvResult", nsManager)?.InnerText ?? "";
-                _logger.LogInformation($"Kết quả cancelInv: {result}");
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(response);
+                    XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                    nsManager.AddNamespace("ns", "http://tempuri.org/");
 
-                return result;
+                    string result = xmlDoc.SelectSingleNode("//ns:cancelInvResult", nsManager)?.InnerText ?? "";
+                    _logger.LogInformation($"Kết quả cancelInv: {result}");
+
+                    return result;
+                }
+                catch (XmlException xmlEx)
+                {
+                    _logger.LogError(xmlEx, "Lỗi khi xử lý XML response từ API cancelInv");
+                    return $"ERR:6 - Lỗi khi xử lý phản hồi từ máy chủ VNPT: {xmlEx.Message}";
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi gọi API cancelInv");
-                throw;
+                return $"ERR:6 - Lỗi không xác định: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Hủy biên lai không kiểm tra trạng thái thanh toán
+        /// </summary>
+        /// <param name="fkey">Chuỗi xác định biên lai cần hủy</param>
+        /// <param name="vnptAccount">Tài khoản VNPT (tùy chọn)</param>
+        /// <returns>Kết quả hủy</returns>
+        public async Task<string> CancelInvoiceNoPay(string fkey, VNPTAccount? vnptAccount = null)
+        {
+            try
+            {
+                _logger.LogInformation($"Gọi API cancelInvNoPay với fkey: {fkey}");
+
+                // Sử dụng thông tin từ tài khoản VNPT hoặc từ cấu hình
+                string username = vnptAccount?.Username ?? _username;
+                string password = vnptAccount?.Password ?? _password;
+                string account = vnptAccount?.Account ?? _account;
+                string acpass = vnptAccount?.ACPass ?? _acpass;
+
+                // Đảm bảo sử dụng PublishService.asmx cho API cancelInvNoPay
+                string serviceUrl = vnptAccount?.ServiceUrl ?? _serviceUrl;
+                if (!serviceUrl.EndsWith("PublishService.asmx"))
+                {
+                    serviceUrl = serviceUrl.Replace("PortalService.asmx", "PublishService.asmx");
+                    if (!serviceUrl.EndsWith("PublishService.asmx"))
+                    {
+                        serviceUrl = "https://ctyhuyphucpagadmin.vnpt-invoice.com.vn/PublishService.asmx";
+                    }
+                }
+
+                _logger.LogInformation($"Sử dụng service URL: {serviceUrl}");
+
+                // Tạo SOAP request
+                string soapRequest = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+                <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+                  <soap:Body>
+                    <cancelInvNoPay xmlns=""http://tempuri.org/"">
+                      <Account>{account}</Account>
+                      <ACpass>{acpass}</ACpass>
+                      <Fkey>{fkey}</Fkey>
+                      <userName>{username}</userName>
+                      <userPass>{password}</userPass>
+                    </cancelInvNoPay>
+                  </soap:Body>
+                </soap:Envelope>";
+
+                try
+                {
+                    // Gọi SOAP API
+                    string response = await CallSoapApi(serviceUrl, "http://tempuri.org/cancelInvNoPay", soapRequest);
+
+                    // Xử lý response
+                    if (response.StartsWith("Error:"))
+                    {
+                        _logger.LogWarning($"Lỗi khi gọi API cancelInvNoPay: {response}");
+                        return response;
+                    }
+
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(response);
+                    XmlNamespaceManager nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
+                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+                    nsManager.AddNamespace("ns", "http://tempuri.org/");
+
+                    string result = xmlDoc.SelectSingleNode("//ns:cancelInvNoPayResult", nsManager)?.InnerText ?? "";
+                    _logger.LogInformation($"Kết quả cancelInvNoPay: {result}");
+
+                    return result;
+                }
+                catch (XmlException xmlEx)
+                {
+                    _logger.LogError(xmlEx, "Lỗi khi xử lý XML response từ API cancelInvNoPay");
+                    return $"ERR:6 - Lỗi khi xử lý phản hồi từ máy chủ VNPT: {xmlEx.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gọi API cancelInvNoPay");
+                return $"ERR:6 - Lỗi không xác định: {ex.Message}";
             }
         }
 
@@ -742,7 +849,11 @@ namespace WebApp.API.Services
 
                 // Tạo HTTP request
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.Headers.Add("SOAPAction", action);
+
+                // Sửa SOAPAction để phù hợp với yêu cầu của VNPT
+                // Thêm dấu ngoặc kép xung quanh SOAPAction
+                request.Headers.Add("SOAPAction", $"\"{action}\"");
+
                 request.ContentType = "text/xml; charset=utf-8";
                 request.Accept = "text/xml";
                 request.Method = "POST";
@@ -762,21 +873,66 @@ namespace WebApp.API.Services
                     {
                         string soapResult = await rd.ReadToEndAsync();
                         _logger.LogInformation($"SOAP Response: {soapResult}");
-                        return soapResult;
+
+                        // Kiểm tra xem response có phải là XML hợp lệ không
+                        try
+                        {
+                            XmlDocument doc = new XmlDocument();
+                            doc.LoadXml(soapResult);
+                            return soapResult;
+                        }
+                        catch (XmlException xmlEx)
+                        {
+                            _logger.LogError(xmlEx, $"SOAP Response không phải là XML hợp lệ: {soapResult}");
+                            return $"Error: XML không hợp lệ - {xmlEx.Message}";
+                        }
                     }
                 }
             }
             catch (WebException ex)
             {
-                _logger.LogError($"SOAP Error: {ex.Message}");
+                _logger.LogError(ex, $"SOAP Error: {ex.Message}");
 
                 if (ex.Response != null)
                 {
-                    using (StreamReader rd = new StreamReader(ex.Response.GetResponseStream()))
+                    try
                     {
-                        string soapResult = await rd.ReadToEndAsync();
-                        _logger.LogError($"SOAP Error Response: {soapResult}");
-                        return $"Error: {ex.Message}\nResponse: {soapResult}";
+                        using (StreamReader rd = new StreamReader(ex.Response.GetResponseStream()))
+                        {
+                            string soapResult = await rd.ReadToEndAsync();
+                            _logger.LogError($"SOAP Error Response: {soapResult}");
+
+                            // Kiểm tra xem error response có chứa SOAP Fault không
+                            if (soapResult.Contains("<soap:Fault>") || soapResult.Contains("<Fault>"))
+                            {
+                                try
+                                {
+                                    XmlDocument doc = new XmlDocument();
+                                    doc.LoadXml(soapResult);
+
+                                    XmlNamespaceManager nsManager = new XmlNamespaceManager(doc.NameTable);
+                                    nsManager.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+
+                                    string faultString = doc.SelectSingleNode("//soap:Fault/faultstring", nsManager)?.InnerText
+                                        ?? doc.SelectSingleNode("//Fault/faultstring")?.InnerText
+                                        ?? "Không xác định";
+
+                                    _logger.LogError($"SOAP Fault: {faultString}");
+                                    return $"Error: SOAP Fault - {faultString}";
+                                }
+                                catch (Exception xmlEx)
+                                {
+                                    _logger.LogError(xmlEx, "Lỗi khi xử lý SOAP Fault");
+                                }
+                            }
+
+                            return $"Error: {ex.Message}\nResponse: {soapResult}";
+                        }
+                    }
+                    catch (Exception rdEx)
+                    {
+                        _logger.LogError(rdEx, "Lỗi khi đọc error response");
+                        return $"Error: {ex.Message} - Không thể đọc error response";
                     }
                 }
 
@@ -784,7 +940,7 @@ namespace WebApp.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError($"General Error: {ex.Message}");
+                _logger.LogError(ex, $"General Error: {ex.Message}");
                 return $"Error: {ex.Message}";
             }
         }

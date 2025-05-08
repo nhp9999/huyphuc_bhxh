@@ -11,7 +11,34 @@ if %errorlevel% neq 0 (
 echo === git update ===
 cd /d "%~dp0"
 git fetch
-git pull origin main
+
+REM Kiểm tra các thay đổi cục bộ
+git diff --quiet
+if %errorlevel% neq 0 (
+    echo Phát hiện thay đổi cục bộ. Bạn có muốn stash các thay đổi này không? (Y/N)
+    choice /c YN /m "Chọn"
+    if errorlevel 2 (
+        echo Bỏ qua cập nhật git. Tiếp tục với phiên bản hiện tại.
+    ) else (
+        echo Đang stash các thay đổi cục bộ...
+        git stash
+        echo Đang pull từ remote...
+        git pull origin main
+        echo Bạn có muốn áp dụng lại các thay đổi đã stash không? (Y/N)
+        choice /c YN /m "Chọn"
+        if errorlevel 1 if not errorlevel 2 (
+            echo Đang áp dụng lại các thay đổi đã stash...
+            git stash pop
+            if %errorlevel% neq 0 (
+                echo Có xung đột khi áp dụng lại các thay đổi. Vui lòng giải quyết thủ công sau khi script kết thúc.
+                echo Các thay đổi của bạn vẫn được lưu trong stash.
+            )
+        )
+    )
+) else (
+    echo Không có thay đổi cục bộ. Đang pull từ remote...
+    git pull origin main
+)
 
 echo === Stop IIS ===
 iisreset /stop
@@ -36,38 +63,143 @@ if %ERRORLEVEL% neq 0 (
 
 echo === install library angular ===
 cd WebApp.Client
+echo Bạn có muốn xóa thư mục node_modules và cài đặt lại không? (Y/N)
+choice /c YN /m "Chọn"
+if errorlevel 1 if not errorlevel 2 (
+    echo Đang xóa thư mục node_modules...
+    rd /s /q node_modules
+)
+
+echo Đang cài đặt các thư viện...
 call npm i
-call npm i xlsx --save
-call npm i pizzip --save
-call npm i jszip --save
-call npm i file-saver --save
-call npm i docxtemplater --save
-call npm i @types/file-saver --save-dev
-call npm i @types/xlsx --save-dev
+if %errorlevel% neq 0 (
+    echo Lỗi khi cài đặt các thư viện npm cơ bản. Đang thử lại...
+    call npm i --legacy-peer-deps
+    if %errorlevel% neq 0 (
+        echo Không thể cài đặt các thư viện npm. Vui lòng kiểm tra lại kết nối mạng hoặc package.json.
+        echo Bạn có muốn tiếp tục không? (Y/N)
+        choice /c YN /m "Chọn"
+        if errorlevel 2 (
+            echo Đang hủy quá trình build...
+            iisreset /start
+            pause
+            exit /b 1
+        )
+    )
+)
+
+echo Đang cài đặt các thư viện bổ sung...
+call npm i xlsx pizzip jszip file-saver docxtemplater --save
+call npm i @types/file-saver @types/xlsx --save-dev
 
 echo === Dang build du an angular ===
-call ng build --configuration production
+echo Đang build với cấu hình production và tăng bộ nhớ cho Node.js...
+node --max-old-space-size=8192 node_modules/@angular/cli/bin/ng build --configuration production
+if %errorlevel% neq 0 (
+    echo Lỗi khi build dự án Angular.
+    echo Bạn có muốn tiếp tục triển khai phiên bản cũ không? (Y/N)
+    choice /c YN /m "Chọn"
+    if errorlevel 2 (
+        echo Đang hủy quá trình triển khai...
+        iisreset /start
+        pause
+        exit /b 1
+    )
+    echo Tiếp tục với phiên bản cũ...
+) else (
+    echo Build Angular thành công!
+)
 
 echo === Copy to folder IIS ===
+echo Đang xóa các tệp cũ trong thư mục IIS...
 for /d %%i in ("\\?\C:\inetpub\huyphucweb\*") do rd /s /q "%%i"
-for %%i in ("\\?\C:\inetpub\huyphucweb\*") do if /I not "%%~nxi"=="web.config" del "%%i"
+if %errorlevel% neq 0 (
+    echo Lỗi khi xóa thư mục trong IIS. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
 
+for %%i in ("\\?\C:\inetpub\huyphucweb\*") do if /I not "%%~nxi"=="web.config" del "%%i"
+if %errorlevel% neq 0 (
+    echo Lỗi khi xóa tệp trong IIS. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
+
+echo Đang sao chép các tệp mới vào thư mục IIS...
 xcopy .\dist\webapp.client\*.* C:\inetpub\huyphucweb /E /I /Y
+if %errorlevel% neq 0 (
+    echo Lỗi khi sao chép vào thư mục IIS. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
 
 echo === Dang build du an .net ===
 cd ..
 cd WebApp.Server
+echo Đang build dự án .NET với cấu hình Release...
 dotnet build --configuration Release
+if %errorlevel% neq 0 (
+    echo Lỗi khi build dự án .NET.
+    echo Bạn có muốn tiếp tục triển khai phiên bản cũ không? (Y/N)
+    choice /c YN /m "Chọn"
+    if errorlevel 2 (
+        echo Đang hủy quá trình triển khai...
+        iisreset /start
+        pause
+        exit /b 1
+    )
+    echo Tiếp tục với phiên bản cũ...
+) else (
+    echo Build .NET thành công!
+)
 
 echo === Copy to folder IIS ===
+echo Đang xóa các tệp cũ trong thư mục IIS API...
 for /d %%i in ("\\?\C:\inetpub\huyphucapi\*") do rd /s /q "%%i"
-for %%i in ("\\?\C:\inetpub\huyphucapi\*") do if /I not "%%~nxi"=="web.config" del "%%i"
+if %errorlevel% neq 0 (
+    echo Lỗi khi xóa thư mục trong IIS API. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
 
+for %%i in ("\\?\C:\inetpub\huyphucapi\*") do if /I not "%%~nxi"=="web.config" del "%%i"
+if %errorlevel% neq 0 (
+    echo Lỗi khi xóa tệp trong IIS API. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
+
+echo Đang sao chép các tệp mới vào thư mục IIS API...
 xcopy .\bin\Release\net9.0\*.* C:\inetpub\huyphucapi /E /I /Y
+if %errorlevel% neq 0 (
+    echo Lỗi khi sao chép vào thư mục IIS API. Kiểm tra quyền truy cập.
+    iisreset /start
+    pause
+    exit /b 1
+)
 
 echo === Start IIS ===
+echo Đang khởi động lại IIS...
 iisreset /start
+if %errorlevel% neq 0 (
+    echo Lỗi khi khởi động lại IIS. Vui lòng khởi động lại thủ công.
+    pause
+    exit /b 1
+)
 
-echo build va deploy thanh cong
-
+echo ===================================
+echo === Build và deploy thành công ===
+echo ===================================
+echo.
+echo Ứng dụng đã được triển khai thành công!
+echo - Frontend: http://localhost
+echo - API: http://localhost:5182
+echo.
+echo Nhấn phím bất kỳ để thoát...
 pause
