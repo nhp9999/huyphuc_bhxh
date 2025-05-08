@@ -26,18 +26,18 @@ export class ExportVnptService {
   // Hàm kiểm tra tuổi
   isUnder18(ngaySinh: string | Date | null | undefined): boolean {
     if (!ngaySinh) return false;
-    
+
     const birthDate = new Date(ngaySinh);
     const today = new Date();
-    
+
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     // Nếu chưa tới tháng sinh nhật hoặc tới tháng sinh nhật nhưng chưa tới ngày sinh nhật
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
+
     return age < 18;
   }
 
@@ -60,7 +60,7 @@ export class ExportVnptService {
 
     // Chỉ chọn các đợt kê khai BHYT
     const dotKeKhaiBHYTList = dotKeKhaiList.filter(d => d.dich_vu === 'BHYT');
-    
+
     if (dotKeKhaiBHYTList.length === 0) {
       this.message.warning('Không có dữ liệu BHYT để xuất');
       return of(false);
@@ -90,18 +90,18 @@ export class ExportVnptService {
                   if (!a.so_bien_lai && !b.so_bien_lai) return 0;
                   if (!a.so_bien_lai) return 1;
                   if (!b.so_bien_lai) return -1;
-                  
+
                   // Nếu cùng quyển biên lai, so sánh số biên lai
                   if (a.QuyenBienLai?.quyen_so === b.QuyenBienLai?.quyen_so) {
                     const soBienLaiA = parseInt(a.so_bien_lai || '0');
                     const soBienLaiB = parseInt(b.so_bien_lai || '0');
                     return soBienLaiA - soBienLaiB;
                   }
-                  
+
                   // Nếu khác quyển biên lai, so sánh quyển biên lai
                   return (a.QuyenBienLai?.quyen_so || '').localeCompare(b.QuyenBienLai?.quyen_so || '');
                 });
-                
+
                 // Cập nhật lại STT sau khi sắp xếp và thêm mã nhân viên
                 keKhaiBHYTs = keKhaiBHYTs.map((item, index) => {
                   // Ưu tiên lấy mã nhân viên theo thứ tự:
@@ -109,9 +109,9 @@ export class ExportVnptService {
                   // 2. Từ đợt kê khai (nguoi_tao)
                   // 3. Từ user hiện tại
                   const maNhanVienThu = item.nguoi_tao || maNhanVienFromDotKeKhai || maNhanVienFromCurrentUser || '';
-                  
+
                   console.log(`Người tham gia ${item.ho_ten} - Mã nhân viên: ${maNhanVienThu}`);
-                  
+
                   return {
                     ...item,
                     stt: index + 1,
@@ -119,7 +119,7 @@ export class ExportVnptService {
                     maNhanVienThu: maNhanVienThu // Gán mã nhân viên thu
                   };
                 });
-                
+
                 return {
                   dotKeKhai,
                   keKhaiBHYTs
@@ -127,24 +127,24 @@ export class ExportVnptService {
               }),
               catchError(error => {
                 console.error(`Lỗi khi lấy dữ liệu cho đợt kê khai ${dotKeKhai.ten_dot}:`, error);
-                return of({ 
-                  dotKeKhai, 
+                return of({
+                  dotKeKhai,
                   keKhaiBHYTs: []
                 });
               })
             );
           });
-        
+
         // Kết hợp tất cả kết quả
-        return observables.length > 0 ? 
-          forkJoin(observables) : 
+        return observables.length > 0 ?
+          forkJoin(observables) :
           of([]);
       }),
       map((results: any[]) => {
         // Ghép tất cả dữ liệu từ nhiều đợt kê khai
         let allData: any[] = [];
         let stt = 1;
-        
+
         results.forEach(result => {
           if (result && result.keKhaiBHYTs && result.keKhaiBHYTs.length > 0) {
             // Cập nhật lại STT cho toàn bộ dữ liệu
@@ -152,25 +152,25 @@ export class ExportVnptService {
               ...item,
               stt: stt++
             }));
-            
+
             allData = [...allData, ...updatedItems];
           }
         });
-        
+
         if (allData.length === 0) {
           this.message.warning('Không có dữ liệu chi tiết để xuất');
           return false;
         }
-        
+
         // Tạo workbook
         const wb = XLSX.utils.book_new();
-        
+
         // Thêm 2 dòng trống
         const emptyRows = [
           Array(13).fill(''),  // Dòng 1 trống với 13 cột
           Array(13).fill('')   // Dòng 2 trống với 13 cột
         ];
-        
+
         // Chuẩn bị dữ liệu cho sheet
         const keKhaiHeaders = [
           'STT', // Cột A - Số thứ tự
@@ -238,16 +238,16 @@ export class ExportVnptService {
           'NgayBienLai', // Cột BK - Ngày biên lai
           'MaNhanvienThu', // Cột BL - Mã nhân viên thu
         ];
-        
+
         const keKhaiData = allData.map((item: any) => {
           // Sử dụng mã nhân viên đã được gán trong bước xử lý dữ liệu
           const maNhanVienThu = item.maNhanVienThu || '';
           console.log(`Xuất Excel: ${item.ho_ten} - Mã nhân viên: ${maNhanVienThu}`);
-          
+
           return [
             item.stt, // Sử dụng STT từ API
             item.ho_ten,
-            item.ma_so_bhxh || '', 
+            item.ma_so_bhxh || '',
             '', // Để trống cột D (MaPhongBan)
             '1', // Cột E giá trị mặc định là 1
             this.getPhuongAnDongText(item.phuong_an_dong || ''),
@@ -257,8 +257,8 @@ export class ExportVnptService {
               month: '2-digit',
               year: 'numeric'
             }) : '',
-            item.so_bien_lai ? (item.QuyenBienLai ? 
-              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+            item.so_bien_lai ? (item.QuyenBienLai ?
+              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
               item.so_bien_lai
             ) : '',
             typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
@@ -322,8 +322,8 @@ export class ExportVnptService {
             '', // Cột BG trống
             '', // Cột BH trống
             item.cccd || '', // Cột BI hiển thị CCCD
-            item.so_bien_lai ? (item.QuyenBienLai ? 
-              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+            item.so_bien_lai ? (item.QuyenBienLai ?
+              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
               item.so_bien_lai
             ) : '', // Cột BJ - Số biên lai
             item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
@@ -334,36 +334,36 @@ export class ExportVnptService {
             maNhanVienThu, // Cột BL - Mã nhân viên thu
           ];
         });
-        
+
         // Tạo worksheet từ dữ liệu
         const ws = XLSX.utils.aoa_to_sheet([...emptyRows, keKhaiHeaders, ...keKhaiData]);
-        
+
         // Thiết lập độ rộng cột
         const maxWidth = 120;
         const colWidths = Array(keKhaiHeaders.length).fill({ wch: 15 });
-        
+
         // Cột STT hẹp hơn
         colWidths[0] = { wch: 5 };
-        
+
         // Cột họ tên rộng hơn
         colWidths[1] = { wch: 30 };
-        
+
         // Cột địa chỉ rộng hơn
         colWidths[22] = { wch: 40 };
         colWidths[38] = { wch: 40 };
-        
+
         ws['!cols'] = colWidths;
-        
+
         // Thêm worksheet vào workbook
         XLSX.utils.book_append_sheet(wb, ws, 'Dữ Liệu');
-        
+
         // Tạo tên file với timestamp
         const now = new Date();
         const fileName = `VNPT_BHYT_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}.xlsx`;
-        
+
         // Xuất file Excel
         XLSX.writeFile(wb, fileName);
-        
+
         this.message.success(`Xuất dữ liệu thành công! Đã xuất ${allData.length} bản ghi từ ${results.length} đợt kê khai.`);
         return true;
       }),
@@ -393,7 +393,7 @@ export class ExportVnptService {
     return this.userService.getCurrentUserInfo().pipe(
       switchMap((user) => {
         const maNhanVien = user.maNhanVien || '';
-        
+
         // Gọi service để lấy dữ liệu kê khai
         return this.dotKeKhaiService.getKeKhaiBHYTsByDotKeKhaiId(dotKeKhaiId).pipe(
           map((keKhaiBHYTs: any[]) => {
@@ -403,16 +403,16 @@ export class ExportVnptService {
               if (!a.so_bien_lai && !b.so_bien_lai) return 0;
               if (!a.so_bien_lai) return 1;
               if (!b.so_bien_lai) return -1;
-              
+
               // Nếu cùng quyển biên lai, so sánh số biên lai
               if (a.QuyenBienLai?.quyen_so === b.QuyenBienLai?.quyen_so) {
                 return parseInt(a.so_bien_lai) - parseInt(b.so_bien_lai);
               }
-              
+
               // Nếu khác quyển biên lai, so sánh quyển biên lai
               return (a.QuyenBienLai?.quyen_so || '').localeCompare(b.QuyenBienLai?.quyen_so || '');
             });
-            
+
             // Cập nhật lại STT sau khi sắp xếp
             keKhaiBHYTs = keKhaiBHYTs.map((item, index) => ({
               ...item,
@@ -492,15 +492,15 @@ export class ExportVnptService {
               Array(13).fill(''),  // Dòng 1 trống với 13 cột
               Array(13).fill('')   // Dòng 2 trống với 13 cột
             ];
-            
+
             const keKhaiData = keKhaiBHYTs.map((item: any) => {
               // Lấy mã nhân viên từ người tạo đợt kê khai
               const maNhanVienThu = dotKeKhai.nguoi_tao || maNhanVien || '12345';
-              
+
               return [
                 item.stt, // Sử dụng STT từ API
                 item.ho_ten,
-                item.ma_so_bhxh || '', 
+                item.ma_so_bhxh || '',
                 '', // Để trống cột D (MaPhongBan)
                 '1', // Cột E giá trị mặc định là 1
                 this.getPhuongAnDongText(item.phuong_an_dong || ''),
@@ -510,8 +510,8 @@ export class ExportVnptService {
                   month: '2-digit',
                   year: 'numeric'
                 }) : '',
-                item.so_bien_lai ? (item.QuyenBienLai ? 
-                  `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+                item.so_bien_lai ? (item.QuyenBienLai ?
+                  `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
                   item.so_bien_lai
                 ) : '',
                 typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
@@ -575,8 +575,8 @@ export class ExportVnptService {
                 '', // Cột BG trống
                 '', // Cột BH trống
                 item.cccd || '', // Cột BI hiển thị CCCD
-                item.so_bien_lai ? (item.QuyenBienLai ? 
-                  `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+                item.so_bien_lai ? (item.QuyenBienLai ?
+                  `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
                   item.so_bien_lai
                 ) : '', // Cột BJ - Số biên lai
                 item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
@@ -596,12 +596,12 @@ export class ExportVnptService {
             // Tạo style cho sheet
             ws['!cols'] = [
               { wch: 8 },  // STT
-              { wch: 30 }, // HoTen  
+              { wch: 30 }, // HoTen
               { wch: 15 }, // Mã số BHXH
               { wch: 10 }, // Cột D trống
               { wch: 10 }, // Cột E trống
               { wch: 15 }, // Phương án đóng
-              { wch: 10 }, // Cột G trống 
+              { wch: 10 }, // Cột G trống
               { wch: 15 }, // Ngày biên lai
               { wch: 10 }, // Cột I trống
               { wch: 15 }, // Người thứ
@@ -662,7 +662,7 @@ export class ExportVnptService {
 
             // Xuất file Excel
             XLSX.writeFile(wb, `ke-khai-bhyt-${dotKeKhai.ten_dot.toLowerCase().replace(/\s+/g, '-')}.xlsx`);
-            
+
             this.message.success('Xuất dữ liệu kê khai BHYT thành công');
             return true;
           })
@@ -686,22 +686,22 @@ export class ExportVnptService {
       this.message.warning('Không có dữ liệu để xuất');
       return false;
     }
-    
+
     // Chuẩn bị dữ liệu
     const headers = [
-      'STT', 
-      'Tên đợt kê khai', 
-      'Loại dịch vụ', 
-      'Đơn vị', 
-      'Số thẻ', 
-      'Tổng tiền', 
-      'Ngày tạo', 
-      'Ngày gửi', 
+      'STT',
+      'Tên đợt kê khai',
+      'Loại dịch vụ',
+      'Đơn vị',
+      'Số thẻ',
+      'Tổng tiền',
+      'Ngày tạo',
+      'Ngày gửi',
       'Trạng thái',
       'Người tạo',
       'Mã hồ sơ'
     ];
-    
+
     const data = dotKeKhaiList.map((item, index) => [
       index + 1,
       item.ten_dot,
@@ -715,11 +715,11 @@ export class ExportVnptService {
       item.nguoi_tao || '',
       item.ma_ho_so || ''
     ]);
-    
+
     // Tạo workbook và worksheet
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    
+
     // Thiết lập độ rộng cột
     ws['!cols'] = [
       { wch: 5 },   // STT
@@ -734,14 +734,14 @@ export class ExportVnptService {
       { wch: 15 },  // Người tạo
       { wch: 15 }   // Mã hồ sơ
     ];
-    
+
     // Thêm worksheet vào workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Danh sách kê khai');
-    
+
     // Tên file và xuất Excel
     const fileName = `danh-sach-ke-khai-${new Date().toISOString().slice(0,10)}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
+
     this.message.success('Xuất Excel thành công');
     return true;
   }
@@ -751,49 +751,49 @@ export class ExportVnptService {
     if (!data) {
       return 'Không có';
     }
-    
+
     // Kiểm tra DonVi với tên khác nhau
     if (data.DonVi?.tenDonVi) {
       return data.DonVi.tenDonVi;
     }
-    
+
     if (data.donVi?.tenDonVi) {
       return data.donVi.tenDonVi;
     }
-    
+
     if (data.don_vi?.tenDonVi) {
       return data.don_vi.tenDonVi;
     }
-    
+
     // Kiểm tra thông qua cách tiếp cận any
     const anyData = data as any;
-    
+
     if (anyData.DonVi?.ten_don_vi) {
       return anyData.DonVi.ten_don_vi;
     }
-    
+
     // Kiểm tra các trường hợp khác nhau
     if (anyData['don_vi']?.tenDonVi) {
       return anyData['don_vi'].tenDonVi;
     }
-    
+
     if (anyData['don_vi']?.ten_don_vi) {
       return anyData['don_vi'].ten_don_vi;
     }
-    
+
     if (anyData['DonVi']?.tenDonVi) {
       return anyData['DonVi'].tenDonVi;
     }
-    
+
     if (anyData['donvi']?.tenDonVi) {
       return anyData['donvi'].tenDonVi;
     }
-    
+
     // Hiển thị đơn vị ID nếu có
     if (data.don_vi_id) {
       return `ID: ${data.don_vi_id}`;
     }
-    
+
     // Khi không có thông tin đơn vị
     return 'Không có';
   }
@@ -811,6 +811,8 @@ export class ExportVnptService {
         return 'Đã từ chối';
       case 'cho_thanh_toan':
         return 'Chờ thanh toán';
+      case 'cho_xu_ly':
+        return 'Chờ xử lý';
       case 'hoan_thanh':
         return 'Hoàn thành';
       case 'tu_choi':
@@ -831,7 +833,7 @@ export class ExportVnptService {
 
     // Chỉ chọn các đợt kê khai BHYT
     const dotKeKhaiBHYTList = dotKeKhaiList.filter(d => d.dich_vu === 'BHYT');
-    
+
     if (dotKeKhaiBHYTList.length === 0) {
       this.message.warning('Không có dữ liệu BHYT để xuất');
       return of(false);
@@ -854,18 +856,18 @@ export class ExportVnptService {
                   if (!a.so_bien_lai && !b.so_bien_lai) return 0;
                   if (!a.so_bien_lai) return 1;
                   if (!b.so_bien_lai) return -1;
-                  
+
                   // Nếu cùng quyển biên lai, so sánh số biên lai
                   if (a.QuyenBienLai?.quyen_so === b.QuyenBienLai?.quyen_so) {
                     const soBienLaiA = parseInt(a.so_bien_lai || '0');
                     const soBienLaiB = parseInt(b.so_bien_lai || '0');
                     return soBienLaiA - soBienLaiB;
                   }
-                  
+
                   // Nếu khác quyển biên lai, so sánh quyển biên lai
                   return (a.QuyenBienLai?.quyen_so || '').localeCompare(b.QuyenBienLai?.quyen_so || '');
                 });
-                
+
                 // Cập nhật lại STT sau khi sắp xếp
                 keKhaiBHYTs = keKhaiBHYTs.map((item, index) => ({
                   ...item,
@@ -873,7 +875,7 @@ export class ExportVnptService {
                   tenDotKeKhai: dotKeKhai.ten_dot, // Thêm tên đợt kê khai vào mỗi bản ghi
                   maNhanVienThu: maNhanVienThuFromUser // Thêm mã nhân viên thu từ người dùng
                 }));
-                
+
                 return {
                   dotKeKhai,
                   keKhaiBHYTs
@@ -881,24 +883,24 @@ export class ExportVnptService {
               }),
               catchError(error => {
                 console.error(`Lỗi khi lấy dữ liệu cho đợt kê khai ${dotKeKhai.ten_dot}:`, error);
-                return of({ 
-                  dotKeKhai, 
+                return of({
+                  dotKeKhai,
                   keKhaiBHYTs: []
                 });
               })
             );
           });
-        
+
         // Kết hợp tất cả kết quả
-        return observables.length > 0 ? 
-          forkJoin(observables) : 
+        return observables.length > 0 ?
+          forkJoin(observables) :
           of([]);
       }),
       map((results: any[]) => {
         // Ghép tất cả dữ liệu từ nhiều đợt kê khai
         let allData: any[] = [];
         let stt = 1;
-        
+
         results.forEach(result => {
           if (result && result.keKhaiBHYTs && result.keKhaiBHYTs.length > 0) {
             // Cập nhật lại STT cho toàn bộ dữ liệu
@@ -906,25 +908,25 @@ export class ExportVnptService {
               ...item,
               stt: stt++
             }));
-            
+
             allData = [...allData, ...updatedItems];
           }
         });
-        
+
         if (allData.length === 0) {
           this.message.warning('Không có dữ liệu chi tiết để xuất');
           return false;
         }
-        
+
         // Tạo workbook
         const wb = XLSX.utils.book_new();
-        
+
         // Thêm 2 dòng trống
         const emptyRows = [
           Array(13).fill(''),  // Dòng 1 trống với 13 cột
           Array(13).fill('')   // Dòng 2 trống với 13 cột
         ];
-        
+
         // Chuẩn bị dữ liệu cho sheet
         const keKhaiHeaders = [
           'STT', // Cột A - Số thứ tự
@@ -992,16 +994,16 @@ export class ExportVnptService {
           'NgayBienLai', // Cột BK - Ngày biên lai
           'MaNhanvienThu', // Cột BL - Mã nhân viên thu
         ];
-        
+
         const keKhaiData = allData.map((item: any) => {
           // Sử dụng mã nhân viên từ người dùng
           const maNhanVienThu = item.maNhanVienThu || maNhanVienThuFromUser;
           console.log(`Sử dụng mã nhân viên cho ${item.ho_ten}: ${maNhanVienThu}`);
-          
+
           return [
             item.stt, // Sử dụng STT từ API
             item.ho_ten,
-            item.ma_so_bhxh || '', 
+            item.ma_so_bhxh || '',
             '', // Để trống cột D (MaPhongBan)
             '1', // Cột E giá trị mặc định là 1
             this.getPhuongAnDongText(item.phuong_an_dong || ''),
@@ -1011,8 +1013,8 @@ export class ExportVnptService {
               month: '2-digit',
               year: 'numeric'
             }) : '',
-            item.so_bien_lai ? (item.QuyenBienLai ? 
-              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+            item.so_bien_lai ? (item.QuyenBienLai ?
+              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
               item.so_bien_lai
             ) : '',
             typeof item.nguoi_thu !== 'undefined' ? item.nguoi_thu.toString() : '',
@@ -1076,8 +1078,8 @@ export class ExportVnptService {
             '', // Cột BG trống
             '', // Cột BH trống
             item.cccd || '', // Cột BI hiển thị CCCD
-            item.so_bien_lai ? (item.QuyenBienLai ? 
-              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` : 
+            item.so_bien_lai ? (item.QuyenBienLai ?
+              `${item.QuyenBienLai.quyen_so}${item.so_bien_lai.padStart(5, '0')}` :
               item.so_bien_lai
             ) : '', // Cột BJ - Số biên lai
             item.ngay_bien_lai ? new Date(item.ngay_bien_lai).toLocaleDateString('vi-VN', {
@@ -1088,36 +1090,36 @@ export class ExportVnptService {
             maNhanVienThu, // Cột BL - Mã nhân viên thu - sử dụng mã được chỉ định từ ngoài
           ];
         });
-        
+
         // Tạo worksheet từ dữ liệu
         const ws = XLSX.utils.aoa_to_sheet([...emptyRows, keKhaiHeaders, ...keKhaiData]);
-        
+
         // Thiết lập độ rộng cột
         const maxWidth = 120;
         const colWidths = Array(keKhaiHeaders.length).fill({ wch: 15 });
-        
+
         // Cột STT hẹp hơn
         colWidths[0] = { wch: 5 };
-        
+
         // Cột họ tên rộng hơn
         colWidths[1] = { wch: 30 };
-        
+
         // Cột địa chỉ rộng hơn
         colWidths[22] = { wch: 40 };
         colWidths[38] = { wch: 40 };
-        
+
         ws['!cols'] = colWidths;
-        
+
         // Thêm worksheet vào workbook
         XLSX.utils.book_append_sheet(wb, ws, 'Dữ Liệu');
-        
+
         // Tạo tên file với timestamp
         const now = new Date();
         const fileName = `VNPT_BHYT_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}.xlsx`;
-        
+
         // Xuất file Excel
         XLSX.writeFile(wb, fileName);
-        
+
         this.message.success(`Xuất dữ liệu thành công! Đã xuất ${allData.length} bản ghi từ ${results.length} đợt kê khai.`);
         return true;
       }),
@@ -1128,4 +1130,4 @@ export class ExportVnptService {
       })
     );
   }
-} 
+}

@@ -196,17 +196,27 @@
             <i nz-icon nzType="eye"></i>
           </button>
           <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
-          <a
+          <button
             nz-button
             nzType="default"
             nzSize="small"
             [disabled]="!item.is_published_to_vnpt"
-            [href]="downloadBienLaiPdf(item.id!)"
-            target="_blank"
+            (click)="downloadPdfFromTable(item.id!)"
             nz-tooltip
             nzTooltipTitle="Tải PDF">
             <i nz-icon nzType="file-pdf"></i>
-          </a>
+          </button>
+          <nz-divider nzType="vertical" *ngIf="item.is_published_to_vnpt"></nz-divider>
+          <button
+            nz-button
+            nzType="default"
+            nzSize="small"
+            [disabled]="!item.is_published_to_vnpt"
+            (click)="printBienLaiFromTable(item.id!)"
+            nz-tooltip
+            nzTooltipTitle="In biên lai">
+            <i nz-icon nzType="printer"></i>
+          </button>
         </td>
       </tr>
     </tbody>
@@ -447,6 +457,9 @@
       </button>
       <button nz-button nzType="primary" (click)="printBienLai()">
         <i nz-icon nzType="printer"></i> In biên lai
+      </button>
+      <button nz-button nzType="primary" (click)="copyBienLaiAsImage()">
+        <i nz-icon nzType="copy"></i> Sao chép ảnh
       </button>
     </ng-template>
   </nz-modal>

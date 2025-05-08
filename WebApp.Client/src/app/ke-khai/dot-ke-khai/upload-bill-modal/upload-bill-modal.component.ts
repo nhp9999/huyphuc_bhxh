@@ -47,9 +47,9 @@ import { environment } from '../../../../environments/environment';
     </div>
     <div *nzModalFooter>
       <button nz-button nzType="default" [disabled]="isUploading" (click)="handleCancel()">Hủy</button>
-      <button 
-        nz-button 
-        nzType="primary" 
+      <button
+        nz-button
+        nzType="primary"
         [nzLoading]="isUploading"
         [disabled]="!hasFile || isUploading"
         (click)="handleOk()"
@@ -67,7 +67,7 @@ import { environment } from '../../../../environments/environment';
       margin-top: 16px;
       color: #8c8c8c;
       font-size: 14px;
-      
+
       p {
         margin: 4px 0;
       }
@@ -125,13 +125,13 @@ export class UploadBillModalComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', item.file as any);
     formData.append('upload_preset', environment.cloudinary.uploadPreset);
-    
+
     // Format timestamp theo giờ Việt Nam
     const now = new Date();
     const timestamp = now.toLocaleString('vi-VN', {
       timeZone: 'Asia/Ho_Chi_Minh'
     }).replace(/[/:]/g, '').replace(/,/g, '_').replace(/ /g, '');
-    
+
     const fileName = `bill_${this.dotKeKhaiId}_${timestamp}`;
     formData.append('public_id', fileName);
     formData.append('folder', 'bills');
@@ -190,9 +190,9 @@ export class UploadBillModalComponent implements OnInit {
     if (info.file.status === 'done') {
       this.isUploading = false;
       this.hasFile = true;
-      
+
       const response = info.file.response;
-      
+
       // Tạo hóa đơn thanh toán
       const hoaDon = {
         dot_ke_khai_id: this.dotKeKhaiId,
@@ -206,8 +206,8 @@ export class UploadBillModalComponent implements OnInit {
 
       this.hoaDonService.create(hoaDon).subscribe({
         next: () => {
-          // Cập nhật trạng thái sang đang xử lý
-          this.dotKeKhaiService.updateTrangThai(this.dotKeKhaiId, 'dang_xu_ly').subscribe({
+          // Cập nhật trạng thái sang chờ xử lý
+          this.dotKeKhaiService.updateTrangThai(this.dotKeKhaiId, 'cho_xu_ly').subscribe({
             next: () => {
               this.message.success('Xác nhận thanh toán thành công');
               // Đóng modal hiện tại
@@ -277,7 +277,7 @@ export class UploadBillModalComponent implements OnInit {
     }
 
     const response = currentFile['cloudinaryResponse'];
-    
+
     // Xác nhận thanh toán với URL của bill
     this.vietQRService.confirmPayment(
       this.dotKeKhaiId,
@@ -314,4 +314,4 @@ export class UploadBillModalComponent implements OnInit {
     }
     this.modal.close();
   }
-} 
+}

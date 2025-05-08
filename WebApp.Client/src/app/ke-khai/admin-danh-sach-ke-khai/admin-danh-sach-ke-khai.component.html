@@ -55,6 +55,14 @@
             </div>
           </ng-template>
         </nz-tab>
+        <nz-tab [nzTitle]="tabTitleChoXuLy">
+          <ng-template #tabTitleChoXuLy>
+            <div class="tab-title-container">
+              <span>Chờ xử lý</span>
+              <nz-badge [nzCount]="getCountByStatus('cho_xu_ly')" [nzOverflowCount]="999" [nzStyle]="{ backgroundColor: '#2f54eb' }"></nz-badge>
+            </div>
+          </ng-template>
+        </nz-tab>
         <nz-tab [nzTitle]="tabTitleDangXuLy">
           <ng-template #tabTitleDangXuLy>
             <div class="tab-title-container">
@@ -248,6 +256,11 @@
                   <li nz-menu-item *ngIf="data.trang_thai === 'cho_thanh_toan'" (click)="duyetDotKeKhai(data)">
                     <span nz-icon nzType="check-circle" nzTheme="outline"></span>
                     Duyệt
+                  </li>
+
+                  <li nz-menu-item *ngIf="data.trang_thai === 'cho_xu_ly'" (click)="batDauXuLy(data)">
+                    <span nz-icon nzType="play-circle" nzTheme="outline"></span>
+                    Bắt đầu xử lý
                   </li>
 
                   <li nz-menu-item *ngIf="data.trang_thai === 'cho_thanh_toan'" (click)="tuChoiDotKeKhai(data)">

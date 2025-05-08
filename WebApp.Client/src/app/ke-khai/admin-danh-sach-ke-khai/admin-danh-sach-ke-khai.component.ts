@@ -135,6 +135,7 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     { text: 'Đã duyệt', value: 'da_duyet' },
     { text: 'Đã từ chối', value: 'da_tu_choi' },
     { text: 'Chờ thanh toán', value: 'cho_thanh_toan' },
+    { text: 'Chờ xử lý', value: 'cho_xu_ly' },
     { text: 'Hoàn thành', value: 'hoan_thanh' },
     { text: 'Đang xử lý', value: 'dang_xu_ly' }
   ];
@@ -252,14 +253,17 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       case 'cho_thanh_toan':
         this.tabTrangThaiIndex = 1;
         break;
-      case 'dang_xu_ly':
+      case 'cho_xu_ly':
         this.tabTrangThaiIndex = 2;
         break;
-      case 'hoan_thanh':
+      case 'dang_xu_ly':
         this.tabTrangThaiIndex = 3;
         break;
-      case 'da_tu_choi':
+      case 'hoan_thanh':
         this.tabTrangThaiIndex = 4;
+        break;
+      case 'da_tu_choi':
+        this.tabTrangThaiIndex = 5;
         break;
       default:
         this.tabTrangThaiIndex = 0;
@@ -518,6 +522,35 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     });
   }
 
+  batDauXuLy(dotKeKhai: DotKeKhai): void {
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận bắt đầu xử lý',
+      nzContent: `Bạn có chắc chắn muốn bắt đầu xử lý đợt kê khai "${dotKeKhai.ten_dot}" không?`,
+      nzOkText: 'Xác nhận',
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        // Hiển thị loading
+        const loadingMsg = this.message.loading('Đang cập nhật trạng thái...', { nzDuration: 0 });
+
+        // Gọi API để cập nhật trạng thái sang đang xử lý
+        if (dotKeKhai.id) {
+          this.dotKeKhaiService.updateTrangThai(dotKeKhai.id, 'dang_xu_ly').subscribe({
+            next: () => {
+              this.message.remove(loadingMsg.messageId);
+              this.message.success(`Đã chuyển đợt kê khai "${dotKeKhai.ten_dot}" sang trạng thái đang xử lý`);
+              this.refreshData(); // Làm mới dữ liệu
+            },
+            error: (error) => {
+              this.message.remove(loadingMsg.messageId);
+              console.error('Lỗi khi cập nhật trạng thái:', error);
+              this.message.error('Có lỗi xảy ra khi cập nhật trạng thái đợt kê khai');
+            }
+          });
+        }
+      }
+    });
+  }
+
   xuatExcelDotKeKhai(dotKeKhai: DotKeKhai): void {
     if (!dotKeKhai || !dotKeKhai.id) {
       this.message.warning('Không tìm thấy thông tin đợt kê khai');
@@ -554,6 +587,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
         return 'error';
       case 'cho_thanh_toan':
         return 'warning';
+      case 'cho_xu_ly':
+        return 'blue';
       case 'hoan_thanh':
         return 'success';
       case 'tu_choi':
@@ -826,15 +861,15 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
                   }
                 }
 
-                // Cập nhật trạng thái sang "đang xử lý"
+                // Cập nhật trạng thái sang "chờ xử lý"
                 if (this.selectedDotKeKhai && this.selectedDotKeKhai.id) {
-                  this.dotKeKhaiService.updateTrangThai(this.selectedDotKeKhai.id, 'dang_xu_ly')
+                  this.dotKeKhaiService.updateTrangThai(this.selectedDotKeKhai.id, 'cho_xu_ly')
                     .subscribe({
                       next: () => {
-                        this.message.success('Đã cập nhật trạng thái sang "Đang xử lý"');
+                        this.message.success('Đã cập nhật trạng thái sang "Chờ xử lý"');
                         // Cập nhật trạng thái trong đối tượng đã chọn
                         if (this.selectedDotKeKhai) {
-                          this.selectedDotKeKhai.trang_thai = 'dang_xu_ly';
+                          this.selectedDotKeKhai.trang_thai = 'cho_xu_ly';
                         }
                         // Làm mới dữ liệu
                         this.refreshData();
@@ -872,13 +907,16 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       case 1: // Chờ thanh toán
         this.danhSachFilters.trangThai = 'cho_thanh_toan';
         break;
-      case 2: // Đang xử lý
+      case 2: // Chờ xử lý
+        this.danhSachFilters.trangThai = 'cho_xu_ly';
+        break;
+      case 3: // Đang xử lý
         this.danhSachFilters.trangThai = 'dang_xu_ly';
         break;
-      case 3: // Hoàn thành
+      case 4: // Hoàn thành
         this.danhSachFilters.trangThai = 'hoan_thanh';
         break;
-      case 4: // Đã từ chối
+      case 5: // Đã từ chối
         this.danhSachFilters.trangThai = 'da_tu_choi';
         break;
       default:

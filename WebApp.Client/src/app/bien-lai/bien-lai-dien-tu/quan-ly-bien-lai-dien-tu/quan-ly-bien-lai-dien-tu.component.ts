@@ -29,6 +29,7 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, finalize, of } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { environment } from '../../../../environments/environment';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-quan-ly-bien-lai-dien-tu',
@@ -654,6 +655,29 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
   }
 
   /**
+   * Tải PDF của biên lai từ bảng
+   * @param id ID biên lai cần tải
+   */
+  downloadPdfFromTable(id: number): void {
+    if (!id) {
+      this.message.warning('Không có biên lai để tải');
+      return;
+    }
+
+    // Tạo một thẻ a tạm thời
+    const link = document.createElement('a');
+    link.href = this.downloadBienLaiPdf(id);
+
+    // Đặt thuộc tính download để tải xuống thay vì mở trong trình duyệt
+    link.setAttribute('download', `BienLai_${id}.pdf`);
+
+    // Thêm vào DOM, kích hoạt sự kiện click, và xóa
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
    * In biên lai điện tử
    * Sử dụng iframe để in nội dung biên lai hiện tại
    */
@@ -688,7 +712,7 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>In biên lai điện tử</title>
+          <title>Biên lai điện tử</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -698,6 +722,10 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
             @media print {
               body {
                 padding: 0;
+              }
+              @page {
+                margin: 0;
+                size: auto;
               }
             }
           </style>
@@ -724,6 +752,192 @@ export class QuanLyBienLaiDienTuComponent implements OnInit {
       console.error('Lỗi khi in biên lai:', error);
       this.message.error('Có lỗi khi in biên lai. Vui lòng thử lại sau.');
     }
+  }
+
+  /**
+   * Sao chép biên lai dưới dạng ảnh vào clipboard
+   */
+  copyBienLaiAsImage(): void {
+    if (!this.bienLaiContent) {
+      this.message.warning('Không có nội dung biên lai để sao chép');
+      return;
+    }
+
+    try {
+      // Lấy phần tử DOM chứa nội dung biên lai
+      const bienLaiElement = document.querySelector('.bien-lai-content');
+      if (!bienLaiElement) {
+        throw new Error('Không tìm thấy phần tử chứa nội dung biên lai');
+      }
+
+      // Hiển thị thông báo đang xử lý
+      const loadingId = this.message.loading('Đang xử lý...', { nzDuration: 0 }).messageId;
+
+      // Sử dụng html2canvas để chuyển đổi nội dung HTML thành canvas
+      html2canvas(bienLaiElement as HTMLElement, {
+        scale: 2, // Tăng độ phân giải
+        useCORS: true, // Cho phép tải hình ảnh từ các domain khác
+        allowTaint: true, // Cho phép taint canvas
+        backgroundColor: '#ffffff' // Đặt màu nền trắng
+      }).then(canvas => {
+        // Xóa thông báo đang xử lý
+        this.message.remove(loadingId);
+
+        // Chuyển đổi canvas thành blob
+        canvas.toBlob(blob => {
+          if (!blob) {
+            this.message.error('Không thể chuyển đổi biên lai thành ảnh');
+            return;
+          }
+
+          // Tạo ClipboardItem và sao chép vào clipboard
+          const item = new ClipboardItem({ 'image/png': blob });
+          navigator.clipboard.write([item])
+            .then(() => {
+              this.message.success('Đã sao chép ảnh biên lai vào clipboard');
+            })
+            .catch(err => {
+              console.error('Lỗi khi sao chép vào clipboard:', err);
+              this.message.error('Không thể sao chép ảnh vào clipboard. Vui lòng thử lại sau.');
+
+              // Phương án dự phòng: Tạo URL và mở trong tab mới
+              this.fallbackCopyImage(canvas);
+            });
+        }, 'image/png');
+      }).catch(err => {
+        // Xóa thông báo đang xử lý
+        this.message.remove(loadingId);
+
+        console.error('Lỗi khi tạo ảnh từ biên lai:', err);
+        this.message.error('Không thể tạo ảnh từ biên lai. Vui lòng thử lại sau.');
+      });
+    } catch (error) {
+      console.error('Lỗi khi sao chép ảnh biên lai:', error);
+      this.message.error('Có lỗi khi sao chép ảnh biên lai. Vui lòng thử lại sau.');
+    }
+  }
+
+  /**
+   * Phương án dự phòng khi không thể sao chép ảnh vào clipboard
+   * @param canvas Canvas chứa ảnh biên lai
+   */
+  private fallbackCopyImage(canvas: HTMLCanvasElement): void {
+    try {
+      // Tạo URL từ canvas
+      const imageUrl = canvas.toDataURL('image/png');
+
+      // Tạo thẻ a tạm thời để tải ảnh
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `BienLai_${this.currentViewBienLaiId || 'image'}.png`;
+
+      // Thêm vào DOM, kích hoạt sự kiện click, và xóa
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      this.message.info('Không thể sao chép ảnh vào clipboard. Đã tải ảnh xuống thay thế.');
+    } catch (error) {
+      console.error('Lỗi khi tải ảnh xuống:', error);
+      this.message.error('Không thể tải ảnh xuống. Vui lòng thử lại sau.');
+    }
+  }
+
+  /**
+   * In biên lai từ bảng danh sách biên lai
+   * @param id ID biên lai cần in
+   */
+  printBienLaiFromTable(id: number): void {
+    // Hiển thị thông báo đang xử lý
+    const loadingId = this.message.loading('Đang tải nội dung biên lai...', { nzDuration: 0 }).messageId;
+
+    // Lấy nội dung biên lai từ API
+    this.vnptBienLaiService.getBienLaiContent(id)
+      .pipe(
+        finalize(() => {
+          this.message.remove(loadingId);
+        }),
+        catchError(error => {
+          console.error('Lỗi khi lấy nội dung biên lai:', error);
+          this.message.error('Có lỗi khi lấy nội dung biên lai');
+          return of('');
+        })
+      )
+      .subscribe({
+        next: (content: string) => {
+          if (!content) {
+            this.message.warning('Không có nội dung biên lai để in');
+            return;
+          }
+
+          if (content.startsWith('Error:') || content.startsWith('ERR:')) {
+            // Hiển thị thông báo lỗi
+            const errorMessage = content.startsWith('ERR:') ? this.getVNPTErrorMessage(content) : content;
+            this.message.error(errorMessage);
+            return;
+          }
+
+          try {
+            // Tạo một iframe ẩn
+            const printIframe = document.createElement('iframe');
+            printIframe.style.position = 'absolute';
+            printIframe.style.top = '-9999px';
+            printIframe.style.left = '-9999px';
+            document.body.appendChild(printIframe);
+
+            // Ghi nội dung vào iframe
+            const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+            if (!iframeDoc) {
+              throw new Error('Không thể truy cập document của iframe');
+            }
+
+            iframeDoc.open();
+            iframeDoc.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Biên lai điện tử</title>
+                <style>
+                  body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                  }
+                  @media print {
+                    body {
+                      padding: 0;
+                    }
+                    @page {
+                      margin: 0;
+                      size: auto;
+                    }
+                  }
+                </style>
+              </head>
+              <body>
+                ${content}
+              </body>
+              </html>
+            `);
+            iframeDoc.close();
+
+            // Đợi iframe tải xong
+            setTimeout(() => {
+              // In nội dung của iframe
+              printIframe.contentWindow?.focus();
+              printIframe.contentWindow?.print();
+
+              // Xóa iframe sau khi in
+              setTimeout(() => {
+                document.body.removeChild(printIframe);
+              }, 1000);
+            }, 500);
+          } catch (error) {
+            console.error('Lỗi khi in biên lai:', error);
+            this.message.error('Có lỗi khi in biên lai. Vui lòng thử lại sau.');
+          }
+        }
+      });
   }
 
   /**
