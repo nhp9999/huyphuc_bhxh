@@ -1,17 +1,17 @@
 <div class="container">
   <nz-card nzTitle="Tra cứu thông tin BHYT" [nzExtra]="extraTemplate">
     <form nz-form [formGroup]="traCuuBHYTForm" (ngSubmit)="submitBHYTForm()">
-      
+
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập mã số BHXH (phải có 10 chữ số)">
           <div class="input-with-button">
-            <input 
-              nz-input 
-              formControlName="maSoBHXH" 
-              placeholder="Nhập mã số BHXH (10 chữ số)" 
-              (input)="formatMaSoBHXH($event)" 
-              maxlength="10" 
+            <input
+              nz-input
+              formControlName="maSoBHXH"
+              placeholder="Nhập mã số BHXH (10 chữ số)"
+              (input)="formatMaSoBHXH($event)"
+              maxlength="10"
             />
           </div>
         </nz-form-control>
@@ -34,7 +34,7 @@
 
     <ng-container *ngIf="daTimKiem">
       <nz-divider></nz-divider>
-      
+
       <div *ngIf="isLoading" class="loading-container">
         <nz-spin nzTip="Đang tra cứu..."></nz-spin>
       </div>
@@ -45,14 +45,14 @@
 
       <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu" class="result-container">
         <h3>Thông tin BHYT</h3>
-        
+
         <div class="custom-tabs">
           <div class="tab-headers">
             <div class="tab-header active" (click)="activateTab('tab1')">Thông tin chung</div>
             <div class="tab-header" (click)="activateTab('tab2')">Thông tin đóng BHYT</div>
             <div class="tab-header" (click)="activateTab('tab3')">Thông tin khác</div>
           </div>
-          
+
           <div class="tab-content">
             <!-- Tab 1: Thông tin chung -->
             <div class="tab-pane active" id="tab1">
@@ -74,7 +74,7 @@
                   </nz-descriptions-item>
                   <nz-descriptions-item nzTitle="Thời hạn sử dụng">
                     {{ ketQuaTraCuu.tuNgayDt | date:'dd/MM/yyyy' }} - {{ ketQuaTraCuu.denNgayDt | date:'dd/MM/yyyy' }}
-                    <nz-tag class="status-tag" 
+                    <nz-tag class="status-tag"
                       [ngClass]="isTheConHan(ketQuaTraCuu.denNgay) ? 'valid-tag' : 'expired-tag'">
                       {{ isTheConHan(ketQuaTraCuu.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
                     </nz-tag>
@@ -111,18 +111,18 @@
                   <nz-descriptions-item nzTitle="Phương án">{{ ketQuaTraCuu.phuongAn }}</nz-descriptions-item>
                   <nz-descriptions-item nzTitle="Ngày 5 năm">{{ ketQuaTraCuu.ngay5NamDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
                   <nz-descriptions-item nzTitle="Địa chỉ liên hệ">{{ ketQuaTraCuu.diaChiLh || 'Không có' }}</nz-descriptions-item>
-                  <nz-descriptions-item nzTitle="Mã tỉnh LH">{{ ketQuaTraCuu.maTinhLh || 'Không có' }}</nz-descriptions-item>
-                  <nz-descriptions-item nzTitle="Mã huyện LH">{{ ketQuaTraCuu.maHuyenLh || 'Không có' }}</nz-descriptions-item>
-                  <nz-descriptions-item nzTitle="Mã xã LH">{{ ketQuaTraCuu.maXaLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Tỉnh liên hệ">{{ ketQuaTraCuu.tenTinhLh || ketQuaTraCuu.maTinhLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Huyện liên hệ">{{ ketQuaTraCuu.tenHuyenLh || ketQuaTraCuu.maHuyenLh || 'Không có' }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Xã liên hệ">{{ ketQuaTraCuu.tenXaLh || ketQuaTraCuu.maXaLh || 'Không có' }}</nz-descriptions-item>
                   <nz-descriptions-item nzTitle="Ngày thẻ mới">{{ ketQuaTraCuu.tuNgayTheMoiDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-                  <nz-descriptions-item nzTitle="Mã bệnh viện">{{ ketQuaTraCuu.maBenhVien }}</nz-descriptions-item>
-                  <nz-descriptions-item nzTitle="Mã BHXH">{{ ketQuaTraCuu.maBhxh }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Bệnh viện">{{ ketQuaTraCuu.tenBenhVienFull || ketQuaTraCuu.maBenhVien }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Cơ quan BHXH">{{ ketQuaTraCuu.tenBHXHFull || ketQuaTraCuu.maBhxh }}</nz-descriptions-item>
                 </nz-descriptions>
               </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Nút xem chi tiết BHYT -->
         <button nz-button nzType="primary" (click)="xemChiTietBHYT()" style="margin-top: 15px;">
           <i nz-icon nzType="medicine-box"></i>
@@ -148,31 +148,39 @@
       <nz-descriptions-item nzTitle="Mã số BHXH" [nzSpan]="1">{{ chiTietItem.maSoBhxh }}</nz-descriptions-item>
       <nz-descriptions-item nzTitle="Họ và tên" [nzSpan]="1">{{ chiTietItem.hoTen }}</nz-descriptions-item>
       <nz-descriptions-item nzTitle="Ngày sinh" [nzSpan]="1">{{ chiTietItem.ngaySinhHienThi }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Giới tính" [nzSpan]="1">{{ chiTietItem.gioiTinhHienThi }}</nz-descriptions-item>
       <nz-descriptions-item nzTitle="Dân tộc/Quốc tịch" [nzSpan]="1">{{ chiTietItem.danTocHienThi }} / {{ chiTietItem.quocTichHienThi }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Số CMND/CCCD" [nzSpan]="1">{{ chiTietItem.soCmnd || 'Không có' }}</nz-descriptions-item>
       <nz-descriptions-item nzTitle="Số điện thoại" [nzSpan]="1">{{ chiTietItem.soDienThoai || 'Không có' }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Thời hạn sử dụng" [nzSpan]="2">
         {{ chiTietItem.tuNgayDt | date:'dd/MM/yyyy' }} - {{ chiTietItem.denNgayDt | date:'dd/MM/yyyy' }}
         <nz-tag [nzColor]="isTheConHan(chiTietItem.denNgay) ? 'success' : 'error'">
           {{ isTheConHan(chiTietItem.denNgay) ? 'Còn hạn' : 'Hết hạn' }}
         </nz-tag>
       </nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Ngày thẻ mới" [nzSpan]="1">{{ chiTietItem.tuNgayTheMoiDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
       <nz-descriptions-item nzTitle="Ngày 5 năm" [nzSpan]="1">{{ chiTietItem.ngay5NamDt | date:'dd/MM/yyyy' }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Nơi đăng ký KCB" [nzSpan]="2">{{ chiTietItem.tenBenhVien }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Địa chỉ liên hệ" [nzSpan]="2">{{ chiTietItem.diaChiLh || 'Không có' }}</nz-descriptions-item>
-      
+
+      <nz-descriptions-item nzTitle="Tỉnh liên hệ" [nzSpan]="2">{{ chiTietItem.tenTinhLh || chiTietItem.maTinhLh || 'Không có' }}</nz-descriptions-item>
+
+      <nz-descriptions-item nzTitle="Huyện liên hệ" [nzSpan]="2">{{ chiTietItem.tenHuyenLh || chiTietItem.maHuyenLh || 'Không có' }}</nz-descriptions-item>
+
+      <nz-descriptions-item nzTitle="Xã liên hệ" [nzSpan]="2">{{ chiTietItem.tenXaLh || chiTietItem.maXaLh || 'Không có' }}</nz-descriptions-item>
+
+      <nz-descriptions-item nzTitle="Bệnh viện" [nzSpan]="2">{{ chiTietItem.tenBenhVienFull || chiTietItem.maBenhVien }}</nz-descriptions-item>
+
+      <nz-descriptions-item nzTitle="Cơ quan BHXH" [nzSpan]="2">{{ chiTietItem.tenBHXHFull || chiTietItem.maBhxh }}</nz-descriptions-item>
+
       <nz-descriptions-item nzTitle="Đơn vị" [nzSpan]="2">{{ chiTietItem.tenDvi }}</nz-descriptions-item>
-      
-      <nz-descriptions-item nzTitle="Cơ quan BHXH" [nzSpan]="2">{{ chiTietItem.tenCqbh }}</nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Tỷ lệ đóng BHYT" [nzSpan]="2">
         <div *ngIf="chiTietItem.tyLeBhyt > 0">BHYT: {{ chiTietItem.tyLeBhyt }}%</div>
         <div *ngIf="chiTietItem.tyLeNstw > 0">NSTW: {{ chiTietItem.tyLeNstw }}%</div>
@@ -180,7 +188,7 @@
         <div *ngIf="chiTietItem.tyLeNsdp > 0">NSDP: {{ chiTietItem.tyLeNsdp }}%</div>
         <div *ngIf="chiTietItem.tyLeKhac > 0">Khác: {{ chiTietItem.tyLeKhac }}%</div>
       </nz-descriptions-item>
-      
+
       <nz-descriptions-item nzTitle="Trạng thái thẻ" [nzSpan]="2">
         <nz-tag [nzColor]="chiTietItem.trangThaiThe === 'Thẻ hợp lệ' ? 'success' : 'error'">
           {{ chiTietItem.trangThaiThe }}
@@ -209,16 +217,16 @@
       <nz-form-item>
         <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
           <div class="captcha-container">
-            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
-              style="margin-bottom: 8px; max-width: 100%;" />
+            <img [src]="captchaImage"
+              alt="captcha" style="margin-bottom: 8px; max-width: 100%; border: 1px solid #e8e8e8; border-radius: 4px;" />
             <div class="input-with-button">
-              <input nz-input 
-                formControlName="text" 
+              <input nz-input
+                formControlName="text"
                 placeholder="Nhập mã xác nhận"
                 (input)="convertToUpperCase($event)"
                 maxlength="4" />
-              <button 
-                nz-button 
+              <button
+                nz-button
                 nzType="default"
                 class="refresh-button"
                 (click)="getCaptcha(); $event.preventDefault()">
@@ -230,4 +238,4 @@
       </nz-form-item>
     </form>
   </ng-container>
-</nz-modal> 
+</nz-modal>
