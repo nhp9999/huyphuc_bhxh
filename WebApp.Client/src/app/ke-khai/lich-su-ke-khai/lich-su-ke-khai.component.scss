@@ -8,7 +8,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   h2 {
     margin-bottom: 0;
     font-size: 18px;
@@ -39,6 +39,22 @@
 
     input, nz-range-picker {
       width: 100%;
+    }
+
+    .custom-input-group {
+      display: flex;
+      align-items: center;
+
+      input {
+        flex: 1;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+
+      button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
     }
   }
 }
@@ -99,11 +115,11 @@
   .button-group {
     width: 100%;
     flex-wrap: wrap;
-    
+
     button {
       width: 100%;
       margin-bottom: 8px;
       justify-content: center;
     }
   }
-} 
+}

@@ -1,0 +1,109 @@
+<div class="modal-content">
+  <div class="modal-header">
+    <h4 class="modal-title">Tìm kiếm và xuất D03 theo mã số BHXH</h4>
+    <button nz-button nzType="text" nzShape="circle" (click)="closeModal()">
+      <i nz-icon nzType="close"></i>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <div class="input-section">
+      <div class="input-row">
+        <label>Nhập mã số BHXH:</label>
+        <div class="input-group">
+          <input
+            nz-input
+            placeholder="Nhập mã số BHXH (10 chữ số)"
+            [(ngModel)]="currentMaSoBHXH"
+            (keyup.enter)="addMaSoBHXH()"
+            maxlength="10"
+            (keypress)="onlyNumber($event)">
+          <button nz-button nzType="primary" (click)="addMaSoBHXH()">
+            <i nz-icon nzType="plus"></i>
+            Thêm
+          </button>
+        </div>
+        <small class="hint-text">Nhập mã số BHXH và nhấn Enter hoặc nút Thêm để đưa vào danh sách</small>
+      </div>
+
+      <div class="upload-section">
+        <span class="upload-label">Hoặc tải lên file Excel:</span>
+        <button nz-button nzType="default" (click)="fileInput.click()">
+          <i nz-icon nzType="upload"></i>
+          Chọn file
+        </button>
+        <input
+          type="file"
+          #fileInput
+          style="display: none;"
+          accept=".xlsx,.xls"
+          (change)="onFileSelected($event)">
+        <span class="upload-hint" *ngIf="selectedFile">{{ selectedFile.name }}</span>
+        <span class="upload-hint" *ngIf="!selectedFile">Chỉ chấp nhận file Excel (.xlsx, .xls)</span>
+      </div>
+    </div>
+
+    <div class="list-section" *ngIf="maSoBHXHList.length > 0">
+      <div class="list-header">
+        <h5>Danh sách mã số BHXH ({{ maSoBHXHList.length }})</h5>
+        <div>
+          <button nz-button nzType="default" nzDanger (click)="clearList()">
+            <i nz-icon nzType="delete"></i>
+            Xóa tất cả
+          </button>
+        </div>
+      </div>
+
+      <div class="list-content">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 60px">STT</th>
+              <th>Mã số BHXH</th>
+              <th style="width: 120px">Trạng thái</th>
+              <th style="width: 100px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of maSoBHXHList; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ item.maSoBHXH }}</td>
+              <td>
+                <nz-tag [nzColor]="getStatusColor(item.status)">
+                  {{ getStatusText(item.status) }}
+                </nz-tag>
+              </td>
+              <td>
+                <button
+                  nz-button
+                  nzType="text"
+                  nzDanger
+                  nzShape="circle"
+                  (click)="removeMaSoBHXH(i)">
+                  <i nz-icon nzType="delete"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="maSoBHXHList.length === 0">
+              <td colspan="4" style="text-align: center; padding: 16px;">
+                Chưa có mã số BHXH nào trong danh sách
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button nz-button nzType="default" (click)="closeModal()">Đóng</button>
+    <button
+      nz-button
+      nzType="primary"
+      [disabled]="maSoBHXHList.length === 0 || isProcessing"
+      (click)="exportD03()">
+      <i nz-icon nzType="file-excel"></i>
+      Xuất D03 ({{ maSoBHXHList.length }} mã số)
+    </button>
+  </div>
+</div>

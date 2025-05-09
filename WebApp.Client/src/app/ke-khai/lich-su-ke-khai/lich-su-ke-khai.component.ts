@@ -8,7 +8,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageModule, NzMessageService } from 'ng-zorro-antd/message';
-import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -18,6 +18,7 @@ import { LichSuKeKhaiService, KeKhaiBHYT, KeKhaiBHXH } from '../../services/lich
 import { DonViService, DonVi } from '../../services/don-vi.service';
 import { D03Service } from '../../bhyt/services/d03.service';
 import { forkJoin } from 'rxjs';
+import { MaSoBHXHModalComponent } from './ma-so-bhxh-modal/ma-so-bhxh-modal.component';
 
 @Component({
   selector: 'app-lich-su-ke-khai',
@@ -38,7 +39,8 @@ import { forkJoin } from 'rxjs';
     NzTableModule,
     NzTagModule,
     NzTabsModule,
-    NzCheckboxModule
+    NzCheckboxModule,
+    MaSoBHXHModalComponent
   ],
   templateUrl: './lich-su-ke-khai.component.html',
   styleUrls: ['./lich-su-ke-khai.component.scss']
@@ -71,7 +73,8 @@ export class LichSuKeKhaiComponent implements OnInit {
     private lichSuKeKhaiService: LichSuKeKhaiService,
     private message: NzMessageService,
     private d03Service: D03Service,
-    private donViService: DonViService
+    private donViService: DonViService,
+    private modalService: NzModalService
   ) {}
 
   ngOnInit(): void {
@@ -284,5 +287,58 @@ export class LichSuKeKhaiComponent implements OnInit {
     setTimeout(() => {
       this.loading = false;
     }, 1000);
+  }
+
+  xuatD03TuMaSoBHXH(): void {
+    // Kiểm tra mã số BHXH đã được nhập chưa
+    if (!this.searchForm.maSoBHXH || this.searchForm.maSoBHXH.trim() === '') {
+      this.message.warning('Vui lòng nhập mã số BHXH để xuất D03');
+      return;
+    }
+
+    // Kiểm tra định dạng mã số BHXH (10 số)
+    if (!/^\d{10}$/.test(this.searchForm.maSoBHXH)) {
+      this.message.warning('Mã số BHXH phải có đúng 10 chữ số');
+      return;
+    }
+
+    this.loading = true;
+    const loadingId = this.message.loading('Đang chuẩn bị dữ liệu xuất D03...', { nzDuration: 0 }).messageId;
+
+    // Tạo options cho D03
+    const options = {
+      tenCongTy: 'Đại lý thu BHXH Huy Phúc',
+      nguoiLap: 'Người lập biểu',
+      ngayLap: new Date()
+    };
+
+    try {
+      // Gọi service để xuất D03 từ mã số BHXH
+      this.d03Service.xuatExcelMauD03TSTuMaSoBHXH(this.searchForm.maSoBHXH, options);
+
+      // Đóng thông báo loading sau 2 giây
+      setTimeout(() => {
+        this.message.remove(loadingId);
+        this.loading = false;
+        this.message.success(`Đã xuất D03 cho mã số BHXH ${this.searchForm.maSoBHXH} thành công`);
+      }, 2000);
+    } catch (error) {
+      this.message.remove(loadingId);
+      this.loading = false;
+      this.message.error('Có lỗi xảy ra khi xuất D03');
+      console.error('Lỗi khi xuất D03:', error);
+    }
+  }
+
+  openMaSoBHXHModal(): void {
+    const modalRef = this.modalService.create({
+      nzTitle: '',
+      nzContent: MaSoBHXHModalComponent,
+      nzFooter: null,
+      nzWidth: 800,
+      nzBodyStyle: { padding: '0' },
+      nzMaskClosable: false,
+      nzClassName: 'ma-so-bhxh-modal'
+    });
   }
 }

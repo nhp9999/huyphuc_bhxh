@@ -198,13 +198,109 @@ namespace WebApp.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy dữ liệu cho biểu mẫu D03-TS từ mã số BHXH
+        /// </summary>
+        /// <param name="maSoBHXH">Mã số BHXH</param>
+        /// <returns>Dữ liệu D03 cho mã số BHXH</returns>
+        [HttpGet("ma-so-bhxh/{maSoBHXH}")]
+        public async Task<ActionResult<D03TSData>> GetD03DataByMaSoBHXH(string maSoBHXH)
+        {
+            try
+            {
+                // Kiểm tra mã số BHXH có tồn tại không
+                var thongTinThe = await _context.ThongTinThes
+                    .FirstOrDefaultAsync(t => t.ma_so_bhxh == maSoBHXH);
+
+                if (thongTinThe == null)
+                {
+                    return NotFound($"Không tìm thấy thông tin thẻ với mã số BHXH = {maSoBHXH}");
+                }
+
+                // Lấy địa chỉ đầy đủ
+                var diaChi = await GetFullAddress(thongTinThe);
+
+                // Lấy thông tin bệnh viện KCB ban đầu
+                string noiDangKyKCBBD = "";
+                if (!string.IsNullOrEmpty(thongTinThe.ma_benh_vien))
+                {
+                    // Tìm thông tin bệnh viện từ mã bệnh viện
+                    var benhVien = await _context.DanhMucCSKCBs
+                        .FirstOrDefaultAsync(bv => bv.value == thongTinThe.ma_benh_vien);
+
+                    if (benhVien != null)
+                    {
+                        // Hiển thị mã bệnh viện trước tên bệnh viện
+                        noiDangKyKCBBD = $"{benhVien.value} - {benhVien.ten}";
+                    }
+                    else
+                    {
+                        // Nếu không tìm thấy thông tin bệnh viện, hiển thị mã bệnh viện
+                        noiDangKyKCBBD = thongTinThe.ma_benh_vien;
+                    }
+                }
+
+                // Lấy thông tin người dùng hiện tại từ token
+                var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                string maNhanVien = "";
+
+                if (!string.IsNullOrEmpty(username))
+                {
+                    // Lấy thông tin người dùng từ database
+                    var currentUser = await _context.NguoiDungs
+                        .FirstOrDefaultAsync(u => u.user_name == username);
+
+                    if (currentUser != null && !string.IsNullOrEmpty(currentUser.ma_nhan_vien))
+                    {
+                        maNhanVien = currentUser.ma_nhan_vien;
+                    }
+                }
+
+                // Tạo ngày đầu tiên của tháng hiện tại (01/MM/YYYY)
+                DateTime now = DateTime.Now;
+                DateTime firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
+
+                // Tạo dữ liệu D03 từ thông tin thẻ
+                var result = new D03TSData
+                {
+                    STT = 1,
+                    HoTen = thongTinThe.ho_ten,
+                    NgaySinh = thongTinThe.ngay_sinh,
+                    GioiTinh = thongTinThe.gioi_tinh,
+                    CCCD = thongTinThe.cccd,
+                    DiaChi = diaChi,
+                    NoiDangKyKCBBD = noiDangKyKCBBD,
+                    NgayBienLai = DateTime.Now,
+                    SoBienLai = "",
+                    MaSoBHXH = thongTinThe.ma_so_bhxh,
+                    SoTheBHYT = thongTinThe.so_the_bhyt ?? "",
+                    GhiChu = "",
+                    MaHoGD = thongTinThe.ma_hgd,
+                    SoDT = thongTinThe.so_dien_thoai,
+                    SoTien = 0,
+                    TuThang = firstDayOfMonth, // Sử dụng ngày đầu tiên của tháng hiện tại
+                    SoThangDong = 0,
+                    MaNhanVien = maNhanVien,
+                    MaTinh = thongTinThe.ma_tinh_nkq,
+                    MaHuyen = thongTinThe.ma_huyen_nkq,
+                    MaXa = thongTinThe.ma_xa_nkq
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi lấy dữ liệu D03-TS cho mã số BHXH: {ex.Message}");
+            }
+        }
+
         // Hàm hỗ trợ để tạo địa chỉ đầy đủ từ ThongTinThe và KeKhaiBHYT
         private async Task<string> GetFullAddress(ThongTinThe thongTinThe, KeKhaiBHYT keKhaiBHYT = null)
         {
             if (thongTinThe == null) return "";
 
             var addressParts = new List<string>();
-            
+
             // Thêm địa chỉ nkq từ KeKhaiBHYT nếu có
             if (keKhaiBHYT != null && !string.IsNullOrEmpty(keKhaiBHYT.dia_chi_nkq))
             {

@@ -21,6 +21,10 @@
         <i nz-icon nzType="file-excel"></i>
         Xuất D03 ({{ getTotalSelectedCount() }} bản ghi)
       </button>
+      <button nz-button nzType="default" (click)="openMaSoBHXHModal()">
+        <i nz-icon nzType="search"></i>
+        Tìm nhiều mã số BHXH
+      </button>
     </div>
   </div>
 
@@ -32,7 +36,12 @@
           <nz-form-item>
             <nz-form-label>Mã số BHXH:</nz-form-label>
             <nz-form-control>
-              <input nz-input placeholder="Nhập mã số BHXH" [(ngModel)]="searchForm.maSoBHXH" name="maSoBHXH">
+              <div class="custom-input-group">
+                <input nz-input placeholder="Nhập mã số BHXH" [(ngModel)]="searchForm.maSoBHXH" name="maSoBHXH">
+                <button nz-button nzType="primary" nzTooltip="Xuất D03 từ mã số BHXH" (click)="xuatD03TuMaSoBHXH()">
+                  <i nz-icon nzType="file-excel"></i>
+                </button>
+              </div>
             </nz-form-control>
           </nz-form-item>
         </nz-col>
