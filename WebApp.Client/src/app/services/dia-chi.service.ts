@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 
 export interface DanhMucTinh {
   id: number;
-  ma: string; 
+  ma: string;
   ten: string;
   text: string;
   created_at: Date;
@@ -36,6 +36,10 @@ export class DiaChiService {
   private baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
+
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
 
   getDanhMucTinh(): Observable<DanhMucTinh[]> {
     return this.http.get<DanhMucTinh[]>(`${this.baseUrl}/danh-muc-tinh`);
@@ -68,4 +72,4 @@ export class DiaChiService {
   getDanhMucXaByMa(ma: string): Observable<DanhMucXa> {
     return this.http.get<DanhMucXa>(`${this.baseUrl}/danh-muc-xa/ma/${ma}`);
   }
-} 
+}

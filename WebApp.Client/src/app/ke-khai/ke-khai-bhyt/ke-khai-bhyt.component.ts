@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -405,7 +406,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     private ssmv2Service: SSMV2Service,
     private bienLaiService: BienLaiService,
     private bhxhService: BHXHService,
-    private locationService: LocationService
+    private locationService: LocationService,
+    private http: HttpClient
   ) {
     this.i18n.setLocale(vi_VN);
     this.iconService.addIcon(
@@ -512,15 +514,40 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.form.get('ma_huyen_ks')?.valueChanges.subscribe(maHuyen => {
       console.log('ma_huyen_ks changed:', maHuyen);
       if (maHuyen) {
-        // Tạo một biến riên để lưu danh sách xã KS
-        this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
-          next: (xas) => {
-            this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-            console.log('Loaded xã KS:', this.danhMucXaKS);
+        // Thử gọi API locations/communes trước
+        this.http.get<any>(`${this.diaChiService.getBaseUrl()}/locations/communes/${maHuyen}`).subscribe({
+          next: (response: any) => {
+            if (response && response.success && response.data) {
+              this.danhMucXaKS = response.data.sort((a: any, b: any) => a.ten.localeCompare(b.ten, 'vi'));
+              console.log('Loaded xã KS từ API locations:', this.danhMucXaKS);
+            } else {
+              // Nếu không thành công, thử gọi API cũ
+              this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+                next: (xas) => {
+                  this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+                  console.log('Loaded xã KS từ API cũ:', this.danhMucXaKS);
+                },
+                error: (err) => {
+                  console.error('Error loading xã KS từ API cũ:', err);
+                  this.message.error('Có lỗi xảy ra khi tải danh sách xã/phường KS');
+                }
+              });
+            }
           },
           error: (error) => {
-            console.error('Error loading xã KS:', error);
-            this.message.error('Có lỗi xảy ra khi tải danh sách xã/phường KS');
+            console.error('Error loading xã KS từ API locations:', error);
+
+            // Nếu API locations không hoạt động, thử gọi API cũ
+            this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+              next: (xas) => {
+                this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+                console.log('Loaded xã KS từ API cũ (sau khi API locations lỗi):', this.danhMucXaKS);
+              },
+              error: (err) => {
+                console.error('Error loading xã KS từ API cũ:', err);
+                this.message.error('Có lỗi xảy ra khi tải danh sách xã/phường KS');
+              }
+            });
           }
         });
       } else {
@@ -871,20 +898,58 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
 
     return new Promise<void>((resolve, reject) => {
-      this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
-        next: (xas) => {
-          const sortedXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
-          this.danhMucXas = sortedXas;
+      // Thử gọi API locations/communes trước
+      this.http.get<any>(`${this.diaChiService.getBaseUrl()}/locations/communes/${maHuyen}`).subscribe({
+        next: (response: any) => {
+          if (response && response.success && response.data) {
+            const sortedXas = response.data.sort((a: any, b: any) => a.ten.localeCompare(b.ten, 'vi'));
+            this.danhMucXas = sortedXas;
 
-          // Lưu vào cache và localStorage
-          this.xaCache.set(maHuyen, sortedXas);
-          this.saveToLocalStorage(cacheKey, sortedXas);
+            // Lưu vào cache và localStorage
+            this.xaCache.set(maHuyen, sortedXas);
+            this.saveToLocalStorage(cacheKey, sortedXas);
 
-          resolve();
+            resolve();
+          } else {
+            // Nếu không thành công, thử gọi API cũ
+            this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+              next: (xas) => {
+                const sortedXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+                this.danhMucXas = sortedXas;
+
+                // Lưu vào cache và localStorage
+                this.xaCache.set(maHuyen, sortedXas);
+                this.saveToLocalStorage(cacheKey, sortedXas);
+
+                resolve();
+              },
+              error: (err) => {
+                console.error('Lỗi khi tải danh mục xã từ API cũ:', err);
+                reject(err);
+              }
+            });
+          }
         },
         error: (error) => {
-          console.error('Lỗi khi tải danh mục xã:', error);
-          reject(error);
+          console.error('Lỗi khi tải danh mục xã từ API locations:', error);
+
+          // Nếu API locations không hoạt động, thử gọi API cũ
+          this.diaChiService.getDanhMucXaByMaHuyen(maHuyen).subscribe({
+            next: (xas) => {
+              const sortedXas = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+              this.danhMucXas = sortedXas;
+
+              // Lưu vào cache và localStorage
+              this.xaCache.set(maHuyen, sortedXas);
+              this.saveToLocalStorage(cacheKey, sortedXas);
+
+              resolve();
+            },
+            error: (err) => {
+              console.error('Lỗi khi tải danh mục xã từ API cũ:', err);
+              reject(err);
+            }
+          });
         }
       });
     });
@@ -3175,20 +3240,56 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                 ma_huyen_ks: data.thongTinThe.ma_huyen_ks
               });
 
-              // Load danh sách xã KS
-              this.diaChiService.getDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_ks).subscribe({
-                next: (xas) => {
-                  this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+              // Load danh sách xã KS - thử API locations trước
+              this.http.get<any>(`${this.diaChiService.getBaseUrl()}/locations/communes/${data.thongTinThe.ma_huyen_ks || ''}`).subscribe({
+                next: (response: any) => {
+                  if (response && response.success && response.data) {
+                    this.danhMucXaKS = response.data.sort((a: any, b: any) => a.ten.localeCompare(b.ten, 'vi'));
 
-                  // Sau khi load xong xã KS, gán giá trị cho trường ma_xa_ks
-                  if (data.thongTinThe.ma_xa_ks) {
-                    this.form.patchValue({
-                      ma_xa_ks: data.thongTinThe.ma_xa_ks
+                    // Sau khi load xong xã KS, gán giá trị cho trường ma_xa_ks
+                    if (data.thongTinThe.ma_xa_ks) {
+                      this.form.patchValue({
+                        ma_xa_ks: data.thongTinThe.ma_xa_ks
+                      });
+                    }
+                  } else {
+                    // Nếu không thành công, thử gọi API cũ
+                    this.diaChiService.getDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_ks || '').subscribe({
+                      next: (xas) => {
+                        this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+
+                        // Sau khi load xong xã KS, gán giá trị cho trường ma_xa_ks
+                        if (data.thongTinThe.ma_xa_ks) {
+                          this.form.patchValue({
+                            ma_xa_ks: data.thongTinThe.ma_xa_ks
+                          });
+                        }
+                      },
+                      error: (err) => {
+                        console.error('Error loading xã KS từ API cũ:', err);
+                      }
                     });
                   }
                 },
                 error: (error) => {
-                  console.error('Error loading xã KS:', error);
+                  console.error('Error loading xã KS từ API locations:', error);
+
+                  // Nếu API locations không hoạt động, thử gọi API cũ
+                  this.diaChiService.getDanhMucXaByMaHuyen(data.thongTinThe.ma_huyen_ks || '').subscribe({
+                    next: (xas) => {
+                      this.danhMucXaKS = xas.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+
+                      // Sau khi load xong xã KS, gán giá trị cho trường ma_xa_ks
+                      if (data.thongTinThe.ma_xa_ks) {
+                        this.form.patchValue({
+                          ma_xa_ks: data.thongTinThe.ma_xa_ks
+                        });
+                      }
+                    },
+                    error: (err) => {
+                      console.error('Error loading xã KS từ API cũ:', err);
+                    }
+                  });
                 }
               });
             }
@@ -4395,7 +4496,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
 
     this.isLoadingTraCuu = true;
-    this.locationService.getCommunes(maHuyen)
+
+    // Thử gọi API locations/communes trước
+    this.http.get<any>(`${this.diaChiService.getBaseUrl()}/locations/communes/${maHuyen}`)
       .pipe(finalize(() => this.isLoadingTraCuu = false))
       .subscribe({
         next: (response) => {
@@ -4406,15 +4509,61 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               maHuyen: commune.ma_huyen
             }));
             this.xaTheoHuyenTraCuu = this.danhSachXaTraCuu;
+            this.traCuuVNPostForm.patchValue({ maXa: null });
           } else {
-            this.xaTheoHuyenTraCuu = [];
+            // Nếu không thành công, thử gọi API cũ
+            this.isLoadingTraCuu = true;
+            this.locationService.getCommunes(maHuyen)
+              .pipe(finalize(() => this.isLoadingTraCuu = false))
+              .subscribe({
+                next: (response) => {
+                  if (response && response.success && response.data) {
+                    this.danhSachXaTraCuu = response.data.map((commune: any) => ({
+                      ma: commune.ma,
+                      ten: commune.ten,
+                      maHuyen: commune.ma_huyen
+                    }));
+                    this.xaTheoHuyenTraCuu = this.danhSachXaTraCuu;
+                  } else {
+                    this.xaTheoHuyenTraCuu = [];
+                  }
+                  this.traCuuVNPostForm.patchValue({ maXa: null });
+                },
+                error: (err) => {
+                  console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen} từ API cũ:`, err);
+                  this.message.error('Không thể tải danh sách xã/phường. Vui lòng thử lại sau.');
+                  this.xaTheoHuyenTraCuu = [];
+                }
+              });
           }
-          this.traCuuVNPostForm.patchValue({ maXa: null });
         },
         error: (err) => {
-          console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen}:`, err);
-          this.message.error('Không thể tải danh sách xã/phường. Vui lòng thử lại sau.');
-          this.xaTheoHuyenTraCuu = [];
+          console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen} từ API locations:`, err);
+
+          // Nếu API locations không hoạt động, thử gọi API cũ
+          this.isLoadingTraCuu = true;
+          this.locationService.getCommunes(maHuyen)
+            .pipe(finalize(() => this.isLoadingTraCuu = false))
+            .subscribe({
+              next: (response) => {
+                if (response && response.success && response.data) {
+                  this.danhSachXaTraCuu = response.data.map((commune: any) => ({
+                    ma: commune.ma,
+                    ten: commune.ten,
+                    maHuyen: commune.ma_huyen
+                  }));
+                  this.xaTheoHuyenTraCuu = this.danhSachXaTraCuu;
+                } else {
+                  this.xaTheoHuyenTraCuu = [];
+                }
+                this.traCuuVNPostForm.patchValue({ maXa: null });
+              },
+              error: (err) => {
+                console.error(`Lỗi khi lấy danh sách xã/phường cho huyện ${maHuyen} từ API cũ:`, err);
+                this.message.error('Không thể tải danh sách xã/phường. Vui lòng thử lại sau.');
+                this.xaTheoHuyenTraCuu = [];
+              }
+            });
         }
       });
   }
