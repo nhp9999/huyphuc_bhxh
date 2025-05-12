@@ -1,14 +1,67 @@
-.ke-khai-bhxh-container {
-  padding: 24px;
-  background-color: #f5f7fa;
-  min-height: 100vh;
-  background-image: linear-gradient(to bottom right, rgba(24, 144, 255, 0.05), rgba(9, 109, 217, 0.05));
+.ke-khai-bhxh-container {  padding: 0;  min-height: 100vh;
+
+  .form-header {
+    background-color: #f0f7ff;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e6e6e6;
+    
+    .form-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0050b3;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      
+      .icon {
+        margin-right: 10px;
+        font-size: 20px;
+        color: #1890ff;
+      }
+    }
+    
+    .form-subtitle {
+      font-size: 14px;
+      color: #595959;
+      margin: 8px 0 0 0;
+    }
+  }
+
+  // Style cho breadcrumb
+  ::ng-deep .ant-breadcrumb {
+    margin: 12px 0 16px;
+    
+    li {
+      font-size: 13px;
+      
+      &:last-child {
+        color: #1890ff;
+        font-weight: 500;
+      }
+    }
+    
+    .ant-breadcrumb-separator {
+      margin: 0 6px;
+      color: #bfbfbf;
+    }
+    
+    a {
+      color: #595959;
+      transition: all 0.3s;
+      
+      &:hover {
+        color: #40a9ff;
+      }
+    }
+  }
 
   .form-card {
-    margin-bottom: 24px;
-    border-radius: 8px;
+    margin-bottom: 20px;
+    border-radius: 4px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
     
     &:hover {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -16,16 +69,19 @@
     
     ::ng-deep .ant-card-head {
       border-bottom: 1px solid #f0f2f5;
-      padding: 16px 24px;
-      background-color: #fafafa;
-      border-radius: 8px 8px 0 0;
+      padding: 8px 16px;
+      background-color: #f0f7ff;
+      border-radius: 4px 4px 0 0;
+      min-height: auto;
       
       .ant-card-head-title {
-        font-size: 18px;
+        font-size: 15px;
         font-weight: 600;
-        color: #1890ff;
+        color: #0050b3;
         position: relative;
-        padding-left: 12px;
+        padding-left: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
         
         &:before {
           content: '';
@@ -33,22 +89,23 @@
           left: 0;
           top: 50%;
           transform: translateY(-50%);
-          width: 4px;
-          height: 18px;
-          background: linear-gradient(to bottom, #1890ff, #096dd9);
-          border-radius: 2px;
+          width: 3px;
+          height: 16px;
+          background: #1890ff;
+          border-radius: 0;
         }
       }
       
       .card-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
+        gap: 6px;
       }
     }
     
     ::ng-deep .ant-card-body {
-      padding: 24px;
+      padding: 16px;
+      border-radius: 0 0 4px 4px;
     }
   }
 
@@ -56,44 +113,34 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
 
     .left-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
       
       button {
         transition: all 0.2s ease;
-        
-        &:hover {
-          transform: translateY(-2px);
-        }
       }
     }
 
     .right-actions {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
 
       .amount {
         color: #1890ff;
         font-weight: 600;
-        font-size: 16px;
+        font-size: 14px;
         background: rgba(24, 144, 255, 0.1);
         padding: 4px 12px;
-        border-radius: 16px;
+        border-radius: 0;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
-        
-        &:hover {
-          background: rgba(24, 144, 255, 0.2);
-          transform: translateY(-2px);
-        }
       }
     }
   }
@@ -102,96 +149,112 @@
     display: flex;
     
     input {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
+      border-radius: 0;
       transition: all 0.3s ease;
-      
-      &:focus {
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-      }
+      height: 32px;
+      padding: 0 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
     }
 
     button {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
+      border-radius: 0;
       transition: all 0.3s ease;
-      
-      &:hover {
-        background-color: #096dd9;
-      }
+      height: 32px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 
   nz-form-label {
     font-weight: 500;
     color: #262626;
+    font-size: 13px;
+    margin-bottom: 4px;
   }
   
   nz-form-item {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     transition: all 0.3s ease;
-    
-    &:hover {
-      ::ng-deep .ant-form-item-label > label {
-        color: #1890ff;
-      }
-    }
   }
   
   ::ng-deep .ant-select {
     width: 100%;
     
     &-selector {
-      border-radius: 4px;
-      transition: all 0.3s ease;
+      height: 32px !important;
+      padding: 0 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      border-radius: 0 !important;
     }
     
-    &-focused .ant-select-selector {
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+    &-selection-item {
+      line-height: normal !important;
+      font-size: 13px;
     }
   }
   
   ::ng-deep .ant-input-number {
     width: 100%;
-    border-radius: 4px;
+    border-radius: 0;
+    height: 32px;
     
-    &-focused {
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    &-input-wrap {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      
+      input {
+        height: 100%;
+        padding: 0 8px;
+        font-size: 13px;
+        line-height: 32px;
+      }
+    }
+    
+    &-handler-wrap {
+      height: 32px;
     }
   }
   
   ::ng-deep .ant-btn {
-    border-radius: 4px;
-    display: flex;
+    border-radius: 0;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    line-height: 1;
     
     &-primary {
-      background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+      background: #1890ff;
       border: none;
       
       &:hover {
-        background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+        background: #40a9ff;
       }
     }
+  }
+  
+  // Đảm bảo các icon trong nút được căn giữa
+  ::ng-deep .ant-btn span[nz-icon] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
   
   .table-actions-cell {
     display: flex;
     gap: 8px;
     justify-content: center;
-    
-    button {
-      transition: all 0.2s ease;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      }
-    }
   }
 
   // Thêm CSS cho cursor-pointer
@@ -208,6 +271,30 @@
       border-left: 3px solid #1890ff;
     }
   }
+  
+  // Thêm css cho input thường
+  ::ng-deep .ant-input {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+  }
+
+  // Thiết lập border-radius đồng nhất cho tất cả các input
+  ::ng-deep .ant-input, 
+  ::ng-deep .ant-select-selector, 
+  ::ng-deep .ant-input-number, 
+  ::ng-deep .ant-picker,
+  ::ng-deep .ant-input-affix-wrapper,
+  ::ng-deep textarea.ant-input {
+    border-radius: 0;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+  }
 }
 
 ::ng-deep {
@@ -217,46 +304,73 @@
 
   .ant-picker {
     width: 100%;
-    border-radius: 4px;
+    border-radius: 0;
     transition: all 0.3s ease;
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
     
-    &:hover, &-focused {
-      border-color: #40a9ff;
-    }
-    
-    &-focused {
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
-    
-    &-input {
-      > input {
-        text-align: left;
-      }
+    input {
+      font-size: 13px;
+      padding: 0;
     }
     
     &-panel-container {
       z-index: 1050;
-      border-radius: 8px;
+      border-radius: 0;
       overflow: hidden;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+    
+    &-input {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      
+      > input {
+        text-align: left;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
     }
   }
   
   .ant-table {
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     
     &-thead > tr > th {
       background-color: #fafafa;
       font-weight: 600;
-      
-      &:first-child {
-        border-top-left-radius: 8px;
-      }
+      border-radius: 0 !important;
+      padding: 10px 8px;
+      height: 44px;
+      white-space: nowrap;
+      text-align: center;
+      font-size: 13px;
+      color: #262626;
+      border-right: 1px solid #f0f0f0;
       
       &:last-child {
-        border-top-right-radius: 8px;
+        border-right: none;
+      }
+    }
+    
+    &-tbody > tr > td {
+      padding: 8px;
+      height: 40px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      font-size: 13px;
+      border-right: 1px solid #f0f0f0;
+      
+      &:last-child {
+        border-right: none;
       }
     }
     
@@ -271,25 +385,17 @@
         background-color: #f9f9f9;
       }
     }
-    
-    &-pagination {
-      margin: 16px 0;
-    }
-    
-    &-cell {
-      transition: all 0.2s ease;
-    }
   }
   
   .ant-tag {
-    border-radius: 4px;
+    border-radius: 0;
     padding: 2px 8px;
     font-weight: 500;
   }
   
   .ant-modal {
     &-content {
-      border-radius: 8px;
+      border-radius: 0;
       overflow: hidden;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
@@ -299,14 +405,14 @@
       padding: 16px 24px;
       
       .ant-modal-title {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 600;
         color: #1890ff;
       }
     }
     
     &-body {
-      padding: 24px;
+      padding: 20px;
     }
     
     &-footer {
@@ -314,12 +420,8 @@
       padding: 16px 24px;
       
       .ant-btn {
-        border-radius: 4px;
+        border-radius: 0;
         transition: all 0.3s ease;
-        
-        &:hover {
-          transform: translateY(-2px);
-        }
       }
     }
   }
@@ -339,12 +441,12 @@
 }
 
 .form-actions {
-  margin-top: 24px;
+  margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .text-right {
@@ -363,12 +465,8 @@
 
     input {
       flex: 1;
-      border-radius: 4px;
+      border-radius: 0;
       transition: all 0.3s ease;
-      
-      &:focus {
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-      }
     }
 
     .refresh-button {
@@ -377,7 +475,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 4px;
+      border-radius: 0;
       transition: all 0.3s ease;
       
       &:hover {
@@ -393,15 +491,10 @@
   
   img {
     max-width: 100%;
-    border-radius: 4px;
+    border-radius: 0;
     border: 1px solid #f0f0f0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
-    
-    &:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    }
   }
 }
 
@@ -428,7 +521,7 @@
       max-width: 100%;
       height: auto;
       border: 1px solid #d9d9d9;
-      border-radius: 4px;
+      border-radius: 0;
     }
   }
   
@@ -452,22 +545,18 @@
   
   textarea {
     resize: none;
-    border-radius: 4px;
-    
-    &:focus {
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
+    border-radius: 0;
   }
 }
 
 // Responsive styles
 @media (max-width: 768px) {
   .ke-khai-bhxh-container {
-    padding: 16px;
+    padding: 0;
     
     .form-card {
       ::ng-deep .ant-card-body {
-        padding: 16px;
+        padding: 12px;
       }
     }
     
@@ -496,24 +585,8 @@
   }
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
-  }
-}
-
 .fade-in {
   animation: fadeIn 0.3s ease forwards;
-}
-
-.pulse {
-  animation: pulse 2s infinite;
 }
 
 // Thêm hiệu ứng ripple cho các nút
@@ -542,5 +615,92 @@
     transform: scale(0, 0);
     opacity: .3;
     transition: 0s;
+  }
+}
+
+// Style cho các nút tác vụ trong bảng
+.table-actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  
+  button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    transition: all 0.3s;
+    
+    &:hover {
+      background-color: #40a9ff;
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Style cho phần tổng số và tổng tiền
+.table-summary {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 12px;
+  gap: 20px;
+  padding: 8px 16px;
+  background-color: white;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  
+  .summary-item {
+    display: flex;
+    align-items: center;
+    
+    span {
+      font-weight: 500;
+      margin-right: 8px;
+    }
+    
+    .value {
+      font-weight: 600;
+      color: #1890ff;
+    }
+    
+    .money-value {
+      font-weight: 600;
+      color: #1890ff;
+    }
+  }
+}
+
+// Style cho checkbox
+::ng-deep .ant-checkbox-wrapper {
+  margin-left: 8px;
+}
+
+// Style cho các nút tác vụ trên bảng
+.table-action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  
+  button {
+    height: 32px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #d9d9d9;
+    background-color: white;
+    transition: all 0.3s;
+    
+    &:hover {
+      border-color: #1890ff;
+      color: #1890ff;
+    }
   }
 } 

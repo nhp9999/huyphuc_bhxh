@@ -23,8 +23,59 @@ export class KeKhaiBHXHService {
     return this.http.post<any>(`${this.apiUrl}/ke-khai-bhxh`, keKhaiBHXH);
   }
 
-  update(id: number, keKhaiBHXH: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, keKhaiBHXH);
+  update(dotKeKhaiId: number, id: number, keKhaiBHXH: any): Observable<any> {
+    console.log('Gọi API cập nhật kê khai BHXH:', `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhxh/${id}`);
+
+    // Đảm bảo ID và dot_ke_khai_id khớp với URL
+    const updatedData = { ...keKhaiBHXH };
+    updatedData.id = Number(id); // Đảm bảo ID là số
+    updatedData.dot_ke_khai_id = Number(dotKeKhaiId); // Đảm bảo dot_ke_khai_id là số
+
+    // Đảm bảo thông tin thẻ có ID nếu có
+    if (updatedData.thong_tin_the && updatedData.thong_tin_the.id) {
+      updatedData.thong_tin_the.id = Number(updatedData.thong_tin_the.id);
+    }
+
+    // Log chi tiết để debug
+    console.log('Dữ liệu gửi đi khi cập nhật (đã điều chỉnh):', JSON.stringify(updatedData, null, 2));
+    console.log('ID trong URL:', id, 'Kiểu:', typeof id);
+    console.log('ID trong dữ liệu:', updatedData.id, 'Kiểu:', typeof updatedData.id);
+    console.log('dotKeKhaiId trong URL:', dotKeKhaiId, 'Kiểu:', typeof dotKeKhaiId);
+    console.log('dot_ke_khai_id trong dữ liệu:', updatedData.dot_ke_khai_id, 'Kiểu:', typeof updatedData.dot_ke_khai_id);
+
+    // Thử sử dụng POST thay vì PUT để cập nhật
+    const url = `${this.apiUrl}/${dotKeKhaiId}/ke-khai-bhxh/${id}`;
+
+    // Thêm xử lý lỗi để xem chi tiết lỗi từ server
+    return this.http.put<any>(url, updatedData)
+      .pipe(
+        catchError(error => {
+          console.error('Chi tiết lỗi từ server:', error);
+          if (error.error && error.error.message) {
+            console.error('Thông báo lỗi từ server:', error.error.message);
+          }
+
+          // Thử một cách khác nếu PUT không hoạt động
+          console.log('Thử sử dụng phương thức khác để cập nhật...');
+
+          // Tạo một URL mới để cập nhật
+          const alternativeUrl = `${this.apiUrl}/ke-khai-bhxh/update`;
+          console.log('Sử dụng URL thay thế:', alternativeUrl);
+
+          // Thêm thông tin ID vào dữ liệu
+          const alternativeData = { ...updatedData, id: Number(id), dot_ke_khai_id: Number(dotKeKhaiId) };
+          console.log('Dữ liệu thay thế:', alternativeData);
+
+          // Thử sử dụng POST thay vì PUT
+          return this.http.post<any>(alternativeUrl, alternativeData)
+            .pipe(
+              catchError(innerError => {
+                console.error('Chi tiết lỗi từ server (phương thức thay thế):', innerError);
+                return throwError(() => innerError);
+              })
+            );
+        })
+      );
   }
 
   getById(id: number): Observable<any> {
@@ -61,7 +112,7 @@ export class KeKhaiBHXHService {
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${this.baseUrl}/thongtinbhxhtnforkekhai`, true);
-      
+
       // Set only safe headers
       xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
       xhr.setRequestHeader('Accept-Language', 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5');
@@ -143,4 +194,4 @@ export class KeKhaiBHXHService {
       xhr.send(JSON.stringify(requestBody));
     });
   }
-} 
+}

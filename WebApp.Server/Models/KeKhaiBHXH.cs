@@ -32,6 +32,12 @@ namespace WebApp.API.Models
         [Column("tien_ho_tro")]
         public decimal tien_ho_tro { get; set; }
 
+        [Column("tien_lai")]
+        public decimal tien_lai { get; set; }
+
+        [Column("tien_thua")]
+        public decimal tien_thua { get; set; }
+
         [Column("so_tien_can_dong")]
         public decimal so_tien_can_dong { get; set; }
 

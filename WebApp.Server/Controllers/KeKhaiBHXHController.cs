@@ -58,6 +58,8 @@ namespace WebApp.API.Controllers
                         k.ty_le_nsnn,
                         k.loai_nsnn,
                         k.tien_ho_tro,
+                        k.tien_lai,
+                        k.tien_thua,
                         k.so_tien_can_dong,
                         k.phuong_thuc_dong,
                         k.thang_bat_dau,
@@ -207,6 +209,8 @@ namespace WebApp.API.Controllers
                     ty_le_nsnn = GetDecimalProperty(requestData, "ty_le_nsnn"),
                     loai_nsnn = GetStringProperty(requestData, "loai_nsnn"),
                     tien_ho_tro = GetDecimalProperty(requestData, "tien_ho_tro"),
+                    tien_lai = GetDecimalProperty(requestData, "tien_lai"),
+                    tien_thua = GetDecimalProperty(requestData, "tien_thua"),
                     so_tien_can_dong = GetDecimalProperty(requestData, "so_tien_can_dong"),
                     phuong_thuc_dong = GetInt32Property(requestData, "phuong_thuc_dong"),
                     thang_bat_dau = GetStringProperty(requestData, "thang_bat_dau"),
@@ -291,18 +295,83 @@ namespace WebApp.API.Controllers
         [HttpPut("{dotKeKhaiId}/ke-khai-bhxh/{id}")]
         public async Task<IActionResult> UpdateKeKhaiBHXH(int dotKeKhaiId, int id, KeKhaiBHXH keKhaiBHXH)
         {
+            _logger.LogInformation($"Nhận yêu cầu cập nhật kê khai BHXH với ID: {id}, dotKeKhaiId: {dotKeKhaiId}");
+            _logger.LogInformation($"Dữ liệu nhận được: {JsonSerializer.Serialize(keKhaiBHXH)}");
+
             if (id != keKhaiBHXH.id || dotKeKhaiId != keKhaiBHXH.dot_ke_khai_id)
             {
+                _logger.LogWarning($"ID không khớp: id={id}, keKhaiBHXH.id={keKhaiBHXH.id}, dotKeKhaiId={dotKeKhaiId}, keKhaiBHXH.dot_ke_khai_id={keKhaiBHXH.dot_ke_khai_id}");
                 return BadRequest(new { message = "ID không khớp" });
             }
 
             try
             {
-                _context.Entry(keKhaiBHXH).State = EntityState.Modified;
+                // Tìm bản ghi hiện có
+                var existingKeKhaiBHXH = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .FirstOrDefaultAsync(k => k.id == id && k.dot_ke_khai_id == dotKeKhaiId);
+
+                if (existingKeKhaiBHXH == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy kê khai BHXH" });
+                }
+
+                // Cập nhật thông tin thẻ nếu có
+                if (existingKeKhaiBHXH.ThongTinThe != null && keKhaiBHXH.ThongTinThe != null)
+                {
+                    var existingThongTinThe = existingKeKhaiBHXH.ThongTinThe;
+                    var updatedThongTinThe = keKhaiBHXH.ThongTinThe;
+
+                    // Cập nhật thông tin cơ bản
+                    existingThongTinThe.ho_ten = updatedThongTinThe.ho_ten;
+                    existingThongTinThe.ngay_sinh = updatedThongTinThe.ngay_sinh;
+                    existingThongTinThe.gioi_tinh = updatedThongTinThe.gioi_tinh;
+                    existingThongTinThe.so_dien_thoai = updatedThongTinThe.so_dien_thoai;
+                    existingThongTinThe.cccd = updatedThongTinThe.cccd;
+                    existingThongTinThe.ma_dan_toc = updatedThongTinThe.ma_dan_toc;
+                    existingThongTinThe.ma_hgd = updatedThongTinThe.ma_hgd;
+
+                    // Cập nhật thông tin nơi khám quán
+                    existingThongTinThe.ma_tinh_nkq = updatedThongTinThe.ma_tinh_nkq;
+                    existingThongTinThe.ma_huyen_nkq = updatedThongTinThe.ma_huyen_nkq;
+                    existingThongTinThe.ma_xa_nkq = updatedThongTinThe.ma_xa_nkq;
+
+                    // Cập nhật entity trong context
+                    _context.ThongTinThes.Update(existingThongTinThe);
+                }
+
+                // Cập nhật từng trường thông tin của kê khai BHXH
+                existingKeKhaiBHXH.muc_thu_nhap = keKhaiBHXH.muc_thu_nhap;
+                existingKeKhaiBHXH.ty_le_dong = keKhaiBHXH.ty_le_dong;
+                existingKeKhaiBHXH.ty_le_nsnn = keKhaiBHXH.ty_le_nsnn;
+                existingKeKhaiBHXH.loai_nsnn = keKhaiBHXH.loai_nsnn;
+                existingKeKhaiBHXH.tien_ho_tro = keKhaiBHXH.tien_ho_tro;
+                existingKeKhaiBHXH.tien_lai = keKhaiBHXH.tien_lai;
+                existingKeKhaiBHXH.tien_thua = keKhaiBHXH.tien_thua;
+                existingKeKhaiBHXH.so_tien_can_dong = keKhaiBHXH.so_tien_can_dong;
+                existingKeKhaiBHXH.phuong_thuc_dong = keKhaiBHXH.phuong_thuc_dong;
+                existingKeKhaiBHXH.thang_bat_dau = keKhaiBHXH.thang_bat_dau;
+                existingKeKhaiBHXH.phuong_an = keKhaiBHXH.phuong_an;
+                existingKeKhaiBHXH.loai_khai_bao = keKhaiBHXH.loai_khai_bao;
+                existingKeKhaiBHXH.ngay_bien_lai = keKhaiBHXH.ngay_bien_lai;
+                existingKeKhaiBHXH.ghi_chu = keKhaiBHXH.ghi_chu;
+                existingKeKhaiBHXH.tinh_nkq = keKhaiBHXH.tinh_nkq;
+                existingKeKhaiBHXH.huyen_nkq = keKhaiBHXH.huyen_nkq;
+                existingKeKhaiBHXH.xa_nkq = keKhaiBHXH.xa_nkq;
+                existingKeKhaiBHXH.ma_nhan_vien = keKhaiBHXH.ma_nhan_vien;
+                existingKeKhaiBHXH.he_so = keKhaiBHXH.he_so;
+
                 await _context.SaveChangesAsync();
-                return NoContent();
+
+                _logger.LogInformation($"Đã cập nhật thành công kê khai BHXH với ID: {id}");
+
+                return Ok(new {
+                    success = true,
+                    message = "Cập nhật kê khai BHXH thành công",
+                    data = existingKeKhaiBHXH
+                });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!KeKhaiBHXHExists(id))
                 {
@@ -310,12 +379,158 @@ namespace WebApp.API.Controllers
                 }
                 else
                 {
-                    throw;
+                    _logger.LogError($"Lỗi DbUpdateConcurrencyException khi cập nhật kê khai BHXH: {ex.Message}");
+                    return StatusCode(500, new { message = "Lỗi khi cập nhật kê khai BHXH", error = ex.Message });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Lỗi khi cập nhật kê khai BHXH: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Lỗi khi cập nhật kê khai BHXH", error = ex.Message });
+            }
+        }
+
+        // POST: api/dot-ke-khai/ke-khai-bhxh/update
+        [HttpPost("ke-khai-bhxh/update")]
+        public async Task<IActionResult> UpdateKeKhaiBHXHAlternative([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                _logger.LogInformation("Nhận yêu cầu cập nhật kê khai BHXH (phương thức thay thế)");
+                _logger.LogInformation($"Dữ liệu nhận được: {requestData}");
+
+                // Lấy ID và dot_ke_khai_id từ request
+                if (!requestData.TryGetProperty("id", out JsonElement idElement) ||
+                    !requestData.TryGetProperty("dot_ke_khai_id", out JsonElement dotKeKhaiIdElement))
+                {
+                    return BadRequest(new { message = "Thiếu thông tin id hoặc dot_ke_khai_id" });
+                }
+
+                int id = idElement.GetInt32();
+                int dotKeKhaiId = dotKeKhaiIdElement.GetInt32();
+
+                // Tìm bản ghi hiện có
+                var existingKeKhaiBHXH = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .FirstOrDefaultAsync(k => k.id == id && k.dot_ke_khai_id == dotKeKhaiId);
+
+                if (existingKeKhaiBHXH == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy kê khai BHXH" });
+                }
+
+                // Cập nhật thông tin thẻ nếu có
+                if (existingKeKhaiBHXH.ThongTinThe != null &&
+                    requestData.TryGetProperty("thong_tin_the", out JsonElement thongTinTheElement))
+                {
+                    var existingThongTinThe = existingKeKhaiBHXH.ThongTinThe;
+
+                    // Cập nhật thông tin cơ bản
+                    existingThongTinThe.ho_ten = GetStringProperty(thongTinTheElement, "ho_ten", existingThongTinThe.ho_ten);
+                    existingThongTinThe.ngay_sinh = GetStringProperty(thongTinTheElement, "ngay_sinh", existingThongTinThe.ngay_sinh);
+                    existingThongTinThe.gioi_tinh = GetStringProperty(thongTinTheElement, "gioi_tinh", existingThongTinThe.gioi_tinh);
+                    existingThongTinThe.so_dien_thoai = GetStringProperty(thongTinTheElement, "so_dien_thoai", existingThongTinThe.so_dien_thoai);
+                    existingThongTinThe.cccd = GetStringProperty(thongTinTheElement, "cccd", existingThongTinThe.cccd);
+                    existingThongTinThe.ma_dan_toc = GetStringProperty(thongTinTheElement, "ma_dan_toc", existingThongTinThe.ma_dan_toc);
+                    existingThongTinThe.ma_hgd = GetStringProperty(thongTinTheElement, "ma_hgd", existingThongTinThe.ma_hgd);
+
+                    // Cập nhật thông tin nơi khám quán
+                    existingThongTinThe.ma_tinh_nkq = GetStringProperty(thongTinTheElement, "ma_tinh_nkq", existingThongTinThe.ma_tinh_nkq);
+                    existingThongTinThe.ma_huyen_nkq = GetStringProperty(thongTinTheElement, "ma_huyen_nkq", existingThongTinThe.ma_huyen_nkq);
+                    existingThongTinThe.ma_xa_nkq = GetStringProperty(thongTinTheElement, "ma_xa_nkq", existingThongTinThe.ma_xa_nkq);
+
+                    // Cập nhật entity trong context
+                    _context.ThongTinThes.Update(existingThongTinThe);
+                }
+
+                // Cập nhật từng trường thông tin của kê khai BHXH
+                if (requestData.TryGetProperty("muc_thu_nhap", out JsonElement mucThuNhapElement))
+                {
+                    existingKeKhaiBHXH.muc_thu_nhap = mucThuNhapElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("ty_le_dong", out JsonElement tyLeDongElement))
+                {
+                    existingKeKhaiBHXH.ty_le_dong = tyLeDongElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("ty_le_nsnn", out JsonElement tyLeNSNNElement) &&
+                    tyLeNSNNElement.ValueKind != JsonValueKind.Null)
+                {
+                    existingKeKhaiBHXH.ty_le_nsnn = tyLeNSNNElement.GetDecimal();
+                }
+
+                existingKeKhaiBHXH.loai_nsnn = GetStringProperty(requestData, "loai_nsnn", existingKeKhaiBHXH.loai_nsnn);
+
+                if (requestData.TryGetProperty("tien_ho_tro", out JsonElement tienHoTroElement))
+                {
+                    existingKeKhaiBHXH.tien_ho_tro = tienHoTroElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("tien_lai", out JsonElement tienLaiElement))
+                {
+                    existingKeKhaiBHXH.tien_lai = tienLaiElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("tien_thua", out JsonElement tienThuaElement))
+                {
+                    existingKeKhaiBHXH.tien_thua = tienThuaElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("so_tien_can_dong", out JsonElement soTienCanDongElement))
+                {
+                    existingKeKhaiBHXH.so_tien_can_dong = soTienCanDongElement.GetDecimal();
+                }
+
+                if (requestData.TryGetProperty("phuong_thuc_dong", out JsonElement phuongThucDongElement))
+                {
+                    existingKeKhaiBHXH.phuong_thuc_dong = phuongThucDongElement.GetInt32();
+                }
+
+                existingKeKhaiBHXH.thang_bat_dau = GetStringProperty(requestData, "thang_bat_dau", existingKeKhaiBHXH.thang_bat_dau);
+                existingKeKhaiBHXH.phuong_an = GetStringProperty(requestData, "phuong_an", existingKeKhaiBHXH.phuong_an);
+                existingKeKhaiBHXH.loai_khai_bao = GetStringProperty(requestData, "loai_khai_bao", existingKeKhaiBHXH.loai_khai_bao);
+
+                if (requestData.TryGetProperty("ngay_bien_lai", out JsonElement ngayBienLaiElement) &&
+                    ngayBienLaiElement.ValueKind != JsonValueKind.Null)
+                {
+                    existingKeKhaiBHXH.ngay_bien_lai = DateTime.Parse(ngayBienLaiElement.GetString());
+                }
+
+                existingKeKhaiBHXH.ghi_chu = GetStringProperty(requestData, "ghi_chu", existingKeKhaiBHXH.ghi_chu);
+                existingKeKhaiBHXH.tinh_nkq = GetStringProperty(requestData, "tinh_nkq", existingKeKhaiBHXH.tinh_nkq);
+                existingKeKhaiBHXH.huyen_nkq = GetStringProperty(requestData, "huyen_nkq", existingKeKhaiBHXH.huyen_nkq);
+                existingKeKhaiBHXH.xa_nkq = GetStringProperty(requestData, "xa_nkq", existingKeKhaiBHXH.xa_nkq);
+                existingKeKhaiBHXH.ma_nhan_vien = GetStringProperty(requestData, "ma_nhan_vien", existingKeKhaiBHXH.ma_nhan_vien);
+
+                if (requestData.TryGetProperty("he_so", out JsonElement heSoElement))
+                {
+                    existingKeKhaiBHXH.he_so = heSoElement.GetInt32();
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Đã cập nhật thành công kê khai BHXH với ID: {id} (phương thức thay thế)");
+
+                return Ok(new {
+                    success = true,
+                    message = "Cập nhật kê khai BHXH thành công",
+                    data = existingKeKhaiBHXH
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi khi cập nhật kê khai BHXH (phương thức thay thế): {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                }
                 return StatusCode(500, new { message = "Lỗi khi cập nhật kê khai BHXH", error = ex.Message });
             }
         }

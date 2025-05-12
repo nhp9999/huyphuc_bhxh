@@ -1,10 +1,5 @@
 <div class="ke-khai-bhyt-container">
-  <nz-card class="form-card" [nzExtra]="extraTemplate" [nzTitle]="titleTemplate">
-    <ng-template #titleTemplate>
-      <div class="card-title">
-        <div class="title-text">Kê khai bảo hiểm y tế</div>
-      </div>
-    </ng-template>
+  <nz-card class="form-card fade-in" [nzExtra]="extraTemplate" nzTitle="Nhập tờ khai đăng ký tham gia BHYT">
     <ng-template #extraTemplate>
       <div class="card-actions">
         <button nz-button nzType="default" class="mr-2 ripple" nzTooltip="Tra cứu mã số BHXH" (click)="showTraCuuMaSoBHXHModal()">

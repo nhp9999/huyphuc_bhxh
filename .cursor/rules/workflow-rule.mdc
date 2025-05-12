@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 - When user starts a new conversation:
   1. Read [long_term.md](mdc:memory_bank/long_term.md) to get the context of the project.
