@@ -58,6 +58,7 @@ import { AuthService } from '../../services/auth.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 import { BienLaiService, BienLai } from '../../services/bien-lai.service';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { BHXHService, TraCuuVNPostRequest } from '../../services/tra-cuu-ma-so-bhxh.service';
 import { LocationService, Province, District, Commune } from '../../services/location.service';
 import { finalize } from 'rxjs/operators';
@@ -205,7 +206,8 @@ interface XaPhuong {
     NzEmptyModule,
     NzToolTipModule,
     NzRadioModule,
-    NzAlertModule
+    NzAlertModule,
+    NzBadgeModule
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -281,6 +283,11 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm biến để theo dõi trạng thái loading khi lưu
   loadingSave = false;
   loadingGui = false;
+
+  // Thêm biến cho modal quét CCCD cải tiến
+  selectedTabIndex = 0;
+  filterStatus: 'success' | 'error' | null = null;
+  filteredCCCDList: CCCDResult[] = [];
 
   // Thêm các thuộc tính cho modal nhập nhanh
   isQuickInputVisible = false;
@@ -1341,21 +1348,37 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   onAllChecked(checked: boolean): void {
-    // Reset mảng selectedIds
-    this.selectedIds = [];
-
-    // Nếu checked là true thì thêm tất cả id vào mảng selectedIds
-    if (checked) {
-      this.keKhaiBHYTs.forEach(item => {
-        if (item.id) {
-          this.selectedIds.push(item.id);
+    // Xử lý khác nhau dựa trên ngữ cảnh
+    if (this.isQuetCCCDVisible) {
+      // Đang ở trong modal quét CCCD
+      // Chỉ chọn các CCCD có trạng thái thành công
+      this.danhSachCCCD.forEach(cccd => {
+        if (cccd.status === 'success') {
+          cccd.checked = checked;
         }
       });
-    }
 
-    // Cập nhật trạng thái
-    this.isAllChecked = checked;
-    this.isIndeterminate = false;
+      // Cập nhật trạng thái
+      this.isAllChecked = checked;
+      this.isIndeterminate = false;
+    } else {
+      // Đang ở trong danh sách kê khai BHYT
+      // Reset mảng selectedIds
+      this.selectedIds = [];
+
+      // Nếu checked là true thì thêm tất cả id vào mảng selectedIds
+      if (checked) {
+        this.keKhaiBHYTs.forEach(item => {
+          if (item.id) {
+            this.selectedIds.push(item.id);
+          }
+        });
+      }
+
+      // Cập nhật trạng thái
+      this.isAllChecked = checked;
+      this.isIndeterminate = false;
+    }
   }
 
   onCCCDChecked(cccd: CCCDResult, checked: boolean): void {
@@ -1364,12 +1387,25 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   refreshCheckStatus(): void {
+    // Lọc ra các CCCD có trạng thái thành công
     const validItems = this.danhSachCCCD.filter(cccd => cccd.status === 'success');
+
+    // Kiểm tra xem tất cả các CCCD thành công đã được chọn chưa
     const allChecked = validItems.length > 0 && validItems.every(item => item.checked);
+
+    // Kiểm tra xem tất cả các CCCD thành công đều chưa được chọn
     const allUnchecked = validItems.every(item => !item.checked);
 
+    // Cập nhật trạng thái checkbox chọn tất cả
     this.isAllChecked = allChecked;
+
+    // Cập nhật trạng thái indeterminate (một số được chọn, một số không)
     this.isIndeterminate = !allChecked && !allUnchecked;
+
+    // Cập nhật danh sách đã lọc nếu đang sử dụng bộ lọc
+    if (this.filterStatus !== null) {
+      this.applyFilter();
+    }
   }
 
   hasSelectedCCCD(): boolean {
@@ -1377,23 +1413,86 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   async apDungNhieuCCCD(): Promise<void> {
+    // Lọc ra các CCCD đã chọn và có trạng thái thành công
     const selectedCCCDs = this.danhSachCCCD.filter(cccd => cccd.checked && cccd.status === 'success');
+
+    // Kiểm tra xem có CCCD nào được chọn không
     if (selectedCCCDs.length === 0) {
       this.message.warning('Vui lòng chọn ít nhất một CCCD để áp dụng');
       return;
     }
 
+    // Kiểm tra xem có loại địa chỉ nào được chọn không
     if (!this.applyPermanentAddress && !this.applyHomeAddress) {
       this.message.warning('Vui lòng chọn ít nhất một loại địa chỉ để áp dụng');
       return;
     }
 
+    // Hiển thị thông báo xác nhận nếu có nhiều CCCD được chọn
+    if (selectedCCCDs.length > 1) {
+      const addressTypes: string[] = [];
+      if (this.applyPermanentAddress) addressTypes.push('địa chỉ thường trú');
+      if (this.applyHomeAddress) addressTypes.push('quê quán');
+
+      // Tạo danh sách CCCD để hiển thị trong thông báo xác nhận
+      const cccdList = selectedCCCDs.map(cccd => `${cccd.name} - ${cccd.id}`).join('<br>');
+
+      // Hiển thị modal xác nhận
+      return new Promise<void>((resolve) => {
+        this.modal.confirm({
+          nzTitle: `Áp dụng ${selectedCCCDs.length} CCCD đã chọn`,
+          nzContent: `<p>Bạn có chắc chắn muốn áp dụng thông tin từ ${selectedCCCDs.length} CCCD sau với ${addressTypes.join(' và ')}?</p>
+                      <div style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                        ${cccdList}
+                      </div>`,
+          nzOkText: 'Áp dụng',
+          nzCancelText: 'Hủy',
+          nzOnOk: async () => {
+            await this.processMultipleCCCDs(selectedCCCDs);
+            resolve();
+          },
+          nzOnCancel: () => {
+            resolve();
+          }
+        });
+      });
+    } else {
+      // Nếu chỉ có một CCCD, áp dụng ngay
+      await this.processMultipleCCCDs(selectedCCCDs);
+    }
+  }
+
+  // Thêm phương thức mới để xử lý nhiều CCCD
+  private async processMultipleCCCDs(selectedCCCDs: CCCDResult[]): Promise<void> {
     this.loadingApDung = true;
+
     try {
+      // Hiển thị thông báo loading với tiến trình
+      let processedCount = 0;
+      const totalCount = selectedCCCDs.length;
+      let loadingMessageId = this.message.loading(
+        `Đang xử lý 0/${totalCount} CCCD...`,
+        { nzDuration: 0 }
+      ).messageId;
+
+      // Xử lý từng CCCD
       for (const cccd of selectedCCCDs) {
+        // Cập nhật thông báo loading
+        processedCount++;
+        this.message.remove(loadingMessageId);
+        loadingMessageId = this.message.loading(
+          `Đang xử lý ${processedCount}/${totalCount} CCCD...`,
+          { nzDuration: 0 }
+        ).messageId;
+
+        // Áp dụng thông tin CCCD
         await this.apDungThongTin(cccd, false);
       }
 
+      // Đóng thông báo loading
+      this.message.remove(loadingMessageId);
+
+      // Hiển thị thông báo thành công
       const addressTypes = [];
       if (this.applyPermanentAddress) addressTypes.push('địa chỉ thường trú');
       if (this.applyHomeAddress) addressTypes.push('quê quán');
@@ -1401,6 +1500,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.message.success(
         `Đã áp dụng thành công ${selectedCCCDs.length} CCCD với ${addressTypes.join(' và ')}`
       );
+
+      // Đóng modal
       this.isQuetCCCDVisible = false;
     } catch (error) {
       this.message.error('Có lỗi xảy ra khi áp dụng thông tin CCCD');
@@ -2704,6 +2805,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   showQuetCCCDModal(): void {
     this.isQuetCCCDVisible = true;
     this.clearImages();
+    this.selectedTabIndex = 0;
+    this.filterStatus = null;
+    this.filteredCCCDList = [];
 
     // Tự động focus vào modal sau khi nó được mở
     setTimeout(() => {
@@ -2720,6 +2824,214 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   handleQuetCCCDCancel(): void {
     this.isQuetCCCDVisible = false;
     this.clearImages();
+    this.filterStatus = null;
+    this.filteredCCCDList = [];
+  }
+
+  // Thêm phương thức để chọn ảnh
+  selectImage(index: number): void {
+    this.currentImageIndex = index;
+  }
+
+  // Thêm phương thức để xóa một ảnh
+  removeImage(index: number): void {
+    this.avatarUrls.splice(index, 1);
+    this.pendingFiles.splice(index, 1);
+
+    // Cập nhật lại currentImageIndex nếu cần
+    if (this.currentImageIndex >= this.avatarUrls.length) {
+      this.currentImageIndex = Math.max(0, this.avatarUrls.length - 1);
+    }
+
+    // Nếu không còn ảnh nào, xóa tất cả dữ liệu
+    if (this.avatarUrls.length === 0) {
+      this.clearImages();
+    }
+  }
+
+  // Thêm phương thức để thêm ảnh mới
+  addMoreImages(): void {
+    // Tạo một input ẩn để chọn file
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png';
+    input.multiple = true;
+
+    // Xử lý sự kiện khi chọn file
+    input.onchange = (event: Event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (files) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          this.addToPendingFiles(file);
+        }
+      }
+    };
+
+    // Kích hoạt click để mở hộp thoại chọn file
+    input.click();
+  }
+
+  // Thêm phương thức để áp dụng bộ lọc
+  applyFilter(): void {
+    if (this.filterStatus === null) {
+      this.filteredCCCDList = [...this.danhSachCCCD];
+    } else {
+      this.filteredCCCDList = this.danhSachCCCD.filter(cccd => cccd.status === this.filterStatus);
+    }
+  }
+
+  // Thêm phương thức để chọn tất cả kết quả thành công
+  selectAllSuccess(): void {
+    const successItems = this.danhSachCCCD.filter(cccd => cccd.status === 'success');
+    successItems.forEach(item => {
+      item.checked = true;
+    });
+
+    // Cập nhật trạng thái checkbox chọn tất cả
+    this.updateCheckboxState();
+  }
+
+  // Thêm phương thức để kiểm tra có kết quả thành công không
+  hasSuccessResults(): boolean {
+    return this.danhSachCCCD.some(cccd => cccd.status === 'success');
+  }
+
+  // Thêm phương thức để kiểm tra có kết quả lỗi không
+  hasErrorResults(): boolean {
+    return this.danhSachCCCD.some(cccd => cccd.status === 'error');
+  }
+
+  // Thêm phương thức để quét lại các CCCD bị lỗi
+  quetLai(): void {
+    const errorItems = this.danhSachCCCD.filter(cccd => cccd.status === 'error');
+    if (errorItems.length === 0) return;
+
+    this.loadingQuetCCCD = true;
+
+    // Tìm các file tương ứng với các CCCD lỗi
+    const errorIndexes = errorItems.map(item => this.danhSachCCCD.indexOf(item));
+    const filesToRescan = errorIndexes.map(index => this.pendingFiles[index]).filter(file => file);
+
+    // Quét lại từng file
+    Promise.all(filesToRescan.map(file => this.cccdService.quetCCCD(file).toPromise()))
+      .then(responses => {
+        // Xử lý kết quả quét
+        responses.forEach((response, index) => {
+          if (response && response.data && response.data.length > 0) {
+            const cccdData = response.data[0];
+            const errorIndex = errorIndexes[index];
+
+            // Cập nhật thông tin CCCD
+            if (errorIndex >= 0 && errorIndex < this.danhSachCCCD.length) {
+              this.danhSachCCCD[errorIndex] = {
+                id: cccdData.id_number || cccdData.id || '',
+                name: cccdData.name || '',
+                dob: cccdData.birth_date || cccdData.dob || '',
+                sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+                nationality: 'Việt Nam',
+                address: this.formatAddress(cccdData.residence || cccdData.address),
+                home_address: {
+                  province: this.extractProvince(cccdData.home),
+                  district: this.extractDistrict(cccdData.home),
+                  ward: this.extractWard(cccdData.home),
+                  street: this.extractStreet(cccdData.home)
+                },
+                permanent_address: {
+                  province: this.extractProvince(cccdData.residence || cccdData.address),
+                  district: this.extractDistrict(cccdData.residence || cccdData.address),
+                  ward: this.extractWard(cccdData.residence || cccdData.address),
+                  street: this.extractStreet(cccdData.residence || cccdData.address)
+                },
+                status: 'success',
+                message: 'Quét thành công',
+                checked: false
+              };
+            }
+          }
+        });
+
+        // Cập nhật UI
+        this.danhSachCCCD = [...this.danhSachCCCD];
+        this.applyFilter();
+        this.message.success(`Đã quét lại ${responses.length} CCCD`);
+      })
+      .catch(error => {
+        console.error('Lỗi khi quét lại CCCD:', error);
+        this.message.error('Có lỗi xảy ra khi quét lại CCCD');
+      })
+      .finally(() => {
+        this.loadingQuetCCCD = false;
+      });
+  }
+
+  // Thêm phương thức để quét lại một CCCD cụ thể
+  quetLaiCCCD(cccd: CCCDResult): void {
+    if (cccd.status !== 'error') return;
+
+    const index = this.danhSachCCCD.indexOf(cccd);
+    if (index < 0 || index >= this.pendingFiles.length) return;
+
+    const file = this.pendingFiles[index];
+    if (!file) return;
+
+    this.loadingQuetCCCD = true;
+
+    this.cccdService.quetCCCD(file).subscribe({
+      next: (response) => {
+        if (response && response.data && response.data.length > 0) {
+          const cccdData = response.data[0];
+
+          // Cập nhật thông tin CCCD
+          this.danhSachCCCD[index] = {
+            id: cccdData.id_number || cccdData.id || '',
+            name: cccdData.name || '',
+            dob: cccdData.birth_date || cccdData.dob || '',
+            sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+            nationality: 'Việt Nam',
+            address: this.formatAddress(cccdData.residence || cccdData.address),
+            home_address: {
+              province: this.extractProvince(cccdData.home),
+              district: this.extractDistrict(cccdData.home),
+              ward: this.extractWard(cccdData.home),
+              street: this.extractStreet(cccdData.home)
+            },
+            permanent_address: {
+              province: this.extractProvince(cccdData.residence || cccdData.address),
+              district: this.extractDistrict(cccdData.residence || cccdData.address),
+              ward: this.extractWard(cccdData.residence || cccdData.address),
+              street: this.extractStreet(cccdData.residence || cccdData.address)
+            },
+            status: 'success',
+            message: 'Quét thành công',
+            checked: false
+          };
+
+          // Cập nhật UI
+          this.danhSachCCCD = [...this.danhSachCCCD];
+          this.applyFilter();
+          this.message.success('Quét lại CCCD thành công');
+        } else {
+          this.message.error('Không thể nhận dạng thông tin từ ảnh');
+        }
+      },
+      error: (error) => {
+        console.error('Lỗi khi quét lại CCCD:', error);
+        this.message.error('Có lỗi xảy ra khi quét lại CCCD');
+      },
+      complete: () => {
+        this.loadingQuetCCCD = false;
+      }
+    });
+  }
+
+  // Sử dụng phương thức onCCCDChecked đã được định nghĩa ở trên
+
+  // Thêm phương thức để cập nhật trạng thái checkbox chọn tất cả
+  private updateCheckboxState(): void {
+    const validItems = this.danhSachCCCD.filter(cccd => cccd.status === 'success');
+    this.isAllChecked = validItems.length > 0 && validItems.every(item => item.checked);
+    this.isIndeterminate = !this.isAllChecked && validItems.some(item => item.checked);
   }
 
   beforeUpload = (file: NzUploadFile): boolean => {
@@ -2857,6 +3169,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.pendingFiles = [];
     this.currentImageIndex = 0;
     this.danhSachCCCD = [];
+    this.filteredCCCDList = [];
+    this.filterStatus = null;
   }
 
   async quetTatCaCCCD(): Promise<void> {
@@ -2900,7 +3214,10 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                 street: this.extractStreet(cccdData.residence || cccdData.address)
               },
               status: 'success',
-              message: 'Quét thành công'
+              message: 'Quét thành công',
+              checked: false,
+              ngaySinhFormatted: this.formatDateFromCCCD(cccdData.birth_date || cccdData.dob || ''),
+              gioiTinh: this.formatGender(cccdData.gender || cccdData.sex || '')
             };
 
             console.log('Processed CCCD Result:', result);
@@ -2914,7 +3231,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
               nationality: '',
               address: '',
               status: 'error',
-              message: 'Không nhận dạng được thông tin'
+              message: 'Không nhận dạng được thông tin',
+              checked: false
             };
             this.danhSachCCCD = [...this.danhSachCCCD, errorResult];
           }
@@ -2928,7 +3246,8 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             nationality: '',
             address: '',
             status: 'error',
-            message: error?.error?.message || error?.message || 'Lỗi khi xử lý ảnh'
+            message: error?.error?.message || error?.message || 'Lỗi khi xử lý ảnh',
+            checked: false
           };
           this.danhSachCCCD = [...this.danhSachCCCD, errorResult];
         }
@@ -2936,11 +3255,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
       // Cập nhật UI
       this.danhSachCCCD = [...this.danhSachCCCD];
+      this.filteredCCCDList = [...this.danhSachCCCD];
       console.log('Final CCCD List:', this.danhSachCCCD);
 
       const successCount = this.danhSachCCCD.filter(cccd => cccd.status === 'success').length;
       if (successCount > 0) {
         this.message.success(`Đã quét thành công ${successCount} CCCD`);
+
+        // Chuyển sang tab kết quả quét nếu có kết quả thành công
+        if (successCount > 0) {
+          this.selectedTabIndex = 1;
+        }
       } else {
         this.message.error('Không thể đọc thông tin từ các ảnh đã tải lên');
       }
@@ -2948,6 +3273,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       this.loadingQuetCCCD = false;
     }
   }
+
+  // Thêm phương thức để định dạng ngày sinh từ CCCD
+  // Sử dụng phương thức formatDateFromCCCD đã được định nghĩa ở cuối file
+
+  // Thêm phương thức để định dạng giới tính từ CCCD
+  // Sử dụng phương thức formatGenderFromCCCD đã được định nghĩa ở cuối file
 
   // Thêm các phương thức hỗ trợ xử lý dữ liệu
   private formatGender(gender: string): string {
@@ -2994,40 +3325,87 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     return typeof address === 'object' ? (address.street || '').trim() : '';
   }
 
-  apDungThongTin(cccd: CCCDResult, closeModal: boolean = true): void {
-    if (cccd.status === 'success') {
-      // Cập nhật thông tin cơ bản
-      this.form.patchValue({
-        cccd: cccd.id,
-        ho_ten: cccd.name,
-        ngay_sinh: new Date(this.formatDate(cccd.dob)),
-        gioi_tinh: cccd.sex === 'NAM' ? 'Nam' : 'Nữ',
-        quoc_tich: cccd.nationality
-      });
+  apDungThongTin(cccd: CCCDResult, closeModal: boolean = true): Promise<void> {
+    return new Promise<void>(async (resolve) => {
+      if (cccd.status === 'success') {
+        try {
+          // Cập nhật thông tin cơ bản
+          this.form.patchValue({
+            cccd: cccd.id,
+            ho_ten: cccd.name,
+            ngay_sinh: new Date(this.formatDate(cccd.dob)),
+            gioi_tinh: cccd.gioiTinh || (cccd.sex === 'NAM' ? 'Nam' : 'Nữ'),
+            quoc_tich: cccd.nationality
+          });
 
-      // Áp dụng địa chỉ thường trú nếu được chọn
-      if (this.applyPermanentAddress && cccd.permanent_address) {
-        const { province, district, ward, street } = cccd.permanent_address;
-        this.form.patchValue({
-          dia_chi_nkq: this.formatFullAddress(cccd.permanent_address)
-        });
-        this.updateAddressFields(province, district, ward);
-      }
+          // Áp dụng địa chỉ thường trú nếu được chọn
+          if (this.applyPermanentAddress && cccd.permanent_address) {
+            const { province, district, ward, street } = cccd.permanent_address;
 
-      // Áp dụng quê quán nếu được chọn
-      if (this.applyHomeAddress && cccd.home_address) {
-        const { province, district, ward, street } = cccd.home_address;
-        this.form.patchValue({
-          que_quan: this.formatFullAddress(cccd.home_address)
-        });
-        this.updateHomeAddressFields(province, district, ward);
-      }
+            // Hiển thị thông báo loading
+            const loadingMessage = this.message.loading('Đang cập nhật địa chỉ thường trú...', { nzDuration: 0 }).messageId;
 
-      if (closeModal) {
-        this.message.success('Đã áp dụng thông tin CCCD');
-        this.isQuetCCCDVisible = false;
+            try {
+              // Cập nhật trường địa chỉ
+              this.form.patchValue({
+                dia_chi_nkq: street || this.formatFullAddress(cccd.permanent_address)
+              });
+
+              // Cập nhật các trường tỉnh/huyện/xã
+              await this.updateAddressFields(province, district, ward);
+
+              // Đóng thông báo loading
+              this.message.remove(loadingMessage);
+            } catch (error) {
+              console.error('Lỗi khi cập nhật địa chỉ thường trú:', error);
+              this.message.remove(loadingMessage);
+              this.message.warning('Có lỗi khi cập nhật địa chỉ thường trú');
+            }
+          }
+
+          // Áp dụng quê quán nếu được chọn
+          if (this.applyHomeAddress && cccd.home_address) {
+            const { province, district, ward, street } = cccd.home_address;
+
+            // Hiển thị thông báo loading
+            const loadingMessage = this.message.loading('Đang cập nhật quê quán...', { nzDuration: 0 }).messageId;
+
+            try {
+              // Cập nhật trường quê quán
+              this.form.patchValue({
+                que_quan: street || this.formatFullAddress(cccd.home_address)
+              });
+
+              // Cập nhật các trường tỉnh/huyện/xã
+              await this.updateHomeAddressFields(province, district, ward);
+
+              // Đóng thông báo loading
+              this.message.remove(loadingMessage);
+            } catch (error) {
+              console.error('Lỗi khi cập nhật quê quán:', error);
+              this.message.remove(loadingMessage);
+              this.message.warning('Có lỗi khi cập nhật quê quán');
+            }
+          }
+
+          if (closeModal) {
+            // Hiển thị thông báo thành công với thông tin chi tiết
+            const successMessage = `Đã áp dụng thông tin CCCD: ${cccd.name} - ${cccd.id}`;
+            this.message.success(successMessage);
+            this.isQuetCCCDVisible = false;
+          }
+
+          resolve();
+        } catch (error) {
+          console.error('Lỗi khi áp dụng thông tin CCCD:', error);
+          this.message.error('Có lỗi xảy ra khi áp dụng thông tin CCCD');
+          resolve();
+        }
+      } else {
+        this.message.warning('Không thể áp dụng thông tin từ CCCD lỗi');
+        resolve();
       }
-    }
+    });
   }
 
   // Thêm phương thức mới để cập nhật trường quê quán
@@ -4930,20 +5308,43 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Thêm phương thức định dạng ngày sinh từ CCCD
+  // Phương thức định dạng ngày sinh từ CCCD
   formatDateFromCCCD(dateStr: string): string {
     if (!dateStr) return '';
 
+    // Xử lý các định dạng ngày khác nhau
+    if (dateStr.includes('-')) {
+      // Định dạng yyyy-MM-dd
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    } else if (dateStr.includes('/')) {
+      // Định dạng dd/MM/yyyy
+      return dateStr;
+    } else if (/^\d{8}$/.test(dateStr)) {
+      // Định dạng yyyyMMdd
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      return `${day}/${month}/${year}`;
+    } else if (/^\d{4}$/.test(dateStr)) {
+      // Chỉ có năm
+      return `01/01/${dateStr}`;
+    }
+
+    // Thử chuyển đổi từ chuỗi sang Date
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch (error) {
-      return dateStr;
+      if (!isNaN(date.getTime())) {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+    } catch (e) {
+      console.error('Lỗi khi chuyển đổi ngày sinh:', e);
     }
+
+    return dateStr;
   }
 
   // Thêm phương thức định dạng giới tính từ CCCD
