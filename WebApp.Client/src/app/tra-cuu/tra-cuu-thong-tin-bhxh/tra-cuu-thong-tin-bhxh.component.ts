@@ -22,6 +22,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { BHXHService, TraCuuThongTinBHXHRequest } from '../../services/tra-cuu-ma-so-bhxh.service';
 import { finalize } from 'rxjs/operators';
 import { SSMV2Service } from '../../services/ssmv2.service';
+import { CaptchaModalComponent } from '../../shared/components/captcha-modal/captcha-modal.component';
 
 @Component({
   selector: 'app-tra-cuu-thong-tin-bhxh',
@@ -44,7 +45,8 @@ import { SSMV2Service } from '../../services/ssmv2.service';
     NzSelectModule,
     NzTabsModule,
     NzModalModule,
-    NzTableModule
+    NzTableModule,
+    CaptchaModalComponent
   ],
   templateUrl: './tra-cuu-thong-tin-bhxh.component.html',
   styleUrls: ['./tra-cuu-thong-tin-bhxh.component.scss']
@@ -54,13 +56,11 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
   isLoading = false;
   daTimKiem = false;
   loiTraCuu = '';
-  ketQuaTraCuu: any = null; // Kết quả tra cứu sẽ là một đối tượng 
+  ketQuaTraCuu: any = null; // Kết quả tra cứu sẽ là một đối tượng
   today: Date = new Date(); // Ngày hiện tại
 
   // Thêm thuộc tính SSMV2
   isVNPostLoginVisible = false;
-  captchaImage = '';
-  captchaCode = '';
   vnpostLoginForm!: FormGroup;
   isLoadingLogin = false;
 
@@ -105,7 +105,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
       this.daTimKiem = true;
       this.loiTraCuu = '';
       this.ketQuaTraCuu = null;
-      
+
       // Kiểm tra token VNPost
       const token = this.ssmv2Service.getToken();
       if (!token) {
@@ -113,26 +113,26 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
         this.autoLoginVNPost(true);
         return;
       }
-      
+
       // Lấy dữ liệu từ form
       const formData: TraCuuThongTinBHXHRequest = {
         maSoBHXH: this.traCuuBHXHForm.value.maSoBHXH
       };
-      
+
       console.log('Dữ liệu gửi đi:', formData);
-      
+
       // Gọi API tra cứu thông tin BHXH
       this.bhxhService.traCuuThongTinBHXH(formData)
         .subscribe({
           next: (res: any) => {
             console.log('Response từ API BHXH:', res);
-            
+
             // Kiểm tra nếu response có chứa thông báo lỗi xác thực
             if (res && res.error === 'Lỗi xác thực') {
               this.ketQuaTraCuu = null;
               this.loiTraCuu = 'Lỗi xác thực: ' + (res.error_description || 'Không tìm thấy thông tin phiên đăng nhập');
               this.message.error(this.loiTraCuu);
-              
+
               // Hiển thị form đăng nhập lại
               this.ssmv2Service.clearToken();
               this.message.warning('Vui lòng đăng nhập lại để tiếp tục');
@@ -140,7 +140,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
               this.isLoading = false;
               return;
             }
-            
+
             // Kiểm tra nếu response có status khác 200
             if (res && res.status && res.status !== 200) {
               this.ketQuaTraCuu = null;
@@ -149,7 +149,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
               this.isLoading = false;
               return;
             }
-            
+
             // Xử lý dữ liệu trả về
             if (res && res.success && res.data) {
               this.ketQuaTraCuu = this.formatThongTinBHXH(res.data);
@@ -166,9 +166,9 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
           error: (err: any) => {
             this.isLoading = false;
             this.ketQuaTraCuu = null;
-            
+
             console.error('Lỗi khi tra cứu:', err);
-            
+
             if (err.error === 'Lỗi xác thực') {
               this.loiTraCuu = 'Lỗi xác thực: ' + (err.error_description || 'Phiên làm việc đã hết hạn');
               this.message.error(this.loiTraCuu);
@@ -207,7 +207,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
       maHo: data.maHoGiaDinh || '',
       noiLamViec: data.noiLamViec || '',
       chucVu: data.chucVu || '',
-      
+
       // Thông tin đăng ký BHXH tự nguyện
       thangBatDau: data.thangBatDau || data.thangBd || '',
       ngayDangKy: data.ngayDk || (data.ngayDangKyDt ? this.formatDate(new Date(data.ngayDangKyDt)) : ''),
@@ -222,19 +222,19 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
       tienNop: data.tienNop ? this.formatCurrency(data.tienNop) : '',
       loaiTien: data.loaiTien || 'VND',
       taiTuc: data.taiTuc === 'true' || data.taiTuc === true ? 'Có' : 'Không',
-      
+
       // Thông tin đơn vị BHXH
       maDonViBHXH: data.maDmBhxh || '',
       tenDonViBHXH: data.tenDmBhxh || '',
-      
+
       // Thông tin đơn vị thu
       maDonViThu: data.maDonVi || '',
       tenDonViThu: data.tenDonVi || '',
-      
+
       // Thông tin tham gia BHXH bắt buộc
       isThamGiaBB: data.isThamGiaBB || false,
       thamGiaBB: data.thamGiaBB || 'Không',
-      
+
       // Dữ liệu gốc
       raw: data
     };
@@ -256,104 +256,59 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
   // Hiển thị form đăng nhập VNPost
   showVNPostLogin(): void {
     this.isVNPostLoginVisible = true;
-    this.getCaptcha();
   }
-  
+
   // Đóng form đăng nhập VNPost
   closeVNPostLogin(): void {
     this.isVNPostLoginVisible = false;
   }
-  
-  // Tải captcha
+
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
   getCaptcha(): void {
-    this.ssmv2Service.getCaptcha().subscribe({
-      next: (res) => {
-        console.log('Captcha response:', res);
-        if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
+    // Để trống vì đã được xử lý trong component captcha
+  }
+
+  // Đăng nhập VNPost
+  handleLogin(loginData: any): void {
+    this.isLoadingLogin = true;
+
+    console.log('Gửi request đăng nhập với data:', { ...loginData, password: '***' });
+
+    this.ssmv2Service.authenticate(loginData).subscribe({
+      next: (response) => {
+        this.isLoadingLogin = false;
+
+        if (response.body?.access_token) {
+          console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
+          this.message.success('Xác thực thành công');
+          this.isVNPostLoginVisible = false;
+
+          // Đảm bảo token đã được lưu trước khi tìm kiếm
+          setTimeout(() => {
+            this.submitBHXHForm();
+          }, 1000);
         } else {
-          this.message.error('Không nhận được dữ liệu captcha');
+          this.message.error('Không nhận được token');
         }
       },
-      error: (err) => {
-        console.error('Captcha error:', err);
-        this.message.error('Lỗi khi lấy captcha: ' + err.message);
+      error: (err: any) => {
+        console.error('Login error:', err);
+        this.isLoadingLogin = false;
+
+        if (err.error?.error === 'invalid_captcha') {
+          this.message.error('Mã xác thực sai');
+        } else if (err.error?.error_description?.includes('xác thực')) {
+          this.message.error('Mã xác thực sai');
+        } else if (err.error?.message) {
+          this.message.error(err.error.message);
+        } else {
+          this.message.error('Xác thực thất bại, vui lòng thử lại');
+        }
       }
     });
   }
-  
-  // Đăng nhập VNPost
-  handleLogin(): void {
-    if (this.vnpostLoginForm.valid) {
-      this.isLoadingLogin = true;
-      
-      const data = {
-        grant_type: 'password',
-        userName: this.vnpostLoginForm.get('userName')?.value,
-        password: this.vnpostLoginForm.get('password')?.value,
-        text: this.vnpostLoginForm.get('text')?.value,
-        code: this.captchaCode,
-        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-        isWeb: true
-      };
 
-      console.log('Gửi request đăng nhập với data:', { ...data, password: '***' });
-
-      this.ssmv2Service.authenticate(data).subscribe({
-        next: (response) => {
-          this.isLoadingLogin = false;
-          
-          if (response.body?.access_token) {
-            console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
-            this.message.success('Xác thực thành công');
-            this.isVNPostLoginVisible = false;
-            
-            // Đảm bảo token đã được lưu trước khi tìm kiếm
-            setTimeout(() => {
-              this.submitBHXHForm();
-            }, 1000);
-          } else {
-            this.message.error('Không nhận được token');
-            this.getCaptcha();
-          }
-        },
-        error: (err) => {
-          console.error('Login error:', err);
-          this.isLoadingLogin = false;
-          this.vnpostLoginForm.patchValue({ text: '' });
-
-          if (err.error?.error === 'invalid_captcha') {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.error_description?.includes('xác thực')) {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.message) {
-            this.message.error(err.error.message);
-          } else {
-            this.message.error('Xác thực thất bại, vui lòng thử lại');
-          }
-
-          setTimeout(() => {
-            this.getCaptcha();
-          }, 100);
-        }
-      });
-    } else {
-      Object.values(this.vnpostLoginForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-          control.updateValueAndValidity();
-        }
-      });
-    }
-  }
-
-  // Chuyển đổi chữ thành chữ hoa
-  convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.toUpperCase();
-    this.vnpostLoginForm.get('text')?.setValue(input.value);
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Kiểm tra trạng thái đăng nhập VNPost
   isVNPostLoggedIn(): boolean {
@@ -377,16 +332,15 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
     this.ssmv2Service.getCaptcha().subscribe({
       next: (res) => {
         if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
-          
+          const captchaCode = res.data.code;
+
           // Thực hiện đăng nhập tự động
           const data = {
             grant_type: 'password',
             userName: this.vnpostLoginForm.get('userName')?.value,
             password: this.vnpostLoginForm.get('password')?.value,
-            text: this.captchaCode, // Sử dụng mã captcha làm text
-            code: this.captchaCode,
+            text: captchaCode, // Sử dụng mã captcha làm text
+            code: captchaCode,
             clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
             isWeb: true
           };
@@ -395,7 +349,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
             next: (response) => {
               if (response.body?.access_token) {
                 console.log('Tự động xác thực thành công');
-                
+
                 // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
                 if (fromSubmit) {
                   setTimeout(() => {
@@ -408,7 +362,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
                 }
               }
             },
-            error: (err) => {
+            error: (err: any) => {
               console.error('Lỗi tự động đăng nhập:', err);
               if (fromSubmit) {
                 this.isLoading = false;
@@ -422,7 +376,7 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
           }
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Lỗi khi lấy captcha:', err);
         if (fromSubmit) {
           this.isLoading = false;
@@ -436,11 +390,11 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
   formatMaSoBHXH(event: Event): void {
     const input = event.target as HTMLInputElement;
     let value = input.value.replace(/\D/g, ''); // Chỉ giữ lại các chữ số
-    
+
     if (value.length > 10) {
       value = value.substring(0, 10); // Giới hạn 10 chữ số
     }
-    
+
     input.value = value;
     this.traCuuBHXHForm.get('maSoBHXH')?.setValue(value);
   }
@@ -448,16 +402,16 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
   // Kiểm tra thẻ còn hạn hay không
   isTheConHan(denNgay: Date | null | undefined): boolean {
     if (!denNgay) return false;
-    
+
     try {
       // Chuyển về cùng định dạng để so sánh
       const expireDate = new Date(denNgay);
       const today = new Date();
-      
+
       // Reset giờ, phút, giây để chỉ so sánh ngày
       expireDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
-      
+
       return expireDate > today;
     } catch (error) {
       return false;
@@ -467,35 +421,35 @@ export class TraCuuThongTinBHXHComponent implements OnInit {
   // Phân tích chuỗi ngày sinh dạng dd/MM/yyyy
   private parseNgaySinhFromString(dateString: string): Date | null {
     if (!dateString) return null;
-    
+
     const parts = dateString.split('/');
     if (parts.length !== 3) return null;
-    
+
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1; // Tháng trong JavaScript bắt đầu từ 0
     const year = parseInt(parts[2], 10);
-    
+
     return new Date(year, month, day);
   }
-  
+
   // Phân tích chuỗi ngày sinh dạng yyyyMMdd
   private parseNgaySinhFromNumber(dateNumber: string): Date | null {
     if (!dateNumber || dateNumber.length !== 8) return null;
-    
+
     const year = parseInt(dateNumber.substring(0, 4), 10);
     const month = parseInt(dateNumber.substring(4, 6), 10) - 1;
     const day = parseInt(dateNumber.substring(6, 8), 10);
-    
+
     return new Date(year, month, day);
   }
-  
+
   // Định dạng số tiền
   private formatCurrency(value: number): string {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   }
-  
+
   // Định dạng ngày tháng
   private formatDate(date: Date): string {
     return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
-} 
+}

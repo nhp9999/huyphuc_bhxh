@@ -1,0 +1,75 @@
+<nz-modal
+  [(nzVisible)]="visible"
+  [nzTitle]="modalTitle"
+  (nzOnCancel)="handleCancel()"
+  (nzOnOk)="handleOk()"
+  [nzOkText]="'Xác nhận'"
+  [nzCancelText]="'Hủy'"
+  [nzOkLoading]="loading"
+  nzWidth="420px"
+  nzClassName="captcha-verification-modal">
+  
+  <ng-template #modalTitle>
+    <div class="modal-title">
+      <span>Xác thực captcha</span>
+      <small class="modal-subtitle">Vui lòng nhập mã xác nhận để tiếp tục</small>
+    </div>
+  </ng-template>
+  
+  <ng-container *nzModalContent>
+    <div class="modal-content">
+      <form nz-form [formGroup]="captchaForm">
+        <!-- Ẩn input tài khoản và mật khẩu -->
+        <input type="hidden" formControlName="userName">
+        <input type="hidden" formControlName="password">
+
+        <div class="captcha-instruction">
+          <i nz-icon nzType="info-circle" nzTheme="outline"></i>
+          <span>Nhập các ký tự bạn thấy trong hình bên dưới</span>
+        </div>
+
+        <div class="captcha-container">
+          <div class="captcha-image-wrapper">
+            <div *ngIf="isLoading" class="captcha-loading">
+              <nz-spin nzSimple></nz-spin>
+            </div>
+            <img 
+              *ngIf="!isLoading && captchaImage" 
+              [src]="captchaImage" 
+              alt="captcha" 
+              class="captcha-image" />
+          </div>
+          
+          <div class="captcha-input-container">
+            <nz-form-item>
+              <nz-form-control nzErrorTip="Vui lòng nhập đúng 4 ký tự">
+                <div class="input-with-button">
+                  <input 
+                    nz-input 
+                    formControlName="text" 
+                    placeholder="Nhập mã xác nhận"
+                    (input)="convertToUpperCase($event)"
+                    maxlength="4"
+                    autocomplete="off"
+                    class="captcha-input" />
+                  <button 
+                    nz-button 
+                    nzType="default"
+                    class="refresh-button"
+                    nzTooltip="Làm mới mã xác nhận"
+                    (click)="getCaptcha(); $event.preventDefault()">
+                    <i nz-icon nzType="reload"></i>
+                  </button>
+                </div>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+        
+        <div class="captcha-help">
+          <p>Không nhìn rõ? Nhấn vào <a (click)="getCaptcha(); $event.preventDefault()">đây</a> để lấy mã mới</p>
+        </div>
+      </form>
+    </div>
+  </ng-container>
+</nz-modal>

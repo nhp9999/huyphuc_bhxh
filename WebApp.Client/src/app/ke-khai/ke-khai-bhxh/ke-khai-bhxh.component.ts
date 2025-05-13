@@ -30,6 +30,7 @@ import { KeKhaiBHXHService } from '../../services/ke-khai-bhxh.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { CaptchaModalComponent } from '../../shared/components/captcha-modal/captcha-modal.component';
 
 registerLocaleData(vi);
 
@@ -61,7 +62,8 @@ interface SearchResponse {
     NzInputNumberModule,
     NzCheckboxModule,
     DatePipe,
-    NzToolTipModule
+    NzToolTipModule,
+    CaptchaModalComponent
   ],
   templateUrl: './ke-khai-bhxh.component.html',
   styleUrls: ['./ke-khai-bhxh.component.scss'],
@@ -180,8 +182,6 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
   // Thêm các thuộc tính SSMV2
   isLoginVisible = false;
-  captchaImage = '';
-  captchaCode = '';
   loginForm: FormGroup;
   loadingLogin = false;
 
@@ -1413,7 +1413,6 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     const token = this.ssmv2Service.getToken();
     if (!token && !isOfflineMode) {
       // Tự động mở form đăng nhập mà không hiển thị thông báo
-      this.getCaptcha();
       this.isLoginVisible = true;
       return;
     }
@@ -1532,146 +1531,53 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
       password: '123456d@D',
       text: ''
     });
-
-    // Lấy captcha
-    this.getCaptcha();
   }
 
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
   getCaptcha(): void {
-    this.ssmv2Service.getCaptcha().subscribe({
-      next: (res) => {
-        console.log('Captcha response:', res);
-        if (res && res.data) {
-          // Đảm bảo dữ liệu hình ảnh có định dạng đúng
-          // Kiểm tra xem dữ liệu hình ảnh đã có tiền tố data:image chưa
-          if (res.data.image && !res.data.image.startsWith('data:image')) {
-            this.captchaImage = 'data:image/png;base64,' + res.data.image;
-          } else {
-            this.captchaImage = res.data.image;
-          }
-          this.captchaCode = res.data.code;
-          console.log('Captcha image URL:', this.captchaImage);
-        } else {
-          console.warn('Không nhận được dữ liệu captcha từ server, sử dụng captcha dự phòng');
-          this.generateFallbackCaptcha();
-          this.message.warning('Không thể kết nối đến máy chủ BHXH. Đang sử dụng captcha dự phòng.');
-        }
-      },
-      error: (err) => {
-        console.error('Captcha error:', err);
-        console.warn('Lỗi khi lấy captcha từ server, sử dụng captcha dự phòng');
-        this.generateFallbackCaptcha();
-        this.message.warning('Không thể kết nối đến máy chủ BHXH. Đang sử dụng captcha dự phòng.');
-      }
-    });
+    // Để trống vì đã được xử lý trong component captcha
   }
 
-  handleLogin(): void {
-    // Đánh dấu trường captcha là đã chạm vào để hiển thị lỗi
-    const textControl = this.loginForm.get('text');
-    if (textControl && textControl.invalid) {
-      textControl.markAsTouched();
-    }
+  handleLogin(loginData: any): void {
+    this.loadingLogin = true;
 
-    // Kiểm tra tính hợp lệ của trường captcha
-    if (textControl && textControl.valid) {
-      this.loadingLogin = true;
+    console.log('Gửi request xác thực với data:', { ...loginData, password: '***' });
 
-      // Kiểm tra xem có đang sử dụng captcha dự phòng không
-      const userInput = this.loginForm.get('text')?.value;
-      const isFallbackCaptcha = this.captchaImage && this.captchaImage.startsWith('data:image/png;base64,') && !this.captchaImage.includes('iVBORw0KGgoAAAANSUhEUgAAASwAAABs');
+    this.ssmv2Service.authenticate(loginData).subscribe({
+      next: (response) => {
+        this.loadingLogin = false;
 
-      if (isFallbackCaptcha) {
-        // Nếu đang sử dụng captcha dự phòng, kiểm tra trực tiếp
-        if (userInput.toUpperCase() === this.captchaCode) {
-          // Xác thực thành công với captcha dự phòng
-          this.loadingLogin = false;
-          this.message.success('Xác thực thành công (chế độ ngoại tuyến)');
+        if (response.body?.access_token) {
+          console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
+          this.message.success('Xác thực thành công');
           this.isLoginVisible = false;
-
-          // Lưu thông tin đăng nhập tạm thời
-          const userInfo = {
-            userName: this.loginForm.get('userName')?.value,
-            name: 'Người dùng ngoại tuyến',
-            mangLuoi: 'OFFLINE',
-            donViCongTac: 'Chế độ ngoại tuyến',
-            chucDanh: 'Người dùng'
-          };
-          localStorage.setItem('ssmv2_user_info', JSON.stringify(userInfo));
 
           // Đảm bảo token đã được lưu trước khi tìm kiếm
           setTimeout(() => {
             if (this.form.get('ma_so_bhxh')?.value) {
-              console.log('Thực hiện tìm kiếm sau khi xác thực thành công (chế độ ngoại tuyến)');
+              console.log('Thực hiện tìm kiếm sau khi xác thực thành công');
               this.searchBHXH();
             }
-          }, 2000);
+          }, 2000); // Tăng thời gian chờ lên 2 giây
         } else {
-          this.loadingLogin = false;
+          this.message.error('Không nhận được token');
+        }
+      },
+      error: (err) => {
+        console.error('Lỗi xác thực:', err);
+        this.loadingLogin = false;
+
+        if (err.error?.error === 'invalid_captcha') {
           this.message.error('Mã xác thực sai');
-          this.loginForm.patchValue({ text: '' });
-          this.generateFallbackCaptcha();
+        } else if (err.error?.error_description?.includes('xác thực')) {
+          this.message.error('Mã xác thực sai');
+        } else if (err.error?.message) {
+          this.message.error(err.error.message);
+        } else {
+          this.message.error('Xác thực thất bại, vui lòng thử lại');
         }
-        return;
       }
-
-      // Xử lý đăng nhập bình thường với server
-      const data = {
-        grant_type: 'password',
-        userName: this.loginForm.get('userName')?.value,
-        password: this.loginForm.get('password')?.value,
-        text: this.loginForm.get('text')?.value,
-        code: this.captchaCode,
-        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-        isWeb: true
-      };
-
-      console.log('Gửi request xác thực với data:', { ...data, password: '***' });
-
-      this.ssmv2Service.authenticate(data).subscribe({
-        next: (response) => {
-          this.loadingLogin = false;
-
-          if (response.body?.access_token) {
-            console.log('Xác thực thành công, token hết hạn sau:', response.body.expires_in, 'giây');
-            this.message.success('Xác thực thành công');
-            this.isLoginVisible = false;
-
-            // Đảm bảo token đã được lưu trước khi tìm kiếm
-            setTimeout(() => {
-              if (this.form.get('ma_so_bhxh')?.value) {
-                console.log('Thực hiện tìm kiếm sau khi xác thực thành công');
-                this.searchBHXH();
-              }
-            }, 2000); // Tăng thời gian chờ lên 2 giây
-          } else {
-            this.message.error('Không nhận được token');
-            this.getCaptcha();
-          }
-        },
-        error: (err) => {
-          console.error('Lỗi xác thực:', err);
-          this.loadingLogin = false;
-          this.loginForm.patchValue({ text: '' });
-
-          if (err.error?.error === 'invalid_captcha') {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.error_description?.includes('xác thực')) {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.message) {
-            this.message.error(err.error.message);
-          } else {
-            this.message.error('Xác thực thất bại, vui lòng thử lại');
-          }
-
-          setTimeout(() => {
-            this.getCaptcha();
-          }, 100);
-        }
-      });
-    } else {
-      this.message.warning('Vui lòng nhập mã xác nhận!');
-    }
+    });
   }
 
   handleLoginCancel(): void {
@@ -1682,62 +1588,7 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Tạo captcha dự phòng trong trường hợp không thể kết nối đến máy chủ
-  generateFallbackCaptcha(): void {
-    // Tạo mã captcha ngẫu nhiên gồm 6 ký tự
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let captchaCode = '';
-    for (let i = 0; i < 6; i++) {
-      captchaCode += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    this.captchaCode = captchaCode;
-
-    // Tạo hình ảnh captcha đơn giản
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 80;
-    const ctx = canvas.getContext('2d');
-
-    if (ctx) {
-      // Vẽ nền
-      ctx.fillStyle = '#f0f2f5';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Vẽ text
-      ctx.font = 'bold 36px Arial';
-      ctx.fillStyle = '#1890ff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Thêm hiệu ứng nhiễu
-      for (let i = 0; i < 100; i++) {
-        ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.2)`;
-        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
-      }
-
-      // Vẽ text với hiệu ứng nghiêng
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((Math.random() - 0.5) * 0.2);
-      ctx.fillText(captchaCode, 0, 0);
-      ctx.restore();
-
-      // Chuyển canvas thành base64 image
-      this.captchaImage = canvas.toDataURL('image/png');
-    }
-
-    console.log('Đã tạo captcha dự phòng:', captchaCode);
-  }
-
-  convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const upperCaseValue = input.value.toUpperCase();
-
-    if (input.value !== upperCaseValue) {
-      input.value = upperCaseValue;
-      this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
-    }
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Phương thức để tải danh sách huyện theo tỉnh
   loadHuyensByTinh(maTinh: string): void {

@@ -126,7 +126,7 @@
             </nz-form-control>
           </nz-form-item>
         </div>
-        
+
         <!-- Thông tin địa chỉ -->
         <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="4">
           <nz-form-item>
@@ -615,51 +615,11 @@
 </div>
 
 <!-- Modal đăng nhập -->
-<nz-modal
-  [(nzVisible)]="isLoginVisible"
-  [nzTitle]="'Xác thực'"
-  [nzOkText]="'Xác thực'"
-  [nzCancelText]="'Hủy'"
-  [nzOkLoading]="loadingLogin"
-  (nzOnOk)="handleLogin()"
-  (nzOnCancel)="handleLoginCancel()">
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="loginForm" class="login-form">
-      <!-- Ẩn phần nhập tài khoản và mật khẩu -->
-      <div style="display: none;">
-        <nz-form-item>
-          <nz-form-label [nzSpan]="24" nzRequired>Tên đăng nhập</nz-form-label>
-          <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập tên đăng nhập">
-            <input nz-input formControlName="userName" placeholder="Nhập tên đăng nhập" />
-          </nz-form-control>
-        </nz-form-item>
-        <nz-form-item>
-          <nz-form-label [nzSpan]="24" nzRequired>Mật khẩu</nz-form-label>
-          <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mật khẩu">
-            <input nz-input type="password" formControlName="password" placeholder="Nhập mật khẩu" />
-          </nz-form-control>
-        </nz-form-item>
-      </div>
-
-      <div class="login-message">
-        <p>Vui lòng nhập mã xác nhận để tiếp tục</p>
-      </div>
-
-      <div class="captcha-image" *ngIf="captchaImage">
-        <img [src]="captchaImage" alt="Captcha" />
-      </div>
-
-      <nz-form-item class="captcha-container">
-        <nz-form-label [nzSpan]="24" nzRequired>Mã xác nhận</nz-form-label>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
-          <div class="input-with-button">
-            <input nz-input formControlName="text" placeholder="Nhập mã xác nhận" (input)="convertToUpperCase($event)" />
-            <button nz-button class="refresh-button" (click)="getCaptcha()">
-              <span nz-icon nzType="reload" nzTheme="outline"></span>
-            </button>
-          </div>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
-  </ng-container>
-</nz-modal>
+<app-captcha-modal
+  [(visible)]="isLoginVisible"
+  [userName]="loginForm.get('userName')?.value"
+  [password]="loginForm.get('password')?.value"
+  [loading]="loadingLogin"
+  (login)="handleLogin($event)"
+  (cancel)="handleLoginCancel()">
+</app-captcha-modal>

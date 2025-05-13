@@ -19,6 +19,7 @@ import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { BHYTService, TraCuuThongTinBHYTRequest, TraCuuThongTinBHYTResponse } from '../../services/tra-cuu-thong-tin-bhyt.service';
 import { SSMV2Service } from '../../services/ssmv2.service';
 import { DiaChiService } from '../../services/dia-chi.service';
+import { CaptchaModalComponent } from '../../shared/components/captcha-modal/captcha-modal.component';
 
 @Component({
   selector: 'app-tra-cuu-thong-tin-bhyt',
@@ -39,7 +40,8 @@ import { DiaChiService } from '../../services/dia-chi.service';
     NzIconModule,
     NzTagModule,
     NzModalModule,
-    NzTabsModule
+    NzTabsModule,
+    CaptchaModalComponent
   ],
   templateUrl: './tra-cuu-thong-tin-bhyt.component.html',
   styleUrls: ['./tra-cuu-thong-tin-bhyt.component.scss']
@@ -53,8 +55,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
 
   // Additional properties for SSMV2
   isVNPostLoginVisible = false;
-  captchaImage = '';
-  captchaCode = '';
   vnpostLoginForm!: FormGroup;
   isLoadingLogin = false;
 
@@ -147,7 +147,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
           this.message.success('Tra cứu thông tin BHYT thành công');
         } else {
           if (response.error && response.error.toString().includes('authenticat')) {
-            this.getCaptcha();
             this.isVNPostLoginVisible = true;
           } else {
             this.loiTraCuu = response.message || 'Không tìm thấy thông tin thẻ BHYT';
@@ -157,7 +156,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
       error: (error: any) => {
         this.isLoading = false;
         if (error && error.error && error.error.includes('xác thực')) {
-          this.getCaptcha();
           this.isVNPostLoginVisible = true;
         } else {
           this.loiTraCuu = error.error || 'Có lỗi xảy ra khi tra cứu thông tin BHYT';
@@ -236,73 +234,10 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
     this.isModalVisible = false;
   }
 
-  // SSMV2 login handlers
-  getCaptcha(): void {
-    this.ssmv2Service.getCaptcha().subscribe({
-      next: (res: any) => {
-        console.log('Captcha response:', res);
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
-        // Xử lý các định dạng dữ liệu khác nhau từ API
-        if (res && res.data) {
-          // Định dạng mới: res.data.image và res.data.code
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
-
-          // Kiểm tra xem captchaImage có tiền tố data:image chưa
-          if (this.captchaImage && !this.captchaImage.startsWith('data:')) {
-            this.captchaImage = 'data:image/png;base64,' + this.captchaImage;
-          }
-
-          console.log('Captcha image:', this.captchaImage ? this.captchaImage.substring(0, 50) + '...' : 'null');
-          console.log('Captcha code:', this.captchaCode ? this.captchaCode.substring(0, 20) + '...' : 'null');
-        } else if (res && res.captchaBase64) {
-          // Định dạng cũ: res.captchaBase64 và res.captchaCode
-          this.captchaImage = res.captchaBase64;
-          this.captchaCode = res.captchaCode;
-
-          // Kiểm tra xem captchaImage có tiền tố data:image chưa
-          if (this.captchaImage && !this.captchaImage.startsWith('data:')) {
-            this.captchaImage = 'data:image/png;base64,' + this.captchaImage;
-          }
-        } else {
-          this.message.error('Không nhận được dữ liệu captcha');
-          this.generateFallbackCaptcha();
-        }
-
-        // Reset giá trị nhập vào của người dùng
-        this.vnpostLoginForm.get('text')?.setValue('');
-      },
-      error: (err: any) => {
-        console.error('Captcha error:', err);
-        this.message.error('Không thể tải mã xác nhận');
-        this.generateFallbackCaptcha();
-      }
-    });
-  }
-
-  handleLogin(): void {
-    if (this.vnpostLoginForm.invalid) {
-      Object.values(this.vnpostLoginForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsDirty();
-          control.updateValueAndValidity({ onlySelf: true });
-        }
-      });
-      return;
-    }
-
+  handleLogin(loginData: any): void {
     this.isLoadingLogin = true;
-
-    // Tạo dữ liệu đăng nhập với mã captcha đúng định dạng
-    const loginData = {
-      grant_type: 'password',
-      userName: this.vnpostLoginForm.get('userName')?.value,
-      password: this.vnpostLoginForm.get('password')?.value,
-      text: this.vnpostLoginForm.get('text')?.value, // Mã người dùng nhập vào
-      code: this.captchaCode, // Mã captcha từ server
-      clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-      isWeb: true
-    };
 
     console.log('Đang đăng nhập với dữ liệu:', {
       userName: loginData.userName,
@@ -322,7 +257,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
         } else {
           this.isLoadingLogin = false;
           this.message.error('Đăng nhập không thành công');
-          this.getCaptcha();
         }
       },
       error: (err: any) => {
@@ -341,8 +275,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
         } else {
           this.message.error('Đăng nhập không thành công: ' + (err.error?.error_description || 'Lỗi không xác định'));
         }
-
-        this.getCaptcha();
       }
     });
   }
@@ -354,7 +286,6 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
   // Thêm phương thức hiển thị form đăng nhập VNPost
   showVNPostLogin(): void {
     this.isVNPostLoginVisible = true;
-    this.getCaptcha();
   }
 
   // Phương thức kích hoạt tab
@@ -381,10 +312,7 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
     }
   }
 
-  convertToUpperCase(event: any): void {
-    const value = event.target.value;
-    this.vnpostLoginForm.get('text')?.setValue(value.toUpperCase());
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Helpers for display
   isTheConHan(denNgay: string): boolean {
@@ -533,51 +461,7 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
     return maBHXH;
   }
 
-  // Tạo captcha dự phòng khi không thể lấy từ API
-  generateFallbackCaptcha(): void {
-    // Tạo mã captcha ngẫu nhiên 4 ký tự
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let captchaCode = '';
-    for (let i = 0; i < 4; i++) {
-      captchaCode += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    this.captchaCode = captchaCode;
-
-    // Tạo hình ảnh captcha bằng canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 50;
-    const ctx = canvas.getContext('2d');
-
-    if (ctx) {
-      // Vẽ nền
-      ctx.fillStyle = '#f0f2f5';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Vẽ text
-      ctx.font = 'bold 36px Arial';
-      ctx.fillStyle = '#1890ff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Thêm hiệu ứng nhiễu
-      for (let i = 0; i < 100; i++) {
-        ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.2)`;
-        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
-      }
-
-      // Vẽ text với hiệu ứng nghiêng
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((Math.random() - 0.5) * 0.2);
-      ctx.fillText(captchaCode, 0, 0);
-      ctx.restore();
-
-      // Chuyển canvas thành base64 image
-      const base64Image = canvas.toDataURL('image/png').split(',')[1];
-      this.captchaImage = base64Image;
-    }
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Thêm phương thức tự động đăng nhập VNPost
   autoLoginVNPost(fromSubmit: boolean = false): void {
@@ -585,99 +469,28 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
     this.ssmv2Service.getCaptcha().subscribe({
       next: (res) => {
         console.log('Captcha response in autoLogin:', res);
-        let captchaObtained = false;
+        let captchaCode = '';
 
         if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
-
-          // Kiểm tra xem captchaImage có tiền tố data:image chưa
-          if (this.captchaImage && !this.captchaImage.startsWith('data:')) {
-            this.captchaImage = 'data:image/png;base64,' + this.captchaImage;
-          }
-
-          captchaObtained = true;
+          captchaCode = res.data.code;
         } else if (res && res.captchaBase64) {
-          this.captchaImage = res.captchaBase64;
-          this.captchaCode = res.captchaCode;
-
-          // Kiểm tra xem captchaImage có tiền tố data:image chưa
-          if (this.captchaImage && !this.captchaImage.startsWith('data:')) {
-            this.captchaImage = 'data:image/png;base64,' + this.captchaImage;
-          }
-
-          captchaObtained = true;
+          captchaCode = res.captchaCode;
         } else {
-          console.warn('Không nhận được dữ liệu captcha từ API, sử dụng captcha dự phòng');
-          this.generateFallbackCaptcha();
-          captchaObtained = true;
-        }
-
-        if (captchaObtained) {
-          // Thực hiện đăng nhập tự động với thông tin đăng nhập đúng
-          const data = {
-            grant_type: 'password',
-            userName: '884000_xa_tli_phuoclt', // Sử dụng tài khoản cố định
-            password: '123456d@D',             // Sử dụng mật khẩu cố định
-            text: this.captchaCode,            // Sử dụng mã captcha làm text
-            code: this.captchaCode,
-            clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-            isWeb: true
-          };
-
-          this.ssmv2Service.authenticate(data).subscribe({
-            next: (response) => {
-              if (response.body?.access_token) {
-                console.log('Tự động xác thực thành công');
-
-                // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
-                if (fromSubmit) {
-                  setTimeout(() => {
-                    this.submitBHYTForm();
-                  }, 1000);
-                }
-              } else {
-                if (fromSubmit) {
-                  this.isLoading = false;
-                }
-              }
-            },
-            error: (err) => {
-              console.error('Lỗi tự động đăng nhập:', err);
-
-              // Ghi log chi tiết hơn về lỗi
-              if (err.error) {
-                console.log('Chi tiết lỗi đăng nhập:', {
-                  error: err.error.error,
-                  description: err.error.error_description,
-                  type: err.error.type
-                });
-              }
-
-              if (fromSubmit) {
-                this.isLoading = false;
-                this.showVNPostLogin(); // Hiển thị form đăng nhập nếu tự động đăng nhập thất bại
-              }
-            }
-          });
-        } else {
+          console.warn('Không nhận được dữ liệu captcha từ API');
           if (fromSubmit) {
             this.isLoading = false;
+            this.showVNPostLogin();
           }
+          return;
         }
-      },
-      error: (err) => {
-        console.error('Lỗi khi lấy captcha:', err);
-        // Tạo captcha dự phòng khi gặp lỗi
-        this.generateFallbackCaptcha();
 
-        // Vẫn tiếp tục đăng nhập với captcha dự phòng và thông tin đăng nhập đúng
+        // Thực hiện đăng nhập tự động với thông tin đăng nhập đúng
         const data = {
           grant_type: 'password',
           userName: '884000_xa_tli_phuoclt', // Sử dụng tài khoản cố định
           password: '123456d@D',             // Sử dụng mật khẩu cố định
-          text: this.captchaCode,
-          code: this.captchaCode,
+          text: captchaCode,                 // Sử dụng mã captcha làm text
+          code: captchaCode,
           clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
           isWeb: true
         };
@@ -685,7 +498,9 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
         this.ssmv2Service.authenticate(data).subscribe({
           next: (response) => {
             if (response.body?.access_token) {
-              console.log('Tự động xác thực thành công với captcha dự phòng');
+              console.log('Tự động xác thực thành công');
+
+              // Chỉ thực hiện tìm kiếm nếu đăng nhập từ quá trình submit form
               if (fromSubmit) {
                 setTimeout(() => {
                   this.submitBHYTForm();
@@ -694,17 +509,34 @@ export class TraCuuThongTinBHYTComponent implements OnInit {
             } else {
               if (fromSubmit) {
                 this.isLoading = false;
-                this.showVNPostLogin();
               }
             }
           },
-          error: () => {
+          error: (err) => {
+            console.error('Lỗi tự động đăng nhập:', err);
+
+            // Ghi log chi tiết hơn về lỗi
+            if (err.error) {
+              console.log('Chi tiết lỗi đăng nhập:', {
+                error: err.error.error,
+                description: err.error.error_description,
+                type: err.error.type
+              });
+            }
+
             if (fromSubmit) {
               this.isLoading = false;
-              this.showVNPostLogin();
+              this.showVNPostLogin(); // Hiển thị form đăng nhập nếu tự động đăng nhập thất bại
             }
           }
         });
+      },
+      error: (err) => {
+        console.error('Lỗi khi lấy captcha:', err);
+        if (fromSubmit) {
+          this.isLoading = false;
+          this.showVNPostLogin();
+        }
       }
     });
   }

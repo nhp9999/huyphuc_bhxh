@@ -199,43 +199,11 @@
 </nz-modal>
 
 <!-- Modal đăng nhập VNPost -->
-<nz-modal
-  [(nzVisible)]="isVNPostLoginVisible"
-  [nzTitle]="'Xác thực captcha'"
-  (nzOnCancel)="closeVNPostLogin()"
-  (nzOnOk)="handleLogin()"
-  [nzOkText]="'Xác nhận'"
-  [nzCancelText]="'Hủy'"
-  [nzOkLoading]="isLoadingLogin"
-  nzWidth="400px">
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="vnpostLoginForm">
-      <!-- Ẩn input tài khoản và mật khẩu -->
-      <input type="hidden" formControlName="userName">
-      <input type="hidden" formControlName="password">
-
-      <nz-form-item>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
-          <div class="captcha-container">
-            <img [src]="captchaImage"
-              alt="captcha" style="margin-bottom: 8px; max-width: 100%; border: 1px solid #e8e8e8; border-radius: 4px;" />
-            <div class="input-with-button">
-              <input nz-input
-                formControlName="text"
-                placeholder="Nhập mã xác nhận"
-                (input)="convertToUpperCase($event)"
-                maxlength="4" />
-              <button
-                nz-button
-                nzType="default"
-                class="refresh-button"
-                (click)="getCaptcha(); $event.preventDefault()">
-                <i nz-icon nzType="reload"></i>
-              </button>
-            </div>
-          </div>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
-  </ng-container>
-</nz-modal>
+<app-captcha-modal
+  [(visible)]="isVNPostLoginVisible"
+  [userName]="vnpostLoginForm.get('userName')?.value"
+  [password]="vnpostLoginForm.get('password')?.value"
+  [loading]="isLoadingLogin"
+  (login)="handleLogin($event)"
+  (cancel)="closeVNPostLogin()">
+</app-captcha-modal>

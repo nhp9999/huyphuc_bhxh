@@ -26,6 +26,7 @@ import { vi_VN } from 'ng-zorro-antd/i18n';
 import { NzI18nService } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
+import { CaptchaModalComponent } from '../../shared/components/captcha-modal/captcha-modal.component';
 import {
   SaveOutline,
   PlusOutline,
@@ -207,7 +208,8 @@ interface XaPhuong {
     NzToolTipModule,
     NzRadioModule,
     NzAlertModule,
-    NzBadgeModule
+    NzBadgeModule,
+    CaptchaModalComponent
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -298,8 +300,6 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   loadingToken = false;
 
   isLoginVisible = false;
-  captchaImage = '';
-  captchaCode = '';
   loginForm: FormGroup;
   loadingLogin = false;
 
@@ -4216,90 +4216,52 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   // Thêm phương thức lấy token
   getAccessToken(): void {
     this.isLoginVisible = true;
-    this.getCaptcha();
   }
 
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
   getCaptcha(): void {
-    this.ssmv2Service.getCaptcha().subscribe({
-      next: (res) => {
-        console.log('Captcha response:', res); // Log để debug
-        if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
+    // Để trống vì đã được xử lý trong component captcha
+  }
+
+  handleLogin(loginData: any): void {
+    this.loadingLogin = true;
+
+    this.ssmv2Service.authenticate(loginData).subscribe({
+      next: (response) => {
+        this.loadingLogin = false;
+
+        if (response.body?.access_token) {
+          this.message.success('Xác thực thành công');
+          this.isLoginVisible = false;
+
+          if (this.form.get('ma_so_bhxh')?.value) {
+            this.onSearchBHYT();
+          }
         } else {
-          this.message.error('Không nhận được dữ liệu captcha');
+          this.message.error('Không nhận được token');
         }
       },
       error: (err) => {
-        console.error('Captcha error:', err); // Log để debug
-        this.message.error('Lỗi khi lấy captcha: ' + err.message);
+        console.log('Error details:', {
+          error: err.error,
+          status: err.status,
+          message: err.message,
+          fullError: err
+        });
+
+        this.loadingLogin = false;
+
+        if (err.error?.error === 'invalid_captcha') {
+          this.message.error('Mã xác thực sai');
+        } else if (err.error?.error_description?.includes('xác thực')) {
+          this.message.error('Mã xác thực sai');
+        } else if (err.error?.message) {
+          this.message.error(err.error.message);
+        } else {
+          this.message.error('Xác thực thất bại, vui lòng thử lại');
+        }
       }
     });
-  }
-
-  handleLogin(): void {
-    if (this.loginForm.get('text')?.valid) {
-      this.loadingLogin = true;
-
-      const data = {
-        grant_type: 'password',
-        userName: this.loginForm.get('userName')?.value,
-        password: this.loginForm.get('password')?.value,
-        text: this.loginForm.get('text')?.value,
-        code: this.captchaCode,
-        clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
-        isWeb: true
-      };
-
-      this.ssmv2Service.authenticate(data).subscribe({
-        next: (response) => {
-          this.loadingLogin = false;
-
-          if (response.body?.access_token) {
-            this.message.success('Xác thực thành công');
-            this.isLoginVisible = false;
-
-            if (this.form.get('ma_so_bhxh')?.value) {
-              this.onSearchBHYT();
-            }
-          } else {
-            this.message.error('Không nhận được token');
-            this.getCaptcha();
-          }
-        },
-        error: (err) => {
-          console.log('Error details:', {
-            error: err.error,
-            status: err.status,
-            message: err.message,
-            fullError: err
-          });
-
-          this.loadingLogin = false;
-          this.loginForm.patchValue({ text: '' });
-
-          if (err.error?.error === 'invalid_captcha') {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.error_description?.includes('xác thực')) {
-            this.message.error('Mã xác thực sai');
-          } else if (err.error?.message) {
-            this.message.error(err.error.message);
-          } else {
-            this.message.error('Xác thực thất bại, vui lòng thử lại');
-          }
-
-          setTimeout(() => {
-            this.getCaptcha();
-          }, 100);
-        }
-      });
-    } else {
-      Object.values(this.loginForm.controls).forEach(control => {
-        if (control.invalid) {
-          control.markAsTouched();
-        }
-      });
-    }
   }
 
   handleLoginCancel(): void {
@@ -4327,21 +4289,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     return diffDays <= 90 ? 'dao_han' : 'tang_moi';
   }
 
-  // Thêm phương thức xử lý input captcha
-  onCaptchaInput(event: any): void {
-    const input = event.target as HTMLInputElement;
-    let value = input.value;
-
-    // Chỉ lấy 4 ký tự đầu tiên
-    if (value.length > 4) {
-      value = value.slice(0, 4);
-    }
-
-    // Chuyển đổi thành chữ hoa và cập nhật vào form
-    this.loginForm.patchValue({
-      text: value.toUpperCase()
-    }, { emitEvent: false });
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Thêm phương thức mới để xử lý khi thay đổi chế độ
   onModeChange(isHoGiaDinh: boolean): void {
@@ -4601,16 +4549,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     }
   }
 
-  convertToUpperCase(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const upperCaseValue = input.value.toUpperCase();
-
-    // Nếu giá trị đã thay đổi sau khi chuyển đổi
-    if (input.value !== upperCaseValue) {
-      input.value = upperCaseValue;
-      this.loginForm.get('text')?.setValue(upperCaseValue, { emitEvent: false });
-    }
-  }
+  // Phương thức này không còn cần thiết khi sử dụng component captcha mới
 
   // Thêm phương thức mới để format ngày sinh thành chuỗi dd/MM/yyyy
   private formatDateToString(date: Date): string {
@@ -5205,16 +5144,15 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.ssmv2Service.getCaptcha().subscribe({
       next: (res) => {
         if (res && res.data) {
-          this.captchaImage = res.data.image;
-          this.captchaCode = res.data.code;
+          const captchaCode = res.data.code;
 
           // Thực hiện đăng nhập tự động
           const data = {
             grant_type: 'password',
             userName: this.loginForm.get('userName')?.value,
             password: this.loginForm.get('password')?.value,
-            text: this.captchaCode, // Sử dụng mã captcha làm text
-            code: this.captchaCode,
+            text: captchaCode, // Sử dụng mã captcha làm text
+            code: captchaCode,
             clientId: 'ZjRiYmI5ZTgtZDcyOC00ODRkLTkyOTYtMDNjYmUzM2U4Yjc5',
             isWeb: true
           };

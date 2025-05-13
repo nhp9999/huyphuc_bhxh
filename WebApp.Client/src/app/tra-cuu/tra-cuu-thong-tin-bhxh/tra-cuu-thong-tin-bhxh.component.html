@@ -1,17 +1,17 @@
 <div class="container">
   <nz-card nzTitle="Tra cứu thông tin BHXH" [nzExtra]="extraTemplate">
     <form nz-form [formGroup]="traCuuBHXHForm" (ngSubmit)="submitBHXHForm()">
-      
+
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Mã số BHXH</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng nhập mã số BHXH (phải có 10 chữ số)">
           <div class="input-with-button">
-            <input 
-              nz-input 
-              formControlName="maSoBHXH" 
-              placeholder="Nhập mã số BHXH (10 chữ số)" 
-              (input)="formatMaSoBHXH($event)" 
-              maxlength="10" 
+            <input
+              nz-input
+              formControlName="maSoBHXH"
+              placeholder="Nhập mã số BHXH (10 chữ số)"
+              (input)="formatMaSoBHXH($event)"
+              maxlength="10"
             />
           </div>
         </nz-form-control>
@@ -34,7 +34,7 @@
 
     <ng-container *ngIf="daTimKiem">
       <nz-divider></nz-divider>
-      
+
       <div *ngIf="isLoading" class="loading-container">
         <nz-spin nzTip="Đang tra cứu..."></nz-spin>
       </div>
@@ -45,7 +45,7 @@
 
       <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu" class="result-container">
         <h3>Thông tin BHXH</h3>
-        
+
         <!-- Thông tin cá nhân -->
         <div class="info-section bhxh-info">
           <h4>Thông tin cá nhân</h4>
@@ -72,7 +72,7 @@
             </nz-descriptions-item>
           </nz-descriptions>
         </div>
-        
+
         <!-- Thông tin đóng BHXH tự nguyện -->
         <div *ngIf="ketQuaTraCuu.phuongAn" class="info-section bhxh-info mt-15">
           <h4>Thông tin đóng BHXH tự nguyện</h4>
@@ -96,7 +96,7 @@
             <nz-descriptions-item nzTitle="Tái tục">{{ ketQuaTraCuu.taiTuc || 'Không' }}</nz-descriptions-item>
           </nz-descriptions>
         </div>
-        
+
         <!-- Nút xem chi tiết BHXH -->
         <button nz-button nzType="primary" (click)="xemChiTietBHXH()" style="margin-top: 15px;">
           <i nz-icon nzType="file-search"></i>
@@ -145,7 +145,7 @@
           <nz-descriptions-item nzTitle="Nơi cư trú" *ngIf="chiTietItem.noiCuTru" [nzSpan]="2">{{ chiTietItem.noiCuTru }}</nz-descriptions-item>
         </nz-descriptions>
       </nz-tab>
-      
+
       <nz-tab nzTitle="Thông tin đóng BHXH" *ngIf="chiTietItem && chiTietItem.phuongAn">
         <nz-descriptions *ngIf="chiTietItem" nzBordered [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
           <nz-descriptions-item nzTitle="Đơn vị BHXH">{{ chiTietItem.tenDonViBHXH || 'Không có' }}</nz-descriptions-item>
@@ -167,7 +167,7 @@
           <nz-descriptions-item nzTitle="Tái tục">{{ chiTietItem.taiTuc || 'Không' }}</nz-descriptions-item>
         </nz-descriptions>
       </nz-tab>
-      
+
       <nz-tab nzTitle="Dữ liệu gốc">
         <pre>{{ chiTietItem.raw | json }}</pre>
       </nz-tab>
@@ -176,43 +176,11 @@
 </nz-modal>
 
 <!-- Modal đăng nhập VNPost -->
-<nz-modal
-  [(nzVisible)]="isVNPostLoginVisible"
-  [nzTitle]="'Xác thực captcha'"
-  (nzOnCancel)="closeVNPostLogin()"
-  (nzOnOk)="handleLogin()"
-  [nzOkText]="'Xác nhận'"
-  [nzCancelText]="'Hủy'"
-  [nzOkLoading]="isLoadingLogin"
-  nzWidth="400px">
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="vnpostLoginForm">
-      <!-- Ẩn input tài khoản và mật khẩu -->
-      <input type="hidden" formControlName="userName">
-      <input type="hidden" formControlName="password">
-
-      <nz-form-item>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
-          <div class="captcha-container">
-            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
-              style="margin-bottom: 8px; max-width: 100%;" />
-            <div class="input-with-button">
-              <input nz-input 
-                formControlName="text" 
-                placeholder="Nhập mã xác nhận"
-                (input)="convertToUpperCase($event)"
-                maxlength="4" />
-              <button 
-                nz-button 
-                nzType="default"
-                class="refresh-button"
-                (click)="getCaptcha(); $event.preventDefault()">
-                <i nz-icon nzType="reload"></i>
-              </button>
-            </div>
-          </div>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
-  </ng-container>
-</nz-modal> 
+<app-captcha-modal
+  [(visible)]="isVNPostLoginVisible"
+  [userName]="vnpostLoginForm.get('userName')?.value"
+  [password]="vnpostLoginForm.get('password')?.value"
+  [loading]="isLoadingLogin"
+  (login)="handleLogin($event)"
+  (cancel)="closeVNPostLogin()">
+</app-captcha-modal>

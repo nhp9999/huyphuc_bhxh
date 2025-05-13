@@ -1,14 +1,14 @@
 <div class="container">
   <nz-card nzTitle="Tra cứu thông tin hộ gia đình" [nzExtra]="extraTemplate">
     <form nz-form [formGroup]="traCuuHoGiaDinhForm" (ngSubmit)="submitHoGiaDinhForm()">
-      
+
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành phố</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Tỉnh/Thành phố">
-          <nz-select 
-            formControlName="maTinh" 
-            (ngModelChange)="onTinhChange($event)" 
-            nzPlaceHolder="Chọn Tỉnh/Thành phố" 
+          <nz-select
+            formControlName="maTinh"
+            (ngModelChange)="onTinhChange($event)"
+            nzPlaceHolder="Chọn Tỉnh/Thành phố"
             [nzLoading]="isLoadingData"
             nzShowSearch
             [nzAllowClear]="true"
@@ -21,10 +21,10 @@
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>Quận/Huyện</nz-form-label>
         <nz-form-control [nzSpan]="14" nzErrorTip="Vui lòng chọn Quận/Huyện">
-          <nz-select 
-            formControlName="maHuyen" 
-            (ngModelChange)="onHuyenChange($event)" 
-            nzPlaceHolder="Chọn Quận/Huyện" 
+          <nz-select
+            formControlName="maHuyen"
+            (ngModelChange)="onHuyenChange($event)"
+            nzPlaceHolder="Chọn Quận/Huyện"
             [nzLoading]="isLoadingData"
             nzShowSearch
             [nzAllowClear]="true"
@@ -37,9 +37,9 @@
       <nz-form-item>
         <nz-form-label [nzSpan]="6">Xã/Phường</nz-form-label>
         <nz-form-control [nzSpan]="14">
-          <nz-select 
-            formControlName="maXa" 
-            nzPlaceHolder="Chọn Xã/Phường" 
+          <nz-select
+            formControlName="maXa"
+            nzPlaceHolder="Chọn Xã/Phường"
             [nzLoading]="isLoadingData"
             nzShowSearch
             [nzAllowClear]="true"
@@ -80,7 +80,7 @@
 
     <ng-container *ngIf="daTimKiem">
       <nz-divider></nz-divider>
-      
+
       <div *ngIf="isLoading" class="loading-container">
         <nz-spin nzTip="Đang tra cứu..."></nz-spin>
       </div>
@@ -91,7 +91,7 @@
 
       <div *ngIf="!isLoading && !loiTraCuu && ketQuaTraCuu.length > 0" class="result-container">
         <h3>Kết quả tra cứu (Tìm thấy {{ ketQuaTraCuu.length }} hộ gia đình)</h3>
-        
+
         <nz-table #basicTable [nzData]="ketQuaTraCuu" [nzPageSize]="5" [nzShowPagination]="ketQuaTraCuu.length > 5">
           <thead>
             <tr>
@@ -197,85 +197,53 @@
 </ng-template>
 
 <!-- Modal đăng nhập VNPost -->
-<nz-modal
-  [(nzVisible)]="isVNPostLoginVisible"
-  [nzTitle]="'Xác thực captcha'"
-  (nzOnCancel)="closeVNPostLogin()"
-  (nzOnOk)="handleLogin()"
-  [nzOkText]="'Xác nhận'"
-  [nzCancelText]="'Hủy'"
-  [nzOkLoading]="isLoadingLogin"
-  nzWidth="400px">
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="vnpostLoginForm">
-      <!-- Ẩn input tài khoản và mật khẩu -->
-      <input type="hidden" formControlName="userName">
-      <input type="hidden" formControlName="password">
-
-      <nz-form-item>
-        <nz-form-control [nzSpan]="24" nzErrorTip="Vui lòng nhập mã xác nhận">
-          <div class="captcha-container">
-            <img [src]="'data:image/png;base64,' + captchaImage" alt="captcha" 
-              style="margin-bottom: 8px; max-width: 100%;" />
-            <div class="input-with-button">
-              <input nz-input 
-                formControlName="text" 
-                placeholder="Nhập mã xác nhận"
-                (input)="convertToUpperCase($event)"
-                maxlength="4" />
-              <button 
-                nz-button 
-                nzType="default"
-                class="refresh-button"
-                (click)="getCaptcha(); $event.preventDefault()">
-                <i nz-icon nzType="reload"></i>
-              </button>
-            </div>
-          </div>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
-  </ng-container>
-</nz-modal>
+<app-captcha-modal
+  [(visible)]="isVNPostLoginVisible"
+  [userName]="vnpostLoginForm.get('userName')?.value"
+  [password]="vnpostLoginForm.get('password')?.value"
+  [loading]="isLoadingLogin"
+  (login)="handleLogin($event)"
+  (cancel)="closeVNPostLogin()">
+</app-captcha-modal>
 
 <style>
   .login-info {
     margin-bottom: 20px;
   }
-  
+
   .captcha-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-bottom: 10px;
   }
-  
+
   .input-with-button {
     display: flex;
     width: 100%;
     margin-top: 10px;
   }
-  
+
   .input-with-button input {
     flex: 1;
   }
-  
+
   .refresh-button {
     margin-left: 8px;
   }
-  
+
   .login-buttons {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
   }
-  
+
   .vnpost-login-button {
     display: flex;
     align-items: center;
     margin-bottom: 15px;
   }
-  
+
   .login-status {
     margin-left: 10px;
     color: #52c41a;

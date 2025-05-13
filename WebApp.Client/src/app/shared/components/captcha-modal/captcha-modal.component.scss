@@ -1,0 +1,187 @@
+// Styling cho modal captcha
+::ng-deep .captcha-verification-modal {
+  .ant-modal-content {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .ant-modal-body {
+    padding: 24px;
+  }
+
+  .ant-modal-footer {
+    padding: 10px 24px;
+    border-top: 1px solid #f0f0f0;
+    background-color: #f8f9fa;
+  }
+}
+
+.modal-title {
+  display: flex;
+  flex-direction: column;
+
+  span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #262626;
+  }
+
+  .modal-subtitle {
+    font-size: 12px;
+    color: #8c8c8c;
+    margin-top: 4px;
+    font-weight: normal;
+  }
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.captcha-instruction {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: #e6f7ff;
+  border-radius: 4px;
+  border: 1px solid #91d5ff;
+
+  i {
+    color: #1890ff;
+    font-size: 16px;
+    margin-right: 8px;
+  }
+
+  span {
+    color: #262626;
+    font-size: 13px;
+  }
+}
+
+.captcha-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.captcha-image-wrapper {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.captcha-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.captcha-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.captcha-input-container {
+  width: 100%;
+
+  nz-form-item {
+    margin-bottom: 0;
+  }
+}
+
+.input-with-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+
+  .captcha-input {
+    flex: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 500;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .refresh-button {
+    margin-left: 0;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    height: 32px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+
+    &:hover {
+      color: #1890ff;
+      background-color: #e6f7ff;
+    }
+  }
+}
+
+.captcha-help {
+  text-align: center;
+  margin-top: 8px;
+  
+  p {
+    font-size: 12px;
+    color: #8c8c8c;
+    margin: 0;
+  }
+  
+  a {
+    color: #1890ff;
+    cursor: pointer;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Responsive styling
+@media (max-width: 576px) {
+  ::ng-deep .captcha-verification-modal {
+    .ant-modal {
+      max-width: 90% !important;
+      margin: 0 auto;
+    }
+  }
+  
+  .captcha-image-wrapper {
+    height: 70px;
+  }
+  
+  .captcha-input {
+    font-size: 14px !important;
+  }
+}
