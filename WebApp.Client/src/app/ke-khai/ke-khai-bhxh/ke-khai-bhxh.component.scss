@@ -99,7 +99,21 @@
       .card-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 4px;
+        align-items: center;
+        gap: 8px;
+
+        button {
+          margin: 0;
+
+          &.mr-2 {
+            margin-right: 0 !important; // Override the inline margin
+          }
+
+          // Group primary actions to the right
+          &[nzType="primary"] {
+            order: 10; // Higher order pushes to the end (right side)
+          }
+        }
       }
     }
 
@@ -113,33 +127,44 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
 
     .left-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
 
       button {
         transition: all 0.2s ease;
+
+        // Danger buttons should be on the right side of the left actions group
+        &[nzDanger] {
+          order: 10;
+        }
+      }
+
+      // Add spacing between button groups
+      > *:not(:last-child) {
+        margin-right: 4px;
       }
     }
 
     .right-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
 
       .amount {
         color: #1890ff;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
         background: rgba(24, 144, 255, 0.1);
-        padding: 4px 12px;
-        border-radius: 0;
+        padding: 3px 10px;
+        border-radius: 2px;
         transition: all 0.3s ease;
       }
     }
@@ -147,25 +172,37 @@
 
   .custom-input-group {
     display: flex;
+    width: 100%;
 
     input {
+      flex: 1;
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
       border-radius: 0;
       transition: all 0.3s ease;
       height: 32px;
       padding: 0 8px;
       font-size: 13px;
-      display: flex;
-      align-items: center;
     }
 
     button {
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+      margin-left: -1px !important;
       border-radius: 0;
       transition: all 0.3s ease;
       height: 32px;
+      width: 32px !important;
+      min-width: 32px !important;
+      padding: 0 !important;
       font-size: 13px;
       display: flex;
       align-items: center;
       justify-content: center;
+
+      span[nz-icon] {
+        font-size: 14px;
+      }
     }
   }
 
@@ -340,17 +377,17 @@
   .ant-table {
     border-radius: 0;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 
     &-thead > tr > th {
       background-color: #fafafa;
       font-weight: 600;
       border-radius: 0 !important;
-      padding: 10px 8px;
-      height: 44px;
+      padding: 8px 6px;
+      height: 38px;
       white-space: nowrap;
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
       color: #262626;
       border-right: 1px solid #f0f0f0;
 
@@ -360,13 +397,13 @@
     }
 
     &-tbody > tr > td {
-      padding: 8px;
-      height: 40px;
+      padding: 6px;
+      height: 36px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       vertical-align: middle;
-      font-size: 13px;
+      font-size: 12px;
       border-right: 1px solid #f0f0f0;
 
       &:last-child {
@@ -441,12 +478,22 @@
 }
 
 .form-actions {
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+
+  button {
+    &[nzType="primary"] {
+      order: 10; // Push primary buttons to the end
+    }
+
+    &[nzDanger] {
+      order: 5; // Push danger buttons before primary but after default
+    }
+  }
 }
 
 .text-right {
@@ -618,27 +665,27 @@
   }
 }
 
-// Style cho các nút tác vụ trong bảng
+// Style cho các nút tác vụ trong bảng - optimized
 .table-actions-cell {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
 
   button {
-    min-width: 32px;
-    height: 32px;
+    min-width: 28px;
+    height: 28px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #1890ff;
-    color: white;
-    border: none;
-    transition: all 0.3s;
+    transition: all 0.2s;
+
+    &[nzDanger] {
+      order: 10; // Push danger buttons to the end
+    }
 
     &:hover {
-      background-color: #40a9ff;
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
   }
 }

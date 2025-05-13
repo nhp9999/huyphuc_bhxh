@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -27,6 +28,7 @@ import { NzI18nService } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
 import { CaptchaModalComponent } from '../../shared/components/captcha-modal/captcha-modal.component';
+import { QuetCCCDModalComponent } from '../../shared/components/quet-cccd-modal/quet-cccd-modal.component';
 import {
   SaveOutline,
   PlusOutline,
@@ -209,7 +211,8 @@ interface XaPhuong {
     NzRadioModule,
     NzAlertModule,
     NzBadgeModule,
-    CaptchaModalComponent
+    CaptchaModalComponent,
+    QuetCCCDModalComponent
   ],
   templateUrl: './ke-khai-bhyt.component.html',
   styleUrls: ['./ke-khai-bhyt.component.scss']
@@ -2948,6 +2951,32 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     this.filteredCCCDList = [];
   }
 
+  // Xử lý dữ liệu từ modal quét CCCD
+  handleApplyDataFromCCCDModal(cccdData: any[]): void {
+    if (!cccdData || cccdData.length === 0) {
+      return;
+    }
+
+    this.loadingApDung = true;
+
+    try {
+      // Xử lý từng CCCD được chọn
+      for (const cccd of cccdData) {
+        if (cccd.status === 'success') {
+          this.apDungThongTin(cccd);
+        }
+      }
+
+      this.message.success(`Đã áp dụng ${cccdData.length} CCCD thành công`);
+    } catch (error) {
+      this.message.error('Có lỗi xảy ra khi áp dụng thông tin CCCD');
+      console.error('Lỗi khi áp dụng thông tin CCCD:', error);
+    } finally {
+      this.loadingApDung = false;
+      this.isQuetCCCDVisible = false;
+    }
+  }
+
   // Thêm phương thức để chọn ảnh
   selectImage(index: number): void {
     this.currentImageIndex = index;
@@ -3034,7 +3063,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     const filesToRescan = errorIndexes.map(index => this.pendingFiles[index]).filter(file => file);
 
     // Quét lại từng file
-    Promise.all(filesToRescan.map(file => this.cccdService.quetCCCD(file).toPromise()))
+    Promise.all(filesToRescan.map(file => firstValueFrom(this.cccdService.quetCCCD(file))))
       .then(responses => {
         // Xử lý kết quả quét
         responses.forEach((response, index) => {
@@ -3045,23 +3074,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
             // Cập nhật thông tin CCCD
             if (errorIndex >= 0 && errorIndex < this.danhSachCCCD.length) {
               this.danhSachCCCD[errorIndex] = {
-                id: cccdData.id_number || cccdData.id || '',
+                id: cccdData['id_number'] || cccdData.id || '',
                 name: cccdData.name || '',
-                dob: cccdData.birth_date || cccdData.dob || '',
-                sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+                dob: cccdData['birth_date'] || cccdData.dob || '',
+                sex: this.formatGender(cccdData['gender'] || cccdData.sex || ''),
                 nationality: 'Việt Nam',
-                address: this.formatAddress(cccdData.residence || cccdData.address),
+                address: this.formatAddress(cccdData['residence'] || cccdData.address),
                 home_address: {
-                  province: this.extractProvince(cccdData.home),
-                  district: this.extractDistrict(cccdData.home),
-                  ward: this.extractWard(cccdData.home),
-                  street: this.extractStreet(cccdData.home)
+                  province: this.extractProvince(cccdData['home']),
+                  district: this.extractDistrict(cccdData['home']),
+                  ward: this.extractWard(cccdData['home']),
+                  street: this.extractStreet(cccdData['home'])
                 },
                 permanent_address: {
-                  province: this.extractProvince(cccdData.residence || cccdData.address),
-                  district: this.extractDistrict(cccdData.residence || cccdData.address),
-                  ward: this.extractWard(cccdData.residence || cccdData.address),
-                  street: this.extractStreet(cccdData.residence || cccdData.address)
+                  province: this.extractProvince(cccdData['residence'] || cccdData.address),
+                  district: this.extractDistrict(cccdData['residence'] || cccdData.address),
+                  ward: this.extractWard(cccdData['residence'] || cccdData.address),
+                  street: this.extractStreet(cccdData['residence'] || cccdData.address)
                 },
                 status: 'success',
                 message: 'Quét thành công',
@@ -3104,23 +3133,23 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
           // Cập nhật thông tin CCCD
           this.danhSachCCCD[index] = {
-            id: cccdData.id_number || cccdData.id || '',
+            id: cccdData['id_number'] || cccdData.id || '',
             name: cccdData.name || '',
-            dob: cccdData.birth_date || cccdData.dob || '',
-            sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+            dob: cccdData['birth_date'] || cccdData.dob || '',
+            sex: this.formatGender(cccdData['gender'] || cccdData.sex || ''),
             nationality: 'Việt Nam',
-            address: this.formatAddress(cccdData.residence || cccdData.address),
+            address: this.formatAddress(cccdData['residence'] || cccdData.address),
             home_address: {
-              province: this.extractProvince(cccdData.home),
-              district: this.extractDistrict(cccdData.home),
-              ward: this.extractWard(cccdData.home),
-              street: this.extractStreet(cccdData.home)
+              province: this.extractProvince(cccdData['home']),
+              district: this.extractDistrict(cccdData['home']),
+              ward: this.extractWard(cccdData['home']),
+              street: this.extractStreet(cccdData['home'])
             },
             permanent_address: {
-              province: this.extractProvince(cccdData.residence || cccdData.address),
-              district: this.extractDistrict(cccdData.residence || cccdData.address),
-              ward: this.extractWard(cccdData.residence || cccdData.address),
-              street: this.extractStreet(cccdData.residence || cccdData.address)
+              province: this.extractProvince(cccdData['residence'] || cccdData.address),
+              district: this.extractDistrict(cccdData['residence'] || cccdData.address),
+              ward: this.extractWard(cccdData['residence'] || cccdData.address),
+              street: this.extractStreet(cccdData['residence'] || cccdData.address)
             },
             status: 'success',
             message: 'Quét thành công',
@@ -3305,7 +3334,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     try {
       for (const file of this.pendingFiles) {
         try {
-          const response = await this.cccdService.quetCCCD(file).toPromise();
+          const response = await firstValueFrom(this.cccdService.quetCCCD(file));
           console.log('Raw API Response:', response);
 
           // FPT.AI trả về dữ liệu trong response.data
@@ -3315,29 +3344,29 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
 
             // Chuyển đổi dữ liệu từ FPT.AI sang định dạng CCCDResult
             const result: CCCDResult = {
-              id: cccdData.id_number || cccdData.id || '',
+              id: cccdData['id_number'] || cccdData.id || '',
               name: cccdData.name || '',
-              dob: cccdData.birth_date || cccdData.dob || '',
-              sex: this.formatGender(cccdData.gender || cccdData.sex || ''),
+              dob: cccdData['birth_date'] || cccdData.dob || '',
+              sex: this.formatGender(cccdData['gender'] || cccdData.sex || ''),
               nationality: 'Việt Nam',
-              address: this.formatAddress(cccdData.residence || cccdData.address),
+              address: this.formatAddress(cccdData['residence'] || cccdData.address),
               home_address: {
-                province: this.extractProvince(cccdData.home),
-                district: this.extractDistrict(cccdData.home),
-                ward: this.extractWard(cccdData.home),
-                street: this.extractStreet(cccdData.home)
+                province: this.extractProvince(cccdData['home']),
+                district: this.extractDistrict(cccdData['home']),
+                ward: this.extractWard(cccdData['home']),
+                street: this.extractStreet(cccdData['home'])
               },
               permanent_address: {
-                province: this.extractProvince(cccdData.residence || cccdData.address),
-                district: this.extractDistrict(cccdData.residence || cccdData.address),
-                ward: this.extractWard(cccdData.residence || cccdData.address),
-                street: this.extractStreet(cccdData.residence || cccdData.address)
+                province: this.extractProvince(cccdData['residence'] || cccdData.address),
+                district: this.extractDistrict(cccdData['residence'] || cccdData.address),
+                ward: this.extractWard(cccdData['residence'] || cccdData.address),
+                street: this.extractStreet(cccdData['residence'] || cccdData.address)
               },
               status: 'success',
               message: 'Quét thành công',
               checked: false,
-              ngaySinhFormatted: this.formatDateFromCCCD(cccdData.birth_date || cccdData.dob || ''),
-              gioiTinh: this.formatGender(cccdData.gender || cccdData.sex || '')
+              ngaySinhFormatted: this.formatDateFromCCCD(cccdData['birth_date'] || cccdData.dob || ''),
+              gioiTinh: this.formatGender(cccdData['gender'] || cccdData.sex || '')
             };
 
             console.log('Processed CCCD Result:', result);

@@ -1,0 +1,243 @@
+<nz-modal
+  [(nzVisible)]="visible"
+  [nzTitle]="modalTitle"
+  [nzWidth]="1280"
+  (nzOnCancel)="handleCancel()"
+  [nzFooter]="modalFooter"
+  nzClassName="cccd-modal"
+  [nzBodyStyle]="{ padding: '0' }"
+>
+  <ng-template #modalTitle>
+    <div style="display: flex; align-items: center;">
+      <span><i nz-icon nzType="idcard" style="margin-right: 8px;"></i>Quét thông tin CCCD</span>
+      <span *ngIf="danhSachCCCD.length > 0" style="margin-left: 12px; font-size: 13px; color: #8c8c8c;">
+        (Đã quét: {{ danhSachCCCD.length }} CCCD, thành công: {{ getSuccessCount() }})
+      </span>
+    </div>
+  </ng-template>
+
+  <div #modalContent *nzModalContent (paste)="handlePaste($event)" tabindex="0">
+    <nz-tabset class="cccd-tabs" [nzTabPosition]="'top'" [nzType]="'card'" [(nzSelectedIndex)]="selectedTabIndex">
+      <nz-tab [nzTitle]="uploadTabTitle">
+        <ng-template #uploadTabTitle>
+          <span><i nz-icon nzType="upload"></i> Tải ảnh</span>
+        </ng-template>
+
+        <div class="fade-in-up">
+          <!-- Khu vực clipboard -->
+          <div class="cccd-clipboard-area" *ngIf="!avatarUrls.length">
+            <div class="clipboard-header">
+              <i nz-icon nzType="info-circle"></i>
+              <span>Hướng dẫn nhanh</span>
+            </div>
+            <div class="clipboard-content">
+              <p>Bạn có thể dán ảnh trực tiếp từ clipboard (Ctrl+V) hoặc kéo thả ảnh vào khung bên dưới</p>
+              <button nz-button nzType="primary" (click)="requestPasteFromClipboard()">
+                <i nz-icon nzType="copy"></i> Dán ảnh từ clipboard
+              </button>
+            </div>
+          </div>
+
+          <!-- Khu vực upload -->
+          <div class="cccd-upload-area" [class.has-image]="avatarUrls.length > 0">
+            <ng-container *ngIf="!avatarUrls.length">
+              <nz-upload
+                class="upload-area-inner"
+                [nzShowUploadList]="false"
+                [nzBeforeUpload]="beforeUpload"
+                [nzMultiple]="true"
+                (nzChange)="handleChange($event)"
+                [nzAccept]="'image/jpeg,image/png'"
+                [nzAction]="''"
+                [nzName]="'cccd-image'"
+              >
+                <i nz-icon [nzType]="loadingQuetCCCD ? 'loading' : 'cloud-upload'" class="upload-icon"></i>
+                <div class="upload-text">Kéo thả ảnh CCCD vào đây hoặc nhấn để tải lên</div>
+                <div class="upload-hint">
+                  Hỗ trợ các định dạng:
+                  <ul>
+                    <li>JPG, PNG (tối đa 5MB)</li>
+                    <li>Có thể tải nhiều ảnh cùng lúc</li>
+                    <li>Ảnh cần rõ nét và đầy đủ thông tin</li>
+                  </ul>
+                </div>
+              </nz-upload>
+            </ng-container>
+
+            <!-- Hiển thị ảnh đã tải lên -->
+            <ng-container *ngIf="avatarUrls.length > 0">
+              <div class="image-preview-grid">
+                <div
+                  *ngFor="let url of avatarUrls; let i = index"
+                  class="image-item"
+                  [class.active]="i === currentImageIndex"
+                  (click)="selectImage(i)"
+                >
+                  <img [src]="url" alt="CCCD Preview" />
+                  <div class="image-overlay">
+                    <div class="overlay-text">Ảnh {{ i + 1 }}/{{ avatarUrls.length }}</div>
+                    <div class="overlay-buttons">
+                      <button nz-button nzType="primary" nzShape="circle" (click)="removeImage(i); $event.stopPropagation()">
+                        <i nz-icon nzType="delete"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="upload-actions">
+                <button nz-button nzDanger (click)="clearImages()">
+                  <i nz-icon nzType="delete"></i> Xóa tất cả
+                </button>
+                <button nz-button nzType="primary" (click)="quetTatCaCCCD()" [nzLoading]="loadingQuetCCCD">
+                  <i nz-icon nzType="scan"></i> Quét tất cả
+                </button>
+                <button nz-button nzType="default" (click)="addMoreImages()">
+                  <i nz-icon nzType="plus"></i> Thêm ảnh
+                </button>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </nz-tab>
+
+      <nz-tab [nzTitle]="resultTabTitle" [nzDisabled]="danhSachCCCD.length === 0">
+        <ng-template #resultTabTitle>
+          <span><i nz-icon nzType="file-text"></i> Kết quả quét</span>
+          <nz-badge *ngIf="danhSachCCCD.length > 0" [nzCount]="danhSachCCCD.length" [nzStyle]="{ backgroundColor: '#1890ff' }"></nz-badge>
+        </ng-template>
+
+        <div class="cccd-result-area fade-in-up">
+          <div class="result-toolbar">
+            <div class="left-actions">
+              <nz-select
+                [(ngModel)]="filterStatus"
+                (ngModelChange)="applyFilter()"
+                nzPlaceHolder="Lọc theo trạng thái"
+                [nzAllowClear]="true"
+                style="width: 150px;"
+              >
+                <nz-option nzValue="success" nzLabel="Thành công"></nz-option>
+                <nz-option nzValue="error" nzLabel="Thất bại"></nz-option>
+              </nz-select>
+
+              <button nz-button (click)="selectAllSuccess()" [disabled]="!hasSuccessResults()">
+                <i nz-icon nzType="check-square"></i> Chọn tất cả thành công
+              </button>
+            </div>
+
+            <div class="right-actions">
+              <button nz-button nzType="primary" (click)="quetTatCaCCCD()" [disabled]="!hasErrorResults() || loadingQuetCCCD" [nzLoading]="loadingQuetCCCD">
+                <i nz-icon nzType="reload"></i> Quét lại
+              </button>
+            </div>
+          </div>
+
+          <nz-table
+            #resultTable
+            [nzData]="filteredCCCDList"
+            [nzPageSize]="5"
+            [nzShowPagination]="true"
+            [nzLoading]="loadingQuetCCCD"
+            class="result-table"
+            [nzScroll]="{ x: '1100px' }"
+          >
+            <thead>
+              <tr>
+                <th [nzWidth]="'60px'" [nzLeft]="true">
+                  <label nz-checkbox
+                    [(ngModel)]="isAllChecked"
+                    (ngModelChange)="onAllChecked($event)"
+                    [nzIndeterminate]="isIndeterminate">
+                  </label>
+                </th>
+                <th [nzWidth]="'120px'" [nzLeft]="true">Số CCCD</th>
+                <th [nzWidth]="'150px'">Họ tên</th>
+                <th [nzWidth]="'100px'">Ngày sinh</th>
+                <th [nzWidth]="'80px'">Giới tính</th>
+                <th [nzWidth]="'200px'" nz-tooltip nzTooltipTitle="Nơi sinh hoặc quê gốc">Quê quán</th>
+                <th [nzWidth]="'200px'" nz-tooltip nzTooltipTitle="Nơi cư trú hiện tại">Nơi thường trú</th>
+                <th [nzWidth]="'100px'">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cccd of resultTable.data" [class.success-row]="cccd.status === 'success'" [class.error-row]="cccd.status === 'error'">
+                <td [nzLeft]="true">
+                  <label nz-checkbox
+                    [(ngModel)]="cccd.checked"
+                    (ngModelChange)="onCCCDChecked(cccd, $event)"
+                    [nzDisabled]="cccd.status === 'error'">
+                  </label>
+                </td>
+                <td [nzLeft]="true">{{ cccd.id || 'N/A' }}</td>
+                <td>{{ cccd.name || 'N/A' }}</td>
+                <td>
+                  <span *ngIf="cccd.ngaySinhFormatted">{{ cccd.ngaySinhFormatted }}</span>
+                  <span *ngIf="!cccd.ngaySinhFormatted">{{ cccd.dob }}</span>
+                </td>
+                <td>{{ cccd.gioiTinh || cccd.sex }}</td>
+                <td nzEllipsis nz-tooltip [nzTooltipTitle]="formatFullAddress(cccd.home_address)">
+                  <ng-container *ngIf="cccd.home_address && cccd.home_address !== 'Không có thông tin'; else naTemplate">
+                    <span class="address-text home-address">{{ formatFullAddress(cccd.home_address) }}</span>
+                  </ng-container>
+                </td>
+                <td nzEllipsis nz-tooltip [nzTooltipTitle]="formatFullAddress(cccd.permanent_address)">
+                  <ng-container *ngIf="cccd.permanent_address && cccd.permanent_address !== 'Không có thông tin'; else naTemplate">
+                    <span class="address-text permanent-address">{{ formatFullAddress(cccd.permanent_address) }}</span>
+                  </ng-container>
+                </td>
+                <td>
+                  <nz-tag [nzColor]="cccd.status === 'success' ? 'success' : 'error'">
+                    {{ cccd.status === 'success' ? 'Thành công' : 'Thất bại' }}
+                  </nz-tag>
+                  <div *ngIf="cccd.status === 'error'" class="error-message">
+                    {{ cccd.message }}
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredCCCDList.length === 0">
+                <td colspan="8" class="ant-table-cell-empty">
+                  <nz-empty
+                    [nzNotFoundContent]="danhSachCCCD.length === 0 ? 'Chưa có dữ liệu. Vui lòng tải lên và quét CCCD' : 'Không tìm thấy kết quả phù hợp với bộ lọc'"
+                  ></nz-empty>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </nz-tab>
+    </nz-tabset>
+  </div>
+
+  <ng-template #modalFooter>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="address-options">
+        <label nz-checkbox [(ngModel)]="applyPermanentAddress" nz-tooltip nzTooltipTitle="Áp dụng địa chỉ thường trú vào địa chỉ NKQ">
+          <span>Áp dụng địa chỉ thường trú</span>
+          <i nz-icon nzType="info-circle" class="tooltip-icon"></i>
+        </label>
+        <label nz-checkbox [(ngModel)]="applyHomeAddress" nz-tooltip nzTooltipTitle="Áp dụng quê quán vào địa chỉ quê quán">
+          <span>Áp dụng quê quán</span>
+          <i nz-icon nzType="info-circle" class="tooltip-icon"></i>
+        </label>
+      </div>
+
+      <div style="flex: 1;"></div>
+
+      <button nz-button (click)="handleCancel()">Đóng</button>
+      <button
+        nz-button
+        nzType="primary"
+        (click)="apDungNhieuCCCD()"
+        [disabled]="!hasSelectedCCCD() || (!applyPermanentAddress && !applyHomeAddress)"
+        [nzLoading]="loadingApDung"
+      >
+        <i nz-icon nzType="import"></i> Áp dụng đã chọn
+      </button>
+    </div>
+  </ng-template>
+</nz-modal>
+
+<ng-template #naTemplate>
+  <span class="na-text">Không có thông tin</span>
+</ng-template>

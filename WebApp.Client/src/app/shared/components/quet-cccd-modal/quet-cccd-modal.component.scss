@@ -1,0 +1,373 @@
+// CSS cho modal quét CCCD
+::ng-deep {
+  .cccd-modal {
+    .ant-modal-content {
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .ant-modal-body {
+      padding: 0;
+    }
+
+    .ant-modal-footer {
+      padding: 12px 24px;
+      background-color: #f9f9f9;
+      border-top: 1px solid #f0f0f0;
+    }
+  }
+
+  .cccd-tabs {
+    .ant-tabs-nav {
+      margin-bottom: 0;
+      padding: 0 16px;
+      background-color: #f0f7ff;
+
+      .ant-tabs-tab {
+        padding: 12px 16px;
+        font-size: 14px;
+
+        &.ant-tabs-tab-active {
+          .ant-tabs-tab-btn {
+            color: #1890ff;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    .ant-tabs-content {
+      padding: 16px;
+      height: 500px;
+      overflow-y: auto;
+    }
+  }
+}
+
+// Khu vực tải ảnh - cải tiến
+.cccd-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-height: 250px;
+  border-radius: 8px;
+  transition: all 0.3s;
+
+  &.has-image {
+    padding: 16px;
+    background-color: #f9f9f9;
+    border: 1px solid #f0f0f0;
+  }
+
+  .upload-area-inner {
+    width: 100%;
+    height: 100%;
+
+    ::ng-deep .ant-upload {
+      width: 100%;
+      height: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-color: #fafafa;
+      border: 2px dashed #d9d9d9;
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: #1890ff;
+        background-color: #f0f7ff;
+      }
+    }
+  }
+
+  .image-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    width: 100%;
+    margin: 16px 0;
+
+    .image-item {
+      position: relative;
+      height: 180px;
+      border: 1px solid #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s;
+      cursor: pointer;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+        .image-overlay {
+          opacity: 1;
+        }
+      }
+
+      &.active {
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+
+        .overlay-text {
+          color: white;
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+
+        .overlay-buttons {
+          display: flex;
+          gap: 8px;
+
+          button {
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+            transition: all 0.3s;
+            border-radius: 50%;
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.7);
+              transform: scale(1.1);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .upload-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+
+    button {
+      min-width: 120px;
+
+      i {
+        margin-right: 6px;
+      }
+
+      &[nzDanger] {
+        margin-right: auto; // Push to the left
+      }
+
+      &[nzType="primary"] {
+        margin-left: auto; // Push to the right
+      }
+    }
+  }
+}
+
+// Cải tiến cho khu vực clipboard
+.cccd-clipboard-area {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  padding: 16px;
+  margin-bottom: 16px;
+
+  .clipboard-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+
+    i {
+      color: #1890ff;
+      font-size: 16px;
+      margin-right: 8px;
+    }
+
+    span {
+      color: #262626;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+
+  .clipboard-content {
+    text-align: center;
+    padding: 16px;
+    border: 1px dashed #d9d9d9;
+    border-radius: 4px;
+    background-color: white;
+
+    p {
+      color: #8c8c8c;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      min-width: 160px;
+    }
+  }
+}
+
+// Khu vực kết quả quét
+.cccd-result-area {
+  .result-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .left-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .right-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .result-table {
+    .ant-table-row {
+      &.success-row {
+        background-color: #f6ffed;
+
+        &:hover > td {
+          background-color: #e6f7ff !important;
+        }
+      }
+
+      &.error-row {
+        background-color: #fff2f0;
+
+        &:hover > td {
+          background-color: #fff1f0 !important;
+        }
+      }
+    }
+
+    .error-message {
+      font-size: 12px;
+      color: #ff4d4f;
+      margin-top: 4px;
+    }
+
+    .address-text {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      position: relative;
+      padding-left: 16px;
+
+      &:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #d9d9d9;
+      }
+
+      &:hover {
+        color: #1890ff;
+      }
+
+      &.home-address {
+        &:before {
+          background-color: #52c41a; // Green for home address
+        }
+      }
+
+      &.permanent-address {
+        &:before {
+          background-color: #1890ff; // Blue for permanent address
+        }
+      }
+    }
+  }
+}
+
+// Tùy chọn áp dụng địa chỉ
+.address-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  label {
+    display: flex;
+    align-items: center;
+
+    .ant-checkbox + span {
+      padding-right: 8px;
+    }
+  }
+}
+
+// Tooltip hướng dẫn
+.tooltip-icon {
+  color: #1890ff;
+  margin-left: 4px;
+  cursor: help;
+}
+
+// Text for N/A values
+.na-text {
+  color: #bfbfbf;
+  font-style: italic;
+  font-size: 12px;
+}
+
+// Animation
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.3s ease forwards;
+}

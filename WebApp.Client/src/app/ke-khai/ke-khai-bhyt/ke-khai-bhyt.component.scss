@@ -133,7 +133,21 @@
       .card-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 4px;
+        align-items: center;
+        gap: 8px;
+
+        button {
+          margin: 0;
+
+          &.mr-2 {
+            margin-right: 0 !important; // Override the inline margin
+          }
+
+          // Group primary actions to the right
+          &[nzType="primary"] {
+            order: 10; // Higher order pushes to the end (right side)
+          }
+        }
       }
     }
 
@@ -148,7 +162,7 @@
     margin-bottom: 6px !important;
   }
 
-  // Chuẩn hóa các nhóm input có button - định nghĩa lại để thay thế cái cũ
+  // Chuẩn hóa các nhóm input có button - tối ưu hóa
   .custom-input-group {
     display: flex;
     width: 100%;
@@ -163,53 +177,84 @@
       border-top-left-radius: 0 !important;
       border-bottom-left-radius: 0 !important;
       margin-left: -1px !important;
-      height: 36px !important;
-      width: 36px !important;
-      min-width: 36px !important;
+      height: 32px !important;
+      width: 32px !important;
+      min-width: 32px !important;
       padding: 0 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
 
       span[nz-icon] {
-        font-size: 16px;
+        font-size: 14px;
       }
     }
   }
 
-  // Styling for action table
+  // Styling for action table - optimized
   .table-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
 
     .left-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
 
       button {
         transition: all 0.2s ease;
+
+        // Danger buttons should be on the right side of the left actions group
+        &[nzDanger] {
+          order: 10;
+        }
+      }
+
+      // Add spacing between button groups
+      > *:not(:last-child) {
+        margin-right: 4px;
       }
     }
 
     .right-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
 
       .amount {
         color: #1890ff;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
         background: rgba(24, 144, 255, 0.1);
-        padding: 4px 12px;
+        padding: 3px 10px;
         border-radius: 2px;
         transition: all 0.3s ease;
+      }
+    }
+  }
+
+  // Add styles for table row actions
+  .table-row-actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+
+    button {
+      min-width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &[nzDanger] {
+        order: 10; // Push danger buttons to the end
       }
     }
   }
@@ -341,17 +386,36 @@
   margin-right: 8px;
 }
 
+.form-actions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  button {
+    &[nzType="primary"] {
+      order: 10; // Push primary buttons to the end
+    }
+
+    &[nzDanger] {
+      order: 5; // Push danger buttons before primary but after default
+    }
+  }
+}
+
 .table-summary {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   margin-top: 12px;
-  gap: 20px;
-  padding: 8px 16px;
+  gap: 16px;
+  padding: 8px 12px;
   background-color: white;
   border: 1px solid #f0f0f0;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
 
   .summary-item {
     display: flex;
@@ -378,7 +442,7 @@
   }
 }
 
-// CSS cho modal quét CCCD
+// CSS cho modal quét CCCD - cải tiến
 ::ng-deep {
   .cccd-modal {
     .ant-modal-content {
@@ -422,34 +486,22 @@
       overflow-y: auto;
     }
   }
-}
 
-// Khu vực tải ảnh
-.cccd-upload-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-
-  .upload-container {
-    width: 100%;
-    margin-bottom: 16px;
-  }
-
-  .upload-dropzone {
-    width: 100%;
-    min-height: 200px;
+  // Cải tiến cho khu vực upload CCCD
+  .cccd-upload-area {
     border: 2px dashed #d9d9d9;
-    border-radius: 4px;
+    border-radius: 8px;
     background-color: #fafafa;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    min-height: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    transition: all 0.3s;
-    cursor: pointer;
 
     &:hover {
       border-color: #1890ff;
@@ -459,194 +511,121 @@
     .upload-icon {
       font-size: 48px;
       color: #bfbfbf;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+      transition: all 0.3s;
     }
 
     .upload-text {
-      font-size: 16px;
       color: #595959;
+      font-size: 16px;
       margin-bottom: 8px;
     }
 
     .upload-hint {
-      font-size: 13px;
       color: #8c8c8c;
-    }
-  }
+      font-size: 13px;
+      max-width: 80%;
+      margin: 0 auto;
 
-  .paste-instruction {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 16px 0;
-    padding: 12px;
-    background-color: #f0f7ff;
-    border-radius: 4px;
-    border: 1px solid #d6e4ff;
+      ul {
+        text-align: left;
+        display: inline-block;
+        margin-top: 8px;
+        padding-left: 20px;
 
-    i {
-      font-size: 18px;
-      color: #1890ff;
-      margin-right: 8px;
-    }
-
-    span {
-      color: #595959;
-      font-size: 14px;
-    }
-  }
-
-  .image-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    width: 100%;
-    margin-top: 16px;
-
-    .image-item {
-      position: relative;
-      border: 1px solid #f0f0f0;
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-
-        .image-actions {
-          opacity: 1;
+        li {
+          margin-bottom: 4px;
         }
       }
+    }
 
-      &.active {
-        border-color: #1890ff;
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-      }
+    &.has-image {
+      border-style: solid;
+      padding: 0;
+      overflow: hidden;
 
       img {
         width: 100%;
-        height: 120px;
-        object-fit: cover;
-        display: block;
+        height: 100%;
+        object-fit: contain;
       }
 
-      .image-actions {
+      .image-overlay {
         position: absolute;
         top: 0;
+        left: 0;
         right: 0;
-        background-color: rgba(0, 0, 0, 0.6);
-        border-bottom-left-radius: 4px;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         opacity: 0;
         transition: opacity 0.3s;
 
-        button {
-          color: white;
-          background: transparent;
-          border: none;
-          padding: 4px 8px;
-          cursor: pointer;
+        &:hover {
+          opacity: 1;
+        }
 
-          &:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-          }
+        .overlay-text {
+          color: white;
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+
+        .overlay-buttons {
+          display: flex;
+          gap: 8px;
         }
       }
-
-      .image-index {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.6);
-        color: white;
-        text-align: center;
-        padding: 2px 0;
-        font-size: 12px;
-      }
     }
   }
 
-  .upload-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 16px;
-
-    button {
-      min-width: 120px;
-    }
-  }
-}
-
-// Khu vực kết quả quét
-.cccd-result-area {
-  .result-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  // Cải tiến cho khu vực clipboard
+  .cccd-clipboard-area {
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    padding: 16px;
     margin-bottom: 16px;
 
-    .left-actions {
+    .clipboard-header {
       display: flex;
-      gap: 8px;
-    }
+      align-items: center;
+      margin-bottom: 12px;
 
-    .right-actions {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .result-table {
-    .ant-table-row {
-      &.success-row {
-        background-color: #f6ffed;
-
-        &:hover > td {
-          background-color: #e6f7ff !important;
-        }
+      i {
+        color: #1890ff;
+        font-size: 16px;
+        margin-right: 8px;
       }
 
-      &.error-row {
-        background-color: #fff2f0;
-
-        &:hover > td {
-          background-color: #fff1f0 !important;
-        }
+      span {
+        color: #262626;
+        font-size: 14px;
+        font-weight: 500;
       }
     }
 
-    .error-message {
-      font-size: 12px;
-      color: #ff4d4f;
-      margin-top: 4px;
+    .clipboard-content {
+      text-align: center;
+      padding: 16px;
+      border: 1px dashed #d9d9d9;
+      border-radius: 4px;
+      background-color: white;
+
+      p {
+        color: #8c8c8c;
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+
+      button {
+        min-width: 160px;
+      }
     }
   }
-}
-
-// Tùy chọn áp dụng địa chỉ
-.address-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-
-  label {
-    display: flex;
-    align-items: center;
-
-    .ant-checkbox + span {
-      padding-right: 8px;
-    }
-  }
-}
-
-// Tooltip hướng dẫn
-.tooltip-icon {
-  color: #1890ff;
-  margin-left: 4px;
-  cursor: help;
 }
 
 // Animation
