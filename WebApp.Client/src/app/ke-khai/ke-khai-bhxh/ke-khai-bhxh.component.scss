@@ -5,7 +5,7 @@
     padding: 16px 20px;
     margin-bottom: 20px;
     border-bottom: 1px solid #e6e6e6;
-    
+
     .form-title {
       font-size: 18px;
       font-weight: 600;
@@ -13,14 +13,14 @@
       margin: 0;
       display: flex;
       align-items: center;
-      
+
       .icon {
         margin-right: 10px;
         font-size: 20px;
         color: #1890ff;
       }
     }
-    
+
     .form-subtitle {
       font-size: 14px;
       color: #595959;
@@ -31,25 +31,25 @@
   // Style cho breadcrumb
   ::ng-deep .ant-breadcrumb {
     margin: 12px 0 16px;
-    
+
     li {
       font-size: 13px;
-      
+
       &:last-child {
         color: #1890ff;
         font-weight: 500;
       }
     }
-    
+
     .ant-breadcrumb-separator {
       margin: 0 6px;
       color: #bfbfbf;
     }
-    
+
     a {
       color: #595959;
       transition: all 0.3s;
-      
+
       &:hover {
         color: #40a9ff;
       }
@@ -57,32 +57,32 @@
   }
 
   .form-card {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     border-radius: 4px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
     border: 1px solid #f0f0f0;
-    
+
     &:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     }
-    
+
     ::ng-deep .ant-card-head {
       border-bottom: 1px solid #f0f2f5;
-      padding: 8px 16px;
+      padding: 6px 12px;
       background-color: #f0f7ff;
       border-radius: 4px 4px 0 0;
       min-height: auto;
-      
+
       .ant-card-head-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         color: #0050b3;
         position: relative;
-        padding-left: 10px;
-        padding-top: 6px;
-        padding-bottom: 6px;
-        
+        padding-left: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+
         &:before {
           content: '';
           position: absolute;
@@ -90,21 +90,21 @@
           top: 50%;
           transform: translateY(-50%);
           width: 3px;
-          height: 16px;
+          height: 14px;
           background: #1890ff;
           border-radius: 0;
         }
       }
-      
+
       .card-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 6px;
+        gap: 4px;
       }
     }
-    
+
     ::ng-deep .ant-card-body {
-      padding: 16px;
+      padding: 12px;
       border-radius: 0 0 4px 4px;
     }
   }
@@ -121,7 +121,7 @@
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      
+
       button {
         transition: all 0.2s ease;
       }
@@ -147,7 +147,7 @@
 
   .custom-input-group {
     display: flex;
-    
+
     input {
       border-radius: 0;
       transition: all 0.3s ease;
@@ -175,15 +175,15 @@
     font-size: 13px;
     margin-bottom: 4px;
   }
-  
+
   nz-form-item {
     margin-bottom: 16px;
     transition: all 0.3s ease;
   }
-  
+
   ::ng-deep .ant-select {
     width: 100%;
-    
+
     &-selector {
       height: 32px !important;
       padding: 0 8px !important;
@@ -191,23 +191,23 @@
       align-items: center !important;
       border-radius: 0 !important;
     }
-    
+
     &-selection-item {
       line-height: normal !important;
       font-size: 13px;
     }
   }
-  
+
   ::ng-deep .ant-input-number {
     width: 100%;
     border-radius: 0;
     height: 32px;
-    
+
     &-input-wrap {
       height: 32px;
       display: flex;
       align-items: center;
-      
+
       input {
         height: 100%;
         padding: 0 8px;
@@ -215,12 +215,12 @@
         line-height: 32px;
       }
     }
-    
+
     &-handler-wrap {
       height: 32px;
     }
   }
-  
+
   ::ng-deep .ant-btn {
     border-radius: 0;
     display: inline-flex;
@@ -232,17 +232,17 @@
     font-size: 13px;
     transition: all 0.3s ease;
     line-height: 1;
-    
+
     &-primary {
       background: #1890ff;
       border: none;
-      
+
       &:hover {
         background: #40a9ff;
       }
     }
   }
-  
+
   // Đảm bảo các icon trong nút được căn giữa
   ::ng-deep .ant-btn span[nz-icon] {
     display: inline-flex;
@@ -250,7 +250,7 @@
     justify-content: center;
     line-height: 1;
   }
-  
+
   .table-actions-cell {
     display: flex;
     gap: 8px;
@@ -261,17 +261,17 @@
   .cursor-pointer {
     cursor: pointer;
     transition: background-color 0.3s;
-    
+
     &:hover {
       background-color: #f5f5f5;
     }
-    
+
     &.active-row {
       background-color: #e6f7ff;
       border-left: 3px solid #1890ff;
     }
   }
-  
+
   // Thêm css cho input thường
   ::ng-deep .ant-input {
     height: 32px;
@@ -282,9 +282,9 @@
   }
 
   // Thiết lập border-radius đồng nhất cho tất cả các input
-  ::ng-deep .ant-input, 
-  ::ng-deep .ant-select-selector, 
-  ::ng-deep .ant-input-number, 
+  ::ng-deep .ant-input,
+  ::ng-deep .ant-select-selector,
+  ::ng-deep .ant-input-number,
   ::ng-deep .ant-picker,
   ::ng-deep .ant-input-affix-wrapper,
   ::ng-deep textarea.ant-input {
@@ -310,24 +310,24 @@
     padding: 0 8px;
     display: flex;
     align-items: center;
-    
+
     input {
       font-size: 13px;
       padding: 0;
     }
-    
+
     &-panel-container {
       z-index: 1050;
       border-radius: 0;
       overflow: hidden;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
-    
+
     &-input {
       display: flex;
       align-items: center;
       height: 100%;
-      
+
       > input {
         text-align: left;
         height: 100%;
@@ -336,12 +336,12 @@
       }
     }
   }
-  
+
   .ant-table {
     border-radius: 0;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    
+
     &-thead > tr > th {
       background-color: #fafafa;
       font-weight: 600;
@@ -353,12 +353,12 @@
       font-size: 13px;
       color: #262626;
       border-right: 1px solid #f0f0f0;
-      
+
       &:last-child {
         border-right: none;
       }
     }
-    
+
     &-tbody > tr > td {
       padding: 8px;
       height: 40px;
@@ -368,72 +368,72 @@
       vertical-align: middle;
       font-size: 13px;
       border-right: 1px solid #f0f0f0;
-      
+
       &:last-child {
         border-right: none;
       }
     }
-    
+
     &-row {
       transition: all 0.3s ease;
-      
+
       &:hover {
         background-color: #e6f7ff !important;
       }
-      
+
       &:nth-child(even) {
         background-color: #f9f9f9;
       }
     }
   }
-  
+
   .ant-tag {
     border-radius: 0;
     padding: 2px 8px;
     font-weight: 500;
   }
-  
+
   .ant-modal {
     &-content {
       border-radius: 0;
       overflow: hidden;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
-    
+
     &-header {
       border-bottom: 1px solid #f0f2f5;
       padding: 16px 24px;
-      
+
       .ant-modal-title {
         font-size: 16px;
         font-weight: 600;
         color: #1890ff;
       }
     }
-    
+
     &-body {
       padding: 20px;
     }
-    
+
     &-footer {
       border-top: 1px solid #f0f2f5;
       padding: 16px 24px;
-      
+
       .ant-btn {
         border-radius: 0;
         transition: all 0.3s ease;
       }
     }
   }
-  
+
   .ant-checkbox {
     &-checked .ant-checkbox-inner {
       background-color: #1890ff;
       border-color: #1890ff;
     }
-    
-    &-wrapper:hover .ant-checkbox-inner, 
-    &:hover .ant-checkbox-inner, 
+
+    &-wrapper:hover .ant-checkbox-inner,
+    &:hover .ant-checkbox-inner,
     &-input:focus + .ant-checkbox-inner {
       border-color: #1890ff;
     }
@@ -477,7 +477,7 @@
       justify-content: center;
       border-radius: 0;
       transition: all 0.3s ease;
-      
+
       &:hover {
         background-color: #f5f5f5;
       }
@@ -488,7 +488,7 @@
 .captcha-image {
   margin-top: 12px;
   text-align: center;
-  
+
   img {
     max-width: 100%;
     border-radius: 0;
@@ -502,21 +502,21 @@
   padding: 8px;
   max-width: 400px;
   margin: 0 auto;
-  
+
   .login-message {
     margin-bottom: 16px;
     text-align: center;
-    
+
     p {
       color: #1890ff;
       font-size: 14px;
     }
   }
-  
+
   .captcha-image {
     text-align: center;
     margin-bottom: 16px;
-    
+
     img {
       max-width: 100%;
       height: auto;
@@ -524,11 +524,11 @@
       border-radius: 0;
     }
   }
-  
+
   .captcha-container {
     .input-with-button {
       display: flex;
-      
+
       .refresh-button {
         margin-left: 8px;
       }
@@ -538,11 +538,11 @@
 
 .modal-form {
   padding: 8px;
-  
+
   nz-form-item {
     margin-bottom: 16px;
   }
-  
+
   textarea {
     resize: none;
     border-radius: 0;
@@ -553,17 +553,17 @@
 @media (max-width: 768px) {
   .ke-khai-bhxh-container {
     padding: 0;
-    
+
     .form-card {
       ::ng-deep .ant-card-body {
         padding: 12px;
       }
     }
-    
+
     .table-actions {
       flex-direction: column;
       align-items: flex-start;
-      
+
       .right-actions {
         margin-top: 12px;
         width: 100%;
@@ -593,7 +593,7 @@
 .ripple {
   position: relative;
   overflow: hidden;
-  
+
   &:after {
     content: "";
     display: block;
@@ -610,7 +610,7 @@
     opacity: 0;
     transition: transform .5s, opacity 1s;
   }
-  
+
   &:active:after {
     transform: scale(0, 0);
     opacity: .3;
@@ -623,7 +623,7 @@
   display: flex;
   gap: 8px;
   justify-content: center;
-  
+
   button {
     min-width: 32px;
     height: 32px;
@@ -635,7 +635,7 @@
     color: white;
     border: none;
     transition: all 0.3s;
-    
+
     &:hover {
       background-color: #40a9ff;
       transform: translateY(-2px);
@@ -655,21 +655,21 @@
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  
+
   .summary-item {
     display: flex;
     align-items: center;
-    
+
     span {
       font-weight: 500;
       margin-right: 8px;
     }
-    
+
     .value {
       font-weight: 600;
       color: #1890ff;
     }
-    
+
     .money-value {
       font-weight: 600;
       color: #1890ff;
@@ -687,7 +687,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
-  
+
   button {
     height: 32px;
     padding: 0 12px;
@@ -697,10 +697,10 @@
     border: 1px solid #d9d9d9;
     background-color: white;
     transition: all 0.3s;
-    
+
     &:hover {
       border-color: #1890ff;
       color: #1890ff;
     }
   }
-} 
+}

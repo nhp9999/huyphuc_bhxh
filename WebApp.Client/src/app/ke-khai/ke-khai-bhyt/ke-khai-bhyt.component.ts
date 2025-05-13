@@ -2480,6 +2480,95 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
       // Tính số tiền cần đóng
       const soTienCanDong = this.tinhSoTienCanDong(nguoiThu, soThangDong);
 
+      // Kiểm tra và sử dụng dữ liệu từ tỉnh KS, huyện KS, xã KS nếu tỉnh NKQ, huyện NKQ, xã NKQ là null
+      const maTinhNkq = data.maTinhNkq || data.maTinhKS;
+      const maHuyenNkq = data.maHuyenNkq || data.maHuyenKS;
+      const maXaNkq = data.maXaNkq || data.maXaKS;
+
+      // Log để kiểm tra
+      console.log('Dữ liệu địa chỉ cho mã số BHXH', data.maSoBHXH, ':', {
+        maTinhNkq_original: data.maTinhNkq,
+        maHuyenNkq_original: data.maHuyenNkq,
+        maXaNkq_original: data.maXaNkq,
+        maTinhKS: data.maTinhKS,
+        maHuyenKS: data.maHuyenKS,
+        maXaKS: data.maXaKS,
+        maTinhNkq_used: maTinhNkq,
+        maHuyenNkq_used: maHuyenNkq,
+        maXaNkq_used: maXaNkq
+      });
+
+      // Lấy tên tỉnh, huyện, xã từ mã
+      let tinhNkqTen = '';
+      let huyenNkqTen = '';
+      let xaNkqTen = '';
+
+      // Lấy tên tỉnh
+      if (maTinhNkq) {
+        const tinh = this.danhMucTinhs.find(t => t.ma === maTinhNkq);
+        if (tinh) {
+          tinhNkqTen = tinh.ten;
+          console.log(`Đã tìm thấy tỉnh: ${tinhNkqTen} (${maTinhNkq})`);
+        } else {
+          tinhNkqTen = this.getTinhTen(maTinhNkq);
+          console.log(`Không tìm thấy tỉnh trong danh mục, sử dụng getTinhTen: ${tinhNkqTen}`);
+        }
+      }
+
+      // Lấy tên huyện
+      if (maHuyenNkq) {
+        // Tìm trong cache huyện
+        let huyenFound = false;
+        for (const [tinhKey, huyenList] of this.huyenCache.entries()) {
+          const huyen = huyenList.find(h => h.ma === maHuyenNkq);
+          if (huyen) {
+            huyenNkqTen = huyen.ten;
+            huyenFound = true;
+            console.log(`Đã tìm thấy huyện trong cache: ${huyenNkqTen} (${maHuyenNkq})`);
+            break;
+          }
+        }
+
+        // Nếu không tìm thấy trong cache, tìm trong danhMucHuyens hiện tại
+        if (!huyenFound) {
+          const huyen = this.danhMucHuyens.find(h => h.ma === maHuyenNkq);
+          if (huyen) {
+            huyenNkqTen = huyen.ten;
+            console.log(`Đã tìm thấy huyện trong danhMucHuyens: ${huyenNkqTen} (${maHuyenNkq})`);
+          } else {
+            huyenNkqTen = this.getHuyenTen(maHuyenNkq);
+            console.log(`Không tìm thấy huyện trong danh mục, sử dụng getHuyenTen: ${huyenNkqTen}`);
+          }
+        }
+      }
+
+      // Lấy tên xã
+      if (maXaNkq) {
+        // Tìm trong cache xã
+        let xaFound = false;
+        for (const [huyenKey, xaList] of this.xaCache.entries()) {
+          const xa = xaList.find(x => x.ma === maXaNkq);
+          if (xa) {
+            xaNkqTen = xa.ten;
+            xaFound = true;
+            console.log(`Đã tìm thấy xã trong cache: ${xaNkqTen} (${maXaNkq})`);
+            break;
+          }
+        }
+
+        // Nếu không tìm thấy trong cache, tìm trong danhMucXas hiện tại
+        if (!xaFound) {
+          const xa = this.danhMucXas.find(x => x.ma === maXaNkq);
+          if (xa) {
+            xaNkqTen = xa.ten;
+            console.log(`Đã tìm thấy xã trong danhMucXas: ${xaNkqTen} (${maXaNkq})`);
+          } else {
+            xaNkqTen = this.getXaTen(maXaNkq);
+            console.log(`Không tìm thấy xã trong danh mục, sử dụng getXaTen: ${xaNkqTen}`);
+          }
+        }
+      }
+
       // Tạo đối tượng kê khai mới
       const keKhaiBHYT: KeKhaiBHYT = {
         id: 0, // ID sẽ được sinh bởi cơ sở dữ liệu
@@ -2498,7 +2587,17 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
           so_the_bhyt: data.soTheBHYT || '',
           ma_dan_toc: data.ma_dan_toc || data.danToc || '',
           quoc_tich: data.quoc_tich || data.quocTich || 'Việt Nam',
-          nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user'
+          nguoi_tao: this.currentUser.userName || this.currentUser.name || 'unknown_user',
+          ma_tinh_nkq: maTinhNkq || '',
+          ma_huyen_nkq: maHuyenNkq || '',
+          ma_xa_nkq: maXaNkq || '',
+          dia_chi_nkq: data.noiNhanHoSo || '',
+          noiNhanHoSo: {
+            tinh: tinhNkqTen,
+            huyen: huyenNkqTen,
+            xa: xaNkqTen,
+            diaChi: data.noiNhanHoSo || ''
+          }
         },
         nguoi_thu: nguoiThu,
         so_thang_dong: soThangDong,
@@ -2507,9 +2606,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         han_the_cu: denNgayTheCu,
         han_the_moi_tu: hanTheMoiTu,
         han_the_moi_den: hanTheMoiDen,
-        tinh_nkq: this.getTinhTen(data.maTinhNkq),
-        huyen_nkq: this.getHuyenTen(data.maHuyenNkq),
-        xa_nkq: this.getXaTen(data.maXaNkq),
+        tinh_nkq: tinhNkqTen,
+        huyen_nkq: huyenNkqTen,
+        xa_nkq: xaNkqTen,
         dia_chi_nkq: data.noiNhanHoSo || '',
         benh_vien_kcb: this.getBenhVienTen(data.maBenhVien || ''),
         ma_benh_vien: data.maBenhVien || '',
@@ -2656,6 +2755,9 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         { nzDuration: 0 }
       ).messageId;
 
+      // Đảm bảo danh sách tỉnh đã được tải
+      await this.loadDanhMucTinh();
+
       // Xử lý từng mã số BHXH
       for (let i = 0; i < maSoBHXHList.length; i++) {
         const maSoBHXH = maSoBHXHList[i];
@@ -2686,6 +2788,24 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
                 message: `Họ tên: ${response.data.hoTen || 'Không có'}\nMã số BHXH: ${maSoBHXH}\n${theBhyt}\nĐối tượng đang tham gia BHXH bắt buộc.`
               });
               continue;
+            }
+
+            // Đảm bảo dữ liệu địa chính đã được tải
+            const maTinhNkq = response.data.maTinhNkq || response.data.maTinhKS;
+            const maHuyenNkq = response.data.maHuyenNkq || response.data.maHuyenKS;
+
+            // Tải danh sách huyện nếu có mã tỉnh
+            if (maTinhNkq) {
+              try {
+                await this.loadDanhMucHuyenByMaTinh(maTinhNkq);
+
+                // Tải danh sách xã nếu có mã huyện
+                if (maHuyenNkq) {
+                  await this.loadDanhMucXaByMaHuyen(maHuyenNkq);
+                }
+              } catch (error) {
+                console.error(`Lỗi khi tải dữ liệu địa chính cho mã số BHXH ${maSoBHXH}:`, error);
+              }
             }
 
             let nguoiThu: number;

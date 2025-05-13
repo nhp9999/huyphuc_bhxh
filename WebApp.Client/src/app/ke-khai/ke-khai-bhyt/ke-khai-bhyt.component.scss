@@ -1,68 +1,67 @@
 :host {
   display: block;
-  background: #ffffff;
 }
 
 .ke-khai-bhyt-container {
   padding: 0;
   min-height: 100vh;
 
-  // Chuẩn hóa kích thước tất cả các input, select và date picker
+  // Chuẩn hóa kích thước tất cả các input, select và date picker - tối ưu hóa
   ::ng-deep {
     // Chuẩn hóa các input
     .ant-input,
     .ant-select-selector,
     .ant-input-number,
     .ant-picker {
-      height: 36px !important;
-      line-height: 36px !important;
-      padding: 0 11px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      padding: 0 8px !important;
       width: 100% !important;
-      font-size: 14px !important;
+      font-size: 13px !important;
       border-radius: 2px !important;
     }
 
     // Đồng bộ chiều cao items trong select
     .ant-select-selection-item {
-      line-height: 34px !important;
-      height: 34px !important;
+      line-height: 30px !important;
+      height: 30px !important;
     }
 
     // Đồng bộ style cho input number
     .ant-input-number-input-wrap {
-      height: 36px !important;
+      height: 32px !important;
 
       input {
-        height: 34px !important;
-        line-height: 34px !important;
-        padding: 0 11px !important;
+        height: 30px !important;
+        line-height: 30px !important;
+        padding: 0 8px !important;
       }
     }
 
     // Fix cho date picker
     .ant-picker-input {
-      height: 34px !important;
+      height: 30px !important;
 
       input {
-        height: 34px !important;
-        line-height: 34px !important;
+        height: 30px !important;
+        line-height: 30px !important;
         padding: 0 !important;
       }
     }
 
     // Chuẩn hóa form item
     .ant-form-item {
-      margin-bottom: 16px !important;
+      margin-bottom: 12px !important;
     }
 
     // Chuẩn hóa label
     .ant-form-item-label {
-      padding-bottom: 6px !important;
+      padding-bottom: 4px !important;
       height: auto !important;
 
       label {
         height: auto !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         color: rgba(0, 0, 0, 0.85) !important;
         font-weight: 500 !important;
       }
@@ -80,43 +79,43 @@
 
     // Sửa style cho các button
     .ant-btn {
-      height: 36px !important;
-      padding: 0 15px !important;
-      font-size: 14px !important;
+      height: 32px !important;
+      padding: 0 12px !important;
+      font-size: 13px !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
     }
   }
 
-  // Giữ lại các style hiện có
+  // Giữ lại các style hiện có nhưng tối ưu hóa
   .form-card {
-    margin-bottom: 30px;
+    margin-bottom: 16px;
     border-radius: 4px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
     border: 1px solid #f0f0f0;
     background-color: #ffffff;
 
     &:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     }
 
     ::ng-deep .ant-card-head {
       border-bottom: 1px solid #f0f2f5;
-      padding: 8px 16px;
+      padding: 6px 12px;
       background-color: #f0f7ff;
       border-radius: 4px 4px 0 0;
       min-height: auto;
 
       .ant-card-head-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         color: #0050b3;
         position: relative;
-        padding-left: 10px;
-        padding-top: 6px;
-        padding-bottom: 6px;
+        padding-left: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
 
         &:before {
           content: '';
@@ -125,7 +124,7 @@
           top: 50%;
           transform: translateY(-50%);
           width: 3px;
-          height: 16px;
+          height: 14px;
           background: #1890ff;
           border-radius: 0;
         }
@@ -134,19 +133,19 @@
       .card-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 6px;
+        gap: 4px;
       }
     }
 
     ::ng-deep .ant-card-body {
-      padding: 16px;
+      padding: 12px;
       border-radius: 0 0 4px 4px;
     }
   }
 
   // Đảm bảo các hàng được căn chỉnh đúng
   ::ng-deep .ant-row {
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
   }
 
   // Chuẩn hóa các nhóm input có button - định nghĩa lại để thay thế cái cũ
@@ -234,21 +233,21 @@
     }
   }
 
-  // Table styling
+  // Table styling - tối ưu hóa
   .ant-table {
     border-radius: 0;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 
     &-thead > tr > th {
       background-color: #fafafa;
       font-weight: 600;
       border-radius: 0 !important;
-      padding: 10px 8px;
-      height: 44px;
+      padding: 8px 6px;
+      height: 38px;
       white-space: nowrap;
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
       color: #262626;
       border-right: 1px solid #f0f0f0;
 
@@ -258,13 +257,13 @@
     }
 
     &-tbody > tr > td {
-      padding: 8px;
-      height: 40px;
+      padding: 6px;
+      height: 36px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       vertical-align: middle;
-      font-size: 13px;
+      font-size: 12px;
       border-right: 1px solid #f0f0f0;
 
       &:last-child {

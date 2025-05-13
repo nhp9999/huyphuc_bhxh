@@ -63,7 +63,7 @@
   .logout-item {
     margin-top: auto;
     border-top: 1px solid rgba(255,255,255,.15);
-    
+
     &:hover {
       background: rgba(255,77,79,.15);
       color: $danger-color !important;
@@ -119,7 +119,7 @@
       font-weight: 600;
       text-align: center;
       line-height: 1.2;
-      
+
       &.collapsed {
         .collapsed-text {
           font-size: 20px;
@@ -127,12 +127,12 @@
           font-weight: bold;
         }
       }
-      
+
       div:first-child {
         margin-bottom: 4px;
         color: $layout-trigger-color;
       }
-      
+
       div:last-child {
         color: $layout-trigger-color;
       }
@@ -198,7 +198,7 @@ nz-header {
     border-radius: 4px;
     transition: all .3s ease;
     color: $text-color-light;
-    
+
     &:hover {
       color: $primary-color-light;
       background-color: $item-hover-bg;
@@ -225,8 +225,8 @@ nz-content {
 }
 
 .inner-content {
-  margin: 24px;
-  min-height: calc(100% - 48px);
+  margin: 16px;
+  min-height: calc(100% - 32px);
   background: transparent;
 }
 
@@ -241,18 +241,19 @@ nz-footer {
 @media (max-width: 768px) {
   .sidebar-logo {
     padding-left: 16px;
-    
+
     h1 {
       display: none;
     }
   }
 
   nz-content {
-    margin: 12px;
+    margin: 0;
   }
 
   .inner-content {
-    padding: 16px;
+    margin: 8px;
+    padding: 0;
   }
 
   .header-right {
