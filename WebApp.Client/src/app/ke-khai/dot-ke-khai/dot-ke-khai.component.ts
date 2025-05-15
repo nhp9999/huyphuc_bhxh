@@ -9,6 +9,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { XemHoaDonModalComponent } from '../../shared/components/xem-hoa-don-modal/xem-hoa-don-modal.component';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -125,7 +126,8 @@ interface KeKhaiBHYT {
     NzStatisticModule,
     NzCardModule,
     NzToolTipModule,
-    NzDescriptionsModule
+    NzDescriptionsModule,
+    XemHoaDonModalComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './dot-ke-khai.component.html',
@@ -156,8 +158,6 @@ export class DotKeKhaiComponent implements OnInit {
   isViewBillModalVisible = false;
   selectedBillUrl: string = '';
   selectedDotKeKhai: DotKeKhai | null = null;
-  zoomLevel: number = 1;
-  rotationDegree: number = 0;
   bienLaiDienTu: boolean = false;
   willUseBienLaiDienTu: boolean = false;
 
@@ -1285,44 +1285,12 @@ export class DotKeKhaiComponent implements OnInit {
     this.selectedBillUrl = url;
     this.selectedDotKeKhai = dotKeKhai || null;
     this.isViewBillModalVisible = true;
-
-    // Reset các giá trị zoom và xoay
-    this.zoomLevel = 1;
-    this.rotationDegree = 0;
   }
 
   handleViewBillModalCancel(): void {
     this.isViewBillModalVisible = false;
     this.selectedBillUrl = '';
     this.selectedDotKeKhai = null;
-    this.zoomLevel = 1;
-    this.rotationDegree = 0;
-  }
-
-  // Thêm các phương thức mới cho modal xem hóa đơn
-  zoomIn(): void {
-    if (this.zoomLevel < 3) {
-      this.zoomLevel += 0.1;
-    }
-  }
-
-  zoomOut(): void {
-    if (this.zoomLevel > 0.5) {
-      this.zoomLevel -= 0.1;
-    }
-  }
-
-  resetZoom(): void {
-    this.zoomLevel = 1;
-    this.rotationDegree = 0;
-  }
-
-  rotateLeft(): void {
-    this.rotationDegree = (this.rotationDegree - 90) % 360;
-  }
-
-  rotateRight(): void {
-    this.rotationDegree = (this.rotationDegree + 90) % 360;
   }
 
   downloadBill(): void {

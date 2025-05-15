@@ -4,7 +4,7 @@
   [nzContent]="modalContent"
   [nzFooter]="modalFooter"
   (nzOnCancel)="handleCancel()"
-  [nzWidth]="900"
+  [nzWidth]="950"
   [nzBodyStyle]="{ padding: '0' }"
   [nzClassName]="'bill-modal'"
   [nzMaskClosable]="!isFullscreen"
@@ -16,7 +16,7 @@
       <span *ngIf="dotKeKhai" class="bill-subtitle">{{ dotKeKhai.ten_dot }}</span>
     </div>
   </ng-template>
-  
+
   <ng-template #modalContent>
     <div class="bill-modal-content" [class.fullscreen-mode]="isFullscreen">
       <!-- Phần xem ảnh -->
@@ -25,39 +25,53 @@
         <div *ngIf="isImageLoading" class="loading-container">
           <nz-spin nzTip="Đang tải ảnh..."></nz-spin>
         </div>
-        
+
         <!-- Container ảnh -->
         <div class="bill-image-container">
-          <!-- Thanh công cụ -->
-          <div class="bill-toolbar">
-            <button nz-button nzType="text" nzShape="circle" (click)="zoomIn()" nz-tooltip nzTooltipTitle="Phóng to">
-              <span nz-icon nzType="zoom-in" nzTheme="outline"></span>
-            </button>
-            <button nz-button nzType="text" nzShape="circle" (click)="zoomOut()" nz-tooltip nzTooltipTitle="Thu nhỏ">
-              <span nz-icon nzType="zoom-out" nzTheme="outline"></span>
-            </button>
-            <button nz-button nzType="text" nzShape="circle" (click)="rotateImage()" nz-tooltip nzTooltipTitle="Xoay ảnh">
-              <span nz-icon nzType="redo" nzTheme="outline"></span>
-            </button>
-            <button nz-button nzType="text" nzShape="circle" (click)="resetImage()" nz-tooltip nzTooltipTitle="Khôi phục">
-              <span nz-icon nzType="sync" nzTheme="outline"></span>
-            </button>
-            <button nz-button nzType="text" nzShape="circle" (click)="toggleFullscreen()" nz-tooltip [nzTooltipTitle]="isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'">
-              <span nz-icon [nzType]="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" nzTheme="outline"></span>
-            </button>
+          <!-- Thanh công cụ chính -->
+          <div class="bill-toolbar primary-toolbar">
+            <div class="toolbar-group">
+              <button nz-button nzType="text" nzShape="circle" (click)="zoomIn()" nz-tooltip nzTooltipTitle="Phóng to (Ctrl +)">
+                <span nz-icon nzType="zoom-in" nzTheme="outline"></span>
+              </button>
+              <button nz-button nzType="text" nzShape="circle" (click)="zoomOut()" nz-tooltip nzTooltipTitle="Thu nhỏ (Ctrl -)">
+                <span nz-icon nzType="zoom-out" nzTheme="outline"></span>
+              </button>
+              <button nz-button nzType="text" nzShape="circle" (click)="resetImage()" nz-tooltip nzTooltipTitle="Khôi phục (Ctrl 0)">
+                <span nz-icon nzType="sync" nzTheme="outline"></span>
+              </button>
+            </div>
+
+            <div class="toolbar-group">
+              <button nz-button nzType="text" nzShape="circle" (click)="rotateImage()" nz-tooltip nzTooltipTitle="Xoay ảnh (Ctrl R)">
+                <span nz-icon nzType="redo" nzTheme="outline"></span>
+              </button>
+              <button nz-button nzType="text" nzShape="circle" (click)="printImage()" nz-tooltip nzTooltipTitle="In ảnh (Ctrl P)">
+                <span nz-icon nzType="printer" nzTheme="outline"></span>
+              </button>
+              <button nz-button nzType="text" nzShape="circle" (click)="copyImageToClipboard()" nz-tooltip nzTooltipTitle="Sao chép ảnh">
+                <span nz-icon nzType="copy" nzTheme="outline"></span>
+              </button>
+            </div>
+
+            <div class="toolbar-group">
+              <button nz-button nzType="text" nzShape="circle" (click)="toggleFullscreen()" nz-tooltip [nzTooltipTitle]="isFullscreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (F11)'">
+                <span nz-icon [nzType]="isFullscreen ? 'fullscreen-exit' : 'fullscreen'" nzTheme="outline"></span>
+              </button>
+            </div>
           </div>
-          
+
           <!-- Thông báo kéo ảnh -->
           <div class="drag-instruction" *ngIf="imageZoom > 1">
             <span nz-icon nzType="drag" nzTheme="outline"></span>
             <span>Kéo để di chuyển ảnh</span>
           </div>
-          
+
           <!-- Ảnh hóa đơn -->
           <img *ngIf="selectedHoaDon"
-            [src]="selectedHoaDon" 
-            alt="Hóa đơn" 
-            class="bill-image" 
+            [src]="selectedHoaDon"
+            alt="Hóa đơn"
+            class="bill-image"
             [style.transform]="getImageTransform()"
             (wheel)="handleMouseWheel($event)"
             (mousedown)="startDrag($event)"
@@ -72,8 +86,9 @@
             loading="lazy"
             (load)="isImageLoading = false"
             [class.hidden]="isImageLoading"
+            #billImage
           />
-          
+
           <!-- Thông báo khi không có ảnh -->
           <div *ngIf="!selectedHoaDon && !isImageLoading" class="no-bill-message">
             <span nz-icon nzType="file-image" nzTheme="outline" class="empty-icon"></span>
@@ -81,7 +96,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Phần thông tin bên phải -->
       <div class="bill-info">
         <div *ngIf="dotKeKhai" class="bill-info-content">
@@ -98,39 +113,65 @@
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Tên file">{{ getFileName() }}</nz-descriptions-item>
           </nz-descriptions>
-          
+
           <div class="action-buttons">
-            <button nz-button nzType="primary" (click)="taiHoaDon()">
+            <button nz-button nzType="primary" (click)="taiHoaDon()" nz-tooltip nzTooltipTitle="Tải xuống hóa đơn">
               <span nz-icon nzType="download" nzTheme="outline"></span>
               Tải xuống
             </button>
+            <button nz-button nzType="default" (click)="printImage()" nz-tooltip nzTooltipTitle="In hóa đơn">
+              <span nz-icon nzType="printer" nzTheme="outline"></span>
+              In
+            </button>
             <button nz-button nzType="default"
               *ngIf="dotKeKhai.trang_thai === 'chua_gui' || dotKeKhai.trang_thai === 'da_tu_choi'"
-              (click)="uploadThayThe()">
+              (click)="uploadThayThe()" nz-tooltip nzTooltipTitle="Tải lại hóa đơn mới">
               <span nz-icon nzType="upload" nzTheme="outline"></span>
               Tải lại hóa đơn
             </button>
           </div>
+
+          <!-- Phím tắt -->
+          <div class="keyboard-shortcuts">
+            <h4>Phím tắt</h4>
+            <ul>
+              <li><kbd>Ctrl</kbd> + <kbd>+</kbd>: Phóng to</li>
+              <li><kbd>Ctrl</kbd> + <kbd>-</kbd>: Thu nhỏ</li>
+              <li><kbd>Ctrl</kbd> + <kbd>0</kbd>: Khôi phục kích thước</li>
+              <li><kbd>Ctrl</kbd> + <kbd>R</kbd>: Xoay ảnh</li>
+              <li><kbd>Ctrl</kbd> + <kbd>P</kbd>: In ảnh</li>
+              <li><kbd>F11</kbd>: Toàn màn hình</li>
+              <li><kbd>Esc</kbd>: Thoát toàn màn hình</li>
+            </ul>
+          </div>
         </div>
-        
-        <nz-alert *ngIf="isFullscreen" 
-          nzType="info" 
-          nzMessage="Nhấn ESC hoặc click nút thu nhỏ để thoát chế độ toàn màn hình" 
+
+        <nz-alert *ngIf="isFullscreen"
+          nzType="info"
+          nzMessage="Nhấn ESC hoặc click nút thu nhỏ để thoát chế độ toàn màn hình"
           class="fullscreen-note">
         </nz-alert>
       </div>
     </div>
   </ng-template>
-  
+
   <ng-template #modalFooter>
     <div class="modal-footer">
-      <button nz-button nzType="default" 
-        (click)="xemKeKhaiBHYT()" 
-        *ngIf="dotKeKhai?.id">
-        <span nz-icon nzType="solution" nzTheme="outline"></span>
-        Xem bản kê
-      </button>
-      <button nz-button nzType="default" (click)="handleCancel()">Đóng</button>
+      <div class="footer-left">
+        <button nz-button nzType="default"
+          (click)="xemKeKhaiBHYT()"
+          *ngIf="dotKeKhai?.id">
+          <span nz-icon nzType="solution" nzTheme="outline"></span>
+          Xem bản kê
+        </button>
+      </div>
+      <div class="footer-right">
+        <button nz-button nzType="primary" (click)="taiHoaDon()">
+          <span nz-icon nzType="download" nzTheme="outline"></span>
+          Tải xuống
+        </button>
+        <button nz-button nzType="default" (click)="handleCancel()">Đóng</button>
+      </div>
     </div>
   </ng-template>
-</nz-modal> 
+</nz-modal>

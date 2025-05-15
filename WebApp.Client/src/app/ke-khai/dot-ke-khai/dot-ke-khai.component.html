@@ -78,8 +78,8 @@
   <!-- Card Danh sách -->
   <nz-card class="table-card" [nzBordered]="false">
     <div class="tab-filter-wrapper">
-      <nz-tabset 
-        [(nzSelectedIndex)]="selectedTabIndex" 
+      <nz-tabset
+        [(nzSelectedIndex)]="selectedTabIndex"
         (nzSelectedIndexChange)="onTabChange($event)"
         [nzAnimated]="false"
         [nzTabPosition]="'top'">
@@ -141,12 +141,12 @@
           <td nzAlign="center">
             <ng-container *ngIf="data.url_bill">
               <button nz-button nzType="link" (click)="$event.stopPropagation(); showViewBillModal(data.url_bill)">
-                <img [src]="data.url_bill" style="max-width: 50px; max-height: 50px; cursor: pointer;" 
+                <img [src]="data.url_bill" style="max-width: 50px; max-height: 50px; cursor: pointer;"
                      nz-tooltip="Xem hóa đơn" />
               </button>
             </ng-container>
-            <button *ngIf="!data.url_bill && (data.trang_thai === 'cho_thanh_toan' || data.trang_thai === 'chua_gui')" 
-                    nz-button nzType="link" 
+            <button *ngIf="!data.url_bill && (data.trang_thai === 'cho_thanh_toan' || data.trang_thai === 'chua_gui')"
+                    nz-button nzType="link"
                     (click)="$event.stopPropagation(); showThanhToanModal(data)">
               <i nz-icon nzType="upload"></i>
               Thanh toán
@@ -154,38 +154,38 @@
           </td>
           <td nzAlign="center">
             <nz-button-group>
-              <button 
-                nz-button 
+              <button
+                nz-button
                 nzType="default"
                 nz-tooltip="Sửa"
                 (click)="$event.stopPropagation(); showModal(data)">
                 <i nz-icon nzType="edit"></i>
               </button>
-              <button 
-                nz-button 
+              <button
+                nz-button
                 nzType="default"
                 nz-tooltip="Xuất Excel"
                 (click)="$event.stopPropagation(); exportData(data)">
                 <i nz-icon nzType="export"></i>
               </button>
-              <button 
+              <button
                 *ngIf="data.dich_vu === 'BHXH TN'"
-                nz-button 
+                nz-button
                 nzType="default"
                 nz-tooltip="Xuất BHXH VNPT"
                 (click)="$event.stopPropagation(); exportBHXHVNPT(data)">
                 <i nz-icon nzType="file-excel"></i>
               </button>
-              <button 
+              <button
                 *ngIf="data.dich_vu === 'BHYT'"
-                nz-button 
+                nz-button
                 nzType="default"
                 nz-tooltip="Xuất D03-TS"
                 (click)="$event.stopPropagation(); exportD03TS(data)">
                 <i nz-icon nzType="file-excel"></i>
               </button>
-              <button 
-                *ngIf="data.trang_thai === 'chua_gui'" 
+              <button
+                *ngIf="data.trang_thai === 'chua_gui'"
                 nz-button
                 nzType="primary"
                 nz-tooltip="Gửi đợt kê khai"
@@ -212,8 +212,8 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="5" nzRequired>Đơn vị</nz-form-label>
           <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đơn vị">
-            <nz-select 
-              formControlName="don_vi_id" 
+            <nz-select
+              formControlName="don_vi_id"
               nzPlaceHolder="Chọn đơn vị"
               nzShowSearch
               [nzLoading]="loading">
@@ -229,8 +229,8 @@
         <nz-form-item>
           <nz-form-label [nzSpan]="5" nzRequired>Đại lý</nz-form-label>
           <nz-form-control [nzSpan]="19" nzErrorTip="Vui lòng chọn đại lý">
-            <nz-select 
-              formControlName="dai_ly_id" 
+            <nz-select
+              formControlName="dai_ly_id"
               nzPlaceHolder="Chọn đại lý"
               nzShowSearch
               [nzLoading]="loading"
@@ -272,75 +272,13 @@
   </nz-modal>
 
   <!-- Modal xem hóa đơn -->
-  <nz-modal
-    [(nzVisible)]="isViewBillModalVisible"
-    [nzTitle]="billModalTitle"
-    [nzFooter]="billModalFooter"
-    (nzOnCancel)="handleViewBillModalCancel()"
-    [nzWidth]="800"
-    [nzStyle]="{ top: '20px' }">
-    <ng-container *nzModalContent>
-      <div class="bill-container">
-        <div class="bill-toolbar">
-          <div class="bill-actions">
-            <button nz-button nzType="default" (click)="zoomIn()" nz-tooltip="Phóng to">
-              <i nz-icon nzType="zoom-in" nzTheme="outline"></i>
-            </button>
-            <button nz-button nzType="default" (click)="zoomOut()" nz-tooltip="Thu nhỏ">
-              <i nz-icon nzType="zoom-out" nzTheme="outline"></i>
-            </button>
-            <button nz-button nzType="default" (click)="resetZoom()" nz-tooltip="Khôi phục kích thước">
-              <i nz-icon nzType="fullscreen-exit" nzTheme="outline"></i>
-            </button>
-            <button nz-button nzType="default" (click)="rotateLeft()" nz-tooltip="Xoay trái">
-              <i nz-icon nzType="rotate-left" nzTheme="outline"></i>
-            </button>
-            <button nz-button nzType="default" (click)="rotateRight()" nz-tooltip="Xoay phải">
-              <i nz-icon nzType="rotate-right" nzTheme="outline"></i>
-            </button>
-          </div>
-        </div>
-        
-        <div class="bill-content">
-          <div class="bill-image-container" [style.transform]="'scale(' + zoomLevel + ') rotate(' + rotationDegree + 'deg)'">
-            <img [src]="selectedBillUrl" alt="Hóa đơn" />
-          </div>
-        </div>
-        
-        <div class="bill-info" *ngIf="selectedDotKeKhai">
-          <nz-descriptions nzTitle="Thông tin hóa đơn" [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
-            <nz-descriptions-item nzTitle="Tên đợt">{{ selectedDotKeKhai.ten_dot }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Đơn vị">{{ getDonViName(selectedDotKeKhai.don_vi_id) }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Dịch vụ">{{ selectedDotKeKhai.dich_vu }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Tổng số thẻ">{{ selectedDotKeKhai.tong_so_the || 0 }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Tổng số tiền">{{ selectedDotKeKhai.tong_so_tien | number:'1.0-0' }} đ</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Trạng thái">
-              <nz-tag [nzColor]="getTagColor(selectedDotKeKhai.trang_thai)">
-                {{ getTagText(selectedDotKeKhai.trang_thai) }}
-              </nz-tag>
-            </nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Mã hồ sơ">{{ selectedDotKeKhai.ma_ho_so }}</nz-descriptions-item>
-            <nz-descriptions-item nzTitle="Ngày tạo">{{ selectedDotKeKhai.ngay_tao | date:'dd/MM/yyyy HH:mm' }}</nz-descriptions-item>
-          </nz-descriptions>
-        </div>
-      </div>
-    </ng-container>
-    
-    <ng-template #billModalTitle>
-      <div class="modal-title">
-        <span>Xem hóa đơn</span>
-        <span *ngIf="selectedDotKeKhai" class="modal-subtitle">{{ selectedDotKeKhai.ten_dot }}</span>
-      </div>
-    </ng-template>
-    
-    <ng-template #billModalFooter>
-      <button nz-button nzType="default" (click)="handleViewBillModalCancel()">Đóng</button>
-      <button nz-button nzType="primary" (click)="downloadBill()">
-        <i nz-icon nzType="download" nzTheme="outline"></i>
-        Tải xuống
-      </button>
-    </ng-template>
-  </nz-modal>
+  <app-xem-hoa-don-modal
+    [isVisible]="isViewBillModalVisible"
+    [dotKeKhai]="selectedDotKeKhai"
+    [urlBill]="selectedBillUrl"
+    (closeModal)="handleViewBillModalCancel()"
+    (downloadBill)="downloadBill()"
+  ></app-xem-hoa-don-modal>
 
   <!-- Thêm template này ở cuối file -->
   <ng-template #modalGuiDotKeKhai>
@@ -554,4 +492,4 @@
     overflow-x: auto;
   }
 }
-</style> 
+</style>
