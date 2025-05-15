@@ -11,6 +11,10 @@ if !errorlevel! neq 0 (
 
 echo === git update ===
 cd /d "%~dp0"
+cd WebApp.Client
+del package.json package-lock.json
+git restore .
+cd ..
 git fetch
 
 REM Kiểm tra các thay đổi cục bộ
