@@ -1067,12 +1067,20 @@ export class KeKhaiBHXHComponent implements OnInit, OnDestroy {
 
     const maSoBHXH = this.form.get('ma_so_bhxh')?.value;
     const currentId = this.form.get('id')?.value;
+    const phuongAn = this.form.get('phuong_an')?.value;
 
-    console.log('Lưu kê khai BHXH - isEdit:', this.isEdit, 'ID:', currentId, 'Mã số BHXH:', maSoBHXH);
+    console.log('Lưu kê khai BHXH - isEdit:', this.isEdit, 'ID:', currentId, 'Mã số BHXH:', maSoBHXH, 'Phương án:', phuongAn);
 
     // Nếu đang chỉnh sửa, không cần kiểm tra trùng lặp với chính nó
     if (this.isEdit && currentId) {
       console.log('Đang chỉnh sửa bản ghi có ID:', currentId);
+      this.processKeKhaiBHXH();
+      return;
+    }
+
+    // Nếu phương án là "DB" (Đóng bù), không cần kiểm tra trùng lặp mã số BHXH
+    if (phuongAn === 'DB') {
+      console.log('Phương án là DB (Đóng bù), bỏ qua kiểm tra trùng lặp mã số BHXH');
       this.processKeKhaiBHXH();
       return;
     }
