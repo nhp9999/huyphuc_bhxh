@@ -389,6 +389,17 @@ namespace WebApp.API.Controllers
                 // Xử lý số biên lai cho từng bản ghi trước khi xóa
                 foreach (var keKhai in keKhaiBHYTs)
                 {
+                    // Xóa các biên lai điện tử liên quan đến kê khai BHYT này
+                    var bienLaiDienTus = await _context.BienLaiDienTus
+                        .Where(b => b.ke_khai_bhyt_id == keKhai.id)
+                        .ToListAsync();
+
+                    if (bienLaiDienTus.Any())
+                    {
+                        _logger.LogInformation($"Xóa {bienLaiDienTus.Count} biên lai điện tử liên quan đến kê khai BHYT {keKhai.id}");
+                        _context.BienLaiDienTus.RemoveRange(bienLaiDienTus);
+                    }
+
                     if (keKhai.QuyenBienLai != null && !string.IsNullOrEmpty(keKhai.so_bien_lai))
                     {
                         // Reset số hiện tại về số của biên lai bị xóa
@@ -401,6 +412,29 @@ namespace WebApp.API.Controllers
                         }
 
                         _context.QuyenBienLais.Update(keKhai.QuyenBienLai);
+                    }
+                }
+
+                // Lấy tất cả các bản ghi kê khai BHXH trong đợt
+                var keKhaiBHXHs = await _context.KeKhaiBHXHs
+                    .Include(k => k.ThongTinThe)
+                    .Where(k => k.dot_ke_khai_id == id)
+                    .ToListAsync();
+
+                // Xử lý biên lai điện tử cho BHXH TN
+                foreach (var keKhai in keKhaiBHXHs)
+                {
+                    // Xóa các biên lai điện tử liên quan đến kê khai BHXH này
+                    // Lưu ý: Mặc dù không có khóa ngoại trực tiếp, nhưng có thể có biên lai điện tử
+                    // được tạo cho BHXH TN với cùng số biên lai
+                    var bienLaiDienTus = await _context.BienLaiDienTus
+                        .Where(b => b.ma_so_bhxh == keKhai.ThongTinThe.ma_so_bhxh && b.so_bien_lai == keKhai.so_bien_lai)
+                        .ToListAsync();
+
+                    if (bienLaiDienTus.Any())
+                    {
+                        _logger.LogInformation($"Xóa {bienLaiDienTus.Count} biên lai điện tử liên quan đến kê khai BHXH {keKhai.id}");
+                        _context.BienLaiDienTus.RemoveRange(bienLaiDienTus);
                     }
                 }
 
