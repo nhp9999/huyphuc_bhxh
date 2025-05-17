@@ -106,7 +106,7 @@
     <nz-table
       #basicTable
       [nzData]="filteredDotKeKhais"
-      [nzScroll]="{ x: '1200px' }"
+      [nzScroll]="{ x: '1320px' }"
       [nzLoading]="loading">
       <thead>
         <tr>
@@ -116,6 +116,7 @@
           <th [nzWidth]="'80px'" nzAlign="center">Dịch vụ</th>
           <th [nzWidth]="'100px'" nzAlign="right">Tổng số thẻ</th>
           <th [nzWidth]="'120px'" nzAlign="right">Tổng số tiền</th>
+          <th [nzWidth]="'120px'" nzAlign="center">Ngày gửi</th>
           <th [nzWidth]="'100px'" nzAlign="center">Trạng thái</th>
           <th [nzWidth]="'120px'">Ghi chú</th>
           <th [nzWidth]="'120px'">Mã hồ sơ</th>
@@ -131,6 +132,10 @@
           <td nzAlign="center">{{ data.dich_vu }}</td>
           <td nzAlign="right">{{ data.tong_so_the || 0 }}</td>
           <td nzAlign="right">{{ data.tong_so_tien | number:'1.0-0' }} đ</td>
+          <td nzAlign="center">
+            <ng-container *ngIf="data.ngay_gui">{{ data.ngay_gui | date: 'dd/MM/yyyy' }}</ng-container>
+            <ng-container *ngIf="!data.ngay_gui">-</ng-container>
+          </td>
           <td nzAlign="center">
             <nz-tag [nzColor]="getTagColor(data.trang_thai)">
               {{ getTagText(data.trang_thai) }}
@@ -441,7 +446,7 @@
     padding: 12px 8px;
   }
 
-  .ant-table-tbody > tr > td:nth-child(10) {
+  .ant-table-tbody > tr > td:nth-child(11) {
     padding: 8px 4px;
     min-width: 120px;
 
@@ -481,8 +486,14 @@
     font-size: 16px;
   }
 
+  /* Style cho cột ngày gửi */
+  .ant-table-tbody > tr > td:nth-child(7) {
+    padding: 12px 8px;
+    text-align: center;
+  }
+
   /* Style cho cột thao tác */
-  .ant-table-tbody > tr > td:nth-child(11) {
+  .ant-table-tbody > tr > td:nth-child(12) {
     padding: 8px 4px;
     min-width: 160px;
   }
