@@ -324,16 +324,17 @@ export class DotKeKhaiComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
-    // Lấy danh sách đợt kê khai
-    this.dotKeKhaiService.getDotKeKhais().subscribe({
-      next: (data) => {
-        console.log('Danh sách đợt kê khai:', data);
+    // Lấy danh sách đợt kê khai với phân trang
+    this.dotKeKhaiService.getDotKeKhaisPaginated(1, 10).subscribe({
+      next: (response) => {
+        console.log('Danh sách đợt kê khai:', response.data);
+        console.log('Tổng số bản ghi:', response.total);
 
-        // Lọc theo người tạo
-        const filteredData = data.filter(dot => dot.nguoi_tao === this.currentUser.username);
+        // Không cần lọc theo người tạo vì API đã lọc
+        const data = response.data;
 
         // Kiểm tra thông tin đơn vị
-        filteredData.forEach(dot => {
+        data.forEach(dot => {
           if (!dot.DonVi) {
             console.warn(`Đợt kê khai ${dot.ten_dot} không có thông tin đơn vị`);
           } else if (!dot.DonVi.maSoBHXH) {
@@ -341,7 +342,7 @@ export class DotKeKhaiComponent implements OnInit {
           }
         });
 
-        this.dotKeKhais = this.sortDotKeKhais(filteredData);
+        this.dotKeKhais = this.sortDotKeKhais(data);
         this.filterData();
         this.loading = false;
       },

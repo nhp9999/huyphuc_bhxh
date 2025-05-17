@@ -13,6 +13,16 @@ using System.ComponentModel.DataAnnotations;
 using WebApp.API.Models.BienlaiDienTu;
 using WebApp.API.Services;
 
+// Add pagination response class
+public class PaginatedResponse<T>
+{
+    public IEnumerable<T> Data { get; set; } = new List<T>();
+    public int Total { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages => (int)Math.Ceiling(Total / (double)PageSize);
+}
+
 namespace WebApp.API.Controllers
 {
     [Authorize]
@@ -35,12 +45,53 @@ namespace WebApp.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DotKeKhai>>> GetDotKeKhais()
+        public async Task<ActionResult<PaginatedResponse<object>>> GetDotKeKhais(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? nguoi_tao = null,
+            [FromQuery] string? trang_thai = null,
+            [FromQuery] bool includeTongSoTien = false,
+            [FromQuery] bool includeTongSoThe = false,
+            [FromQuery] bool includeDonVi = false)
         {
             try
             {
-                var dotKeKhais = await _context.DotKeKhais
-                    .Include(d => d.DonVi)
+                // Validate parameters
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100; // Limit max page size
+
+                // Start with base query
+                var query = _context.DotKeKhais.AsQueryable();
+
+                // Apply filters
+                if (!string.IsNullOrEmpty(nguoi_tao))
+                {
+                    query = query.Where(d => d.nguoi_tao == nguoi_tao);
+                }
+
+                if (!string.IsNullOrEmpty(trang_thai))
+                {
+                    query = query.Where(d => d.trang_thai == trang_thai);
+                }
+
+                // Get total count for pagination
+                var totalCount = await query.CountAsync();
+
+                // Apply pagination and ordering
+                var pagedQuery = query
+                    .OrderByDescending(d => d.ngay_tao)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize);
+
+                // Include DonVi if requested
+                if (includeDonVi)
+                {
+                    pagedQuery = pagedQuery.Include(d => d.DonVi);
+                }
+
+                // Execute query with optimized projection
+                var dotKeKhais = await pagedQuery
                     .Select(d => new
                     {
                         d.id,
@@ -56,19 +107,23 @@ namespace WebApp.API.Controllers
                         d.ngay_tao,
                         d.ngay_gui,
                         d.ma_ho_so,
-                        DonVi = d.DonVi,
-                        tong_so_tien = d.dich_vu == "BHYT"
+                        d.dai_ly_id,
+                        d.is_bien_lai_dien_tu,
+                        // Only include DonVi if requested
+                        DonVi = includeDonVi ? d.DonVi : null,
+                        // Only calculate these if requested
+                        tong_so_tien = includeTongSoTien ? (d.dich_vu == "BHYT"
                             ? _context.KeKhaiBHYTs
                                 .Where(k => k.dot_ke_khai_id == d.id)
                                 .Sum(k => k.so_tien_can_dong)
                             : _context.KeKhaiBHXHs
                                 .Where(k => k.dot_ke_khai_id == d.id)
-                                .Sum(k => k.so_tien_can_dong),
-                        tong_so_the = d.dich_vu == "BHYT"
+                                .Sum(k => k.so_tien_can_dong)) : (decimal?)null,
+                        tong_so_the = includeTongSoThe ? (d.dich_vu == "BHYT"
                             ? _context.KeKhaiBHYTs
                                 .Count(k => k.dot_ke_khai_id == d.id)
                             : _context.KeKhaiBHXHs
-                                .Count(k => k.dot_ke_khai_id == d.id),
+                                .Count(k => k.dot_ke_khai_id == d.id)) : (int?)null,
                         url_bill = _context.HoaDonThanhToans
                             .Where(h => h.dot_ke_khai_id == d.id && h.deleted_at == null)
                             .OrderByDescending(h => h.ngay_tao)
@@ -77,7 +132,16 @@ namespace WebApp.API.Controllers
                     })
                     .ToListAsync();
 
-                return Ok(dotKeKhais);
+                // Create and return paginated response
+                var response = new PaginatedResponse<object>
+                {
+                    Data = dotKeKhais,
+                    Total = totalCount,
+                    Page = page,
+                    PageSize = pageSize
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {

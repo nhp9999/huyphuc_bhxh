@@ -18,7 +18,6 @@ namespace WebApp.API.Controllers
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public string? Ip { get; set; }
     }
 
     [ApiController]
@@ -212,7 +211,7 @@ namespace WebApp.API.Controllers
         public OpenApiLocationData data { get; set; } = new OpenApiLocationData();
     }
 
-    public class OpenApiLocationData 
+    public class OpenApiLocationData
     {
         public string ip { get; set; } = string.Empty;
         public string city { get; set; } = string.Empty;
@@ -223,4 +222,4 @@ namespace WebApp.API.Controllers
         public string region { get; set; } = string.Empty;
         public string timezone { get; set; } = string.Empty;
     }
-} 
+}

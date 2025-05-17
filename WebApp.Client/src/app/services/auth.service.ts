@@ -25,7 +25,6 @@ interface LoginResponse {
 interface LoginRequest {
   username: string;
   password: string;
-  ip?: string;
 }
 
 @Injectable({
@@ -34,43 +33,38 @@ interface LoginRequest {
 export class AuthService {
   constructor(private http: HttpClient) {}
 
-  login(username: string, password: string, ip?: string): Observable<LoginResponse> {
+  login(username: string, password: string): Observable<LoginResponse> {
     const loginData: LoginRequest = {
       username,
-      password,
-      ip
+      password
     };
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, loginData);
   }
 
   logout(): void {
+    // Only need to remove the user object since it contains the token
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
   }
 
   setSession(authResult: any): void {
     if (!authResult) return;
 
-    // Lưu token vào localStorage
-    localStorage.setItem('token', authResult.token);
-    
-    // Lưu thông tin user riêng
+    // Create a single user object with all necessary data
     const userData = {
       ...authResult.user,
-      token: authResult.token, // Thêm token vào object user
-      ma_nhan_vien: authResult.user.username // Sử dụng username làm mã nhân viên
+      token: authResult.token,
+      ma_nhan_vien: authResult.user.username // Use username as employee code
     };
+
+    // Store only in user object to avoid redundancy
     localStorage.setItem('user', JSON.stringify(userData));
 
-    console.log('Saved auth data:', {
-      token: authResult.token,
-      user: userData
-    });
+    console.log('Authentication data saved successfully');
   }
 
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('token');
-    return !!token;
+    const user = this.getCurrentUser();
+    return !!user?.token;
   }
 
   getCurrentUser(): any {
@@ -84,6 +78,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    const user = this.getCurrentUser();
+    return user?.token || null;
   }
-} 
+}
