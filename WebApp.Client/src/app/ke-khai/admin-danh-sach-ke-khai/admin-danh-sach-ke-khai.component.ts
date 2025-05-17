@@ -280,7 +280,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     // Hiển thị thông báo đang tải
     const loadingMsg = this.message.loading('Đang tải danh sách đợt kê khai...', { nzDuration: 0 });
 
-    this.dotKeKhaiService.getDotKeKhais().subscribe({
+    // Sử dụng phương thức getAllDotKeKhais thay vì getDotKeKhais để lấy tất cả đợt kê khai không lọc theo người dùng
+    this.dotKeKhaiService.getAllDotKeKhais().subscribe({
       next: (data: DotKeKhai[]) => {
         // Đóng thông báo loading
         this.message.remove(loadingMsg.messageId);
@@ -302,6 +303,8 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
           console.log('Thuộc tính DonVi:', data[0].DonVi);
           console.log('Thuộc tính don_vi:', data[0].don_vi);
           console.log('Tất cả các thuộc tính:', Object.keys(data[0]));
+        } else {
+          console.log('Không có dữ liệu đợt kê khai');
         }
 
         this.loading = false;

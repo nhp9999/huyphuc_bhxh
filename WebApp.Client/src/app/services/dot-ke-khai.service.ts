@@ -185,6 +185,39 @@ export class DotKeKhaiService {
     );
   }
 
+  // Phương thức mới để lấy tất cả đợt kê khai không lọc theo người dùng (dành cho admin)
+  getAllDotKeKhais(page: number = 1, pageSize: number = 10): Observable<DotKeKhai[]> {
+    const cacheKey = `allDotKeKhais_${page}_${pageSize}`;
+
+    // Kiểm tra cache
+    const cachedData = this.getFromCache<DotKeKhai[]>(cacheKey);
+    if (cachedData) {
+      return of(cachedData);
+    }
+
+    // Thêm query params bằng HttpParams để tránh vấn đề mã hóa URL
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString())
+      .set('includeTongSoTien', 'true')
+      .set('includeTongSoThe', 'true')
+      .set('includeDonVi', 'true');
+    // Không thêm nguoi_tao để lấy tất cả dữ liệu
+
+    return this.http.get<PaginatedResponse<DotKeKhai>>(this.apiUrl, { params }).pipe(
+      map(response => response.data as DotKeKhai[]),
+      tap(data => {
+        // Lưu vào cache
+        this.saveToCache(cacheKey, data);
+      }),
+      shareReplay(1),
+      catchError(error => {
+        console.error('Lỗi khi tải danh sách tất cả đợt kê khai:', error);
+        return of([]);
+      })
+    );
+  }
+
   // New method to get paginated data
   getDotKeKhaisPaginated(page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<DotKeKhai>> {
     const username = this.getCurrentUsername();
