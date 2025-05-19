@@ -22,6 +22,10 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzPopoverModule } from 'ng-zorro-antd/popover';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { DotKeKhaiService, DotKeKhai } from '../../services/dot-ke-khai.service';
 import { KeKhaiBHYTService } from '../../services/ke-khai-bhyt.service';
 import { UserService } from '../../services/user.service';
@@ -44,7 +48,9 @@ import {
   DatabaseOutline,
   FileImageOutline,
   DownloadOutline,
-  DollarOutline
+  DollarOutline,
+  UpOutline,
+  DownOutline
 } from '@ant-design/icons-angular/icons';
 import { environment } from '../../../environments/environment';
 import { XemHoaDonModalComponent } from '../../shared/components/xem-hoa-don-modal/xem-hoa-don-modal.component';
@@ -81,7 +87,11 @@ import { HttpClient } from '@angular/common/http';
     NzAlertModule,
     NzCheckboxModule,
     XemHoaDonModalComponent,
-    NzMenuModule
+    NzMenuModule,
+    NzCollapseModule,
+    NzGridModule,
+    NzPopoverModule,
+    NzInputNumberModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './admin-danh-sach-ke-khai.component.html',
@@ -115,6 +125,10 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Biến cho tab
   tabTrangThaiIndex = 0;
 
+  // Biến cho bộ lọc nâng cao
+  showAdvancedFilter = false;
+  activeFilters = 0;
+
   danhSachFilters = {
     dichVu: null as string | null,
     trangThai: null as string | null,
@@ -123,7 +137,13 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
     thang: null as number | null,
     maNhanVien: null as string | null,
     ngayGuiTu: null as Date | null, // Ngày gửi từ
-    ngayGuiDen: null as Date | null // Ngày gửi đến
+    ngayGuiDen: null as Date | null, // Ngày gửi đến
+    ngayTaoTu: null as Date | null, // Ngày tạo từ
+    ngayTaoDen: null as Date | null, // Ngày tạo đến
+    tongSoTienTu: null as number | null, // Tổng số tiền từ
+    tongSoTienDen: null as number | null, // Tổng số tiền đến
+    tongSoTheTu: null as number | null, // Tổng số thẻ từ
+    tongSoTheDen: null as number | null // Tổng số thẻ đến
   };
   danhSachDichVu = [
     { text: 'BHYT', value: 'BHYT' },
@@ -197,7 +217,9 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       DatabaseOutline,
       FileImageOutline,
       DownloadOutline,
-      DollarOutline
+      DollarOutline,
+      UpOutline,
+      DownOutline
     ]);
 
     // Khởi tạo form
@@ -349,9 +371,17 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       thang: null,
       maNhanVien: null,
       ngayGuiTu: null, // Đặt lại bộ lọc ngày gửi từ
-      ngayGuiDen: null  // Đặt lại bộ lọc ngày gửi đến
+      ngayGuiDen: null,  // Đặt lại bộ lọc ngày gửi đến
+      ngayTaoTu: null, // Ngày tạo từ
+      ngayTaoDen: null, // Ngày tạo đến
+      tongSoTienTu: null, // Tổng số tiền từ
+      tongSoTienDen: null, // Tổng số tiền đến
+      tongSoTheTu: null, // Tổng số thẻ từ
+      tongSoTheDen: null // Tổng số thẻ đến
     };
     this.tabTrangThaiIndex = 0;
+    this.showAdvancedFilter = false;
+    this.activeFilters = 0;
     this.loadDotKeKhaiList();
   }
 
@@ -422,8 +452,61 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
       });
     }
 
+    // Lọc theo ngày tạo từ
+    if (this.danhSachFilters.ngayTaoTu) {
+      filteredData = filteredData.filter(item => {
+        if (!item.ngay_tao) return false;
+        const ngayTao = new Date(item.ngay_tao);
+        return ngayTao >= (this.danhSachFilters.ngayTaoTu as Date);
+      });
+    }
+
+    // Lọc theo ngày tạo đến
+    if (this.danhSachFilters.ngayTaoDen) {
+      filteredData = filteredData.filter(item => {
+        if (!item.ngay_tao) return false;
+        const ngayTao = new Date(item.ngay_tao);
+        return ngayTao <= (this.danhSachFilters.ngayTaoDen as Date);
+      });
+    }
+
+    // Lọc theo tổng số tiền từ
+    if (this.danhSachFilters.tongSoTienTu !== null) {
+      filteredData = filteredData.filter(item => {
+        if (item.tong_so_tien === undefined || item.tong_so_tien === null) return false;
+        return item.tong_so_tien >= (this.danhSachFilters.tongSoTienTu as number);
+      });
+    }
+
+    // Lọc theo tổng số tiền đến
+    if (this.danhSachFilters.tongSoTienDen !== null) {
+      filteredData = filteredData.filter(item => {
+        if (item.tong_so_tien === undefined || item.tong_so_tien === null) return false;
+        return item.tong_so_tien <= (this.danhSachFilters.tongSoTienDen as number);
+      });
+    }
+
+    // Lọc theo tổng số thẻ từ
+    if (this.danhSachFilters.tongSoTheTu !== null) {
+      filteredData = filteredData.filter(item => {
+        if (item.tong_so_the === undefined || item.tong_so_the === null) return false;
+        return item.tong_so_the >= (this.danhSachFilters.tongSoTheTu as number);
+      });
+    }
+
+    // Lọc theo tổng số thẻ đến
+    if (this.danhSachFilters.tongSoTheDen !== null) {
+      filteredData = filteredData.filter(item => {
+        if (item.tong_so_the === undefined || item.tong_so_the === null) return false;
+        return item.tong_so_the <= (this.danhSachFilters.tongSoTheDen as number);
+      });
+    }
+
     this.dotKeKhaiList = filteredData;
     // Không cập nhật cache số lượng sau khi lọc vì chúng ta muốn hiển thị thống kê theo dữ liệu gốc
+
+    // Đếm số bộ lọc đang được áp dụng
+    this.countActiveFilters();
 
     this.loading = false;
 
@@ -438,6 +521,60 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
   // Gọi phương thức này thay vì searchData (đổi tên để rõ ý đồ)
   searchData(): void {
     this.danhSachDaChon.clear(); // Xóa danh sách đã chọn khi lọc dữ liệu
+    this.applyFilters();
+  }
+
+  // Đếm số bộ lọc đang được áp dụng
+  countActiveFilters(): void {
+    let count = 0;
+
+    // Đếm các bộ lọc cơ bản
+    if (this.searchText && this.searchText.trim() !== '') count++;
+    if (this.danhSachFilters.dichVu) count++;
+    if (this.danhSachFilters.trangThai) count++;
+    if (this.danhSachFilters.donVi) count++;
+    if (this.danhSachFilters.nam) count++;
+    if (this.danhSachFilters.thang) count++;
+    if (this.danhSachFilters.maNhanVien && this.danhSachFilters.maNhanVien.trim() !== '') count++;
+
+    // Đếm các bộ lọc nâng cao
+    if (this.danhSachFilters.ngayGuiTu) count++;
+    if (this.danhSachFilters.ngayGuiDen) count++;
+    if (this.danhSachFilters.ngayTaoTu) count++;
+    if (this.danhSachFilters.ngayTaoDen) count++;
+    if (this.danhSachFilters.tongSoTienTu !== null) count++;
+    if (this.danhSachFilters.tongSoTienDen !== null) count++;
+    if (this.danhSachFilters.tongSoTheTu !== null) count++;
+    if (this.danhSachFilters.tongSoTheDen !== null) count++;
+
+    this.activeFilters = count;
+  }
+
+  // Bật/tắt bộ lọc nâng cao
+  toggleAdvancedFilter(): void {
+    this.showAdvancedFilter = !this.showAdvancedFilter;
+  }
+
+  // Xóa tất cả bộ lọc
+  clearAllFilters(): void {
+    this.searchText = '';
+    this.danhSachFilters = {
+      dichVu: null,
+      trangThai: this.danhSachFilters.trangThai, // Giữ nguyên trạng thái tab
+      donVi: null,
+      nam: null,
+      thang: null,
+      maNhanVien: null,
+      ngayGuiTu: null,
+      ngayGuiDen: null,
+      ngayTaoTu: null,
+      ngayTaoDen: null,
+      tongSoTienTu: null,
+      tongSoTienDen: null,
+      tongSoTheTu: null,
+      tongSoTheDen: null
+    };
+    this.activeFilters = 0;
     this.applyFilters();
   }
 
@@ -902,30 +1039,35 @@ export class AdminDanhSachKeKhaiComponent implements OnInit {
 
   // Xử lý khi thay đổi tab
   onTabChange(index: number): void {
+    // Lưu trạng thái bộ lọc hiện tại
+    const currentFilters = { ...this.danhSachFilters };
+
     // Cập nhật danhSachFilters.trangThai dựa vào tab được chọn
     switch (index) {
       case 0: // Tất cả
-        this.danhSachFilters.trangThai = null;
+        currentFilters.trangThai = null;
         break;
       case 1: // Chờ thanh toán
-        this.danhSachFilters.trangThai = 'cho_thanh_toan';
+        currentFilters.trangThai = 'cho_thanh_toan';
         break;
       case 2: // Chờ xử lý
-        this.danhSachFilters.trangThai = 'cho_xu_ly';
+        currentFilters.trangThai = 'cho_xu_ly';
         break;
       case 3: // Đang xử lý
-        this.danhSachFilters.trangThai = 'dang_xu_ly';
+        currentFilters.trangThai = 'dang_xu_ly';
         break;
       case 4: // Hoàn thành
-        this.danhSachFilters.trangThai = 'hoan_thanh';
+        currentFilters.trangThai = 'hoan_thanh';
         break;
       case 5: // Đã từ chối
-        this.danhSachFilters.trangThai = 'da_tu_choi';
+        currentFilters.trangThai = 'da_tu_choi';
         break;
       default:
-        this.danhSachFilters.trangThai = null;
+        currentFilters.trangThai = null;
     }
 
+    // Cập nhật bộ lọc với trạng thái mới
+    this.danhSachFilters = currentFilters;
     this.tabTrangThaiIndex = index;
     this.applyFilters();
   }

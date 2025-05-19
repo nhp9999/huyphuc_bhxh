@@ -161,6 +161,22 @@ export class DotKeKhaiComponent implements OnInit {
   bienLaiDienTu: boolean = false;
   willUseBienLaiDienTu: boolean = false;
 
+  // Thêm các thuộc tính cho phân trang
+  pageIndex = 1;
+  pageSize = 10;
+  total = 0;
+
+  // Thêm biến để lưu trữ số lượng từng trạng thái
+  statusCounts: Record<string, number> = {
+    'chua_gui': 0,
+    'da_gui': 0,
+    'dang_xu_ly': 0,
+    'cho_thanh_toan': 0,
+    'hoan_thanh': 0,
+    'tu_choi': 0,
+    'total': 0
+  };
+
   // Map trạng thái theo tab index
   private readonly trangThaiMap = [
     '', // Tất cả
@@ -276,6 +292,7 @@ export class DotKeKhaiComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    this.loadStatusCounts();
     this.loadDaiLys();
     this.updateTenDot();
 
@@ -324,14 +341,21 @@ export class DotKeKhaiComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
-    // Lấy danh sách đợt kê khai với phân trang
-    this.dotKeKhaiService.getDotKeKhaisPaginated(1, 10).subscribe({
+    
+    // Get the status filter based on selected tab
+    const selectedTrangThai = this.trangThaiMap[this.selectedTabIndex];
+    
+    // Lấy danh sách đợt kê khai với phân trang và lọc theo trạng thái
+    this.dotKeKhaiService.getDotKeKhaisPaginated(this.pageIndex, this.pageSize, selectedTrangThai).subscribe({
       next: (response) => {
         console.log('Danh sách đợt kê khai:', response.data);
         console.log('Tổng số bản ghi:', response.total);
 
         // Không cần lọc theo người tạo vì API đã lọc
         const data = response.data;
+        
+        // Cập nhật tổng số bản ghi
+        this.total = response.total;
 
         // Kiểm tra thông tin đơn vị
         data.forEach(dot => {
@@ -343,7 +367,11 @@ export class DotKeKhaiComponent implements OnInit {
         });
 
         this.dotKeKhais = this.sortDotKeKhais(data);
-        this.filterData();
+        this.filteredDotKeKhais = this.dotKeKhais;
+        
+        // Refresh status counts
+        this.loadStatusCounts();
+        
         this.loading = false;
       },
       error: (error) => {
@@ -387,10 +415,25 @@ export class DotKeKhaiComponent implements OnInit {
 
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
-    this.filterData();
+    // Reset page index when changing tabs
+    this.pageIndex = 1;
+    // Reload data from server
+    this.loadData();
+  }
+
+  onPageIndexChange(index: number): void {
+    this.pageIndex = index;
+    this.loadData();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.pageIndex = 1;
+    this.loadData();
   }
 
   filterData(): void {
+    // Apply client-side filtering only for the current page of data
     let filtered = [...this.dotKeKhais];
 
     // Lọc theo trạng thái (tab)
@@ -838,11 +881,11 @@ export class DotKeKhaiComponent implements OnInit {
   }
 
   getCounts(trangThai: string): number {
-    return this.dotKeKhais.filter(item => item.trang_thai === trangThai).length;
+    return this.statusCounts[trangThai] || 0;
   }
 
   getTotalDotKeKhai(): number {
-    return this.dotKeKhais.length;
+    return this.statusCounts['total'] || 0;
   }
 
   getDonViName(donViId: number): string {
@@ -2017,6 +2060,18 @@ export class DotKeKhaiComponent implements OnInit {
       this.message.remove(messageId);
       this.message.error('Có lỗi xảy ra khi xử lý dữ liệu');
       this.loading = false;
+    });
+  }
+
+  // Add a new method to load status counts
+  loadStatusCounts(): void {
+    this.dotKeKhaiService.getStatusCounts().subscribe({
+      next: (counts) => {
+        this.statusCounts = counts;
+      },
+      error: (error) => {
+        console.error('Lỗi khi tải số lượng theo trạng thái:', error);
+      }
     });
   }
 }

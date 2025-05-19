@@ -89,26 +89,100 @@
   }
 }
 
-.filter-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+.filter-panel {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 16px;
   margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
-  .search-box {
-    width: 300px;
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .filter-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.85);
+
+      span[nz-icon] {
+        margin-right: 8px;
+        font-size: 16px;
+      }
+
+      nz-badge {
+        margin-left: 8px;
+      }
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+    }
   }
 
-  .filter-options {
+  .filter-basic {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    flex: 1;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    .search-box {
+      width: 300px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex: 1;
+    }
   }
 
-  .filter-item {
-    width: 150px;
+  .filter-advanced {
+    margin-top: 16px;
+
+    .filter-group {
+      margin-bottom: 16px;
+
+      .filter-group-title {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: rgba(0, 0, 0, 0.85);
+      }
+
+      .filter-group-content {
+        padding: 8px;
+        background-color: #fff;
+        border-radius: 4px;
+        border: 1px solid #f0f0f0;
+      }
+
+      .filter-range {
+        display: flex;
+        gap: 8px;
+
+        .filter-item {
+          flex: 1;
+        }
+      }
+    }
   }
+
+  .filter-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+}
+
+.filter-item {
+  width: 150px;
 }
 
 .action-buttons {
@@ -142,21 +216,49 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .filter-section {
-    flex-direction: column;
+  .filter-panel {
+    .filter-header {
+      flex-direction: column;
+      align-items: flex-start;
 
-    .search-box {
-      width: 100%;
+      .filter-title {
+        margin-bottom: 8px;
+      }
+
+      .filter-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
 
-    .filter-options {
-      width: 100%;
-      justify-content: space-between;
+    .filter-basic {
+      flex-direction: column;
+
+      .search-box {
+        width: 100%;
+      }
+
+      .filter-options {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
 
     .filter-item {
       width: 48%;
       margin-bottom: 8px;
+    }
+
+    .filter-advanced {
+      .filter-range {
+        flex-direction: column;
+      }
+    }
+
+    .filter-footer {
+      button {
+        width: 100%;
+      }
     }
   }
 }

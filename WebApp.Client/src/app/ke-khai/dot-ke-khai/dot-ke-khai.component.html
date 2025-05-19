@@ -107,7 +107,19 @@
       #basicTable
       [nzData]="filteredDotKeKhais"
       [nzScroll]="{ x: '1320px' }"
-      [nzLoading]="loading">
+      [nzLoading]="loading"
+      [nzFrontPagination]="false"
+      [nzPageSize]="pageSize"
+      [nzShowPagination]="true"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[5, 10, 20, 50, 100]"
+      [nzShowQuickJumper]="true"
+      [nzShowTotal]="totalTemplate"
+      [nzTotal]="total"
+      [nzPageIndex]="pageIndex"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)">
+      <ng-template #totalTemplate let-total>Tổng số: {{ total }} bản ghi</ng-template>
       <thead>
         <tr>
           <th [nzWidth]="'50px'" [nzChecked]="isAllChecked" [nzIndeterminate]="isIndeterminate" (nzCheckedChange)="onAllChecked($event)"></th>

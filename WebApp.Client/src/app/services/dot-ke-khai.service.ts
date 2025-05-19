@@ -219,9 +219,9 @@ export class DotKeKhaiService {
   }
 
   // New method to get paginated data
-  getDotKeKhaisPaginated(page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<DotKeKhai>> {
+  getDotKeKhaisPaginated(page: number = 1, pageSize: number = 10, trangThai?: string): Observable<PaginatedResponse<DotKeKhai>> {
     const username = this.getCurrentUsername();
-    const cacheKey = `dotKeKhaisPaginated_${username}_${page}_${pageSize}`;
+    const cacheKey = `dotKeKhaisPaginated_${username}_${page}_${pageSize}_${trangThai || 'all'}`;
 
     // Kiểm tra cache
     const cachedData = this.getFromCache<PaginatedResponse<DotKeKhai>>(cacheKey);
@@ -230,13 +230,18 @@ export class DotKeKhaiService {
     }
 
     // Thêm query params bằng HttpParams để tránh vấn đề mã hóa URL
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', pageSize.toString())
       .set('includeTongSoTien', 'true')
       .set('includeTongSoThe', 'true')
       .set('includeDonVi', 'true')
       .set('nguoi_tao', username);
+    
+    // Add trang_thai filter if provided
+    if (trangThai) {
+      params = params.set('trang_thai', trangThai);
+    }
 
     return this.http.get<PaginatedResponse<DotKeKhai>>(this.apiUrl, { params }).pipe(
       tap(response => {
@@ -534,5 +539,39 @@ export class DotKeKhaiService {
         this.cache.delete(key);
       }
     }
+  }
+
+  // Method to get counts for each trang_thai
+  getStatusCounts(): Observable<Record<string, number>> {
+    const username = this.getCurrentUsername();
+    const cacheKey = `statusCounts_${username}`;
+
+    // Kiểm tra cache
+    const cachedData = this.getFromCache<Record<string, number>>(cacheKey);
+    if (cachedData) {
+      return of(cachedData);
+    }
+
+    const params = new HttpParams()
+      .set('nguoi_tao', username);
+
+    return this.http.get<Record<string, number>>(`${this.apiUrl}/status-counts`, { params }).pipe(
+      tap(data => {
+        // Lưu vào cache với thời gian ngắn hơn (2 phút)
+        this.saveToCache(cacheKey, data, 2 * 60 * 1000);
+      }),
+      catchError(error => {
+        console.error('Lỗi khi lấy số lượng theo trạng thái:', error);
+        return of({
+          'chua_gui': 0,
+          'da_gui': 0,
+          'dang_xu_ly': 0,
+          'cho_thanh_toan': 0,
+          'hoan_thanh': 0,
+          'tu_choi': 0,
+          'total': 0
+        });
+      })
+    );
   }
 }
