@@ -237,7 +237,7 @@ export class DotKeKhaiService {
       .set('includeTongSoThe', 'true')
       .set('includeDonVi', 'true')
       .set('nguoi_tao', username);
-    
+
     // Add trang_thai filter if provided
     if (trangThai) {
       params = params.set('trang_thai', trangThai);
@@ -302,14 +302,27 @@ export class DotKeKhaiService {
       .set('includeTongSoThe', 'true')
       .set('includeDonVi', 'true');
 
+    console.log(`Gọi API lấy đợt kê khai ID=${id} với params:`, params.toString());
+
     return this.http.get<DotKeKhai>(`${this.apiUrl}/${id}`, { params }).pipe(
       tap(data => {
         // Lưu vào cache với thời gian ngắn hơn (2 phút)
         this.saveToCache(cacheKey, data, 2 * 60 * 1000);
+        console.log(`Đã lưu đợt kê khai ID=${id} vào cache`);
       }),
       shareReplay(1),
       catchError(error => {
         console.error(`Lỗi khi tải đợt kê khai id=${id}:`, error);
+        // Xóa cache nếu có lỗi để tránh lưu dữ liệu không hợp lệ
+        this.cache.delete(cacheKey);
+
+        // Thêm thông tin chi tiết về lỗi
+        if (error.status === 404) {
+          console.warn(`Đợt kê khai với ID=${id} không tồn tại trong hệ thống`);
+        } else if (error.status === 500) {
+          console.error(`Lỗi server khi tải đợt kê khai id=${id}:`, error.error?.message || error.message);
+        }
+
         throw error;
       })
     );

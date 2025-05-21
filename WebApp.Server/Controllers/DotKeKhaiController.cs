@@ -155,6 +155,17 @@ namespace WebApp.API.Controllers
         {
             try
             {
+                _logger.LogInformation($"Đang lấy thông tin đợt kê khai ID: {id}");
+
+                // Kiểm tra xem đợt kê khai có tồn tại không trước khi thực hiện truy vấn phức tạp
+                var dotKeKhaiExists = await _context.DotKeKhais.AnyAsync(d => d.id == id);
+
+                if (!dotKeKhaiExists)
+                {
+                    _logger.LogWarning($"Không tìm thấy đợt kê khai với ID: {id}");
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {id}" });
+                }
+
                 var dotKeKhai = await _context.DotKeKhais
                     .Include(d => d.DonVi)
                     .Where(d => d.id == id)
@@ -173,6 +184,8 @@ namespace WebApp.API.Controllers
                         d.ngay_tao,
                         d.ngay_gui,
                         d.ma_ho_so,
+                        d.dai_ly_id,
+                        d.is_bien_lai_dien_tu,
                         DonVi = d.DonVi,
                         tong_so_tien = d.dich_vu == "BHYT"
                             ? _context.KeKhaiBHYTs
@@ -196,14 +209,17 @@ namespace WebApp.API.Controllers
 
                 if (dotKeKhai == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy đợt kê khai" });
+                    _logger.LogWarning($"Không tìm thấy đợt kê khai với ID: {id} sau khi truy vấn chi tiết");
+                    return NotFound(new { message = $"Không tìm thấy đợt kê khai với ID: {id}" });
                 }
 
+                _logger.LogInformation($"Đã tìm thấy đợt kê khai ID: {id}, tên đợt: {dotKeKhai.ten_dot}");
                 return Ok(dotKeKhai);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error getting dot ke khai {id}: {ex.Message}");
+                _logger.LogError($"Lỗi khi lấy thông tin đợt kê khai {id}: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
                 return StatusCode(500, new { message = "Lỗi khi lấy thông tin đợt kê khai", error = ex.Message });
             }
         }

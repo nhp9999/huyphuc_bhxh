@@ -22,7 +22,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { KeKhaiBHYT, KeKhaiBHYTService, ThongTinThe, DanhMucCSKCB } from '../../services/ke-khai-bhyt.service';
 import { DotKeKhai, DotKeKhaiService } from '../../services/dot-ke-khai.service';
 import { DiaChiService, DanhMucTinh, DanhMucHuyen, DanhMucXa } from '../../services/dia-chi.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { vi_VN } from 'ng-zorro-antd/i18n';
 import { NzI18nService } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
@@ -223,6 +223,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   thongTinThe: ThongTinThe | null = null;
   dotKeKhai: DotKeKhai | null = null;
   loadingSearch = false; // Thêm biến loading cho tìm kiếm
+  loading = false; // Thêm biến loading chung
   loadingTable = false; // Thêm biến loading cho bảng
   isVisible = false;
   isEdit = false;
@@ -408,6 +409,7 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
     private modal: NzModalService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
+    private router: Router,
     private i18n: NzI18nService,
     private iconService: NzIconService,
     private donViService: DonViService,
@@ -722,8 +724,12 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
   }
 
   loadDotKeKhai(): void {
+    this.loading = true; // Set loading state
+    console.log(`Đang tải đợt kê khai ID: ${this.dotKeKhaiId}`);
+
     this.dotKeKhaiService.getDotKeKhai(this.dotKeKhaiId).subscribe({
       next: (data) => {
+        this.loading = false;
         this.dotKeKhai = data;
         // Log để kiểm tra giá trị
         console.log('Đợt kê khai:', data);
@@ -771,7 +777,19 @@ export class KeKhaiBHYTComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        this.message.error('Có lỗi xảy ra khi tải thông tin đợt kê khai');
+        this.loading = false;
+        console.error('Lỗi khi tải đợt kê khai:', error);
+
+        if (error.status === 404) {
+          this.message.error('Không tìm thấy đợt kê khai với ID: ' + this.dotKeKhaiId);
+
+          // Redirect to the list page after a short delay
+          setTimeout(() => {
+            this.router.navigate(['/dot-ke-khai']);
+          }, 2000);
+        } else {
+          this.message.error('Có lỗi xảy ra khi tải thông tin đợt kê khai: ' + (error.error?.message || error.message || 'Lỗi không xác định'));
+        }
       }
     });
   }
