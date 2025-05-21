@@ -10,7 +10,7 @@ import { map, catchError } from 'rxjs/operators';
 })
 export class KeKhaiBHXHService {
   private apiUrl = `${environment.apiUrl}/dot-ke-khai`;
-  private baseUrl = 'https://ssmv2.vnpost.vn/connect/tracuu';
+  private baseUrl = 'https://ssm.vnpost.vn/connect/tracuu';
 
   constructor(
     private http: HttpClient,

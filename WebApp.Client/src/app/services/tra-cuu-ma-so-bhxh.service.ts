@@ -93,10 +93,10 @@ export class BHXHService {
 
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh', true);
-      
+      xhr.open('POST', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh', true);
+
       // Set headers theo request mẫu chính xác
-      xhr.setRequestHeader('Host', 'ssmv2.vnpost.vn');
+      xhr.setRequestHeader('Host', 'ssm.vnpost.vn');
       xhr.setRequestHeader('sec-ch-ua-platform', '"Windows"');
       xhr.setRequestHeader('Authorization', bearerToken);
       xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36');
@@ -182,9 +182,9 @@ export class BHXHService {
       };
 
       // Log thông tin request
-      console.log('Request URL:', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh');
+      console.log('Request URL:', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh');
       console.log('Request Headers:', {
-        'Host': 'ssmv2.vnpost.vn',
+        'Host': 'ssm.vnpost.vn',
         'sec-ch-ua-platform': '"Windows"',
         'Authorization': `${bearerToken.substring(0, 50)}...`,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
@@ -219,8 +219,8 @@ export class BHXHService {
     // Tạo XMLHttpRequest thay vì dùng HttpClient
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh', true);
-      
+      xhr.open('POST', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh', true);
+
       // Set only safe headers
       xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
       xhr.setRequestHeader('Accept-Language', 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5');
@@ -283,7 +283,7 @@ export class BHXHService {
         });
       };
 
-      console.log('Request URL:', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh');
+      console.log('Request URL:', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh');
       console.log('Request Headers:', {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5',
@@ -313,10 +313,10 @@ export class BHXHService {
 
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh', true);
-      
+      xhr.open('POST', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh', true);
+
       // Set headers theo request mẫu chính xác
-      xhr.setRequestHeader('Host', 'ssmv2.vnpost.vn');
+      xhr.setRequestHeader('Host', 'ssm.vnpost.vn');
       xhr.setRequestHeader('sec-ch-ua-platform', '"Windows"');
       xhr.setRequestHeader('Authorization', bearerToken);
       xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36');
@@ -382,9 +382,9 @@ export class BHXHService {
       };
 
       // Log thông tin request
-      console.log('Request URL:', 'https://ssmv2.vnpost.vn/connect/tracuu/masobhxh');
+      console.log('Request URL:', 'https://ssm.vnpost.vn/connect/tracuu/masobhxh');
       console.log('Request Headers:', {
-        'Host': 'ssmv2.vnpost.vn',
+        'Host': 'ssm.vnpost.vn',
         'sec-ch-ua-platform': '"Windows"',
         'Authorization': `${bearerToken.substring(0, 50)}...`,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
@@ -419,8 +419,8 @@ export class BHXHService {
     // Tạo XMLHttpRequest thay vì dùng HttpClient
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ssmv2.vnpost.vn/connect/tracuu/getthongtinhgd', true);
-      
+      xhr.open('POST', 'https://ssm.vnpost.vn/connect/tracuu/getthongtinhgd', true);
+
       // Set only safe headers
       xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
       xhr.setRequestHeader('Accept-Language', 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5');
@@ -484,7 +484,7 @@ export class BHXHService {
       };
 
       // Log thông tin request
-      console.log('Request URL:', 'https://ssmv2.vnpost.vn/connect/tracuu/getthongtinhgd');
+      console.log('Request URL:', 'https://ssm.vnpost.vn/connect/tracuu/getthongtinhgd');
       console.log('Request Body:', request);
 
       xhr.send(JSON.stringify(request));
@@ -508,8 +508,8 @@ export class BHXHService {
     // Tạo XMLHttpRequest thay vì dùng HttpClient
     return new Observable(observer => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhxh', true);
-      
+      xhr.open('POST', 'https://ssm.vnpost.vn/connect/tracuu/thongtinbhxh', true);
+
       // Set only safe headers
       xhr.setRequestHeader('Accept', 'application/json, text/plain, */*');
       xhr.setRequestHeader('Accept-Language', 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5');
@@ -572,7 +572,7 @@ export class BHXHService {
         });
       };
 
-      console.log('Request URL:', 'https://ssmv2.vnpost.vn/connect/tracuu/thongtinbhxh');
+      console.log('Request URL:', 'https://ssm.vnpost.vn/connect/tracuu/thongtinbhxh');
       console.log('Request Headers:', {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'vi-VN,vi;q=0.9,fr;q=0.7,en-US;q=0.6,en;q=0.5',
@@ -586,4 +586,4 @@ export class BHXHService {
       xhr.send(JSON.stringify(request));
     });
   }
-} 
+}

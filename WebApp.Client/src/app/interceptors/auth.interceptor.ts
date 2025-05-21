@@ -4,7 +4,7 @@ import { catchError, throwError } from 'rxjs';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // Không xử lý nếu là request đến API tra cứu BHYT
-  if (req.url.includes('ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai')) {
+  if (req.url.includes('ssm.vnpost.vn/connect/tracuu/thongtinbhytforkekhai')) {
     return next(req);
   }
 
@@ -14,7 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     if (user) {
       const userData = JSON.parse(user);
-      
+
       if (userData && userData.token) {
         console.log('Token being sent:', userData.token);
         req = req.clone({
@@ -39,4 +39,4 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       return throwError(() => error);
     })
   );
-}; 
+};

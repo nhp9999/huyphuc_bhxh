@@ -28,7 +28,7 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class SSMV2Service {
-  private baseUrl = 'https://ssmv2.vnpost.vn';
+  private baseUrl = 'https://ssm.vnpost.vn';
   private tokenKey = 'ssmv2_token';
   private tokenExpireKey = 'ssmv2_token_expire';
   private refreshingToken = false;
@@ -47,9 +47,9 @@ export class SSMV2Service {
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9,vi;q=0.8',
       'Content-Type': 'application/json',
-      'Origin': 'https://ssmv2.vnpost.vn',
-      'Referer': 'https://ssmv2.vnpost.vn/',
-      'Host': 'ssmv2.vnpost.vn'
+      'Origin': 'https://ssm.vnpost.vn',
+      'Referer': 'https://ssm.vnpost.vn/',
+      'Host': 'ssm.vnpost.vn'
     });
 
     return this.http.get(`${this.baseUrl}/oauth2/Captcha`, { headers })
@@ -80,11 +80,11 @@ export class SSMV2Service {
     }
 
     const headers = new HttpHeaders({
-      'Accept': '*/*', 
+      'Accept': '*/*',
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Origin': 'https://ssmv2.vnpost.vn',
-      'Referer': 'https://ssmv2.vnpost.vn/',
-      'Host': 'ssmv2.vnpost.vn'
+      'Origin': 'https://ssm.vnpost.vn',
+      'Referer': 'https://ssm.vnpost.vn/',
+      'Host': 'ssm.vnpost.vn'
     });
 
     return this.http.post<AuthResponse>(`${this.baseUrl}/oauth2/Authenticate`, body.toString(), {
@@ -96,7 +96,7 @@ export class SSMV2Service {
           // Lưu token với thời gian hết hạn ngắn hơn một chút để đảm bảo an toàn
           const safeExpiresIn = Math.max(0, (response.body.expires_in || 0) - 60); // Trừ đi 60 giây
           this.saveToken(response.body.access_token, safeExpiresIn);
-          
+
           // Lưu thông tin user nếu có
           if (response.body.userName) {
             const userInfo = {
@@ -118,20 +118,20 @@ export class SSMV2Service {
     try {
       // Tính thời gian hết hạn
       const expiresAt = new Date().getTime() + (expiresIn * 1000);
-      
+
       // Lưu token và thời gian hết hạn
       localStorage.setItem(this.tokenKey, token);
       localStorage.setItem(this.tokenExpireKey, expiresAt.toString());
-      
+
       // Lưu thời gian tạo token
       localStorage.setItem('ssmv2_token_created', new Date().getTime().toString());
-      
+
       console.log('Token đã được lưu:', {
         token: token.substring(0, 20) + '...',
         expiresIn: `${expiresIn} giây`,
         expiresAt: new Date(expiresAt).toLocaleString()
       });
-      
+
       this.tokenSubject.next(token);
     } catch (error) {
       console.error('Lỗi khi lưu token:', error);
@@ -144,7 +144,7 @@ export class SSMV2Service {
     try {
       const expireTime = localStorage.getItem(this.tokenExpireKey);
       const createdTime = localStorage.getItem('ssmv2_token_created');
-      
+
       if (!expireTime || !createdTime) {
         console.log('Không tìm thấy thông tin token');
         return true;
@@ -153,24 +153,24 @@ export class SSMV2Service {
       const now = new Date().getTime();
       const expireTimeNum = parseInt(expireTime);
       const createdTimeNum = parseInt(createdTime);
-      
+
       // Kiểm tra xem token đã tồn tại quá lâu chưa (ví dụ: 4 tiếng)
       const maxTokenAge = 4 * 60 * 60 * 1000; // 4 tiếng
       const tokenAge = now - createdTimeNum;
-      
+
       if (tokenAge > maxTokenAge) {
         console.log('Token đã tồn tại quá lâu:', Math.round(tokenAge / (60 * 1000)), 'phút');
         return true;
       }
-      
+
       // Thêm buffer 5 phút để tránh token hết hạn đột ngột
       const bufferTime = 5 * 60 * 1000; // 5 phút
       const isExpired = now >= (expireTimeNum - bufferTime);
-      
+
       if (isExpired) {
         console.log('Token sẽ hết hạn vào:', new Date(expireTimeNum).toLocaleString());
       }
-      
+
       return isExpired;
     } catch (error) {
       console.error('Lỗi khi kiểm tra hạn token:', error);
@@ -182,12 +182,12 @@ export class SSMV2Service {
   getToken(): string | null {
     try {
       const token = localStorage.getItem(this.tokenKey);
-      
+
       if (!token) {
         console.log('Không tìm thấy token trong localStorage');
         return null;
       }
-      
+
       // Kiểm tra thời gian hết hạn
       const expireTime = localStorage.getItem(this.tokenExpireKey);
       if (!expireTime) {
@@ -197,21 +197,21 @@ export class SSMV2Service {
 
       const now = new Date().getTime();
       const expireTimeNum = parseInt(expireTime);
-      
+
       // Chỉ xóa token khi đã thực sự hết hạn (không tính buffer time)
       if (now >= expireTimeNum) {
         console.log('Token đã hết hạn hoàn toàn, xóa token');
         this.clearToken();
         return null;
       }
-      
+
       // Log thông tin token
       const timeLeft = Math.round((expireTimeNum - now) / 1000);
       console.log('Thông tin token:', {
         expiresAt: new Date(expireTimeNum).toLocaleString(),
         timeLeft: `${timeLeft} giây`
       });
-      
+
       return token;
     } catch (error) {
       console.error('Lỗi khi lấy token:', error);
@@ -234,4 +234,4 @@ export class SSMV2Service {
     }
     return headers;
   }
-} 
+}

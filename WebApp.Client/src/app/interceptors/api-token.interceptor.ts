@@ -8,7 +8,7 @@ const API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54
 export class ApiTokenInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Chỉ thêm token API cho request đến API tra cứu BHYT
-    if (request.url.includes('ssmv2.vnpost.vn/connect/tracuu/thongtinbhytforkekhai')) {
+    if (request.url.includes('ssm.vnpost.vn/connect/tracuu/thongtinbhytforkekhai')) {
       request = request.clone({
         setHeaders: {
           'Authorization': `Bearer ${API_TOKEN}`,
@@ -24,4 +24,4 @@ export class ApiTokenInterceptor implements HttpInterceptor {
 }
 
 // Thêm export instance của interceptor
-export const apiTokenInterceptor = new ApiTokenInterceptor(); 
+export const apiTokenInterceptor = new ApiTokenInterceptor();
